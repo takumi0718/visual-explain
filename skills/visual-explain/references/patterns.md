@@ -53,9 +53,9 @@
 
 ```html
 <ol class="flow">
-  <li class="node">入力を受け取る</li>
-  <li class="node">内容を検証する</li>
-  <li class="node">結果を返す</li>
+  <li class="flow-node">入力を受け取る</li>
+  <li class="flow-node">内容を検証する</li>
+  <li class="flow-node">結果を返す</li>
 </ol>
 ```
 
@@ -67,11 +67,11 @@
 <div class="layers">
   <section class="lane" data-lane>
     <p class="lane-label">利用者</p>
-    <div class="lane-nodes"><div class="node">要求</div></div>
+    <div class="lane-nodes"><div class="flow-node">要求</div></div>
   </section>
   <section class="lane" data-lane>
     <p class="lane-label">処理</p>
-    <div class="lane-nodes"><div class="node">検証</div></div>
+    <div class="lane-nodes"><div class="flow-node">検証</div></div>
   </section>
 </div>
 ```
@@ -94,8 +94,8 @@
 ```html
 <div class="matrix">
   <table>
-    <thead><tr><th scope="col">案</th><th scope="col">利点</th><th scope="col">制約</th></tr></thead>
-    <tbody><tr><th scope="row">案A</th><td>速い</td><td>検証が必要</td></tr></tbody>
+    <thead><tr><th class="matrix-label" scope="col">案</th><th class="matrix-label" scope="col">利点</th><th class="matrix-label" scope="col">制約</th></tr></thead>
+    <tbody><tr class="option-card" data-tone="accent"><th class="matrix-label" scope="row">案A</th><td class="matrix-cell">速い</td><td class="matrix-cell">検証が必要</td></tr></tbody>
   </table>
 </div>
 ```
@@ -150,10 +150,10 @@
 
 | 図 | コンテナ | 必須スロット |
 | --- | --- | --- |
-| flow | `flow` | 直接の子として順序どおりの `node` |
-| layers | `layers` | `lane` ごとに `lane-label` と `lane-nodes`、その中に `node` |
+| flow | `flow` | 直接の子として順序どおりの `flow-node` |
+| layers | `layers` | `lane` ごとに `lane-label` と `lane-nodes`、その中に `flow-node` |
 | compare | `compare` | 直接の子として2個の `compare-frame` |
-| matrix | `matrix` | セマンティックな `table`、列見出し、行見出し |
+| matrix | `matrix` | セマンティックな `table`、`matrix-label` の見出し、`matrix-cell` の内容セル、比較対象は `option-card` |
 | timeline | `timeline` | 時系列順の `timeline-item`、各項目の `time` と内容 |
 | kpi | `kpi` | `kpi-card` ごとの `kpi-value` と指標名 |
 | bars | `bars` | `bar-row` ごとのラベル、`bar-track` 内の `bar-fill`、数値 |
@@ -166,9 +166,9 @@
 ```html
 <figure class="figure">
   <ol class="flow" data-connect="request->validate, validate->respond">
-    <li class="node" id="request">要求</li>
-    <li class="node" id="validate">検証</li>
-    <li class="node" id="respond">応答</li>
+    <li class="flow-node" id="request">要求</li>
+    <li class="flow-node" id="validate">検証</li>
+    <li class="flow-node" id="respond">応答</li>
   </ol>
   <figcaption>隣接する処理だけを接続する。</figcaption>
 </figure>
