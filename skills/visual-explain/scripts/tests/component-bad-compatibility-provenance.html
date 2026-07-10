@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>visual-explain 資料</title>
+  <title>資料タイトル</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -170,6 +170,8 @@
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
   (() => {
@@ -235,121 +237,15 @@
   </script>
   <main>
     <!-- CONTENT:BEGIN -->
-    <section class="first-screen" aria-label="開発用カタログの説明">
-      <p class="proposal">これは非規範の手動目視用カタログです。固定部品の表示と操作だけを確認し、生成資料の見本としては使いません。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> この非規範の手動目視用カタログで部品の表示と操作を確認するか決めます。</p>
-      <ul class="conditions"><li>全8図フォーマットを同じ骨格で確認できること</li><li>コネクタ、ステッパー、確度表記を操作できること</li></ul>
-    </section>
-
-    <section aria-labelledby="catalog-flow">
-      <h1 id="catalog-flow">flow とコネクタ</h1>
-      <p class="claim">隣接ノードの接続を固定コネクタで描画します。</p>
-      <figure class="figure">
-        <ol class="flow" data-connect="catalog-draft->catalog-check, catalog-check->catalog-save">
-          <li class="flow-node" id="catalog-draft">下書き</li>
-          <li class="flow-node" id="catalog-check">検査</li>
-          <li class="flow-node" id="catalog-save">保存</li>
-        </ol>
-        <figcaption>線が描画されなくても、順序と接続先はノードの文言から読めます。</figcaption>
-      </figure>
-    </section>
-
-    <section aria-labelledby="catalog-layers">
-      <h2 id="catalog-layers">layers</h2>
-      <p class="claim">責務ごとのレーンを並べます。</p>
-      <figure class="figure">
-        <div class="layers">
-          <section class="lane" data-lane><p class="lane-label">利用者</p><div class="lane-nodes"><div class="flow-node">依頼</div></div></section>
-          <section class="lane" data-lane><p class="lane-label">資料</p><div class="lane-nodes"><div class="flow-node">判断材料</div></div></section>
-        </div>
-        <figcaption>レーン名とノードを対にして責務を区別します。</figcaption>
-      </figure>
-    </section>
-
-    <section aria-labelledby="catalog-compare">
-      <h2 id="catalog-compare">compare</h2>
-      <p class="claim">同じ大きさの二つの状態を比べます。</p>
-      <figure class="figure"><div class="compare">
-        <section class="compare-frame"><h3>Before</h3><p>保存先が都度異なる。</p></section>
-        <section class="compare-frame"><h3>After</h3><p>保存先を規約で固定する。</p></section>
-      </div><figcaption>片方を強調せず、差分を文章で比較します。</figcaption></figure>
-    </section>
-
-    <section aria-labelledby="catalog-matrix">
-      <h2 id="catalog-matrix">matrix</h2>
-      <p class="claim">選択肢と制約を表で確認します。</p>
-      <div class="matrix"><table>
-        <thead><tr><th scope="col">案</th><th scope="col">利点</th><th scope="col">制約</th></tr></thead>
-        <tbody><tr><th scope="row">日付付き保存</th><td>並行作業を分けられる</td><td>ファイル名が長くなる</td></tr></tbody>
-      </table></div>
-    </section>
-
-    <section aria-labelledby="catalog-timeline">
-      <h2 id="catalog-timeline">timeline</h2>
-      <p class="claim">時点と出来事を順に表示します。</p>
-      <ol class="timeline">
-        <li class="timeline-item"><time datetime="2026-07-10">2026年7月10日</time><p>資料を生成する。</p></li>
-        <li class="timeline-item"><time datetime="2026-07-11">2026年7月11日</time><p>保存規約を確認する。</p></li>
-      </ol>
-    </section>
-
-    <section aria-labelledby="catalog-kpi">
-      <h2 id="catalog-kpi">kpi</h2>
-      <p class="claim">値と指標名を近くに置きます。</p>
-      <div class="kpi"><article class="kpi-card"><span class="kpi-value">3</span><p>保存候補</p></article><article class="kpi-card"><span class="kpi-value">1</span><p>承認待ち</p></article></div>
-    </section>
-
-    <section aria-labelledby="catalog-bars">
-      <h2 id="catalog-bars">bars</h2>
-      <p class="claim">棒の長さと数値を併記します。</p>
-      <div class="bars"><div class="bar-row"><span>検査済み</span><span class="bar-track"><span class="bar-fill" style="--value: 75%"></span></span><strong>75%</strong></div><div class="bar-row"><span>未確認</span><span class="bar-track"><span class="bar-fill" style="--value: 25%"></span></span><strong>25%</strong></div></div>
-    </section>
-
-    <section aria-labelledby="catalog-terms">
-      <h2 id="catalog-terms">terms</h2>
-      <p class="claim">用語と短い定義を対にします。</p>
-      <dl class="terms"><div class="term"><dt>ノード</dt><dd>処理または状態を示すカード。</dd></div><div class="term"><dt>レーン</dt><dd>責務ごとに分けた行。</dd></div></dl>
-    </section>
-
-    <section aria-labelledby="catalog-stepper">
-      <h2 id="catalog-stepper">ステッパー</h2>
-      <p class="claim">開始状態、終了状態、全3段階を予告し、操作で各段階と全体表示を確認します。</p>
-      <div class="stepper" data-stepper data-total-steps="3">
-        <article class="step-panel" data-step="1"><h3>1. 下書き</h3><p>開始状態です。</p></article>
-        <article class="step-panel" data-step="2"><h3>2. 検査</h3><p>中間状態です。</p></article>
-        <article class="step-panel" data-step="3"><h3>3. 保存</h3><p>終了状態です。</p></article>
-        <div class="stepper-controls"><button type="button" data-step-action="previous">前へ: 前の段階を表示</button><button type="button" data-step-action="next" data-next-label="次へ: 次の段階を表示">次へ: 次の段階を表示</button><button type="button" data-step-action="all">全体表示: 3段階を同時に表示</button></div>
-      </div>
-    </section>
-
-    <section aria-labelledby="catalog-certainty">
-      <h2 id="catalog-certainty">確度表記</h2>
-      <p>検査済みの値です。<span class="certainty confirmed">確認済み</span></p>
-      <p>利用頻度は増える見込みです。<span class="certainty inferred">推論</span></p>
-      <p>恒久保存の方針は決まっていません。<span class="certainty unverified">未確認</span></p>
-      <details class="source-note"><summary>出所</summary><p>カタログ内の値と状態は、部品表示を確認するためのテストデータです。</p></details>
-    </section>
-
-    <section aria-labelledby="catalog-canonical">
-      <h1 id="catalog-canonical">カノニカル部品 (matrix / flow)</h1>
-      <p class="claim">昇格済みの意味コンポーネントは canonical IR から生成します。</p>
-      <p>二軸分類は <code>matrix@1</code>、順序・有向・分岐の関係は <code>flow@1</code> を明示選択で使います。生成物は <code>scripts/build_explainer.py --assembly &lt;IR&gt; --output &lt;html&gt;</code> でビルドし、<code>scripts/check.sh &lt;html&gt;</code> で四層検証します。</p>
-      <ul class="conditions">
-        <li>例: <code>scripts/tests/component-valid-matrix.json</code>（matrix）</li>
-        <li>例: <code>scripts/tests/component-valid-flow.json</code>（flow）</li>
-        <li>例: <code>scripts/tests/component-valid-mixed.json</code>（matrix＋互換＋flow）</li>
-      </ul>
-      <p>その他の形式と弱モデル劣化は、ラベル付きの互換節として同じ組み立てに入ります。詳細は references/patterns.md と references/design-system.md を参照します。</p>
-    </section>
-
-    <section class="closing-section" aria-label="開発時の注意">
-      <h2>リスクと弱い前提</h2><p>このファイルのテストデータは実運用の判断材料ではありません。</p>
-      <h2>不確かな点</h2><p>ブラウザごとの表示差はこのカタログだけでは網羅できません。</p>
-    </section>
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <section data-ve-section-kind="compatibility" data-ve-instance="legacy-x"><p>既存ルールの内容</p></section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

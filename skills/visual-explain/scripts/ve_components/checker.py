@@ -19,8 +19,15 @@ from .diagnostics import (
     FORBIDDEN_CONTENT_MARKUP,
     INVALID_CONTROLLED_ASSET,
     MISSING_CONTROLLED_MARKER,
+    MISSING_PROVENANCE,
     Diagnostic,
 )
+from .validation import VOCABULARY
+
+_COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
+_COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
+_SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
+_ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
 
 STYLES_BEGIN = "<!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->"
 STYLES_END = "<!-- VE-CONTROLLED:COMPONENT-STYLES:END -->"
@@ -225,9 +232,36 @@ def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, compon
     return diagnostics
 
 
+def validate_final_provenance(content: str) -> list[Diagnostic]:
+    """Every section wrapper in the content slot must carry valid provenance."""
+    diagnostics: list[Diagnostic] = []
+    for match in _SECTION_TAG_RE.finditer(content):
+        attrs = match.group(1)
+        kind_match = _ATTR_RE("data-ve-section-kind").search(attrs)
+        if kind_match is None:
+            continue
+        kind = kind_match.group(1)
+        if kind == "canonical":
+            if not _ATTR_RE("data-ve-component").search(attrs) or not _ATTR_RE("data-ve-instance").search(attrs):
+                diagnostics.append(Diagnostic(MISSING_PROVENANCE, "canonical セクションに component/instance provenance がありません"))
+        elif kind == "compatibility":
+            src = _ATTR_RE("data-ve-compat-source").search(attrs)
+            reason = _ATTR_RE("data-ve-compat-reason").search(attrs)
+            if src is None or src.group(1) not in _COMPAT_SOURCES or reason is None or reason.group(1) not in _COMPAT_REASONS:
+                diagnostics.append(Diagnostic(MISSING_PROVENANCE, "compatibility セクションに正しい provenance がありません"))
+        else:
+            diagnostics.append(Diagnostic(MISSING_PROVENANCE, f"未知の section-kind '{kind}'"))
+    return diagnostics
+
+
 def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expected=None,
                          components_dir: Path | None = None) -> list[Diagnostic]:
-    """Run the safety/skeleton layer. Legacy documents pass unchanged."""
+    """Run the four-layer checker. Legacy documents pass unchanged.
+
+    Layers: (1) safety/fixed regions, (2) IR/selection is enforced at build time,
+    (3) component/manifest — manifest-to-DOM when ``expected`` is present, final
+    provenance/semantic attributes otherwise, (4) flattened-document safety.
+    """
     text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
     skel = skeleton.decode("utf-8") if isinstance(skeleton, bytes) else skeleton
     if not is_component_document(text):
@@ -236,10 +270,12 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
     slots, marker_diags = extract_controlled_slots(text)
     diagnostics += marker_diags
     diagnostics += normalized_fixed_regions(text, skel)
+    content = slots.get("content", "")
     if "content" in slots:
-        diagnostics += validate_content_markup(slots["content"])
+        diagnostics += validate_content_markup(content)
+        diagnostics += validate_final_provenance(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
-        from .final_checks import check_manifest_to_dom  # Task 7
-        diagnostics += check_manifest_to_dom(text, slots, expected)
+        from .final_checks import check_manifest_to_dom
+        diagnostics += check_manifest_to_dom(content, slots, expected)
     return diagnostics
