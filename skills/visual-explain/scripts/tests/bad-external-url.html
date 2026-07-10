@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <title>{{TITLE}}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f8;
+      --surface: #ffffff;
+      --border: #c7cdd4;
+      --text: #17212b;
+      --text-dim: #596775;
+      --accent: #076a77;
+      --accent-strong: #004d58;
+      --accent-warm: #a84712;
+      --warning: #a13d16;
+      --focus: #005fcc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #10161c;
+        --surface: #19232c;
+        --border: #40505d;
+        --text: #edf3f6;
+        --text-dim: #afbdc7;
+        --accent: #54c8c2;
+        --accent-strong: #93e1dc;
+        --accent-warm: #ffb27c;
+        --warning: #ffab82;
+        --focus: #8cc8ff;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--text); }
+    body { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+    main { width: min(100% - 2rem, 72rem); margin: 0 auto; padding: 2rem 0 4rem; }
+    section { min-width: 0; margin-block: 2rem; }
+    h1, h2, h3, p { min-width: 0; }
+    h1 { font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.2; }
+    h2 { font-size: 1.35rem; line-height: 1.3; }
+    a { color: var(--accent-strong); }
+    button, summary, a { outline-offset: 3px; }
+    button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); }
+    button { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; padding: .55rem .8rem; cursor: pointer; }
+    button:hover:not(:disabled) { border-color: var(--accent); }
+    button:disabled { color: var(--text-dim); cursor: not-allowed; }
+
+    .first-screen { display: grid; gap: 1rem; padding: clamp(1.25rem, 3vw, 2.5rem); background: var(--surface); border-left: .4rem solid var(--accent); }
+    .proposal, .decision { margin: 0; font-size: 1.1rem; }
+    .decision strong { color: var(--accent-strong); }
+    .conditions { display: grid; gap: .4rem; margin: 0; padding-left: 1.25rem; color: var(--text-dim); }
+
+    .claim { margin-bottom: .75rem; font-size: 1.1rem; font-weight: 700; }
+    .figure { position: relative; min-width: 0; margin: 1rem 0; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: .5rem; overflow: auto; }
+    .figure figcaption { margin-top: .75rem; color: var(--text-dim); font-size: .92rem; }
+    .evidence { margin-top: .75rem; padding-left: .8rem; border-left: .2rem solid var(--border); color: var(--text-dim); font-size: .94rem; }
+    details.deep-dive { margin-top: 1rem; padding: .65rem .8rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
+    details.deep-dive summary { cursor: pointer; font-weight: 700; }
+    pre { max-width: 100%; overflow: auto; padding: 1rem; background: var(--bg); border: 1px solid var(--border); }
+
+    .node { position: relative; z-index: 1; min-width: 0; padding: .7rem .85rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
+    .flow { display: flex; align-items: stretch; gap: 1.75rem; }
+    .flow .node { flex: 1 1 10rem; }
+    .flow > .node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + .45rem); color: var(--accent); font-weight: 700; transform: translateY(-50%); }
+    .layers { display: grid; gap: .75rem; }
+    .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: .75rem; align-items: center; }
+    .lane-label { color: var(--text-dim); font-weight: 700; }
+    .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; min-width: 0; }
+    .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .compare-frame { min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: .4rem; }
+    .compare-frame h3 { margin-top: 0; }
+    .matrix { max-width: 100%; overflow: auto; }
+    .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
+    .matrix th, .matrix td { padding: .7rem; text-align: left; vertical-align: top; border: 1px solid var(--border); }
+    .matrix th { background: var(--bg); }
+    .timeline { display: grid; gap: .8rem; border-left: .2rem solid var(--accent); padding-left: 1.25rem; }
+    .timeline-item { position: relative; min-width: 0; }
+    .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.25rem - .45rem); top: .45rem; background: var(--accent); border-radius: 50%; }
+    .timeline time { color: var(--text-dim); font-weight: 700; }
+    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; }
+    .kpi-card { min-width: 0; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
+    .kpi-value { display: block; color: var(--accent-strong); font-size: 1.8rem; font-weight: 800; line-height: 1.2; }
+    .bars { display: grid; gap: .75rem; }
+    .bar-row { display: grid; grid-template-columns: minmax(7rem, .35fr) minmax(8rem, 1fr) auto; gap: .75rem; align-items: center; min-width: 0; }
+    .bar-track { min-width: 0; height: 1rem; overflow: hidden; background: var(--bg); border-radius: 999px; }
+    .bar-fill { display: block; width: var(--value, 0%); min-width: .25rem; height: 100%; background: var(--accent); }
+    .terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; }
+    .term { min-width: 0; padding: .9rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
+    .term dt { color: var(--accent-strong); font-weight: 800; }
+    .term dd { margin: .35rem 0 0; color: var(--text-dim); }
+
+    .certainty { display: inline-flex; align-items: center; margin-inline: .25rem; padding: .08rem .45rem; border: 1px solid currentColor; border-radius: 999px; font-size: .82em; font-weight: 700; white-space: nowrap; }
+    .certainty.confirmed { color: var(--accent-strong); }
+    .certainty.inferred { color: var(--accent-warm); }
+    .certainty.unverified { color: var(--warning); }
+    details.source-note { display: inline-block; position: relative; margin-inline: .25rem; }
+    details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
+    details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: .35rem; padding: .5rem; background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
+
+    .stepper { display: grid; gap: .75rem; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: .5rem; }
+    .stepper-status { margin: 0; color: var(--text-dim); }
+    .step-panel[hidden] { display: none; }
+    .step-panel.is-current { border-left: .25rem solid var(--accent); padding-left: .75rem; }
+    .stepper-controls { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+    .closing-section { padding: 1.25rem; background: var(--bg); border: 1px solid var(--border); border-top: .35rem solid var(--accent-warm); }
+    .closing-section h2 { margin-top: 0; }
+    .closing-section h3 { margin-bottom: .25rem; }
+    .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .connector-warning { margin: .75rem 0 0; color: var(--warning); font-weight: 700; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    footer { padding: 1rem; color: var(--text-dim); text-align: center; font-size: .9rem; }
+
+    @media (max-width: 42rem) {
+      main { width: min(100% - 1rem, 72rem); padding-top: 1rem; }
+      .flow { flex-direction: column; gap: 1.5rem; }
+      .flow .node:not(:last-child)::after { top: calc(100% + .75rem); left: 50%; transform: translateX(-50%) rotate(90deg); }
+      .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: .4rem; }
+      .compare { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- CONTENT:BEGIN -->
+    <section class="first-screen" aria-label="最初に伝えること">
+      <p class="proposal">提案の概要です。</p>
+      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
+    <img src="https://example.invalid/image.png" alt="">
+    </section>
+    <section class="closing-section" aria-label="判断材料">
+      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
+      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+    </section>
+    <!-- CONTENT:END -->
+  </main>
+  <footer>AI が生成した資料</footer>
+
+  <script>
+  /* FIXED CONNECTOR JS: DO NOT MODIFY. */
+  (() => {
+    let resizeObserver;
+    const SVG_NS = 'http:' + '//www.w3.org/2000/svg';
+    const directChild = (parent, className) => Array.from(parent.children).find((node) => node.classList && node.classList.contains(className));
+    const scopes = () => Array.from(new Set([
+      ...document.querySelectorAll('[data-connect-scope]'),
+      ...Array.from(document.querySelectorAll('.figure')).filter((figure) => figure.querySelector('[data-connect]'))
+    ]));
+    const nodeMap = (scope) => new Map(Array.from(scope.querySelectorAll('[id]')).map((node) => [node.id, node]));
+    const laneIndex = (node, scope) => Array.from(scope.querySelectorAll('[data-lane]')).findIndex((lane) => lane.contains(node));
+    const siblingIndex = (node) => Array.from(node.parentElement.querySelectorAll(':scope > [id]')).indexOf(node);
+    const adjacent = (from, to, scope) => {
+      const fromLane = laneIndex(from, scope);
+      const toLane = laneIndex(to, scope);
+      if (fromLane >= 0 && toLane >= 0) return fromLane === toLane ? Math.abs(siblingIndex(from) - siblingIndex(to)) === 1 : Math.abs(fromLane - toLane) === 1;
+      return from.parentElement === to.parentElement && Math.abs(siblingIndex(from) - siblingIndex(to)) === 1;
+    };
+    const pointPair = (from, to, scope) => {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), box = scope.getBoundingClientRect();
+      const ax = a.left + a.width / 2, ay = a.top + a.height / 2, bx = b.left + b.width / 2, by = b.top + b.height / 2;
+      if (Math.abs(bx - ax) >= Math.abs(by - ay)) return [bx >= ax ? a.right : a.left, ay, bx >= ax ? b.left : b.right, by, box];
+      return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
+    };
+    const pathFor = (from, to, scope) => {
+      const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
+      const x1 = sx - box.left, y1 = sy - box.top, x2 = ex - box.left, y2 = ey - box.top;
+      const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+      const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1, c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
+      const c2x = horizontal ? x2 - (x2 - x1) * .45 : x2, c2y = horizontal ? y2 : y2 - (y2 - y1) * .45;
+      return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+    };
+    const warning = (scope, message) => {
+      const badge = document.createElement('p');
+      badge.className = 'connector-warning';
+      badge.textContent = `接続を描画できません: ${message}`;
+      scope.append(badge);
+    };
+    const render = (scope) => {
+      scope.querySelectorAll('.connector-layer, .connector-warning').forEach((node) => node.remove());
+      const list = directChild(scope, 'connection-text') || document.createElement('ul');
+      list.className = 'connection-text visually-hidden';
+      list.setAttribute('aria-label', '接続関係');
+      list.replaceChildren();
+      if (!list.parentElement) scope.append(list);
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'connector-layer');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><marker id="connector-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"/></marker></defs>';
+      const nodes = nodeMap(scope);
+      let hasLine = false;
+      scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+        declaration.dataset.connect.split(',').map((item) => item.trim()).filter(Boolean).forEach((item) => {
+          const [fromId, toId] = item.split('->').map((id) => id && id.trim());
+          const from = nodes.get(fromId), to = nodes.get(toId);
+          if (!from || !to) {
+            console.error('visual-explain: unknown connector reference', item);
+            warning(scope, `「${item}」の ID が見つかりません。`);
+            return;
+          }
+          if (!adjacent(from, to, scope)) {
+            console.error('visual-explain: non-adjacent connector rejected', item);
+            warning(scope, `「${item}」は隣接ノードだけを接続できます。`);
+            return;
+          }
+          const path = document.createElementNS(SVG_NS, 'path');
+          path.setAttribute('d', pathFor(from, to, scope));
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', 'currentColor');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('marker-end', 'url(#connector-arrow)');
+          svg.append(path);
+          const text = document.createElement('li');
+          text.textContent = `${from.textContent.trim()} から ${to.textContent.trim()} へ接続`;
+          list.append(text);
+          hasLine = true;
+        });
+      });
+      if (hasLine) scope.append(svg);
+    };
+    const renderAll = () => scopes().forEach(render);
+    window.addEventListener('load', () => {
+      renderAll();
+      resizeObserver = new ResizeObserver(renderAll);
+      scopes().forEach((scope) => resizeObserver.observe(scope));
+    });
+    document.addEventListener('toggle', (event) => { if (event.target.matches('details')) renderAll(); }, true);
+    document.addEventListener('visual-explain:stepchange', renderAll);
+  })();
+
+  /* FIXED STEPPER AND DETAILS JS: DO NOT MODIFY. */
+  (() => {
+    const update = (stepper, current, all = false) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      panels.forEach((panel) => {
+        const active = Number(panel.dataset.step) === current;
+        panel.hidden = !all && !active;
+        panel.classList.toggle('is-current', active && !all);
+        panel.setAttribute('aria-current', active && !all ? 'step' : 'false');
+      });
+      let status = stepper.querySelector('.stepper-status');
+      if (!status) {
+        status = document.createElement('p');
+        status.className = 'stepper-status';
+        status.setAttribute('aria-live', 'polite');
+        stepper.prepend(status);
+      }
+      status.textContent = all ? `全体表示: ${total} 段階を同時に表示中。` : `現在の状態: ステップ ${current}/${total}。開始状態はステップ 1、終了状態はステップ ${total}。`;
+      const previous = stepper.querySelector('[data-step-action="previous"]');
+      const next = stepper.querySelector('[data-step-action="next"]');
+      if (previous) previous.disabled = all || current <= 1;
+      if (next) next.disabled = all || current >= total;
+      if (next) next.textContent = next.dataset.nextLabel || `次へ: ステップ ${Math.min(total, current + 1)} を表示`;
+      stepper.dataset.currentStep = String(current);
+      document.dispatchEvent(new CustomEvent('visual-explain:stepchange'));
+    };
+    document.querySelectorAll('details').forEach((details) => details.setAttribute('aria-expanded', String(details.open)));
+    document.querySelectorAll('[data-stepper]').forEach((stepper) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      if (!total) return;
+      update(stepper, 1);
+      stepper.addEventListener('click', (event) => {
+        const action = event.target.closest('button[data-step-action]');
+        if (!action) return;
+        const current = Number(stepper.dataset.currentStep) || 1;
+        if (action.dataset.stepAction === 'previous') update(stepper, Math.max(1, current - 1));
+        if (action.dataset.stepAction === 'next') update(stepper, Math.min(total, current + 1));
+        if (action.dataset.stepAction === 'all') update(stepper, current, true);
+      });
+    });
+    document.addEventListener('toggle', (event) => {
+      if (event.target.matches('details')) event.target.setAttribute('aria-expanded', String(event.target.open));
+    }, true);
+  })();
+  </script>
+</body>
+</html>
