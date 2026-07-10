@@ -156,7 +156,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     elif has_matrix:
         matrix = _validate_matrix(raw.get("matrix"), f"{path}.matrix", col)
     else:
-        flow = _validate_flow(raw.get("flow"), f"{path}.flow", col)
+        acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
+        flow = _validate_flow(raw.get("flow"), f"{path}.flow", col, acyclic=acyclic)
 
     # Cross-consistency: component choice must match the present payload and kind.
     if selection is not None:
@@ -380,10 +381,11 @@ def _validate_axis(raw: object, path: str, col: DiagnosticCollector) -> tuple[Ax
     return tuple(out)
 
 
-def _validate_flow(raw: object, path: str, col: DiagnosticCollector) -> FlowPayload | None:
+def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bool = False) -> FlowPayload | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "flow はオブジェクトである必要があります", path)
         return None
+    start_len = len(col.diagnostics)
     _check_keys(raw, _FLOW_KEYS, path, col)
     nodes_raw = raw.get("nodes")
     edges_raw = raw.get("edges")
@@ -449,10 +451,61 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector) -> FlowPayl
         if rid not in node_ids:
             col.add(INVALID_COMPONENT_PAYLOAD, f"readingOrder '{rid}' が存在しません", path)
 
+    # Graph-integrity checks only when the structure is otherwise sound, so a
+    # single dangling edge does not cascade into confusing reachability noise.
+    if len(col.diagnostics) == start_len:
+        _check_flow_integrity(node_ids, edges, start_id, list(reading_order), acyclic, path, col)
+
     return FlowPayload(
         nodes=tuple(nodes), edges=tuple(edges), groups=groups,
         start_id=start_id, reading_order=tuple(reading_order),
     )
+
+
+def _check_flow_integrity(node_ids: set[str], edges: list[FlowEdge], start_id, reading_order: list[str],
+                          acyclic: bool, path: str, col: DiagnosticCollector) -> None:
+    adjacency: dict[str, list[str]] = {n: [] for n in node_ids}
+    indegree: dict[str, int] = {n: 0 for n in node_ids}
+    for edge in edges:
+        adjacency[edge.source].append(edge.target)
+        indegree[edge.target] += 1
+
+    roots = [n for n in node_ids if indegree[n] == 0]
+    origin = start_id or (roots[0] if len(roots) == 1 else (reading_order[0] if reading_order else None))
+    if origin is None:
+        col.add(INVALID_COMPONENT_PAYLOAD, "開始ノードが曖昧です (startId か readingOrder を指定してください)", path)
+    else:
+        seen: set[str] = set()
+        stack = [origin]
+        while stack:
+            node = stack.pop()
+            if node in seen:
+                continue
+            seen.add(node)
+            stack.extend(adjacency.get(node, []))
+        unreachable = node_ids - seen
+        if unreachable:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"到達不能なノードがあります: {sorted(unreachable)}", path)
+
+    if acyclic and _has_cycle(node_ids, adjacency):
+        col.add(INVALID_FLOW_EDGE, "順序関係 (ordered-transition) に循環があります", path)
+
+
+def _has_cycle(node_ids: set[str], adjacency: dict[str, list[str]]) -> bool:
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {n: WHITE for n in node_ids}
+
+    def visit(node: str) -> bool:
+        color[node] = GRAY
+        for nxt in adjacency.get(node, []):
+            if color.get(nxt) == GRAY:
+                return True
+            if color.get(nxt) == WHITE and visit(nxt):
+                return True
+        color[node] = BLACK
+        return False
+
+    return any(color[n] == WHITE and visit(n) for n in node_ids)
 
 
 def _validate_groups(raw: object, path: str, col: DiagnosticCollector) -> tuple[FlowGroup, ...]:
