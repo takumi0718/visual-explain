@@ -104,7 +104,7 @@
     .compare-frame h3 { margin-top: 0; }
     .matrix { max-width: 100%; overflow: auto; }
     .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
-    .matrix-label, .matrix-cell { padding: .7rem; text-align: left; vertical-align: top; border: 1px solid var(--border); background: var(--surface); }
+    .matrix-label, .matrix-cell { padding: .7rem; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
     .matrix-label { color: var(--text); font-weight: 800; }
     .matrix thead .matrix-label { border-bottom-width: .15rem; }
     .option-card { min-width: 0; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
@@ -114,9 +114,9 @@
     [data-tone="warning"] { --tone-border: var(--warning); --tone-background: color-mix(in srgb, var(--warning) 12%, var(--surface)); --tone-text: var(--warning); }
     [data-tone="muted"] { --tone-border: var(--border); --tone-background: var(--bg); --tone-text: var(--text-dim); }
     .flow-node[data-tone], .option-card[data-tone], .matrix-label[data-tone], .matrix-cell[data-tone] { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
-    .option-card[data-tone] > .matrix-label, .option-card[data-tone] > .matrix-cell { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
-    .option-card[data-tone="accent"] > .matrix-label { border-left-width: .2rem; }
-    .option-card[data-tone="accent"] > .matrix-cell:last-child { border-right-width: .2rem; }
+    .matrix .option-card[data-tone] { background: transparent; color: inherit; }
+    .matrix .option-card[data-tone] > .matrix-label, .matrix .option-card[data-tone] > .matrix-cell, .matrix .matrix-label[data-tone], .matrix .matrix-cell[data-tone] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .matrix .option-card[data-tone="accent"] > .matrix-label, .matrix .option-card[data-tone="accent"] > .matrix-cell, .matrix .matrix-label[data-tone="accent"], .matrix .matrix-cell[data-tone="accent"] { background: var(--tone-background); }
     .timeline { display: grid; gap: .8rem; border-left: .2rem solid var(--accent); padding-left: 1.25rem; }
     .timeline-item { position: relative; min-width: 0; }
     .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.25rem - .45rem); top: .45rem; background: var(--accent); border-radius: 50%; }
