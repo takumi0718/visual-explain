@@ -27,6 +27,14 @@ Required facts:
 - A premortem works by asking readers to generate causal reasons for a hypothetical failure, rather than merely listing risks.
 - `~/.agents/skills` is a de facto skill discovery convention; Claude Code has its own discovery-path exception.
 
+## Title fixture contract
+
+Every ordinary fixture has one `TITLE:BEGIN`/`TITLE:END` slot containing one non-empty plain-text `<title>` element. The negative title fixtures isolate empty, markup, unresolved-placeholder, and missing-marker diagnostics.
+
 ## Evaluation contract
 
 For every generated document, evaluate: required-fact reproduction, zero unsupported claims or arrows, correct certainty labels, and readability. The first screen alone must answer what the material concerns and what decision is requested.
+
+### Pi/Katsura Qwen guard
+
+For Pi/Katsura Qwen only, required cause→effect wording must be preserved verbatim or quoted. Do not draw arrows or sequences unless their order is an explicit required fact; mark any allowed inference as **推論**. When uncertain, use a matrix, terms, or prose instead of a flow diagram. This is an additive model-specific guard, not a relaxation of the general contract.

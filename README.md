@@ -5,7 +5,7 @@ It supports proposal decisions, system walkthroughs, and research reports.
 Every document is a single HTML file with inline CSS and JavaScript.
 The workflow is static-first and adds interaction only when change over time is essential.
 A stable skeleton provides reusable layouts, responsive behavior, and accessibility basics.
-Generated content stays inside a constrained editable region.
+Generated titles and content stay inside dedicated, checked editable regions; all other bytes remain fixed.
 External assets and build dependencies are not required.
 A local checker validates structure, safety rules, and required sections.
 The skill follows the portable Agent Skills directory convention.

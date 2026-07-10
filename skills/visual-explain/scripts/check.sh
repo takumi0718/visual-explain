@@ -13,38 +13,71 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
-BEGIN = b"<!-- CONTENT:BEGIN -->"
-END = b"<!-- CONTENT:END -->"
+TITLE_BEGIN = b"<!-- TITLE:BEGIN -->"
+TITLE_END = b"<!-- TITLE:END -->"
+CONTENT_BEGIN = b"<!-- CONTENT:BEGIN -->"
+CONTENT_END = b"<!-- CONTENT:END -->"
 FORBIDDEN_TAGS = {"script", "style", "meta", "iframe", "form", "object", "embed"}
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
 
-def content_bounds(raw: bytes, label: str, errors: list[str]) -> tuple[int, int] | None:
-    if raw.count(BEGIN) != 1 or raw.count(END) != 1:
-        errors.append(f"{label}: CONTENT マーカーは BEGIN/END を各1個含めてください")
+def slot_bounds(raw: bytes, begin_marker: bytes, end_marker: bytes, slot: str, label: str, errors: list[str]) -> tuple[int, int] | None:
+    if raw.count(begin_marker) != 1 or raw.count(end_marker) != 1:
+        errors.append(f"{label}: {slot} マーカーは BEGIN/END を各1個含めてください")
         return None
-    begin = raw.index(BEGIN) + len(BEGIN)
-    end = raw.index(END)
+    begin = raw.index(begin_marker) + len(begin_marker)
+    end = raw.index(end_marker)
     if begin > end:
-        errors.append(f"{label}: CONTENT マーカーの順序が不正です")
+        errors.append(f"{label}: {slot} マーカーの順序が不正です")
         return None
     return begin, end
 
 
-def fixed_regions_match(candidate: bytes, skeleton: bytes, errors: list[str]) -> bytes:
-    candidate_bounds = content_bounds(candidate, "生成HTML", errors)
-    skeleton_bounds = content_bounds(skeleton, "skeleton", errors)
-    if candidate_bounds is None or skeleton_bounds is None:
-        return b""
-    candidate_prefix = candidate[:candidate_bounds[0]]
-    candidate_suffix = candidate[candidate_bounds[1]:]
-    skeleton_prefix = skeleton[:skeleton_bounds[0]]
-    skeleton_suffix = skeleton[skeleton_bounds[1]:]
-    if hashlib.sha256(candidate_prefix).digest() != hashlib.sha256(skeleton_prefix).digest():
-        errors.append("固定領域が skeleton.html と一致しません (CONTENT:BEGIN より前)")
-    if hashlib.sha256(candidate_suffix).digest() != hashlib.sha256(skeleton_suffix).digest():
-        errors.append("固定領域が skeleton.html と一致しません (CONTENT:END より後)")
-    return candidate[candidate_bounds[0]:candidate_bounds[1]]
+def fixed_regions_match(candidate: bytes, skeleton: bytes, errors: list[str]) -> tuple[bytes, bytes | None]:
+    candidate_title = slot_bounds(candidate, TITLE_BEGIN, TITLE_END, "TITLE", "生成HTML", errors)
+    candidate_content = slot_bounds(candidate, CONTENT_BEGIN, CONTENT_END, "CONTENT", "生成HTML", errors)
+    skeleton_title = slot_bounds(skeleton, TITLE_BEGIN, TITLE_END, "TITLE", "skeleton", errors)
+    skeleton_content = slot_bounds(skeleton, CONTENT_BEGIN, CONTENT_END, "CONTENT", "skeleton", errors)
+    content = candidate[candidate_content[0]:candidate_content[1]] if candidate_content else b""
+    title = candidate[candidate_title[0]:candidate_title[1]] if candidate_title else None
+    if None in (candidate_title, candidate_content, skeleton_title, skeleton_content):
+        return content, title
+    assert candidate_title and candidate_content and skeleton_title and skeleton_content
+    if candidate_title[1] > candidate_content[0]:
+        errors.append("生成HTML: TITLE スロットは CONTENT スロットより前に置いてください")
+        return content, title
+    if skeleton_title[1] > skeleton_content[0]:
+        errors.append("skeleton: TITLE スロットは CONTENT スロットより前に置いてください")
+        return content, title
+    candidate_fixed = (
+        candidate[:candidate_title[0]],
+        candidate[candidate_title[1]:candidate_content[0]],
+        candidate[candidate_content[1]:],
+    )
+    skeleton_fixed = (
+        skeleton[:skeleton_title[0]],
+        skeleton[skeleton_title[1]:skeleton_content[0]],
+        skeleton[skeleton_content[1]:],
+    )
+    labels = ("TITLE:BEGIN より前", "TITLE:END から CONTENT:BEGIN まで", "CONTENT:END より後")
+    for candidate_region, skeleton_region, label in zip(candidate_fixed, skeleton_fixed, labels):
+        if hashlib.sha256(candidate_region).digest() != hashlib.sha256(skeleton_region).digest():
+            errors.append(f"固定領域が skeleton.html と一致しません ({label})")
+    return content, title
+
+
+def validate_title(title: str, errors: list[str]) -> None:
+    match = re.fullmatch(r"\s*<title>(.*?)</title>\s*", title, re.IGNORECASE | re.DOTALL)
+    if match is None:
+        errors.append("title: TITLE スロットには <title> 要素を1つだけ置いてください")
+        return
+    value = match.group(1)
+    if re.search(r"\{\{[^{}]+\}\}", value):
+        errors.append("title: 未解決プレースホルダーは使えません")
+    elif not value.strip():
+        errors.append("title: タイトルは空にできません")
+    elif "<" in value or ">" in value:
+        errors.append("title: タイトルにはマークアップを使えません")
 
 
 def class_has(attrs: dict[str, str | None], name: str) -> bool:
@@ -228,12 +261,15 @@ def check_file(html_path: Path, type_name: str, skeleton_path: Path) -> list[str
         skeleton = skeleton_path.read_bytes()
     except OSError as exc:
         return [f"skeleton.htmlを読めません: {exc}"]
-    content_bytes = fixed_regions_match(candidate, skeleton, errors)
+    content_bytes, title_bytes = fixed_regions_match(candidate, skeleton, errors)
     try:
         full_text = candidate.decode("utf-8")
         content = content_bytes.decode("utf-8")
+        title = title_bytes.decode("utf-8") if title_bytes is not None else None
     except UnicodeDecodeError:
         return errors + ["HTML は UTF-8 である必要があります"]
+    if title is not None:
+        validate_title(title, errors)
     ids = IdCollector()
     ids.feed(full_text)
     ids.close()
@@ -260,7 +296,11 @@ def run_selftest(script_dir: Path) -> int:
         ("bad-onclick.html", "proposal", ("<button>: イベント属性 onclick は禁止です",)),
         ("bad-decision.html", "proposal", ("proposal: 第一画面に「あなたが決めること」の判断文が1件必要です",)),
         ("bad-closing.html", "proposal", ("proposal: 末尾節「不確かな点」が必要です",)),
-        ("bad-fixed-region.html", "proposal", ("固定領域が skeleton.html と一致しません (CONTENT:BEGIN より前)", "固定領域が skeleton.html と一致しません (CONTENT:END より後)")),
+        ("bad-fixed-region.html", "proposal", ("固定領域が skeleton.html と一致しません (TITLE:BEGIN より前)", "固定領域が skeleton.html と一致しません (CONTENT:END より後)")),
+        ("bad-title-empty.html", "proposal", ("title: タイトルは空にできません",)),
+        ("bad-title-markup.html", "proposal", ("title: タイトルにはマークアップを使えません",)),
+        ("bad-title-placeholder.html", "proposal", ("title: 未解決プレースホルダーは使えません",)),
+        ("bad-title-missing.html", "proposal", ("生成HTML: TITLE マーカーは BEGIN/END を各1個含めてください",)),
         ("bad-data-connect.html", "proposal", ("data-connect: 参照 ID が存在しません: unknown",)),
         ("bad-javascript-link.html", "proposal", ("<a> の href: 許可されない URL スキームです: javascript:alert(1)",)),
         ("bad-forbidden-tag.html", "proposal", ("禁止タグ <script> が CONTENT 内にあります",)),

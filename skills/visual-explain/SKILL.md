@@ -43,7 +43,7 @@ license: MIT
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
 4. **図フォーマットを選ぶ:** `flow`、`layers`、`compare`、`matrix`、`timeline`、`kpi`、`bars`、`terms`、`details` の固定ライブラリを既定にする。座標計算、独自 CSS、独自 JavaScript は追加しない。
-5. **構成する:** `assets/skeleton.html` を新しい資料へコピーし、`<!-- CONTENT:BEGIN -->` と `<!-- CONTENT:END -->` の間だけを編集する。結論先行、必要時の用語表、型ごとの本文、必須の末尾節を入れる。描画規則は [references/design-system.md](references/design-system.md) に従う。
+5. **構成する:** `assets/skeleton.html` を新しい資料へコピーし、`<!-- TITLE:BEGIN -->` と `<!-- TITLE:END -->` の間には非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ置く。本文は `<!-- CONTENT:BEGIN -->` と `<!-- CONTENT:END -->` の間だけを編集する。ほかの領域は1バイトも変更しない。結論先行、必要時の用語表、型ごとの本文、必須の末尾節を入れる。描画規則は [references/design-system.md](references/design-system.md) に従う。
 6. **機械チェックする:** `scripts/check.sh <絶対パス> --type <proposal|system|research>` を実行する。FAIL は修正して再実行し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
 8. **保存する:** 下の保存規約に従い、衝突を避けて資料を保存する。
@@ -133,6 +133,15 @@ git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外
 リポジトリ内では `.gitignore` を編集しない。`git rev-parse --git-path info/exclude` で取得したファイルに `.visual-explain/` を追記してローカル除外する。書き込めない場合は、生成時にコミット対象に入らないよう注意を添える。自動削除はしない。生成時に 30 日超のファイルが 20 件を超えていたら一言知らせ、削除はユーザーに委ねる。恒久保存はユーザーが別の保管場所へ昇格する。
 
 利用可能なモデルが固定ライブラリ、説明文法、正確性、無操作の不変条件を満たす資料を安定して作れない場合は、図を諦める。`matrix`、`terms`、または簡潔な文章へ縮退し、見栄えのために自由 SVG や動きを追加しない。縮退の具体的な適用基準は、別途の評価結果に従って確定する。
+
+### Pi/Katsura Qwen 固有の保守的縮退
+
+これは Pi 上の Katsura Qwen にだけ適用する、評価で確認した追加制約であり、他モデル向けの一般規則を緩めるものではない。
+
+- 必須事実の因果は、原因→結果の文言を原文どおり保持するか引用する。言い換えで因果を補わない。
+- 順序が明示的な必須事実でない限り、矢印や連番の図を描かない。
+- 許される推論には対象の直近で **推論** と明記する。
+- 因果・順序に確信がなければ、`matrix`、`terms`、または簡潔な文章へ縮退し、flow 図にしない。
 
 Attribution: visual-explainer (MIT) の固定図フォーマット、デザイン規則、目視確認の設計要素を参照した。
 Attribution: obra/superpowers 由来の提案ゲートと承認後ワークフローの設計要素を参照した。
