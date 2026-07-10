@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "visual-explain/assembly.schema.json",
+  "title": "visual-explain assembly request",
+  "description": "One explainer build request. A section is discriminated by kind: canonical delegates to component-ir.schema.json; compatibility accepts only id, markup, and three provenance fields. Compatibility source/reason enums are copied verbatim from component-vocabulary.json; scripts/tests/test_component_contract.py fails on any drift.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "document", "sections"],
+  "properties": {
+    "schemaVersion": {"enum": [1]},
+    "document": {"$ref": "#/$defs/document"},
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/section"}
+    }
+  },
+  "$defs": {
+    "compatibilitySource": {"enum": ["legacy-html-insertion"]},
+    "compatibilityReason": {"enum": ["unmigrated-format", "weak-model-degradation"]},
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "summary"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    },
+    "section": {
+      "oneOf": [
+        {"$ref": "#/$defs/canonicalSection"},
+        {"$ref": "#/$defs/compatibilitySection"}
+      ]
+    },
+    "canonicalSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ir"],
+      "properties": {
+        "kind": {"const": "canonical"},
+        "ir": {"$ref": "component-ir.schema.json"}
+      }
+    },
+    "compatibilitySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "markup", "provenance"],
+      "properties": {
+        "kind": {"const": "compatibility"},
+        "id": {"type": "string", "minLength": 1},
+        "markup": {"type": "string", "minLength": 1},
+        "provenance": {"$ref": "#/$defs/provenance"}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "reason", "format"],
+      "properties": {
+        "source": {"$ref": "#/$defs/compatibilitySource"},
+        "reason": {"$ref": "#/$defs/compatibilityReason"},
+        "format": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "visual-explain/component-ir.schema.json",
+  "title": "visual-explain canonical component IR",
+  "description": "Authoritative shape of one canonical section IR. Enums are copied verbatim from component-vocabulary.json; scripts/tests/test_component_contract.py fails on any drift. The canonical format contains no HTML, CSS, JavaScript, DOM operation, renderer class, connector geometry, or free coordinate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "relationship", "selection", "caption", "certainty", "sources", "accessibility"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "relationship": {"$ref": "#/$defs/relationship"},
+    "selection": {"$ref": "#/$defs/selection"},
+    "caption": {"type": "string", "minLength": 1},
+    "certainty": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/certaintyAssertion"}
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/source"}
+    },
+    "accessibility": {"$ref": "#/$defs/accessibility"},
+    "matrix": {"$ref": "#/$defs/matrixPayload"},
+    "flow": {"$ref": "#/$defs/flowPayload"}
+  },
+  "oneOf": [
+    {"required": ["matrix"], "not": {"required": ["flow"]}},
+    {"required": ["flow"], "not": {"required": ["matrix"]}}
+  ],
+  "$defs": {
+    "componentId": {"enum": ["matrix", "flow"]},
+    "contractVersion": {"enum": [1]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph"]},
+    "capability": {
+      "enum": [
+        "two-axis-classification",
+        "intersection-comparison",
+        "ordered-transition",
+        "directed-transition",
+        "branching"
+      ]
+    },
+    "certaintyLevel": {"enum": ["confirmed", "inferred", "unverified"]},
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "capabilities"],
+      "properties": {
+        "kind": {"$ref": "#/$defs/relationshipKind"},
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/capability"}
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "version", "matchedCapabilities"],
+      "properties": {
+        "component": {"$ref": "#/$defs/componentId"},
+        "version": {"$ref": "#/$defs/contractVersion"},
+        "matchedCapabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/capability"}
+        }
+      }
+    },
+    "certaintyAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "level", "statement"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "level": {"$ref": "#/$defs/certaintyLevel"},
+        "statement": {"type": "string", "minLength": 1}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "detail": {"type": "string"}
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "summary"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    },
+    "matrixPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rows", "columns", "cells"],
+      "properties": {
+        "rows": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/axisEntry"}},
+        "columns": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/axisEntry"}},
+        "cells": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/matrixCell"}}
+      }
+    },
+    "axisEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1}
+      }
+    },
+    "matrixCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rowId", "columnId", "content"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "rowId": {"type": "string", "minLength": 1},
+        "columnId": {"type": "string", "minLength": 1},
+        "content": {"type": "string", "minLength": 1},
+        "certaintyRef": {"type": "string", "minLength": 1},
+        "sourceRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "flowPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/flowNode"}},
+        "edges": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/flowEdge"}},
+        "groups": {"type": "array", "items": {"$ref": "#/$defs/flowGroup"}},
+        "startId": {"type": "string", "minLength": 1},
+        "readingOrder": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "flowNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "group": {"type": "string", "minLength": 1}
+      }
+    },
+    "flowEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "relation"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1},
+        "relation": {"$ref": "#/$defs/capability"},
+        "label": {"type": "string", "minLength": 1}
+      }
+    },
+    "flowGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
