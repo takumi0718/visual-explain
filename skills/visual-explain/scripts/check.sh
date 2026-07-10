@@ -93,9 +93,10 @@ class ContentInspector(HTMLParser):
     def check_attrs(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         for name, value in attrs:
             name = name.lower()
+            local_name = name.rsplit(":", 1)[-1]
             if name.startswith("on"):
                 self.errors.append(f"<{tag}>: イベント属性 {name} は禁止です")
-            if name in {"href", "src"} and value is not None:
+            if local_name in {"href", "src"} and value is not None:
                 self.check_url(value, f"<{tag}> の {name}")
             if name == "data-connect" and value is not None:
                 declarations = [item.strip() for item in value.split(",") if item.strip()]
@@ -254,39 +255,37 @@ def usage() -> int:
 
 def run_selftest(script_dir: Path) -> int:
     cases = [
-        ("valid-proposal.html", "proposal", True),
-        ("bad-external-url.html", "proposal", False),
-        ("bad-onclick.html", "proposal", False),
-        ("bad-decision.html", "proposal", False),
-        ("bad-closing.html", "proposal", False),
-        ("bad-fixed-region.html", "proposal", False),
-        ("bad-data-connect.html", "proposal", False),
-        ("bad-javascript-link.html", "proposal", False),
-        ("bad-forbidden-tag.html", "proposal", False),
-        ("bad-id-duplicate.html", "proposal", False),
-        ("bad-animation.html", "proposal", False),
-        ("bad-svg-reason.html", "proposal", False),
-        ("bad-absolute-px.html", "proposal", False),
-        ("bad-nesting.html", "proposal", False),
-        ("valid-system.html", "system", True),
-        ("valid-research.html", "research", True),
-        ("bad-system-closing.html", "system", False),
+        ("valid-proposal.html", "proposal", ()),
+        ("bad-external-url.html", "proposal", ("<img> の src: 外部リソース参照は使えません: https://example.invalid/image.png",)),
+        ("bad-onclick.html", "proposal", ("<button>: イベント属性 onclick は禁止です",)),
+        ("bad-decision.html", "proposal", ("proposal: 第一画面に「あなたが決めること」の判断文が1件必要です",)),
+        ("bad-closing.html", "proposal", ("proposal: 末尾節「不確かな点」が必要です",)),
+        ("bad-fixed-region.html", "proposal", ("固定領域が skeleton.html と一致しません (CONTENT:BEGIN より前)", "固定領域が skeleton.html と一致しません (CONTENT:END より後)")),
+        ("bad-data-connect.html", "proposal", ("data-connect: 参照 ID が存在しません: unknown",)),
+        ("bad-javascript-link.html", "proposal", ("<a> の href: 許可されない URL スキームです: javascript:alert(1)",)),
+        ("bad-forbidden-tag.html", "proposal", ("禁止タグ <script> が CONTENT 内にあります",)),
+        ("bad-id-duplicate.html", "proposal", ("id は文書内で一意である必要があります: duplicate",)),
+        ("bad-animation.html", "proposal", ("禁止アニメーション: infinite 指定は使えません",)),
+        ("bad-svg-reason.html", "proposal", ("自由 SVG には SVG理由 コメントが必要です",)),
+        ("bad-absolute-px.html", "proposal", ("座標直書き: position:absolute と複数の px 指定は使えません",)),
+        ("bad-nesting.html", "proposal", ("ネスト不整合: </div> の前に <span> を閉じる必要があります", "ネスト不整合: </section> の前に <span> を閉じる必要があります", "ネスト不整合: 閉じられていないタグがあります: <section>, <div>, <span>")),
+        ("bad-svg-xlink-javascript.html", "proposal", ("<a> の xlink:href: 許可されない URL スキームです: javascript:alert(1)",)),
+        ("valid-system.html", "system", ()),
+        ("valid-research.html", "research", ()),
+        ("bad-system-closing.html", "system", ("system: 末尾節「限界・確度」が必要です",)),
     ]
     passed = failed = 0
     skeleton = script_dir.parent / "assets" / "skeleton.html"
     fixtures = script_dir / "tests"
-    for filename, type_name, expected_pass in cases:
+    for filename, type_name, expected_errors in cases:
         errors = check_file(fixtures / filename, type_name, skeleton)
-        actual_pass = not errors
-        if actual_pass == expected_pass:
+        if errors == list(expected_errors):
             passed += 1
         else:
             failed += 1
-            expected = "PASS" if expected_pass else "FAIL"
-            actual = "PASS" if actual_pass else "FAIL"
-            print(f"selftest failure: {filename}: expected {expected}, got {actual}", file=sys.stderr)
-            for error in errors:
-                print(f"  FAIL: {error}", file=sys.stderr)
+            print(f"selftest failure: {filename}: diagnostics differed", file=sys.stderr)
+            print(f"  expected: {list(expected_errors)!r}", file=sys.stderr)
+            print(f"  actual:   {errors!r}", file=sys.stderr)
     print(f"selftest: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1
 
