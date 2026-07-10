@@ -227,9 +227,11 @@ def pattern_checks(content: str, type_name: str, inspector: ContentInspector, er
         for required in ("リスクと弱い前提", "不確かな点"):
             if required not in inspector.headings:
                 errors.append(f"proposal: 末尾節「{required}」が必要です")
-    else:
+    elif type_name == "system":
         if "限界・確度" not in inspector.headings:
-            errors.append(f"{type_name}: 末尾節「限界・確度」が必要です")
+            errors.append("system: 末尾節「限界・確度」が必要です")
+    elif "限界・反証・確度" not in inspector.headings:
+        errors.append("research: 末尾節「限界・反証・確度」が必要です")
 
     if re.search(r"animation(?:-iteration-count)?\s*:[^;}]*\binfinite\b", content, re.IGNORECASE):
         errors.append("禁止アニメーション: infinite 指定は使えません")
@@ -315,6 +317,7 @@ def run_selftest(script_dir: Path) -> int:
         ("valid-system.html", "system", ()),
         ("valid-research.html", "research", ()),
         ("bad-system-closing.html", "system", ("system: 末尾節「限界・確度」が必要です",)),
+        ("valid-system.html", "research", ("research: 末尾節「限界・反証・確度」が必要です",)),
     ]
     passed = failed = 0
     skeleton = script_dir.parent / "assets" / "skeleton.html"
