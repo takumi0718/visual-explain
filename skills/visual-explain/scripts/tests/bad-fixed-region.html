@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <title>{{TITLE}}</title>
   <style>
     :root {
-      color-scheme: light dark;
+      color-scheme: light;
       --bg: #f6f7f8;
       --surface: #ffffff;
       --border: #c7cdd4;
@@ -15,6 +15,8 @@
       --text-dim: #596775;
       --accent: #076a77;
       --accent-strong: #004d58;
+      --positive: #2f6b4f;
+      --positive-strong: #1e4c36;
       --accent-warm: #a84712;
       --warning: #a13d16;
       --focus: #005fcc;
@@ -22,7 +24,8 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
+        color-scheme: dark;
         --bg: #10161c;
         --surface: #19232c;
         --border: #40505d;
@@ -30,10 +33,30 @@
         --text-dim: #afbdc7;
         --accent: #54c8c2;
         --accent-strong: #93e1dc;
+        --positive: #7dd3a5;
+        --positive-strong: #a7e8c3;
         --accent-warm: #ffb27c;
         --warning: #ffab82;
         --focus: #8cc8ff;
       }
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #10161c;
+      --surface: #19232c;
+      --border: #40505d;
+      --text: #edf3f6;
+      --text-dim: #afbdc7;
+      --accent: #54c8c2;
+      --accent-strong: #93e1dc;
+      --positive: #7dd3a5;
+      --positive-strong: #a7e8c3;
+      --accent-warm: #ffb27c;
+      --warning: #ffab82;
+      --focus: #8cc8ff;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -68,10 +91,10 @@
     details.deep-dive summary { cursor: pointer; font-weight: 700; }
     pre { max-width: 100%; overflow: auto; padding: 1rem; background: var(--bg); border: 1px solid var(--border); }
 
-    .node { position: relative; z-index: 1; min-width: 0; padding: .7rem .85rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
+    .flow-node { position: relative; z-index: 1; min-width: 0; padding: .7rem .85rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
     .flow { display: flex; align-items: stretch; gap: 1.75rem; }
-    .flow .node { flex: 1 1 10rem; }
-    .flow > .node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + .45rem); color: var(--accent); font-weight: 700; transform: translateY(-50%); }
+    .flow .flow-node { flex: 1 1 10rem; }
+    .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + .45rem); color: var(--accent); font-weight: 700; transform: translateY(-50%); }
     .layers { display: grid; gap: .75rem; }
     .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: .75rem; align-items: center; }
     .lane-label { color: var(--text-dim); font-weight: 700; }
@@ -81,8 +104,19 @@
     .compare-frame h3 { margin-top: 0; }
     .matrix { max-width: 100%; overflow: auto; }
     .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
-    .matrix th, .matrix td { padding: .7rem; text-align: left; vertical-align: top; border: 1px solid var(--border); }
-    .matrix th { background: var(--bg); }
+    .matrix-label, .matrix-cell { padding: .7rem; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .matrix-label { color: var(--text); font-weight: 800; }
+    .matrix thead .matrix-label { border-bottom-width: .15rem; }
+    .option-card { min-width: 0; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; }
+    .matrix .option-card { padding: 0; background: transparent; border: 0; border-radius: 0; }
+    [data-tone="accent"] { --tone-border: var(--accent); --tone-background: color-mix(in srgb, var(--accent) 12%, var(--surface)); --tone-text: var(--accent-strong); }
+    [data-tone="positive"] { --tone-border: var(--positive); --tone-background: color-mix(in srgb, var(--positive) 12%, var(--surface)); --tone-text: var(--positive-strong); }
+    [data-tone="warning"] { --tone-border: var(--warning); --tone-background: color-mix(in srgb, var(--warning) 12%, var(--surface)); --tone-text: var(--warning); }
+    [data-tone="muted"] { --tone-border: var(--border); --tone-background: var(--bg); --tone-text: var(--text-dim); }
+    .flow-node[data-tone], .option-card[data-tone], .matrix-label[data-tone], .matrix-cell[data-tone] { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
+    .matrix .option-card[data-tone] { background: transparent; color: inherit; }
+    .matrix .option-card[data-tone] > .matrix-label, .matrix .option-card[data-tone] > .matrix-cell, .matrix .matrix-label[data-tone], .matrix .matrix-cell[data-tone] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .matrix .option-card[data-tone="accent"] > .matrix-label, .matrix .option-card[data-tone="accent"] > .matrix-cell, .matrix .matrix-label[data-tone="accent"], .matrix .matrix-cell[data-tone="accent"] { background: var(--tone-background); }
     .timeline { display: grid; gap: .8rem; border-left: .2rem solid var(--accent); padding-left: 1.25rem; }
     .timeline-item { position: relative; min-width: 0; }
     .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.25rem - .45rem); top: .45rem; background: var(--accent); border-radius: 50%; }
@@ -119,18 +153,80 @@
     .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
     .connector-warning { margin: .75rem 0 0; color: var(--warning); font-weight: 700; }
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .theme-control { display: flex; justify-content: flex-end; width: min(100% - 2rem, 72rem); margin: 1rem auto 0; }
     footer { padding: 1rem; color: var(--text-dim); text-align: center; font-size: .9rem; }
 
     @media (max-width: 42rem) {
       main { width: min(100% - 1rem, 72rem); padding-top: 1rem; }
       .flow { flex-direction: column; gap: 1.5rem; }
-      .flow .node:not(:last-child)::after { top: calc(100% + .75rem); left: 50%; transform: translateX(-50%) rotate(90deg); }
+      .flow .flow-node:not(:last-child)::after { top: calc(100% + .75rem); left: 50%; transform: translateX(-50%) rotate(90deg); }
       .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: .4rem; }
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <script>
+  /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    try {
+      const theme = window.localStorage.getItem(root.dataset.themeStorageKey);
+      if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+    } catch {
+      // Storage is optional; CSS keeps the OS preference when it is unavailable.
+    }
+  })();
+  </script>
 </head>
 <body>
+  <div class="theme-control">
+    <button type="button" data-theme-toggle aria-pressed="false">現在のテーマを確認中です。</button>
+  </div>
+  <script>
+  /* FIXED THEME CONTROL JS: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    const button = document.querySelector('[data-theme-toggle]');
+    if (!button) return;
+
+    let mediaQuery;
+    try {
+      mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    } catch {
+      mediaQuery = null;
+    }
+    let explicitTheme = root.dataset.theme === 'light' || root.dataset.theme === 'dark';
+    const systemTheme = () => mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+    const currentTheme = () => explicitTheme ? root.dataset.theme : systemTheme();
+    const label = (theme) => theme === 'dark' ? 'ダーク' : 'ライト';
+    const render = () => {
+      const current = currentTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+      button.textContent = `現在のテーマ: ${label(current)}。${label(next)}に切り替える`;
+      button.setAttribute('aria-pressed', String(current === 'dark'));
+    };
+    const persist = (theme) => {
+      try {
+        window.localStorage.setItem(root.dataset.themeStorageKey, theme);
+      } catch {
+        // A manual choice still works for this document if storage is unavailable.
+      }
+    };
+
+    render();
+    button.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      explicitTheme = true;
+      persist(next);
+      render();
+    });
+    if (mediaQuery) {
+      const updateFromSystem = () => { if (!explicitTheme) render(); };
+      if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', updateFromSystem);
+      else if (mediaQuery.addListener) mediaQuery.addListener(updateFromSystem);
+    }
+  })();
+  </script>
   <main>
     <!-- CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
@@ -143,7 +239,7 @@
     </section>
     <!-- CONTENT:END -->
   </main>
-  <footer>改変済みの固定領域</footer>
+  <footer>変更されたフッター</footer>
 
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */

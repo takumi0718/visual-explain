@@ -266,6 +266,8 @@ def run_selftest(script_dir: Path) -> int:
         ("bad-forbidden-tag.html", "proposal", ("禁止タグ <script> が CONTENT 内にあります",)),
         ("bad-id-duplicate.html", "proposal", ("id は文書内で一意である必要があります: duplicate",)),
         ("bad-animation.html", "proposal", ("禁止アニメーション: infinite 指定は使えません",)),
+        ("bad-animate.html", "proposal", ("禁止アニメーションタグ <animate> が CONTENT 内にあります",)),
+        ("bad-css-url.html", "proposal", ("CSS url(): 許可されない URL スキームです: data:text/plain,blocked",)),
         ("bad-svg-reason.html", "proposal", ("自由 SVG には SVG理由 コメントが必要です",)),
         ("bad-absolute-px.html", "proposal", ("座標直書き: position:absolute と複数の px 指定は使えません",)),
         ("bad-nesting.html", "proposal", ("ネスト不整合: </div> の前に <span> を閉じる必要があります", "ネスト不整合: </section> の前に <span> を閉じる必要があります", "ネスト不整合: 閉じられていないタグがあります: <section>, <div>, <span>")),
