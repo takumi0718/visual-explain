@@ -181,3 +181,124 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 接続は同じレーン内の隣接ノード、または隣接レーン間だけに限定する。障害物回避や交差の解消はしない。これで表せない複雑なグラフは図を分割する。ノードの位置、接続点、線、矢印を手で描いてはならない。固定のコネクタ処理が辺の中点、曲線、矢印、再描画、視覚的な警告を扱い、`connection-text visually-hidden` の接続テキストも生成するため、これらを手で追加または変更してはならない。
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
+
+## カノニカルな matrix / flow / mixed の組み立て例
+
+昇格済みの `matrix` と `flow` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。
+
+### matrix（二軸分類・交差比較）
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-matrix", "title": "権限モデルの二軸整理", "summary": "役割と操作の交差で許可範囲を判断する。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-matrix",
+        "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison"]},
+        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
+        "caption": "役割 × 操作の許可範囲",
+        "certainty": [{"id": "d-cert", "level": "confirmed", "statement": "管理者の全操作は仕様で確定。"}],
+        "sources": [{"id": "d-src", "label": "権限仕様 v3"}],
+        "accessibility": {"label": "許可マトリクス", "summary": "行が役割、列が操作の表。"},
+        "matrix": {
+          "rows": [{"id": "d-admin", "label": "管理者"}, {"id": "d-viewer", "label": "閲覧者"}],
+          "columns": [{"id": "d-read", "label": "読み取り"}, {"id": "d-write", "label": "書き込み"}],
+          "cells": [
+            {"id": "d-c1", "rowId": "d-admin", "columnId": "d-read", "content": "許可", "certaintyRef": "d-cert", "sourceRef": "d-src"},
+            {"id": "d-c2", "rowId": "d-admin", "columnId": "d-write", "content": "許可", "certaintyRef": "d-cert", "sourceRef": "d-src"},
+            {"id": "d-c3", "rowId": "d-viewer", "columnId": "d-read", "content": "許可", "certaintyRef": "d-cert", "sourceRef": "d-src"},
+            {"id": "d-c4", "rowId": "d-viewer", "columnId": "d-write", "content": "不可", "certaintyRef": "d-cert", "sourceRef": "d-src"}
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+### flow（順序・有向遷移・分岐）
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-flow", "title": "レビュー承認の流れ", "summary": "承認に至る順序と分岐を判断する。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-flow",
+        "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition"]},
+        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
+        "caption": "提案から承認までの遷移",
+        "certainty": [{"id": "f-cert", "level": "confirmed", "statement": "起案から一次レビューへの遷移は確定。"}],
+        "sources": [{"id": "f-src", "label": "レビュー運用手順"}],
+        "accessibility": {"label": "承認フロー", "summary": "起案・一次レビュー・承認の順の有向グラフ。"},
+        "flow": {
+          "nodes": [{"id": "f-draft", "label": "起案"}, {"id": "f-review", "label": "一次レビュー"}, {"id": "f-approve", "label": "承認"}],
+          "edges": [
+            {"id": "f-e1", "from": "f-draft", "to": "f-review", "relation": "ordered-transition", "label": "提出"},
+            {"id": "f-e2", "from": "f-review", "to": "f-approve", "relation": "directed-transition", "label": "合意"}
+          ],
+          "startId": "f-draft"
+        }
+      }
+    }
+  ]
+}
+```
+
+### mixed（matrix ＋ 互換 ＋ flow）
+
+canonical セクションと互換節を1つの資料に順序どおり並べる。互換節は `provenance` に `source=legacy-html-insertion` と `reason`（`unmigrated-format` か `weak-model-degradation`）と `format` を持ち、canonical の選択・レジストリ・レンダラをバイパスして同じ組み立てに入る。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-mixed", "title": "混在資料", "summary": "canonical と互換を並べる。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-mx",
+        "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification"]},
+        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification"]},
+        "caption": "役割 × 操作",
+        "certainty": [{"id": "mx-c", "level": "confirmed", "statement": "確定。"}],
+        "sources": [{"id": "mx-s", "label": "権限仕様"}],
+        "accessibility": {"label": "許可マトリクス", "summary": "行が役割、列が操作。"},
+        "matrix": {
+          "rows": [{"id": "mx-r", "label": "管理者"}],
+          "columns": [{"id": "mx-col", "label": "読み取り"}],
+          "cells": [{"id": "mx-cell", "rowId": "mx-r", "columnId": "mx-col", "content": "許可"}]
+        }
+      }
+    },
+    {
+      "kind": "compatibility",
+      "id": "sec-legacy",
+      "markup": "<div class=\"layers\"><div class=\"lane\"><span class=\"lane-label\">入力</span><div class=\"lane-nodes\"><div class=\"flow-node\">受付</div></div></div></div>",
+      "provenance": {"source": "legacy-html-insertion", "reason": "unmigrated-format", "format": "layers"}
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-fl",
+        "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition"]},
+        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition"]},
+        "caption": "承認の流れ",
+        "certainty": [{"id": "fl-c", "level": "confirmed", "statement": "確定。"}],
+        "sources": [{"id": "fl-s", "label": "運用手順"}],
+        "accessibility": {"label": "承認フロー", "summary": "起案・承認の順。"},
+        "flow": {
+          "nodes": [{"id": "fl-a", "label": "起案"}, {"id": "fl-b", "label": "承認"}],
+          "edges": [{"id": "fl-e", "from": "fl-a", "to": "fl-b", "relation": "ordered-transition"}],
+          "startId": "fl-a"
+        }
+      }
+    }
+  ]
+}
+```

@@ -265,5 +265,46 @@ class CompatibilityProvenanceTest(unittest.TestCase):
         self.assertIn("invalid_compatibility_provenance", codes(ctx.exception))
 
 
+class DocumentationConsistencyTest(unittest.TestCase):
+    """Documented assembly examples validate; only matrix/flow are production;
+    documentation introduces no vocabulary aliases."""
+
+    import re as _re
+
+    def _assembly_blocks(self, name: str) -> list[dict]:
+        text = (SKILL / "references" / name).read_text("utf-8")
+        blocks = self._re.findall(r"```json\n(.*?)\n```", text, self._re.DOTALL)
+        return [json.loads(b) for b in blocks if '"schemaVersion"' in b]
+
+    def test_patterns_assembly_examples_validate(self) -> None:
+        assemblies = self._assembly_blocks("patterns.md")
+        self.assertGreaterEqual(len(assemblies), 3)  # matrix, flow, mixed
+        for raw in assemblies:
+            validate_assembly(raw)  # raises on any contract violation
+
+    def test_only_matrix_and_flow_in_production_registry(self) -> None:
+        from ve_components.registry import load_registry
+        registry = load_registry(SKILL / "assets" / "components" / "registry.json")
+        self.assertEqual({c.id for c in registry.components}, {"matrix", "flow"})
+
+    def test_documented_tokens_are_in_vocabulary(self) -> None:
+        components = VOCABULARY["components"]
+        all_caps = {cap for c in components.values() for cap in c["capabilities"]}
+        sources = set(VOCABULARY["compatibility"]["sources"])
+        reasons = set(VOCABULARY["compatibility"]["reasons"])
+        for raw in self._assembly_blocks("patterns.md"):
+            request = validate_assembly(raw)
+            for section in request.sections:
+                ir = getattr(section, "ir", None)
+                if ir is not None:
+                    self.assertIn(ir.selection.component, components)
+                    self.assertEqual(ir.selection.version, components[ir.selection.component]["contractVersion"])
+                    self.assertEqual(ir.relationship.kind, components[ir.selection.component]["relationshipKind"])
+                    self.assertTrue(set(ir.relationship.capabilities) <= all_caps)
+                else:
+                    self.assertIn(section.provenance.source, sources)
+                    self.assertIn(section.provenance.reason, reasons)
+
+
 if __name__ == "__main__":
     unittest.main()

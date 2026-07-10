@@ -143,5 +143,28 @@ git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外
 - 許される推論には対象の直近で **推論** と明記する。
 - 因果・順序に確信がなければ、`matrix`、`terms`、または簡潔な文章へ縮退し、flow 図にしない。
 
+## カノニカルな matrix / flow コンポーネント（昇格済みの通常経路）
+
+二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow` を、次の1つの意思決定列で使う。両者が四層検証を通過したため、これが通常経路である。
+
+1. **関係を宣言する** — canonical IR に `relationship.kind`（`two-axis` または `directed-graph`）と `capabilities` を書く。散文から方向やコンポーネントを推測させない。
+2. **レジストリで発見する** — 宣言した関係とケイパビリティで候補を絞る（集合包含のみ、ランキングなし）。
+3. **決定的な候補から明示選択する** — `selection.component` と `version` を候補集合から明示的に選ぶ。
+4. **一致ケイパビリティの理由を記録する** — `selection.matchedCapabilities` は宣言とレジストリの両方に存在する必要がある。
+5. **ビルドして検証する** — `python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>` で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書）を検証する。
+
+matrix/flow の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
+
+## 弱モデル劣化と互換節
+
+弱いモデルが canonical 生成に確信を持てないときは、**明示的な互換節**として劣化提供できる。互換節は次を満たす。
+
+- `provenance` に `source=legacy-html-insertion`、`reason=weak-model-degradation`、および `format` を書く。
+- canonical の選択・レジストリ解決・レンダラ実行・コンポーネントマニフェスト・制御アセットを**すべてバイパス**する。
+- canonical セクションと**共存**でき、同じ composer/flattener と最終検査に入る。
+- 制御された**コンテンツスロットにのみ**入り、style/script/link 注入、インライン実行、外部依存、固定領域マーカーを含められない。既存のコンテンツ規則と最終検査規則はそのまま適用され、`check.sh` を通過する。
+
+`layers`・`compare`・`timeline`・`kpi`・`bars`・`terms`・`details`・`stepper` は引き続き旧ルールの HTML マークアップとして互換節から始まる。互換は決して canonical 成功ではなく、provenance の `reason` で区別される。
+
 Attribution: visual-explainer (MIT) の固定図フォーマット、デザイン規則、目視確認の設計要素を参照した。
 Attribution: obra/superpowers 由来の提案ゲートと承認後ワークフローの設計要素を参照した。
