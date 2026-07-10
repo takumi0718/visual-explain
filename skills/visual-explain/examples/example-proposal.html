@@ -213,31 +213,91 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">生成した説明資料は、リポジトリ内の <code>.visual-explain/</code> に日付付き HTML として保存することを提案します。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> この保存規約を採用するか決めます。</p>
-      <ul class="conditions"><li>生成物を通常のコミット対象から分けられること</li><li>既存ファイルを上書きしないこと</li></ul>
+      <p class="proposal">顧客向け料金改定は、法務・請求・顧客通知の根拠を一つの承認地図で照合し、対象を限定して段階公開することを提案します。</p>
+      <p class="decision"><strong>あなたが決めること:</strong> 未確認の契約例外を含む料金改定を、限定対象で開始するか決めます。</p>
+      <ul class="conditions"><li>契約根拠・請求計算・告知対象が同じ顧客群を指していること</li><li>撤回条件と承認責任者を公開前に合意できること</li></ul>
     </section>
 
-    <section aria-labelledby="storage-rule">
-      <h1 id="storage-rule">保存規約は衝突を避けて資料を残せるか</h1>
-      <p class="claim">保存先・基本名・衝突時の順序を一つの規約に固定します。<span class="certainty confirmed">確認済み</span></p>
+    <section aria-labelledby="current-problem">
+      <h1 id="current-problem">現状と問題: 部門ごとの確認だけでは公開の影響を判断できない</h1>
+      <p class="claim">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class="certainty unverified">未確認</span></p>
+      <p class="evidence">これは正規見本のための想定です。実在する料金改定の状況を示すものではありません。</p>
+      <details class="source-note"><summary>出所</summary><p>この canonical proposal example の説明用シナリオ。外部の顧客、契約、請求データは使用していません。</p></details>
+    </section>
+
+    <section aria-labelledby="approval-map">
+      <h2 id="approval-map">判断の中心図: 根拠から限定公開までを一つの地図で照合する</h2>
+      <p class="claim">承認者は、根拠・顧客影響・公開後の撤回を同じ経路で確認してから開始します。<span class="certainty inferred">推論</span></p>
       <figure class="figure">
-        <ol class="flow" data-connect="proposal-generate->proposal-store, proposal-store->proposal-collision">
-          <li class="node" id="proposal-generate">資料を生成する</li>
-          <li class="node" id="proposal-store"><code>.visual-explain/YYYY-MM-DD-&lt;slug&gt;.html</code> に保存する</li>
-          <li class="node" id="proposal-collision">同名なら <code>-HHMM</code> を付けて保存する</li>
-        </ol>
-        <figcaption>通常時と衝突時の保存先を、生成の直後に判断できる順で示します。</figcaption>
+        <div class="layers" data-connect="contract-exception->billing-calculation, price-change->billing-calculation, price-change->notification-audience, billing-calculation->joint-approval, notification-audience->joint-approval, joint-approval->limited-release, joint-approval->rollback-condition">
+          <section class="lane" data-lane>
+            <p class="lane-label">根拠</p>
+            <div class="lane-nodes">
+              <div class="node" id="contract-exception">契約例外</div>
+              <div class="node" id="price-change">料金改定案</div>
+            </div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">顧客影響</p>
+            <div class="lane-nodes">
+              <div class="node" id="billing-calculation">請求計算と対象顧客</div>
+              <div class="node" id="notification-audience">告知対象と文面</div>
+            </div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">共同承認</p>
+            <div class="lane-nodes"><div class="node" id="joint-approval">法務・請求・顧客対応が例外、価格、顧客群を照合</div></div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">公開と保護</p>
+            <div class="lane-nodes">
+              <div class="node" id="limited-release">限定対象で公開</div>
+              <div class="node" id="rollback-condition">撤回条件を監視</div>
+            </div>
+          </section>
+        </div>
+        <figcaption>矢印は照合すべき関係を示します。実際のシステム連携や承認済みの手順を表すものではありません。</figcaption>
       </figure>
-      <p class="evidence">保存先はリポジトリ内では <code>.visual-explain/</code>、基本名は <code>YYYY-MM-DD-&lt;slug&gt;.html</code>、同名時は上書きせず <code>-HHMM</code> を付けます。</p>
-      <details class="source-note"><summary>出所</summary><p><code>skills/visual-explain/SKILL.md</code> の「保存規約と縮退規則」。</p></details>
+      <p class="evidence">文章だけでは、どの根拠がどの顧客影響と承認・撤回に接続するかを追いにくいため、この見本では関係を図にしています。</p>
+    </section>
+
+    <section aria-labelledby="before-after">
+      <h2 id="before-after">Before / After: 判断材料を分けたままにしない</h2>
+      <p class="claim">比較するのは資料の見た目ではなく、公開判断で失われる関係です。</p>
+      <div class="compare">
+        <section class="compare-frame">
+          <h3>Before: 部門別の確認</h3>
+          <p>法務は契約例外、請求は計算、顧客対応は告知を個別に確認します。</p>
+          <p>承認者は、例外が誰の請求と通知に影響するかを資料間でつなぎ直します。</p>
+        </section>
+        <section class="compare-frame">
+          <h3>After: 共同の承認地図</h3>
+          <p>同じ顧客群に対する根拠、計算、通知、撤回条件を一つの経路で照合します。</p>
+          <p>開始前に責任者と限定対象を明示し、問題時は撤回条件へ戻れます。</p>
+        </section>
+      </div>
+    </section>
+
+    <section aria-labelledby="alternatives">
+      <h2 id="alternatives">代替案とトレードオフ</h2>
+      <p class="claim">限定対象での段階公開は、全顧客への即時反映と変更保留の間で、影響確認の機会を残す案です。<span class="certainty inferred">推論</span></p>
+      <div class="matrix">
+        <table>
+          <thead><tr><th scope="col">案</th><th scope="col">主な利点</th><th scope="col">主なトレードオフ</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">全顧客へ一斉公開</th><td>対象を分けずに早く反映できる</td><td>例外や計算誤りの影響範囲も最初から広い</td></tr>
+            <tr><th scope="row">変更を保留</th><td>新しい請求影響を発生させない</td><td>料金改定の目的を達成できず、判断材料も増えない</td></tr>
+            <tr><th scope="row">提案: 限定対象で段階公開</th><td>照合した顧客群で影響と撤回条件を確かめられる</td><td>対象選定、承認、顧客対応を追加で運用する必要がある</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="closing-section" aria-label="判断材料">
       <h2>リスクと弱い前提</h2>
-      <p>この規約は生成物をローカル除外できることを前提にします。除外設定へ書き込めない環境では、コミット対象に混ざらないよう利用者が確認する必要があります。</p>
+      <p>限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。</p>
       <h2>不確かな点</h2>
-      <p>保存後に資料をどれだけ再利用・恒久保存するかは、利用者ごとに未確認です。</p>
+      <p>実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。開始判断の前に、それぞれの担当者と確認が必要です。</p>
     </section>
     <!-- CONTENT:END -->
   </main>
