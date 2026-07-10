@@ -8,5 +8,8 @@ checker rules in Tasks 5-6.
 from __future__ import annotations
 
 from ..model import RendererFn
+from .matrix import render_matrix
 
-TRUSTED_RENDERERS: dict[str, RendererFn] = {}
+TRUSTED_RENDERERS: dict[str, RendererFn] = {
+    "matrix@1": render_matrix,
+}

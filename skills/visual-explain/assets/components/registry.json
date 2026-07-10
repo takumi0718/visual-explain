@@ -1,4 +1,25 @@
 {
   "registryVersion": 1,
-  "components": []
+  "components": [
+    {
+      "id": "matrix",
+      "version": 1,
+      "relationshipKind": "two-axis",
+      "capabilities": ["two-axis-classification", "intersection-comparison"],
+      "semanticResponsibility": "二軸分類と交差の比較のみを担う。",
+      "requiredInputs": ["caption", "accessibility", "rows", "columns", "cells"],
+      "optionalInputs": ["certainty", "sources"],
+      "behavior": "静的な意味づけされた表を描画する。",
+      "slots": ["caption", "certainty", "source", "accessibility"],
+      "accessibility": "見出しセルと caption/summary を持つラベル付き figure/table。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": ["static-content", "semantic-ids", "matrix-references", "escaping", "no-external-reference", "responsive-order"],
+      "renderer": "matrix@1",
+      "assets": [
+        {"id": "matrix.css", "slot": "styles", "path": "matrix.css", "digest": "0382a6e969c9a34fd9330853bb239a673a9ab8bb49d9f932205ef4005546ff9f"}
+      ]
+    }
+  ]
 }
