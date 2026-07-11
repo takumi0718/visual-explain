@@ -115,8 +115,8 @@ class SpacingGridAuditTest(unittest.TestCase):
 
 
 class TypeScaleTest(unittest.TestCase):
-    def test_four_step_scale_tokens_exist(self):
-        for token in ("--fs-hero: 1.875rem", "--fs-h2: 1.25rem", "--fs-body: 1rem", "--fs-small: .8125rem"):
+    def test_five_step_scale_tokens_exist(self):
+        for token in ("--fs-hero: 1.875rem", "--fs-h2: 1.25rem", "--fs-body: 1rem", "--fs-small: .8125rem", "--fs-figure: .875rem"):
             self.assertIn(token, SKELETON)
 
 
