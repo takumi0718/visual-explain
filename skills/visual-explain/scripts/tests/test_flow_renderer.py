@@ -223,6 +223,46 @@ class FlowGroupReadingOrderTest(unittest.TestCase):
         self.assertIn("invalid_component_payload", ctx.exception.codes)
 
 
+class FlowReadingOrderPermutationTest(unittest.TestCase):
+    """readingOrder, when present, must be a unique permutation of exactly the
+    declared flow node IDs — for grouped and ungrouped flows alike."""
+
+    def reject_ungrouped(self, reading_order) -> set[str]:
+        with self.assertRaises(ContractError) as ctx:
+            validate_canonical_section(
+                flow_ir(lambda ir: ir["flow"].__setitem__("readingOrder", reading_order)))
+        return codes(ctx.exception)
+
+    def test_ungrouped_valid_permutation_accepted(self) -> None:
+        ir = validate_canonical_section(
+            flow_ir(lambda ir: ir["flow"].__setitem__(
+                "readingOrder", ["node-approve", "node-draft", "node-review"])))
+        self.assertEqual(
+            list(ir.flow.reading_order), ["node-approve", "node-draft", "node-review"])
+
+    def test_ungrouped_duplicate_id_rejected(self) -> None:
+        # All nodes present, but node-draft is repeated.
+        self.assertIn("invalid_component_payload",
+                      self.reject_ungrouped(["node-draft", "node-review", "node-approve", "node-draft"]))
+
+    def test_ungrouped_missing_id_rejected(self) -> None:
+        # node-approve is omitted, so the order is not a full permutation.
+        self.assertIn("invalid_component_payload",
+                      self.reject_ungrouped(["node-draft", "node-review"]))
+
+    def test_grouped_duplicate_id_rejected(self) -> None:
+        # b1 repeated but kept contiguous within its group, so the duplicate must
+        # be caught by permutation validation, not the group-contiguity path.
+        with self.assertRaises(ContractError) as ctx:
+            validate_canonical_section(_grouped_ir(["b1", "b1", "b2", "a1"]))
+        self.assertIn("invalid_component_payload", ctx.exception.codes)
+
+    def test_grouped_missing_id_rejected(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_canonical_section(_grouped_ir(["b1", "b2"]))
+        self.assertIn("invalid_component_payload", ctx.exception.codes)
+
+
 class FlowBuildTest(unittest.TestCase):
     def test_build_and_check_flow_fixture(self) -> None:
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as handle:

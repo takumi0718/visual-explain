@@ -192,6 +192,28 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = build("component-valid-flow.json").replace('data-ve-to="node-review"', 'data-ve-to="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(doc))
 
+    def test_flow_endpoint_requires_true_node_identity(self) -> None:
+        # An arbitrary element that merely exposes data-ve-node-id — without a
+        # non-empty data-ve-semantic-id equal to it — must NOT satisfy an edge
+        # endpoint. Otherwise a tampered artifact could smuggle a fake node in to
+        # make a rewritten from/to reference resolve.
+        doc = build("component-valid-flow.json")
+        tampered = doc.replace(
+            '<ul class="ve-flow-edges">',
+            '<ul class="ve-flow-edges"><li data-ve-node-id="ghost"></li>', 1,
+        ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_flow_endpoint_rejects_semantic_id_mismatch(self) -> None:
+        # A node element whose data-ve-node-id disagrees with its
+        # data-ve-semantic-id is not a real node and cannot anchor an endpoint.
+        doc = build("component-valid-flow.json")
+        tampered = doc.replace(
+            '<ul class="ve-flow-edges">',
+            '<ul class="ve-flow-edges"><li data-ve-semantic-id="other" data-ve-node-id="ghost"></li>', 1,
+        ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
     def test_matrix_cell_missing_column_association_fails(self) -> None:
         doc = build("component-valid-matrix.json").replace(' data-ve-column-id="col-read"', "", 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(doc))

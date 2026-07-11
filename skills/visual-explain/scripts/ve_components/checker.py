@@ -309,8 +309,13 @@ class _DomSemanticParser(HTMLParser):
         d = {k.lower(): (v or "") for k, v in attrs}
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
-        if "data-ve-node-id" in d:
-            self.node_ids.add(d["data-ve-node-id"])
+        # A real flow node element carries a non-empty data-ve-node-id equal to
+        # its own data-ve-semantic-id. An element that merely exposes
+        # data-ve-node-id (or one whose semantic id disagrees) is not a node and
+        # must never anchor an edge endpoint.
+        node_id = d.get("data-ve-node-id")
+        if node_id and d.get("data-ve-semantic-id") == node_id:
+            self.node_ids.add(node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):
             self.edges.append((d["data-ve-from"], d["data-ve-to"], d["data-ve-relation"]))

@@ -447,9 +447,21 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bo
     if reading_order and not isinstance(reading_order, list):
         col.add(INVALID_COMPONENT_PAYLOAD, "readingOrder は配列である必要があります", path)
         reading_order = []
-    for rid in reading_order:
-        if rid not in node_ids:
-            col.add(INVALID_COMPONENT_PAYLOAD, f"readingOrder '{rid}' が存在しません", path)
+    # When present, readingOrder must be a unique permutation of exactly the
+    # declared flow node IDs — no unknown, duplicate, or missing IDs — so the
+    # rendered order can never silently drop or repeat a node.
+    if reading_order:
+        seen_order: set[str] = set()
+        for rid in reading_order:
+            if rid not in node_ids:
+                col.add(INVALID_COMPONENT_PAYLOAD, f"readingOrder '{rid}' が存在しません", path)
+            elif rid in seen_order:
+                col.add(INVALID_COMPONENT_PAYLOAD, f"readingOrder '{rid}' が重複しています", path)
+            seen_order.add(rid)
+        missing = node_ids - seen_order
+        if missing:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"readingOrder に欠けているノードがあります: {sorted(missing)}", path)
 
     # Graph-integrity checks only when the structure is otherwise sound, so a
     # single dangling edge does not cascade into confusing reachability noise.
