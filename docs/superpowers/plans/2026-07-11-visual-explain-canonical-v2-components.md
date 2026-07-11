@@ -30,6 +30,16 @@ Copied from `spec.md`; every task's requirements implicitly include all of these
 - **Lengths:** all character caps counted in Unicode code points (Python `len()`).
 - **Existing matrix/flow contracts unchanged**, with one sanctioned strictness-preserving exception: flow `edge.relation` becomes scoped to flow's own capabilities (Task 1) so the v2 enum growth cannot widen it.
 
+## Adopted execution policy — aggregate one PR (2026-07-12)
+
+> This user-approved policy supersedes the per-slice remote-PR/merge waits in **PR Boundaries and Sequential Integration**, every task's `Slice Gate` stop wording, each task's `Baseline: … after Task N merge` wording, and the Post-S6 prerequisite that S6 be remotely merged.
+
+- Keep the six slices serial and atomic, but integrate each locally into the single `canonical-v2` integration branch after its local gate and review have converged. A slice must still complete its ten-step gate, full tests, skeleton-byte check, generated inspection artifacts, docs sync, and different-runtime review before its changes become the baseline for the following slice.
+- Do **not** push or open a remote PR for S1–S5, and do not wait for an individual-slice human PR/merge gate. Record each slice's local `PR-BODY-s<N>.md` as cumulative evidence and proceed directly to the next slice from the current integration head.
+- The normal three-round maximum, fail-closed gate behavior, reviewer independence, and non-convergence reporting remain in force. A non-converged slice requires an explicit human disposition before it may be locally integrated; accepted audit notes must be recorded alongside the run evidence.
+- After S6, regenerate every inspection artifact, run the full integrated test/check evidence, and perform the cumulative cross-component review plus its bounded remediation loop on the integrated `canonical-v2` branch.
+- Only after that cumulative review is clean (or its residual risk has an explicit human disposition) prepare **one** combined PR body and decision material for `canonical-v2` into its parent branch. `git push`, remote draft-PR creation, remote merge, and destructive cleanup remain separate, explicit human gates.
+
 ## File Structure (whole project)
 
 New files by the end of Task 6 (all under `skills/visual-explain/`):
