@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .diagnostics import (
     ARTIFACT_SEMANTIC_MISMATCH,
+    ASK_CONTRACT_VIOLATION,
     FIXED_REGION_MISMATCH,
     FORBIDDEN_CONTENT_MARKUP,
     INVALID_CONTROLLED_ASSET,
@@ -149,7 +150,151 @@ def validate_content_markup(content_markup: str) -> list[Diagnostic]:
     parser = _ContentSafetyParser()
     parser.feed(content_markup)
     parser.close()
-    return parser.diagnostics
+    diagnostics = list(parser.diagnostics)
+    diagnostics.extend(validate_ask_blocks(content_markup))
+    return diagnostics
+
+
+_ASK_KINDS = frozenset({"decision", "request", "hypothesis"})
+_ASK_ROLES = frozenset({"user", "agent", "third-party"})
+_CERTAINTY_CLASSES = frozenset({"confirmed", "inferred", "unverified"})
+
+
+class _AskParser(HTMLParser):
+    """Collect structural and content-quality facts for each data-ask subtree.
+
+    Nesting is depth-scoped (mirrors ``_DomSemanticParser``): a stack of open
+    ``data-ask`` blocks plus a stack of open "text scopes" (question, option
+    tradeoff, no-default-reason, request step, claim, verify). ``handle_data``
+    appends to every text scope currently open for a block, so nested markup
+    (e.g. a certainty badge inside a claim) still counts toward the claim's
+    own text without a separate accumulator.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.blocks: list[dict] = []
+        self._stack: list[tuple[dict, int]] = []
+        self._scopes: list[tuple[int, dict, str, int | None]] = []
+        self._depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._depth += 1
+        attr = dict(attrs)
+        classes = frozenset((attr.get("class") or "").split())
+        if "data-ask" in attr:
+            block = {
+                "kind": attr.get("data-ask") or "",
+                "question_texts": [],
+                "options": 0,
+                "option_records": [],
+                "defaults": 0,
+                "no_default_reason_texts": [],
+                "roles": [],
+                "role_labels": 0,
+                "role_texts": [],
+                "claims": 0,
+                "claim_texts": [],
+                "claim_certainty": 0,
+                "claim_certainty_valid": 0,
+                "verify_texts": [],
+                "_claim_depth": None,
+            }
+            self.blocks.append(block)
+            self._stack.append((block, self._depth))
+        for block, _block_depth in self._stack:
+            if "ask-question" in classes:
+                block["question_texts"].append("")
+                self._scopes.append((self._depth, block, "question_texts", len(block["question_texts"]) - 1))
+            if "data-ask-option" in attr:
+                block["options"] += 1
+                block["option_records"].append({"tradeoffs": 0, "text": ""})
+            if "ask-tradeoff" in classes and block["option_records"]:
+                block["option_records"][-1]["tradeoffs"] += 1
+                self._scopes.append((self._depth, block, "option_tradeoff_text", None))
+            if "data-ask-default" in attr:
+                block["defaults"] += 1
+            if "ask-no-default-reason" in classes:
+                block["no_default_reason_texts"].append("")
+                self._scopes.append((self._depth, block, "no_default_reason_texts", len(block["no_default_reason_texts"]) - 1))
+            if "data-ask-role" in attr:
+                block["roles"].append(attr.get("data-ask-role") or "")
+                if attr.get("data-ask-role-label"):
+                    block["role_labels"] += 1
+                block["role_texts"].append("")
+                self._scopes.append((self._depth, block, "role_texts", len(block["role_texts"]) - 1))
+            if "ask-claim" in classes:
+                block["claims"] += 1
+                block["claim_texts"].append("")
+                self._scopes.append((self._depth, block, "claim_texts", len(block["claim_texts"]) - 1))
+                block["_claim_depth"] = self._depth
+            if "certainty" in classes and block["_claim_depth"] is not None and self._depth > block["_claim_depth"]:
+                block["claim_certainty"] += 1
+                if len(classes & _CERTAINTY_CLASSES) == 1:
+                    block["claim_certainty_valid"] += 1
+            if "ask-verify" in classes:
+                block["verify_texts"].append("")
+                self._scopes.append((self._depth, block, "verify_texts", len(block["verify_texts"]) - 1))
+
+    def handle_data(self, data: str) -> None:
+        for _depth, block, field, idx in self._scopes:
+            if field == "option_tradeoff_text":
+                block["option_records"][-1]["text"] += data
+            else:
+                block[field][idx] += data
+
+    def handle_endtag(self, tag: str) -> None:
+        while self._scopes and self._scopes[-1][0] == self._depth:
+            self._scopes.pop()
+        if self._stack and self._stack[-1][1] == self._depth:
+            block, _ = self._stack[-1]
+            if block["_claim_depth"] == self._depth:
+                block["_claim_depth"] = None
+            self._stack.pop()
+        self._depth -= 1
+
+
+def validate_ask_blocks(content_markup: str) -> list[Diagnostic]:
+    """Validate every ``data-ask`` subtree's DOM structure and content quality."""
+    parser = _AskParser()
+    parser.feed(content_markup)
+    parser.close()
+    diags: list[Diagnostic] = []
+    for block in parser.blocks:
+        kind = block["kind"]
+        if kind not in _ASK_KINDS:
+            diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, f"未知の ask 種別 '{kind}'"))
+            continue
+        if kind == "decision":
+            if len(block["question_texts"]) != 1 or not block["question_texts"][0].strip():
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision には非空の ask-question がちょうど1つ必要です"))
+            if block["options"] < 2:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision には選択肢が2件以上必要です"))
+            if any(rec["tradeoffs"] != 1 or not rec["text"].strip() for rec in block["option_records"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "各選択肢には非空テキストの ask-tradeoff がちょうど1つ必要です"))
+            if block["defaults"] > 1:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision の既定案は最大1件です"))
+            if block["defaults"] == 0 and (
+                len(block["no_default_reason_texts"]) != 1 or not block["no_default_reason_texts"][0].strip()
+            ):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "既定案なしの decision には非空の ask-no-default-reason が必要です"))
+        elif kind == "request":
+            if not block["roles"]:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "request には data-ask-role 付きの手順が1件以上必要です"))
+            if any(role not in _ASK_ROLES for role in block["roles"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "data-ask-role は user/agent/third-party のみ有効です"))
+            if block["role_labels"] != len(block["roles"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "各手順に data-ask-role-label（表示ラベル）が必要です"))
+            if any(not text.strip() for text in block["role_texts"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "request の各手順には非空の動作テキストが必要です"))
+        else:  # hypothesis
+            if len(block["claim_texts"]) != 1 or not block["claim_texts"][0].strip():
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "hypothesis には非空の ask-claim がちょうど1つ必要です"))
+            if block["claim_certainty"] != 1 or block["claim_certainty_valid"] != 1:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "hypothesis の ask-claim には確度クラスがちょうど1つ必要です"))
+            if len(block["verify_texts"]) != 1 or not block["verify_texts"][0].strip():
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "hypothesis には非空の ask-verify がちょうど1つ必要です"))
+    return diags
 
 
 class _StrictSlotParser(HTMLParser):
@@ -461,6 +606,7 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_content_markup(content)
         diagnostics += validate_final_provenance(content)
         diagnostics += validate_artifact_semantics(content)
+        diagnostics += validate_ask_blocks(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

@@ -72,6 +72,9 @@ class LayerOneAndFourSafetyTest(unittest.TestCase):
     def test_content_style(self) -> None:
         self.assertIn("forbidden_content_markup", self.check("component-bad-content-style.html"))
 
+    def test_ask_decision_single_option(self) -> None:
+        self.assertIn("ask_contract_violation", self.check("bad-ask-decision.html"))
+
     def test_asset_hash(self) -> None:
         self.assertIn("invalid_controlled_asset", self.check("component-bad-asset-hash.html"))
 

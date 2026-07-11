@@ -53,6 +53,9 @@ MISSING_PROVENANCE = "missing_provenance"
 # Round 2 — artifact-only semantic/static integrity of the final DOM.
 ARTIFACT_SEMANTIC_MISMATCH = "artifact_semantic_mismatch"
 
+# Task 7 — ask block contract codes.
+ASK_CONTRACT_VIOLATION = "ask_contract_violation"
+
 ALL_CODES = frozenset({
     INVALID_RELATIONSHIP_DECLARATION,
     INVALID_COMPONENT_PAYLOAD,
@@ -83,6 +86,7 @@ ALL_CODES = frozenset({
     ARTIFACT_SEMANTIC_MISMATCH,
     FLOW_TOPOLOGY_VIOLATION,
     FLOW_TOPOLOGY_TOO_COMPLEX,
+    ASK_CONTRACT_VIOLATION,
 })
 
 
