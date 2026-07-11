@@ -24,7 +24,7 @@
 
 ```text
 $ cd skills/visual-explain/scripts && python3 -m pytest tests -q
-273 passed, 73 subtests passed in ~2.4s
+281 passed, 73 subtests passed in ~2.4s
 
 $ python3 build_explainer.py --assembly tests/component-valid-enumeration.json --output tests/enumeration-doc.html
 OK: tests/enumeration-doc.html

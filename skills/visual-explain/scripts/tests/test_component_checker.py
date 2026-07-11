@@ -398,5 +398,19 @@ class VerificationMatrixTest(unittest.TestCase):
         self.assertIn("ve-flow-group-label", html_doc)
 
 
+class EnumerationDocRegressionTest(unittest.TestCase):
+    """Committed enumeration-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_enumeration_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "enumeration-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_enumeration_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "enumeration-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
 if __name__ == "__main__":
     unittest.main()

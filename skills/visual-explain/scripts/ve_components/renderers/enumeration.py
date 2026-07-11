@@ -53,7 +53,7 @@ def render_enumeration(section: CanonicalSection, definition) -> RenderResult:
         )
 
     layout_cls = "ve-enum-columns" if enumeration.presentation == "columns" else "ve-enum-list-centered"
-    list_markup = f'<ol class="ve-enum-items {layout_cls}">{"".join(blocks)}</ol>'
+    list_markup = f'<ul class="ve-enum-items {layout_cls}">{"".join(blocks)}</ul>'
 
     notes = []
     for cert in ir.certainty:

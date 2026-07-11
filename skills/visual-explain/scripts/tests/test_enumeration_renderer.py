@@ -66,6 +66,14 @@ class EnumerationMarkupTest(unittest.TestCase):
         for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
             self.assertNotIn("number", item)
 
+    def test_item_container_is_unordered_not_ordered_list(self) -> None:
+        self.assertIn('<ul class="ve-enum-items', self.markup)
+        self.assertNotRegex(self.markup, r"<ol[^>]*class=\"[^\"]*ve-enum-items")
+
+    def test_number_spans_are_decorative_only(self) -> None:
+        for match in re.finditer(r'<span class="ve-enum-number"([^>]*)>', self.markup):
+            self.assertIn('aria-hidden="true"', match.group(1))
+
     def test_list_presentation_uses_centered_wrapper(self) -> None:
         self.assertIn("ve-enum-list-centered", self.markup)
 
