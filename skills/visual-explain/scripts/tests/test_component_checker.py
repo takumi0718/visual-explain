@@ -255,6 +255,30 @@ class ArtifactSemanticTest(unittest.TestCase):
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
         self.assertIn("logic-tree connector に data-connect は許可されていません", messages)
 
+    def test_logic_tree_connector_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-connector-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("logic-tree の connector は枝数と一致する必要があります" in m for m in messages),
+            messages,
+        )
+
+    def test_logic_tree_spine_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-spine-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("logic-tree の spine は1本である必要があります", messages)
+
+    def test_logic_tree_root_stem_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-root-stem-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("logic-tree の root-stem は1本である必要があります", messages)
+
     def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")
