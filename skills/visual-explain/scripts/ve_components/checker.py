@@ -28,6 +28,7 @@ from .validation import VOCABULARY
 
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
 _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
+_COMPONENTS = set(VOCABULARY["components"])
 _SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
 _ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
 
@@ -546,6 +547,33 @@ def extract_flow_dom(markup: str) -> tuple[set[str], set[tuple[str, str, str]], 
     return parser.node_ids, set(parser.edges), parser.incomplete_edge
 
 
+_COMPONENT_RE = re.compile(r'data-ve-component="([^"]+)"')
+
+
+def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    block_attrs = re.findall(r'<li\s+([^>]*\bve-enum-block\b[^>]*)>', body)
+    if len(block_attrs) < 2 or len(block_attrs) > 6:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"enumeration は2〜6項目である必要があります (found {len(block_attrs)})"))
+    if len(block_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in block_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "enumeration ブロックに data-ve-semantic-id がありません"))
+    for attrs in block_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        bid = match.group(1)
+        if bid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"enumeration 項目 '{bid}' に意味 ID がありません"))
+    return diagnostics
+
+
+COMPONENT_ARTIFACT_CHECKS = {
+    "enumeration": _check_enumeration_artifact,
+}
+
 _CANONICAL_SECTION_RE = re.compile(
     r'<section\b[^>]*data-ve-section-kind="canonical"[^>]*>(.*?)</section>', re.DOTALL)
 
@@ -555,32 +583,52 @@ def validate_artifact_semantics(content: str) -> list[Diagnostic]:
 
     Within each canonical section: flow edges must carry from/to/relation and both
     endpoints must be node semantic IDs of that same flow; matrix cells must carry
-    both row and column IDs referencing real headers; and caption/certainty/source
+    both row and column IDs referencing real headers; non-flow/matrix components must
+    not carry flow/matrix relationship attributes; and caption/certainty/source
     notes must survive.
     """
     diagnostics: list[Diagnostic] = []
+    component_ids = {cid for cid in _COMPONENTS}
     for body in _CANONICAL_SECTION_RE.findall(content):
+        component_match = _COMPONENT_RE.search(body)
+        component = component_match.group(1) if component_match else ""
         parser = _parse_dom(body)
-        if parser.incomplete_edge:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
-        for frm, to, _rel in parser.edges:
-            if frm not in parser.node_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
-            if to not in parser.node_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
-        if parser.cell_incomplete:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
-        for ref in parser.row_refs:
-            if ref not in parser.semantic_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
-        for ref in parser.col_refs:
-            if ref not in parser.semantic_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+        if component == "flow":
+            if parser.incomplete_edge:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+            for frm, to, _rel in parser.edges:
+                if frm not in parser.node_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
+                if to not in parser.node_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
+        elif component == "matrix":
+            if parser.cell_incomplete:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+            for ref in parser.row_refs:
+                if ref not in parser.semantic_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
+            for ref in parser.col_refs:
+                if ref not in parser.semantic_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+        elif component in component_ids:
+            if parser.incomplete_edge or parser.edges:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"{component} セクションに flow 辺属性は許可されていません"))
+            if parser.cell_incomplete or parser.row_refs or parser.col_refs:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"{component} セクションに matrix セル属性は許可されていません"))
+            checker = COMPONENT_ARTIFACT_CHECKS.get(component)
+            if checker is not None:
+                diagnostics.extend(checker(body, parser))
         if "<figcaption" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
         if "data-ve-semantic-id=" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
-        if "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
+        if component in component_ids:
+            if f"ve-{component}-notes" not in body:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"canonical セクションに確度/出典の注記がありません"))
+        elif "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
     return diagnostics
 

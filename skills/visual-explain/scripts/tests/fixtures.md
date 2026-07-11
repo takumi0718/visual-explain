@@ -51,3 +51,19 @@ For every generated document, evaluate: required-fact reproduction, zero unsuppo
 ### Pi/Katsura Qwen guard
 
 For Pi/Katsura Qwen only, required cause→effect wording must be preserved verbatim or quoted. Do not draw arrows or sequences unless their order is an explicit required fact; mark any allowed inference as **推論**. When uncertain, use a matrix, terms, or prose instead of a flow diagram. This is an additive model-specific guard, not a relaxation of the general contract.
+
+## S1 enumeration fixtures（canonical-v2）
+
+S1 スライスで追加した列挙型コンポーネントの検証用フィクスチャ。
+
+| ファイル | 意図 |
+|---|---|
+| `component-valid-enumeration.json` | list / number モードの有効 IR |
+| `component-valid-enumeration-columns.json` | columns / label モードの有効 IR |
+| `component-bad-enumeration-gap-description.json` | description 歯抜け → `enumeration_structure_violation` |
+| `component-bad-enumeration-label-missing.json` | label モードで label 欠落 |
+| `component-bad-enumeration-too-many.json` | 7項目（上限超過） |
+| `component-bad-enumeration-empty-block.json` | number モードで title/description 両欠 |
+| `component-bad-enumeration-structure.html` | ビルド済み文書で1項目のみ → `artifact_semantic_mismatch` |
+| `component-bad-enumeration-missing-semantic-id.html` | ブロック1件の `data-ve-semantic-id` 欠落 → enumeration 構造診断 |
+| `enumeration-doc.html` | light/dark 目視用のビルド成果物 |

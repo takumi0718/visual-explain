@@ -241,9 +241,16 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / mixed の組み立て例
 
-昇格済みの `matrix` と `flow` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+
+### 箇条書き種別 → 図（選択ガイド）
+
+- **並列列挙（順序なし）** → `enumeration`（`parallel-enumeration` / `parallel-itemization`）。番号は識別子であり順序の宣言ではない。
+- **線形順序（分岐なし）** → `chevron`（将来スライス）。順序のテスト: 「並べ替えても意味が変わらない」なら enumeration、「順序が本質」なら chevron。
+- **分岐・合流・スキップ** → `flow`（`directed-graph`）。`relationship.kind` で送り分ける。
+- **優先の階層（上ほど重要・少ない）** → `pyramid`（将来スライス）。**単なる並列3項目は enumeration の仕事** — pyramid は誤用しない。
 
 ### matrix（二軸分類・交差比較）
 
@@ -306,6 +313,40 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
             {"id": "f-e2", "from": "f-review", "to": "f-approve", "relation": "directed-transition", "label": "合意"}
           ],
           "startId": "f-draft"
+        }
+      }
+    }
+  ]
+}
+```
+
+### enumeration（並列列挙）
+
+2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、各 item は `title` か `description` の少なくとも一方が必要。`description` は全 item で省略するか全 item で指定する（歯抜け不可）。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-enum", "title": "並列項目の列挙", "summary": "順序を持たない並列関係を示す。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-enum",
+        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
+        "selection": {"component": "enumeration", "version": 1, "matchedCapabilities": ["parallel-itemization"]},
+        "caption": "検討対象の並列項目",
+        "certainty": [{"id": "e-cert", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}],
+        "sources": [{"id": "e-src", "label": "議事録 2026-06"}],
+        "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
+        "enumeration": {
+          "items": [
+            {"id": "e-a", "title": "権限モデルの見直し"},
+            {"id": "e-b", "title": "監査ログの保持期間"},
+            {"id": "e-c", "title": "通知チャネルの統合"}
+          ],
+          "presentation": "list",
+          "blockContent": "number"
         }
       }
     }

@@ -40,6 +40,10 @@ class LayerTwoBuildRejectionTest(unittest.TestCase):
         "component-bad-combined-relationship.json",
         "component-bad-flow-edge.json",
         "component-bad-matrix-cell.json",
+        "component-bad-enumeration-gap-description.json",
+        "component-bad-enumeration-label-missing.json",
+        "component-bad-enumeration-too-many.json",
+        "component-bad-enumeration-empty-block.json",
     ]
 
     def test_bad_assemblies_raise(self) -> None:
@@ -176,6 +180,31 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_valid_flow_artifact_passes(self) -> None:
         doc = build("component-valid-flow.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_enumeration_artifact_passes(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_enumeration_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-enumeration-structure.html").read_text("utf-8")))
+
+    def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-enumeration-missing-semantic-id.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "enumeration ブロックに data-ve-semantic-id がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_enumeration_with_flow_attrs_fails(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        tampered = doc.replace(
+            '<li class="ve-enum-block"',
+            '<li class="ve-enum-block" data-ve-from="item-a" data-ve-to="item-b" data-ve-relation="ordered-transition"',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_removed_flow_from_attribute_fails(self) -> None:
         doc = build("component-valid-flow.json").replace(' data-ve-from="node-draft"', "", 1)
@@ -367,6 +396,20 @@ class VerificationMatrixTest(unittest.TestCase):
         html_doc = build("assembly-branching-flow.json")
         self.assertIn("ve-flow-rail", html_doc)
         self.assertIn("ve-flow-group-label", html_doc)
+
+
+class EnumerationDocRegressionTest(unittest.TestCase):
+    """Committed enumeration-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_enumeration_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "enumeration-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_enumeration_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "enumeration-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
 
 
 if __name__ == "__main__":

@@ -24,6 +24,7 @@
     "accessibility": {"$ref": "#/$defs/accessibility"},
     "matrix": {"$ref": "#/$defs/matrixPayload"},
     "flow": {"$ref": "#/$defs/flowPayload"},
+    "enumeration": {"$ref": "#/$defs/enumerationPayload"},
     "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     "takeawayScope": {"enum": ["targets", "whole"]},
     "emphasis": {
@@ -35,21 +36,26 @@
     }
   },
   "oneOf": [
-    {"required": ["matrix"], "not": {"required": ["flow"]}},
-    {"required": ["flow"], "not": {"required": ["matrix"]}}
+    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}]}},
+    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}]}},
+    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}]}}
   ],
   "$defs": {
-    "componentId": {"enum": ["matrix", "flow"]},
+    "componentId": {"enum": ["matrix", "flow", "enumeration"]},
     "contractVersion": {"enum": [1]},
-    "relationshipKind": {"enum": ["two-axis", "directed-graph"]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration"]},
     "capability": {
       "enum": [
         "two-axis-classification",
         "intersection-comparison",
         "ordered-transition",
         "directed-transition",
-        "branching"
+        "branching",
+        "parallel-itemization"
       ]
+    },
+    "flowRelation": {
+      "enum": ["ordered-transition", "directed-transition", "branching"]
     },
     "certaintyLevel": {"enum": ["confirmed", "inferred", "unverified"]},
     "relationship": {
@@ -170,7 +176,7 @@
         "id": {"type": "string", "minLength": 1},
         "from": {"type": "string", "minLength": 1},
         "to": {"type": "string", "minLength": 1},
-        "relation": {"$ref": "#/$defs/capability"},
+        "relation": {"$ref": "#/$defs/flowRelation"},
         "label": {"type": "string", "minLength": 1}
       }
     },
@@ -181,6 +187,36 @@
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "label": {"type": "string", "minLength": 1}
+      }
+    },
+    "enumerationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/enumerationItem"}
+        },
+        "presentation": {"enum": ["list", "columns"], "default": "list"},
+        "blockContent": {"enum": ["number", "label"], "default": "number"}
+      }
+    },
+    "enumerationItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 16},
+        "title": {"type": "string", "minLength": 1, "maxLength": 30},
+        "description": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
       }
     }
   }

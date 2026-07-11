@@ -119,6 +119,21 @@ class FlowPayload:
     reading_order: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class EnumerationItem:
+    id: str
+    label: Optional[str] = None
+    title: Optional[str] = None
+    description: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class EnumerationPayload:
+    items: tuple[EnumerationItem, ...]
+    presentation: str = "list"
+    block_content: str = "number"
+
+
 # ---------------------------------------------------------------------------
 # Sections
 # ---------------------------------------------------------------------------
@@ -135,13 +150,20 @@ class CanonicalIR:
     accessibility: AccessibilityInfo
     matrix: Optional[MatrixPayload] = None
     flow: Optional[FlowPayload] = None
+    enumeration: Optional[EnumerationPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
 
     @property
     def payload_kind(self) -> str:
-        return "matrix" if self.matrix is not None else "flow"
+        if self.matrix is not None:
+            return "matrix"
+        if self.flow is not None:
+            return "flow"
+        if self.enumeration is not None:
+            return "enumeration"
+        raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
         ids: list[str] = [self.id]
@@ -155,6 +177,8 @@ class CanonicalIR:
             ids.extend(n.id for n in self.flow.nodes)
             ids.extend(e.id for e in self.flow.edges)
             ids.extend(g.id for g in self.flow.groups)
+        if self.enumeration is not None:
+            ids.extend(item.id for item in self.enumeration.items)
         return tuple(ids)
 
 

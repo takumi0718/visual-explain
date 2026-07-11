@@ -101,6 +101,52 @@
           "digest": "e9dab25d5c11e0e0293ba0b4d67a9cf7e3b284c7205b424b3ad57c95a07c59cb"
         }
       ]
+    },
+    {
+      "id": "enumeration",
+      "version": 1,
+      "relationshipKind": "parallel-enumeration",
+      "capabilities": [
+        "parallel-itemization"
+      ],
+      "semanticResponsibility": "順序を持たない並列項目の列挙のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的な番号またはラベル付きブロックで並列項目を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と項目ブロックの一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "enumeration-structure"
+      ],
+      "renderer": "enumeration@1",
+      "assets": [
+        {
+          "id": "enumeration.css",
+          "slot": "styles",
+          "path": "enumeration.css",
+          "digest": "81218908d6aaf2840db4d829c6a5da4e4a6bc4f955bbb42ff7e1a00d5c08fd44"
+        }
+      ]
     }
   ]
 }

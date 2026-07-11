@@ -43,6 +43,7 @@ KNOWN_CHECKER_RULES = frozenset({
     "no-external-reference",
     "escaping",
     "responsive-order",
+    "enumeration-structure",
 })
 
 _ASSET_SLOTS = frozenset({"styles", "scripts"})

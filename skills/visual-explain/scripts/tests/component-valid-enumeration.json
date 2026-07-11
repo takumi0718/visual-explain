@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "enumeration-demo",
+    "title": "並列項目の列挙",
+    "summary": "順序を持たない並列関係を列挙型で示す資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-enum-list",
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": ["parallel-itemization"]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 1,
+          "matchedCapabilities": ["parallel-itemization"]
+        },
+        "caption": "検討対象の並列項目",
+        "certainty": [
+          {"id": "cert-enum-confirmed", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}
+        ],
+        "sources": [
+          {"id": "src-notes", "label": "議事録 2026-06", "detail": "並列検討の記録。"}
+        ],
+        "accessibility": {
+          "label": "並列項目の列挙",
+          "summary": "番号付きの縦リストで3項目を並列に示す。"
+        },
+        "enumeration": {
+          "items": [
+            {"id": "item-a", "title": "権限モデルの見直し"},
+            {"id": "item-b", "title": "監査ログの保持期間"},
+            {"id": "item-c", "title": "通知チャネルの統合"}
+          ],
+          "presentation": "list",
+          "blockContent": "number"
+        }
+      }
+    }
+  ]
+}
