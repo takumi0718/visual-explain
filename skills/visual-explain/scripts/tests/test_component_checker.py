@@ -231,6 +231,10 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")))
 
+    def test_waterfall_missing_value_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-waterfall-missing-value.html").read_text("utf-8")))
+
     def test_logic_tree_missing_leaf_id_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-logic-tree-missing-leaf-id.html").read_text("utf-8")

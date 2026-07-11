@@ -776,7 +776,7 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
 def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     bar_blocks = re.findall(
-        r'<div\s+([^>]*\bve-waterfall-bar\b[^>]*)>.*?</div>',
+        r'<div\s+([^>]*\bve-waterfall-bar\b[^>]*)>(.*?)</div>',
         body,
         re.DOTALL,
     )
@@ -784,7 +784,7 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に棒がありません"))
         return diagnostics
 
-    for attrs in bar_blocks:
+    for attrs, inner in bar_blocks:
         classes = _class_tokens_from_attr_string(attrs)
         starts = [c for c in classes if c.startswith("ve-wf-start-")]
         lens = [c for c in classes if c.startswith("ve-wf-len-")]
@@ -797,6 +797,29 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
             if not suffix.isdigit() or not (0 <= int(suffix) <= 100):
                 diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                               f"waterfall 百分率クラス '{token}' が範囲外です"))
+        value_spans = re.findall(
+            r'<span\s+[^>]*\bve-waterfall-value\b[^>]*>([^<]*)</span>',
+            inner,
+        )
+        if len(value_spans) != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒は ve-waterfall-value を1つだけ持つ必要があります"))
+        elif not value_spans[0].strip():
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒の ve-waterfall-value に可視テキストがありません"))
+
+    connector_blocks = re.findall(
+        r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
+        r'(<span\s+[^>]*\bve-waterfall-connector\b[^>]*>\s*</span>)',
+        body,
+        re.DOTALL,
+    )
+    for connector_html in connector_blocks:
+        starts = re.findall(r'\bve-wf-start-(\d+)\b', connector_html)
+        lens = re.findall(r'\bve-wf-len-(\d+)\b', connector_html)
+        if len(starts) != 1 or len(lens) != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall コネクタは ve-wf-start/len を1つずつ持つ必要があります"))
 
     if "ve-waterfall-notes" not in body:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,

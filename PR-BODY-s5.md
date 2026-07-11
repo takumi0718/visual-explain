@@ -7,7 +7,7 @@
 - [x] 3. No new common IR fields — payload dispatch addition only (`waterfall` JSON key)
 - [x] 4. `renderers/waterfall.py` + manifest consumes all semantic IDs (start ∪ steps ∪ end)
 - [x] 5. `assets/components/waterfall.css` (pre-generated `ve-wf-start-0…100` / `ve-wf-len-0…100`, orientation containers `ve-wf-bars`/`ve-wf-columns`)
-- [x] 6. digest `cbcad059f545814022cd3363ffa09963c8b17a80bb46be4d8a1d08a3684b9d5d`
+- [x] 6. digest `11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f`
 - [x] 7. `TRUSTED_RENDERERS["waterfall@1"]`
 - [x] 8. registry entry + `waterfall-consistency` checker rule
 - [x] 9. four-layer checks + bad fixtures (JSON ×6 + bad structure HTML)

@@ -197,19 +197,41 @@ class BuildDecimalParsingTest(unittest.TestCase):
         }
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
             json.dump(fixture, handle)
-            path = handle.name
+            assembly_path = Path(handle.name)
+        out = Path(tempfile.gettempdir()) / "ve-wf-decimal-build.html"
+        out.unlink(missing_ok=True)
         try:
-            from build_explainer import main
-            import sys
-            from io import StringIO
-            out = Path(path).read_text("utf-8")
-            parsed = json.loads(out, parse_float=Decimal)
-            prec = parsed["sections"][0]["ir"]["waterfall"]["displayPrecision"]
-            self.assertIsInstance(prec, Decimal)
-            self.assertEqual(prec, Decimal("0.1"))
-            self.assertNotIsInstance(prec, float)
+            import build_explainer as be
+            from build_explainer import BuildPaths, build_to_path
+
+            raw_assembly = json.loads(assembly_path.read_text("utf-8"), parse_float=Decimal)
+            paths = BuildPaths(
+                skeleton=SKILL / "assets" / "skeleton.html",
+                registry=SKILL / "assets" / "components" / "registry.json",
+                components_dir=SKILL / "assets" / "components",
+                output=out,
+            )
+            captured: list[object] = []
+            original_va = be.validate_assembly
+
+            def tracking_validate(raw):
+                result = original_va(raw)
+                section = result.sections[0]
+                from ve_components.model import CanonicalSection
+                assert isinstance(section, CanonicalSection)
+                captured.append(section.ir.waterfall.display_precision)
+                return result
+
+            with patch.object(be, "validate_assembly", tracking_validate):
+                build_to_path(raw_assembly, paths)
+            self.assertTrue(out.exists())
+            self.assertEqual(len(captured), 1)
+            self.assertIsInstance(captured[0], Decimal)
+            self.assertEqual(captured[0], Decimal("0.1"))
+            self.assertNotIsInstance(captured[0], float)
         finally:
-            Path(path).unlink(missing_ok=True)
+            assembly_path.unlink(missing_ok=True)
+            out.unlink(missing_ok=True)
 
 
 class WaterfallNumericTest(unittest.TestCase):
@@ -219,6 +241,13 @@ class WaterfallNumericTest(unittest.TestCase):
         lo, hi = Decimal("-20"), Decimal("30")
         self.assertEqual(quantize_percent(Decimal("-20"), lo, hi), 0)
         self.assertEqual(quantize_percent(Decimal("30"), lo, hi), 100)
+
+    def test_quantize_percent_rounds_half_up_at_midpoint(self) -> None:
+        from ve_components.numeric import quantize_percent
+
+        lo, hi = Decimal("0"), Decimal("100")
+        self.assertEqual(quantize_percent(Decimal("50.5"), lo, hi), 51)
+        self.assertEqual(quantize_percent(Decimal("50.4"), lo, hi), 50)
 
 
 class WaterfallManifestTest(unittest.TestCase):
@@ -257,6 +286,38 @@ class WaterfallMarkupTest(unittest.TestCase):
         self.assertIn(self.ir.caption, self.markup)
         self.assertIn(self.ir.accessibility.summary, self.markup)
         self.assertIn("ve-waterfall-notes", self.markup)
+
+    def test_each_bar_has_exactly_one_visible_value_span(self) -> None:
+        for block in self._bar_blocks():
+            values = re.findall(
+                r'<span\s+[^>]*\bve-waterfall-value\b[^>]*>([^<]*)</span>',
+                block,
+            )
+            self.assertEqual(len(values), 1, block)
+            self.assertTrue(values[0].strip(), block)
+
+    def test_connectors_in_track_with_position_classes(self) -> None:
+        connectors = re.findall(
+            r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
+            r'<span\s+([^>]*\bve-waterfall-connector\b[^>]*)></span>',
+            self.markup,
+        )
+        wf = self.ir.waterfall
+        assert wf is not None
+        self.assertEqual(len(connectors), len(wf.steps) + 1)
+        for attrs in connectors:
+            self.assertEqual(len(re.findall(r"\bve-wf-start-\d+\b", attrs)), 1)
+            self.assertEqual(len(re.findall(r"\bve-wf-len-\d+\b", attrs)), 1)
+
+    def test_css_has_exactly_202_percent_rules(self) -> None:
+        css = (SKILL / "assets" / "components" / "waterfall.css").read_text("utf-8")
+        percent_rules = [
+            line for line in css.splitlines()
+            if re.search(r"\.ve-wf-(start|len)-\d+\s*\{", line)
+        ]
+        self.assertEqual(len(percent_rules), 202)
+        self.assertNotIn(".ve-wf-bars .ve-wf-start-", css)
+        self.assertNotIn(".ve-wf-columns .ve-wf-start-", css)
 
     def test_each_bar_has_exactly_one_start_and_len_class(self) -> None:
         for block in self._bar_blocks():
@@ -317,7 +378,7 @@ class WaterfallMarkupTest(unittest.TestCase):
             self.assertIn(f"ve-wf-tone-{step.tone}", step_block.group(0))
 
     def test_dashed_connectors_between_consecutive_bars(self) -> None:
-        connectors = re.findall(r'\bve-waterfall-connector\b', self.markup)
+        connectors = re.findall(r'<span\s+[^>]*\bve-waterfall-connector\b', self.markup)
         wf = self.ir.waterfall
         assert wf is not None
         expected = len(wf.steps) + 1
@@ -341,6 +402,19 @@ class WaterfallColumnsMarkupTest(unittest.TestCase):
 
     def test_columns_never_degrades_to_bars(self) -> None:
         self.assertNotIn("ve-wf-bars", self.markup)
+
+    def test_connectors_in_track_with_position_classes(self) -> None:
+        connectors = re.findall(
+            r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
+            r'<span\s+([^>]*\bve-waterfall-connector\b[^>]*)></span>',
+            self.markup,
+        )
+        wf = self.ir.waterfall
+        assert wf is not None
+        self.assertEqual(len(connectors), len(wf.steps) + 1)
+        for attrs in connectors:
+            self.assertEqual(len(re.findall(r"\bve-wf-start-\d+\b", attrs)), 1)
+            self.assertEqual(len(re.findall(r"\bve-wf-len-\d+\b", attrs)), 1)
 
 
 class WaterfallRendererFailureTest(unittest.TestCase):

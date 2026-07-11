@@ -75,7 +75,9 @@ def _render_connector(from_val, to_val, lo, hi) -> tuple[str, Diagnostic | None]
         return "", Diagnostic(RENDERER_FAILURE, "コネクタの百分率が域外です")
     start, length = geom
     return (
-        f'<span class="ve-waterfall-connector {_class_pair(start, length)}" aria-hidden="true"></span>',
+        f'<div class="ve-waterfall-connector-track">'
+        f'<span class="ve-waterfall-connector {_class_pair(start, length)}" aria-hidden="true"></span>'
+        f'</div>',
         None,
     )
 
