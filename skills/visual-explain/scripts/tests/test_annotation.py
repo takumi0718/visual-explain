@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from ve_components.diagnostics import ContractError
+from ve_components import validation
 from ve_components.validation import validate_assembly
 
 FIXTURES = Path(__file__).resolve().parent
@@ -83,6 +84,17 @@ class AnnotationValidationTest(unittest.TestCase):
                 section["ir"]["takeawayTargetIds"] = [row_id]
                 break
         self.assertIn("invalid_component_payload", self._codes(raw))
+
+
+class SchemaLimitConsistencyTest(unittest.TestCase):
+    def test_schema_numeric_limits_match_validation_constants(self):
+        schema = json.loads((FIXTURES.parents[1] / "references" / "component-ir.schema.json").read_text("utf-8"))
+        props = schema["properties"]
+        self.assertEqual(props["takeawayTargetIds"]["maxItems"], validation.MAX_TAKEAWAY_TARGETS)
+        self.assertEqual(props["emphasis"]["maxItems"], validation.MAX_EMPHASIS_ITEMS)
+        label = props["emphasis"]["items"]["properties"]["label"]
+        self.assertEqual(label["maxLength"], validation.MAX_EMPHASIS_LABEL_CHARS)
+        self.assertEqual(label["minLength"], 1)
 
 
 if __name__ == "__main__":

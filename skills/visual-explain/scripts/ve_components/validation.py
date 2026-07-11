@@ -59,6 +59,11 @@ _ALL_CAPABILITIES = {cap for c in _COMPONENTS.values() for cap in c["capabilitie
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
 _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
 
+# Annotation limit constants (must stay in sync with component-ir.schema.json).
+MAX_TAKEAWAY_TARGETS = 3
+MAX_EMPHASIS_ITEMS = 3
+MAX_EMPHASIS_LABEL_CHARS = 40
+
 # Renderer / DOM / coordinate-shaped keys that must never appear in canonical IR.
 FORBIDDEN_AUTHORING_KEYS = {
     "html", "markup", "innerhtml", "outerhtml", "template",
@@ -225,8 +230,8 @@ def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_
                 "takeawayTargetIds が0件です (図全体が対象なら takeawayScope: \"whole\" を明示してください)", path)
     if scope == "whole" and target_list:
         col.add(INVALID_COMPONENT_PAYLOAD, "takeawayScope: whole と takeawayTargetIds は併用できません", path)
-    if len(target_list) > 3:
-        col.add(INVALID_COMPONENT_PAYLOAD, "takeawayTargetIds は最大3件です", path)
+    if len(target_list) > MAX_TAKEAWAY_TARGETS:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"takeawayTargetIds は最大{MAX_TAKEAWAY_TARGETS}件です", path)
     seen: set[str] = set()
     for tid in target_list:
         if tid in seen:
@@ -235,8 +240,8 @@ def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_
         if tid not in allowed:
             col.add(INVALID_COMPONENT_PAYLOAD, f"takeaway 対象 '{tid}' は {kind_label} ID ではありません", path)
     emphasis_raw = raw.get("emphasis", [])
-    if not isinstance(emphasis_raw, list) or len(emphasis_raw) > 3:
-        col.add(INVALID_COMPONENT_PAYLOAD, "emphasis は最大3件の配列が必要です", path)
+    if not isinstance(emphasis_raw, list) or len(emphasis_raw) > MAX_EMPHASIS_ITEMS:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis は最大{MAX_EMPHASIS_ITEMS}件の配列が必要です", path)
         emphasis_raw = []
     result = []
     seen_emphasis: set[str] = set()
@@ -250,8 +255,8 @@ def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_
         seen_emphasis.add(tid)
         if tid not in allowed:
             col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis 対象 '{tid}' は {kind_label} ID ではありません", path)
-        if not isinstance(label, str) or not label.strip() or len(label) > 40:
-            col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis[{i}].label は1〜40字が必要です", path)
+        if not isinstance(label, str) or not label.strip() or len(label) > MAX_EMPHASIS_LABEL_CHARS:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis[{i}].label は1〜{MAX_EMPHASIS_LABEL_CHARS}字が必要です", path)
         elif label == caption:
             col.add(INVALID_COMPONENT_PAYLOAD, "emphasis.label と caption の同文重複は禁止です", path)
         else:
