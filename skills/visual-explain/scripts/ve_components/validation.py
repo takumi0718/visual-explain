@@ -22,7 +22,7 @@ from .diagnostics import (
     ContractError,
     DiagnosticCollector,
 )
-from .flow_layout import assign_rails, check_topology, edge_spans, order_index
+from .flow_layout import assign_rails, check_row_budget, check_topology, edge_spans, order_index
 from .model import (
     AccessibilityInfo,
     AssemblyRequest,
@@ -560,6 +560,9 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bo
         index = order_index(nodes, list(reading_order))
         _, rail_diags = assign_rails(edge_spans(edges, index))
         for diag in rail_diags:
+            col.add(diag.code, diag.message, path)
+        budget_diags = check_row_budget(nodes, edges, list(reading_order))
+        for diag in budget_diags:
             col.add(diag.code, diag.message, path)
 
     return FlowPayload(

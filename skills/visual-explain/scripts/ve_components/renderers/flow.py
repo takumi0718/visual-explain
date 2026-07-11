@@ -15,7 +15,7 @@ from __future__ import annotations
 import html
 
 from ..diagnostics import RENDERER_FAILURE, Diagnostic
-from ..flow_layout import assign_rails, edge_spans, order_index
+from ..flow_layout import MAX_SPINE_ROWS, assign_rails, edge_spans, order_index
 from ..model import CanonicalSection, RenderManifest, RenderResult
 
 _CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
@@ -25,11 +25,12 @@ _RELATION_LABEL = {
     "branching": "分岐",
 }
 
-# Row upper bound for the pre-generated ve-rail-{s}-{e} classes: 12 nodes + 11
-# adjacent links + 4 group labels + 1 spare. Validation's density ceiling (12
-# nodes) keeps real documents well under this, but the renderer fails closed if
-# a rail would ever need a row beyond it.
-MAX_ROWS = 28
+# Row upper bound for the pre-generated ve-rail-{s}-{e} classes (bounds
+# 1<=s<e<=MAX_SPINE_ROWS). validation.py's check_row_budget rejects any flow
+# that would exceed this budget with flow_topology_too_complex before it ever
+# reaches the renderer; this local alias plus the guard below is a defensive
+# fail-closed backstop, not the primary enforcement point.
+MAX_ROWS = MAX_SPINE_ROWS
 
 
 def _esc(value: str) -> str:

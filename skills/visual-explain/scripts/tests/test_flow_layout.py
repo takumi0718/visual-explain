@@ -1,11 +1,22 @@
 import unittest
 
 from ve_components.model import FlowEdge, FlowNode
-from ve_components.flow_layout import assign_rails, check_topology, edge_spans, order_index
+from ve_components.flow_layout import (
+    assign_rails,
+    check_row_budget,
+    check_topology,
+    edge_spans,
+    order_index,
+    projected_spine_rows,
+)
 
 
 def _nodes(*ids):
     return [FlowNode(id=i, label=i) for i in ids]
+
+
+def _grouped_nodes(*id_group_pairs):
+    return [FlowNode(id=i, label=i, group=g) for i, g in id_group_pairs]
 
 
 def _edge(eid, s, t):
@@ -82,6 +93,42 @@ class RailTest(unittest.TestCase):
                  _edge("s4", "b", "f")]
         rails, diags = assign_rails(edge_spans(edges, idx))
         self.assertEqual([d.code for d in diags], ["flow_topology_too_complex"])
+
+
+class RowBudgetTest(unittest.TestCase):
+    def _linear_ids(self, n):
+        return [f"n{i}" for i in range(1, n + 1)]
+
+    def _linear_edges(self, ids):
+        return [_edge(f"e{i}", ids[i], ids[i + 1]) for i in range(len(ids) - 1)]
+
+    def test_fifteen_node_linear_chain_alone_exceeds_budget(self):
+        # 15 stations + 14 adjacent links = 29 rows > MAX_SPINE_ROWS (28), even
+        # before the long skip edge is considered.
+        ids = self._linear_ids(15)
+        nodes = _nodes(*ids)
+        edges = self._linear_edges(ids)
+        self.assertEqual(projected_spine_rows(nodes, edges, ids), 29)
+
+    def test_fifteen_node_linear_with_skip_edge_is_too_complex(self):
+        ids = self._linear_ids(15)
+        nodes = _nodes(*ids)
+        edges = self._linear_edges(ids) + [_edge("skip-1-15", "n1", "n15")]
+        diags = check_row_budget(nodes, edges, ids)
+        self.assertEqual([d.code for d in diags], ["flow_topology_too_complex"])
+
+    def test_twelve_node_with_groups_stays_within_budget(self):
+        # 12 stations + 11 adjacent links + 3 group-label rows = 26 <= 28.
+        pairs = (
+            [(f"n{i}", "grp-a") for i in range(1, 5)]
+            + [(f"n{i}", "grp-b") for i in range(5, 9)]
+            + [(f"n{i}", "grp-c") for i in range(9, 13)]
+        )
+        ids = [i for i, _ in pairs]
+        nodes = _grouped_nodes(*pairs)
+        edges = self._linear_edges(ids)
+        self.assertEqual(projected_spine_rows(nodes, edges, ids), 26)
+        self.assertEqual(check_row_budget(nodes, edges, ids), [])
 
 
 if __name__ == "__main__":

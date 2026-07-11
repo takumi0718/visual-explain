@@ -323,6 +323,25 @@ class FlowTopologyContractTest(unittest.TestCase):
         request = validate_assembly(raw)
         self.assertEqual(len(request.sections), 1)
 
+    def test_row_budget_exceeded_is_rejected_at_validation(self) -> None:
+        # 15-node linear chain + one long skip edge (1 -> 15) is a topologically
+        # valid v1 drawable graph (forward-only, fan <= 3, <= 3 concurrent
+        # rails) but blows the renderer's 28-row spine budget. This must be
+        # caught here, as flow_topology_too_complex, rather than surfacing
+        # later as an opaque renderer_failure.
+        raw = copy.deepcopy(load("component-valid-flow.json"))
+        ir = raw["sections"][0]["ir"]
+        node_ids = [f"node-{i}" for i in range(1, 16)]
+        ir["flow"]["nodes"] = [{"id": nid, "label": nid} for nid in node_ids]
+        ir["flow"]["edges"] = [
+            {"id": f"edge-{i}", "from": node_ids[i], "to": node_ids[i + 1], "relation": "directed-transition"}
+            for i in range(len(node_ids) - 1)
+        ] + [{"id": "edge-skip-1-15", "from": node_ids[0], "to": node_ids[-1], "relation": "directed-transition"}]
+        ir["flow"]["startId"] = node_ids[0]
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(raw)
+        self.assertIn("flow_topology_too_complex", codes(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
