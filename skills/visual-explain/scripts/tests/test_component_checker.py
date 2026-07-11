@@ -336,5 +336,38 @@ class MixedAndWeakModelFinalTest(unittest.TestCase):
                 self.assertIn("forbidden_content_markup", proc.stderr)
 
 
+class VerificationMatrixTest(unittest.TestCase):
+    """The spec's verification fixture matrix: authored documents must pass the
+    four-layer checker, and the branching flow assembly must build with rails and
+    group labels. These are component documents (empty controlled markers), so
+    the checker's content-safety, ask, and artifact layers apply."""
+
+    DOCS = ["matrix-doc-long-titles.html", "matrix-doc-mixed-density.html",
+            "matrix-doc-all-notations.html"]
+
+    def _check(self, name: str) -> list:
+        raw = (TESTS / name).read_text("utf-8")
+        return check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)
+
+    def test_verification_docs_pass_checker(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(doc=name):
+                self.assertEqual(self._check(name), [])
+
+    def test_verification_docs_pass_via_check_sh(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(doc=name):
+                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
+                                      capture_output=True, text=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    def test_branching_flow_assembly_builds(self) -> None:
+        # The renderer routes the skip (branching) edge onto a right-hand rail
+        # and stamps a group-label row for each contiguous group run.
+        html_doc = build("assembly-branching-flow.json")
+        self.assertIn("ve-flow-rail", html_doc)
+        self.assertIn("ve-flow-group-label", html_doc)
+
+
 if __name__ == "__main__":
     unittest.main()
