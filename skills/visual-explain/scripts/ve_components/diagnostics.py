@@ -56,6 +56,9 @@ ARTIFACT_SEMANTIC_MISMATCH = "artifact_semantic_mismatch"
 # S1 — enumeration structure codes.
 ENUMERATION_STRUCTURE_VIOLATION = "enumeration_structure_violation"
 
+# S2 — chevron structure codes.
+CHEVRON_STRUCTURE_VIOLATION = "chevron_structure_violation"
+
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
 
@@ -91,6 +94,7 @@ ALL_CODES = frozenset({
     FLOW_TOPOLOGY_TOO_COMPLEX,
     ASK_CONTRACT_VIOLATION,
     ENUMERATION_STRUCTURE_VIOLATION,
+    CHEVRON_STRUCTURE_VIOLATION,
 })
 
 

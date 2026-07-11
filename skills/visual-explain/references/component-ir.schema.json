@@ -25,6 +25,7 @@
     "matrix": {"$ref": "#/$defs/matrixPayload"},
     "flow": {"$ref": "#/$defs/flowPayload"},
     "enumeration": {"$ref": "#/$defs/enumerationPayload"},
+    "chevron": {"$ref": "#/$defs/chevronPayload"},
     "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     "takeawayScope": {"enum": ["targets", "whole"]},
     "emphasis": {
@@ -36,14 +37,15 @@
     }
   },
   "oneOf": [
-    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}]}},
-    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}]}},
-    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}]}}
+    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}]}},
+    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}]}},
+    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}]}},
+    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}]}}
   ],
   "$defs": {
-    "componentId": {"enum": ["matrix", "flow", "enumeration"]},
+    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron"]},
     "contractVersion": {"enum": [1]},
-    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration"]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence"]},
     "capability": {
       "enum": [
         "two-axis-classification",
@@ -51,7 +53,9 @@
         "ordered-transition",
         "directed-transition",
         "branching",
-        "parallel-itemization"
+        "parallel-itemization",
+        "linear-sequence",
+        "closed-loop"
       ]
     },
     "flowRelation": {
@@ -205,6 +209,37 @@
       }
     },
     "enumerationItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 16},
+        "title": {"type": "string", "minLength": 1, "maxLength": 30},
+        "description": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "chevronPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["steps"],
+      "properties": {
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/chevronStep"}
+        },
+        "orientation": {"enum": ["vertical", "horizontal"], "default": "vertical"},
+        "blockContent": {"enum": ["number", "label"], "default": "number"},
+        "loop": {"type": "boolean", "default": false}
+      }
+    },
+    "chevronStep": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id"],

@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from .diagnostics import (
+    CHEVRON_STRUCTURE_VIOLATION,
     DUPLICATE_SEMANTIC_ID,
     ENUMERATION_STRUCTURE_VIOLATION,
     FORBIDDEN_AUTHORING_FIELD,
@@ -31,6 +32,8 @@ from .model import (
     CanonicalIR,
     CanonicalSection,
     CertaintyAssertion,
+    ChevronPayload,
+    ChevronStep,
     CompatibilityProvenance,
     CompatibilitySection,
     DocumentMetadata,
@@ -81,7 +84,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
-    "matrix", "flow", "enumeration",
+    "matrix", "flow", "enumeration", "chevron",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -98,6 +101,8 @@ _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
 _GROUP_KEYS = {"id", "label"}
 _ENUMERATION_KEYS = {"items", "presentation", "blockContent"}
 _ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description"}
+_CHEVRON_KEYS = {"steps", "orientation", "blockContent", "loop"}
+_CHEVRON_STEP_KEYS = {"id", "label", "title", "description"}
 _DOCUMENT_KEYS = {"id", "title", "summary"}
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
@@ -141,6 +146,7 @@ _ANNOTATION_TARGET_LABELS = {
     "matrix": "セル",
     "flow": "ノード/エッジ",
     "enumeration": "項目",
+    "chevron": "ステップ",
 }
 
 
@@ -160,6 +166,8 @@ def _run_payload_validator(
     if payload_kind == "flow":
         acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
         return validator(payload_raw, payload_path, col, acyclic=acyclic)
+    if payload_kind == "chevron":
+        return validator(payload_raw, payload_path, col, relationship=relationship)
     return validator(payload_raw, payload_path, col)
 
 
@@ -192,6 +200,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     matrix = None
     flow = None
     enumeration = None
+    chevron = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
     if len(present) == 0:
@@ -210,6 +219,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
             flow = validated_payload
         elif payload_kind == "enumeration":
             enumeration = validated_payload
+        elif payload_kind == "chevron":
+            chevron = validated_payload
 
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
         raw, path, col, caption, payload_kind, validated_payload
@@ -243,6 +254,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         matrix=matrix,
         flow=flow,
         enumeration=enumeration,
+        chevron=chevron,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
@@ -592,6 +604,123 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
     return EnumerationPayload(items=tuple(items), presentation=presentation, block_content=block_content)
 
 
+def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
+                      relationship: RelationshipDeclaration | None = None) -> ChevronPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "chevron はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _CHEVRON_KEYS, path, col)
+    orientation = raw.get("orientation", "vertical")
+    block_content = raw.get("blockContent", "number")
+    loop = raw.get("loop", False)
+    if orientation not in ("vertical", "horizontal"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"orientation '{orientation}' は vertical か horizontal のみ有効です", path)
+        orientation = "vertical"
+    if block_content not in ("number", "label"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"blockContent '{block_content}' は number か label のみ有効です", path)
+        block_content = "number"
+    if not isinstance(loop, bool):
+        col.add(INVALID_COMPONENT_PAYLOAD, "loop は真偽値である必要があります", path)
+        loop = False
+
+    caps = set(relationship.capabilities) if relationship is not None else set()
+    if "linear-sequence" not in caps:
+        col.add(CHEVRON_STRUCTURE_VIOLATION, "linear-sequence capability は常に必須です", path)
+    has_closed_loop = "closed-loop" in caps
+    if loop and not has_closed_loop:
+        col.add(CHEVRON_STRUCTURE_VIOLATION, "loop:true には closed-loop capability が必要です", path)
+    if not loop and has_closed_loop:
+        col.add(CHEVRON_STRUCTURE_VIOLATION, "closed-loop capability は loop:true と併用する必要があります", path)
+    if loop and orientation == "horizontal":
+        col.add(CHEVRON_STRUCTURE_VIOLATION, "loop:true は orientation:vertical のみ有効です", path)
+
+    steps_raw = raw.get("steps")
+    if not isinstance(steps_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "steps は配列である必要があります", path)
+        return None
+    count = len(steps_raw)
+    min_steps = 3 if orientation == "horizontal" else 2
+    max_steps = 6
+    if count < min_steps or count > max_steps:
+        col.add(CHEVRON_STRUCTURE_VIOLATION,
+                f"steps は{min_steps}〜{max_steps}件である必要があります (orientation={orientation})", path)
+
+    desc_max_lines = 2 if orientation == "horizontal" else 3
+    desc_max_chars = 30 if orientation == "horizontal" else 40
+
+    steps: list[ChevronStep] = []
+    has_description: list[bool] = []
+    for i, item in enumerate(steps_raw):
+        p = f"{path}.steps[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "step はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _CHEVRON_STEP_KEYS, p, col)
+        sid = item.get("id")
+        if not _nonblank_str(sid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "step.id は空にできません", p)
+        label = item.get("label")
+        title = item.get("title")
+        desc_raw = item.get("description")
+        desc_lines: list[str] = []
+        if desc_raw is not None:
+            if not isinstance(desc_raw, list) or not desc_raw:
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "description は非空の配列である必要があります", p)
+            else:
+                if len(desc_raw) > desc_max_lines:
+                    col.add(CHEVRON_STRUCTURE_VIOLATION,
+                            f"description は最大{desc_max_lines}行です", p)
+                for j, line in enumerate(desc_raw):
+                    if not isinstance(line, str) or not line.strip():
+                        col.add(CHEVRON_STRUCTURE_VIOLATION, f"description[{j}] は空にできません", p)
+                    elif len(line) > desc_max_chars:
+                        col.add(CHEVRON_STRUCTURE_VIOLATION,
+                                f"description[{j}] は{desc_max_chars}字以内です", p)
+                    else:
+                        desc_lines.append(line)
+        has_description.append(bool(desc_lines))
+
+        if orientation == "horizontal" and title is not None:
+            col.add(CHEVRON_STRUCTURE_VIOLATION, "orientation:horizontal では title は禁止です", p)
+
+        if block_content == "label":
+            if not _nonblank_str(label):
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:label では label が必須です", p)
+            elif len(str(label)) > 16:
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "label は16字以内です", p)
+            if title is not None:
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:label では title は禁止です", p)
+        else:
+            if label is not None:
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:number では label は禁止です", p)
+            if title is not None and orientation != "horizontal":
+                if not _nonblank_str(title):
+                    col.add(CHEVRON_STRUCTURE_VIOLATION, "title は空にできません", p)
+                elif len(str(title)) > 30:
+                    col.add(CHEVRON_STRUCTURE_VIOLATION, "title は30字以内です", p)
+            if orientation == "horizontal":
+                if not desc_lines:
+                    col.add(CHEVRON_STRUCTURE_VIOLATION,
+                            "horizontal number モードでは各 step に description が必要です", p)
+            elif not (title and str(title).strip()) and not desc_lines:
+                col.add(CHEVRON_STRUCTURE_VIOLATION,
+                        "number モードでは各 step に title か description が必要です", p)
+
+        steps.append(ChevronStep(
+            id=sid, label=label if isinstance(label, str) else None,
+            title=title if isinstance(title, str) else None,
+            description=tuple(desc_lines),
+        ))
+
+    if has_description and not all(has_description) and any(has_description):
+        col.add(CHEVRON_STRUCTURE_VIOLATION,
+                "description は全 step で省略するか全 step で指定する必要があります", path)
+
+    if col:
+        return None
+    return ChevronPayload(steps=tuple(steps), orientation=orientation, block_content=block_content, loop=loop)
+
+
 def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bool = False) -> FlowPayload | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "flow はオブジェクトである必要があります", path)
@@ -822,6 +951,9 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     enumeration = raw.get("enumeration")
     if isinstance(enumeration, dict):
         collect(enumeration.get("items"))
+    chevron = raw.get("chevron")
+    if isinstance(chevron, dict):
+        collect(chevron.get("steps"))
     seen: set[str] = set()
     for value in ids:
         if value in seen:
@@ -837,6 +969,7 @@ _PAYLOAD_VALIDATORS = {
     "matrix": _validate_matrix,
     "flow": _validate_flow,
     "enumeration": _validate_enumeration,
+    "chevron": _validate_chevron,
 }
 
 
@@ -854,10 +987,15 @@ def _annotation_targets_enumeration(payload: EnumerationPayload | None) -> set[s
     return {item.id for item in payload.items} if payload is not None else set()
 
 
+def _annotation_targets_chevron(payload: ChevronPayload | None) -> set[str]:
+    return {step.id for step in payload.steps} if payload is not None else set()
+
+
 ANNOTATION_TARGETS = {
     "matrix": _annotation_targets_matrix,
     "flow": _annotation_targets_flow,
     "enumeration": _annotation_targets_enumeration,
+    "chevron": _annotation_targets_chevron,
 }
 
 
