@@ -154,16 +154,16 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 - 詳細は `deep-dive` にだけ格納し、判断の核心、制約、反証は初期表示に残せ。
 - 1セクション1問いを守り、主張を1行、根拠を2〜3行の目安に抑えよ。概ね1画面に収まるかを目視確認せよ。
 
-## コンポーネント資産の所有権（matrix / flow / enumeration）
+## コンポーネント資産の所有権（matrix / flow / enumeration / chevron）
 
-昇格済みの `matrix`、`flow`、`enumeration` は骨格とコンポーネントで所有権を分ける。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron` は骨格とコンポーネントで所有権を分ける。
 
 - **骨格**がグローバルトークン・固定領域・テーマ・固定 JavaScript を所有する。これらのバイトは1つも変更しない。
-- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]` を根に持つ規則だけを書き、骨格トークンを再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
-- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
+- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]` を根に持つ規則だけを書き、骨格トークンを再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
+- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
 - CSS は意味の可読性・既存トークン・名前空間・静的アクセシビリティ・レスポンシブ順序だけに限る。狭い画面では積み重ねてよいが、意味的な読み順を反転しない。美的レビューは本スライスの範囲外。
-- **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。
-- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）。超過は分割か縮退。
+- **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）と chevron の縦型（`orientation: "vertical"`）だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。
+- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段。超過は分割か縮退。
 - **信頼アセットは単一の fail-closed ゲート**として扱う。レジストリの ID/バージョン/ダイジェスト、レンダラ許可リスト、マニフェスト宣言、名前空間、スロット種別、CSP、外部参照なしをまとめて満たさない資産は拒否する。CSS を変更したら `shasum -a 256` で再計算し、`registry.json` のダイジェストをワイルドカードや初回信頼ではなく厳密な値で更新する。
 
 ## 新コンポーネントの拡張ゲート（10 手順）

@@ -241,15 +241,15 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
 - **並列列挙（順序なし）** → `enumeration`（`parallel-enumeration` / `parallel-itemization`）。番号は識別子であり順序の宣言ではない。
-- **線形順序（分岐なし）** → `chevron`（将来スライス）。順序のテスト: 「並べ替えても意味が変わらない」なら enumeration、「順序が本質」なら chevron。
-- **分岐・合流・スキップ** → `flow`（`directed-graph`）。`relationship.kind` で送り分ける。
+- **線形順序（分岐なし）** → `chevron`（`ordered-sequence` / `linear-sequence`）。順序のテスト: 「並べ替えても意味が変わらない」なら enumeration、「順序が本質」なら chevron。
+- **分岐・合流は `directed-graph`（flow）、線形は `ordered-sequence`（chevron）** — `relationship.kind` で送り分ける。capability `branching` の有無は説明上の目印であり、発見機構ではない。
 - **優先の階層（上ほど重要・少ない）** → `pyramid`（将来スライス）。**単なる並列3項目は enumeration の仕事** — pyramid は誤用しない。
 
 ### matrix（二軸分類・交差比較）
@@ -347,6 +347,42 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
           ],
           "presentation": "list",
           "blockContent": "number"
+        }
+      }
+    }
+  ]
+}
+```
+
+### chevron（線形順序）
+
+2〜6段（`orientation: "horizontal"` は3〜6段）。`blockContent: "number"` では番号はレンダラが採番し、各 step は `title` か `description` の少なくとも一方が必要（横型 number モードでは `title` 禁止のため `description` が全 step 必須）。`loop: true` は縦型のみで `closed-loop` capability と併用。縦型 `description` は1〜3行・各40字以内、横型は1〜2行・各30字以内。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-chevron", "title": "処理フローの4段階", "summary": "縦型チェブロンで線形順序を示す。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-chevron",
+        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "caption": "受付から報告までの4段",
+        "certainty": [{"id": "c-cert", "level": "confirmed", "statement": "4段は運用手順書に準拠。"}],
+        "sources": [{"id": "c-src", "label": "運用手順書 v3"}],
+        "accessibility": {"label": "処理フローのチェブロン", "summary": "縦型の番号付き4段で線形順序を示す。"},
+        "chevron": {
+          "steps": [
+            {"id": "c-intake", "title": "受付", "description": ["依頼を記録する", "担当を割り当てる"]},
+            {"id": "c-verify", "title": "検証", "description": ["入力を確認する", "不足を差し戻す"]},
+            {"id": "c-execute", "title": "実行", "description": ["手順に従い処理する", "結果を保存する"]},
+            {"id": "c-report", "title": "報告", "description": ["完了を記録する", "関係者へ通知する"]}
+          ],
+          "orientation": "vertical",
+          "blockContent": "number",
+          "loop": false
         }
       }
     }

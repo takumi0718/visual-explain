@@ -433,5 +433,25 @@ class EnumerationDocRegressionTest(unittest.TestCase):
         self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
 
 
+class ChevronDocRegressionTest(unittest.TestCase):
+    """Committed chevron inspection documents must pass the same gate as check.sh."""
+
+    DOCS = ["chevron-doc.html", "chevron-horizontal-doc.html"]
+
+    def test_committed_chevron_docs_pass_check_sh(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(name=name):
+                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
+                                      capture_output=True, text=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_chevron_docs_pass_four_layer_checker(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(name=name):
+                raw = (TESTS / name).read_text("utf-8")
+                self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
 if __name__ == "__main__":
     unittest.main()
