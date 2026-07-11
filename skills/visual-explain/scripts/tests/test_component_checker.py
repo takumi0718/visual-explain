@@ -44,6 +44,11 @@ class LayerTwoBuildRejectionTest(unittest.TestCase):
         "component-bad-enumeration-label-missing.json",
         "component-bad-enumeration-too-many.json",
         "component-bad-enumeration-empty-block.json",
+        "component-bad-chevron-loop-horizontal.json",
+        "component-bad-chevron-loop-capability-mismatch.json",
+        "component-bad-chevron-title-in-horizontal.json",
+        "component-bad-chevron-no-visible-content.json",
+        "component-bad-chevron-too-few-horizontal.json",
     ]
 
     def test_bad_assemblies_raise(self) -> None:
@@ -185,9 +190,25 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = build("component-valid-enumeration.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
 
+    def test_valid_chevron_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_loop_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron-loop.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_horizontal_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron-horizontal.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
     def test_enumeration_structure_html_fails(self) -> None:
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-enumeration-structure.html").read_text("utf-8")))
+
+    def test_chevron_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-chevron-structure.html").read_text("utf-8")))
 
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
         from ve_components.checker import check_final_document

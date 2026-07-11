@@ -570,8 +570,37 @@ def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[D
     return diagnostics
 
 
+def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    step_attrs = re.findall(r'<li\s+([^>]*\bve-chevron-step\b[^>]*)>', body)
+    if len(step_attrs) < 2 or len(step_attrs) > 6:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"chevron は2〜6段である必要があります (found {len(step_attrs)})"))
+    if len(step_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in step_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "chevron ステップに data-ve-semantic-id がありません"))
+    for attrs in step_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        sid = match.group(1)
+        if sid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"chevron ステップ '{sid}' に意味 ID がありません"))
+    loop_rails = re.findall(r'class="[^"]*\bve-chevron-loop-rail\b[^"]*"', body)
+    is_horizontal = "ve-chevron-horizontal" in body
+    if is_horizontal and loop_rails:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "horizontal chevron に loop レールは許可されていません"))
+    if not is_horizontal and len(loop_rails) > 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "vertical chevron の loop レールは最大1本です"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
+    "chevron": _check_chevron_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(
