@@ -47,6 +47,7 @@ KNOWN_CHECKER_RULES = frozenset({
     "chevron-structure",
     "pyramid-structure",
     "stairs-structure",
+    "logic-tree-structure",
 })
 
 _ASSET_SLOTS = frozenset({"styles", "scripts"})

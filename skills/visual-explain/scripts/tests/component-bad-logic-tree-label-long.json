@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "logic-tree-bad-label",
+    "title": "ラベル過長",
+    "summary": "rootラベル21字の不正IR。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-lt-label",
+        "relationship": {
+          "kind": "hierarchical-decomposition",
+          "capabilities": ["mece-decomposition"]
+        },
+        "selection": {
+          "component": "logic-tree",
+          "version": 1,
+          "matchedCapabilities": ["mece-decomposition"]
+        },
+        "caption": "ラベル過長",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "ロジックツリー", "summary": "rootラベルが21字。"},
+        "logic-tree": {
+          "root": {"id": "root-topic", "label": "あああああああああああああああああああああ"},
+          "branches": [
+            {"id": "branch-a", "label": "枝A"},
+            {"id": "branch-b", "label": "枝B"}
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -175,6 +175,31 @@ class StairsPayload:
     stages: tuple[StairsStage, ...]
 
 
+@dataclass(frozen=True)
+class LogicTreeLeaf:
+    id: str
+    text: str
+
+
+@dataclass(frozen=True)
+class LogicTreeBranch:
+    id: str
+    label: str
+    leaves: tuple[LogicTreeLeaf, ...] = ()
+
+
+@dataclass(frozen=True)
+class LogicTreeRoot:
+    id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class LogicTreePayload:
+    root: LogicTreeRoot
+    branches: tuple[LogicTreeBranch, ...]
+
+
 # ---------------------------------------------------------------------------
 # Sections
 # ---------------------------------------------------------------------------
@@ -195,6 +220,7 @@ class CanonicalIR:
     chevron: Optional[ChevronPayload] = None
     pyramid: Optional[PyramidPayload] = None
     stairs: Optional[StairsPayload] = None
+    logic_tree: Optional[LogicTreePayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
@@ -213,6 +239,8 @@ class CanonicalIR:
             return "pyramid"
         if self.stairs is not None:
             return "stairs"
+        if self.logic_tree is not None:
+            return "logic-tree"
         raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
@@ -235,6 +263,11 @@ class CanonicalIR:
             ids.extend(tier.id for tier in self.pyramid.tiers)
         if self.stairs is not None:
             ids.extend(stage.id for stage in self.stairs.stages)
+        if self.logic_tree is not None:
+            ids.append(self.logic_tree.root.id)
+            for branch in self.logic_tree.branches:
+                ids.append(branch.id)
+                ids.extend(leaf.id for leaf in branch.leaves)
         return tuple(ids)
 
 

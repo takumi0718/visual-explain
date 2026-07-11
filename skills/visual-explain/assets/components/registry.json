@@ -286,6 +286,53 @@
           "digest": "8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe"
         }
       ]
+    },
+    {
+      "id": "logic-tree",
+      "version": 1,
+      "relationshipKind": "hierarchical-decomposition",
+      "capabilities": [
+        "mece-decomposition"
+      ],
+      "semanticResponsibility": "構成の階層分解のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "root",
+        "branches"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なロジックツリーで root と branch を接続線付きで描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と root/branch/leaf の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "logic-tree-structure"
+      ],
+      "renderer": "logic-tree@1",
+      "assets": [
+        {
+          "id": "logic-tree.css",
+          "slot": "styles",
+          "path": "logic-tree.css",
+          "digest": "392189a53a978812139170109f88a1846863b141a338e6240719a9bea8309dd2"
+        }
+      ]
     }
   ]
 }

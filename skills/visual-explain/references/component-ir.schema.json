@@ -28,6 +28,7 @@
     "chevron": {"$ref": "#/$defs/chevronPayload"},
     "pyramid": {"$ref": "#/$defs/pyramidPayload"},
     "stairs": {"$ref": "#/$defs/stairsPayload"},
+    "logic-tree": {"$ref": "#/$defs/logicTreePayload"},
     "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     "takeawayScope": {"enum": ["targets", "whole"]},
     "emphasis": {
@@ -39,17 +40,18 @@
     }
   },
   "oneOf": [
-    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}]}},
-    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}]}},
-    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}]}},
-    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}]}},
-    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}]}},
-    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}]}}
+    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}]}},
+    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}]}},
+    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}]}},
+    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}]}},
+    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}]}},
+    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["logic-tree"]}]}},
+    {"required": ["logic-tree"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}]}}
   ],
   "$defs": {
-    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs"]},
+    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "logic-tree"]},
     "contractVersion": {"enum": [1]},
-    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity"]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition"]},
     "capability": {
       "enum": [
         "two-axis-classification",
@@ -61,7 +63,8 @@
         "linear-sequence",
         "closed-loop",
         "priority-layering",
-        "maturity-staging"
+        "maturity-staging",
+        "mece-decomposition"
       ]
     },
     "flowRelation": {
@@ -305,6 +308,52 @@
         "label": {"type": "string", "minLength": 1, "maxLength": 14},
         "note": {"type": "string", "minLength": 1, "maxLength": 20},
         "current": {"type": "boolean"}
+      }
+    },
+    "logicTreePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "branches"],
+      "properties": {
+        "root": {"$ref": "#/$defs/logicTreeRoot"},
+        "branches": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/logicTreeBranch"}
+        }
+      }
+    },
+    "logicTreeRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 20}
+      }
+    },
+    "logicTreeBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 16},
+        "leaves": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/logicTreeLeaf"}
+        }
+      }
+    },
+    "logicTreeLeaf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1, "maxLength": 40}
       }
     }
   }
