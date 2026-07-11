@@ -83,6 +83,12 @@ class MatrixPayload:
 
 
 @dataclass(frozen=True)
+class EmphasisAnnotation:
+    target_id: str
+    label: str
+
+
+@dataclass(frozen=True)
 class FlowNode:
     id: str
     label: str
@@ -129,6 +135,9 @@ class CanonicalIR:
     accessibility: AccessibilityInfo
     matrix: Optional[MatrixPayload] = None
     flow: Optional[FlowPayload] = None
+    takeaway_target_ids: tuple[str, ...] = ()
+    takeaway_scope: str = "targets"
+    emphasis: tuple["EmphasisAnnotation", ...] = ()
 
     @property
     def payload_kind(self) -> str:

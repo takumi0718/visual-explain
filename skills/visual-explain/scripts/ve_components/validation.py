@@ -33,6 +33,7 @@ from .model import (
     CompatibilityProvenance,
     CompatibilitySection,
     DocumentMetadata,
+    EmphasisAnnotation,
     ExplicitSelection,
     FlowEdge,
     FlowGroup,
@@ -68,7 +69,10 @@ FORBIDDEN_AUTHORING_KEYS = {
     "dom", "svg", "path", "transform", "renderer",
 }
 
-_IR_KEYS = {"id", "relationship", "selection", "caption", "certainty", "sources", "accessibility", "matrix", "flow"}
+_IR_KEYS = {
+    "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility", "matrix", "flow",
+    "takeawayTargetIds", "takeawayScope", "emphasis",
+}
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
 _SELECTION_KEYS = {"component", "version", "matchedCapabilities"}
 _CERTAINTY_KEYS = {"id", "level", "statement"}
@@ -160,6 +164,14 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
         flow = _validate_flow(raw.get("flow"), f"{path}.flow", col, acyclic=acyclic)
 
+    payload_kind = "matrix" if matrix is not None else "flow"
+    cell_ids = {c.id for c in matrix.cells} if matrix is not None else set()
+    node_ids = {n.id for n in flow.nodes} if flow is not None else set()
+    edge_ids = {e.id for e in flow.edges} if flow is not None else set()
+    takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
+        raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids
+    )
+
     # Cross-consistency: component choice must match the present payload and kind.
     if selection is not None:
         expected_component = "matrix" if has_matrix and not has_flow else ("flow" if has_flow and not has_matrix else None)
@@ -188,7 +200,63 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         accessibility=accessibility,
         matrix=matrix,
         flow=flow,
+        takeaway_target_ids=takeaway_target_ids,
+        takeaway_scope=takeaway_scope,
+        emphasis=emphasis,
     )
+
+
+def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids):
+    # 注釈は opt-in: 3フィールドのいずれも無い既存 IR は無検査で通す（後方互換）。
+    # いずれか1つでも指定されたら契約全体を検査する。
+    if not ({"takeawayTargetIds", "takeawayScope", "emphasis"} & set(raw)):
+        return (), "targets", ()
+    scope = raw.get("takeawayScope", "targets")
+    if scope not in ("targets", "whole"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"takeawayScope '{scope}' は targets か whole のみ有効です", path)
+    targets = raw.get("takeawayTargetIds", None)
+    target_list = targets if isinstance(targets, list) else []
+    if targets is not None and not isinstance(targets, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "takeawayTargetIds は配列が必要です", path)
+    allowed = cell_ids if payload_kind == "matrix" else (node_ids | edge_ids)
+    kind_label = "セル" if payload_kind == "matrix" else "ノード/エッジ"
+    if scope == "targets" and len(target_list) == 0:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "takeawayTargetIds が0件です (図全体が対象なら takeawayScope: \"whole\" を明示してください)", path)
+    if scope == "whole" and target_list:
+        col.add(INVALID_COMPONENT_PAYLOAD, "takeawayScope: whole と takeawayTargetIds は併用できません", path)
+    if len(target_list) > 3:
+        col.add(INVALID_COMPONENT_PAYLOAD, "takeawayTargetIds は最大3件です", path)
+    seen: set[str] = set()
+    for tid in target_list:
+        if tid in seen:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"takeawayTargetIds '{tid}' が重複しています", path)
+        seen.add(tid)
+        if tid not in allowed:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"takeaway 対象 '{tid}' は {kind_label} ID ではありません", path)
+    emphasis_raw = raw.get("emphasis", [])
+    if not isinstance(emphasis_raw, list) or len(emphasis_raw) > 3:
+        col.add(INVALID_COMPONENT_PAYLOAD, "emphasis は最大3件の配列が必要です", path)
+        emphasis_raw = []
+    result = []
+    seen_emphasis: set[str] = set()
+    for i, item in enumerate(emphasis_raw):
+        if not isinstance(item, dict) or set(item) != {"targetId", "label"}:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis[{i}] は targetId と label のみを持つ必要があります", path)
+            continue
+        tid, label = item["targetId"], item["label"]
+        if tid in seen_emphasis:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis 対象 '{tid}' が重複しています", path)
+        seen_emphasis.add(tid)
+        if tid not in allowed:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis 対象 '{tid}' は {kind_label} ID ではありません", path)
+        if not isinstance(label, str) or not label.strip() or len(label) > 40:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"emphasis[{i}].label は1〜40字が必要です", path)
+        elif label == caption:
+            col.add(INVALID_COMPONENT_PAYLOAD, "emphasis.label と caption の同文重複は禁止です", path)
+        else:
+            result.append(EmphasisAnnotation(target_id=str(tid), label=label))
+    return tuple(str(t) for t in target_list), scope, tuple(result)
 
 
 def _validate_relationship(raw: object, path: str, col: DiagnosticCollector) -> RelationshipDeclaration | None:
