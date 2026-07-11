@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "bad-stairs", "title": "bad", "summary": "bad"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-bad",
+      "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging"]},
+      "selection": {"component": "stairs", "version": 1, "matchedCapabilities": ["maturity-staging"]},
+      "caption": "bad",
+      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
+      "sources": [{"id": "s1", "label": "x"}],
+      "accessibility": {"label": "x", "summary": "x"},
+      "stairs": {
+        "stages": [
+          {"id": "s1", "label": "1"},
+          {"id": "s2", "label": "2"},
+          {"id": "s3", "label": "3"},
+          {"id": "s4", "label": "4"},
+          {"id": "s5", "label": "5"},
+          {"id": "s6", "label": "6"}
+        ]
+      }
+    }
+  }]
+}

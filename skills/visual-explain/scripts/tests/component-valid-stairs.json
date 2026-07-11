@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "stairs-demo",
+    "title": "成熟度の階段",
+    "summary": "5段の階段で成熟度と現在地を示す資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-stairs",
+        "relationship": {
+          "kind": "staged-maturity",
+          "capabilities": ["maturity-staging"]
+        },
+        "selection": {
+          "component": "stairs",
+          "version": 1,
+          "matchedCapabilities": ["maturity-staging"]
+        },
+        "caption": "成熟度の5段階",
+        "certainty": [
+          {"id": "cert-stairs", "level": "confirmed", "statement": "5段は成熟度モデルに準拠。"}
+        ],
+        "sources": [
+          {"id": "src-model", "label": "成熟度モデル v1", "detail": "段階定義。"}
+        ],
+        "accessibility": {
+          "label": "成熟度階段",
+          "summary": "低い段から高い段へ5段の成熟度を示す。"
+        },
+        "stairs": {
+          "stages": [
+            {"id": "stage-1", "label": "未整備"},
+            {"id": "stage-2", "label": "部分導入"},
+            {"id": "stage-3", "label": "標準化", "current": true, "note": "ここにいる"},
+            {"id": "stage-4", "label": "最適化"},
+            {"id": "stage-5", "label": "自律運用"}
+          ]
+        }
+      }
+    }
+  ]
+}

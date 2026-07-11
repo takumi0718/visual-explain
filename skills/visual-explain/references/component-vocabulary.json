@@ -20,6 +20,16 @@
       "contractVersion": 1,
       "relationshipKind": "ordered-sequence",
       "capabilities": ["linear-sequence", "closed-loop"]
+    },
+    "pyramid": {
+      "contractVersion": 1,
+      "relationshipKind": "layered-priority",
+      "capabilities": ["priority-layering"]
+    },
+    "stairs": {
+      "contractVersion": 1,
+      "relationshipKind": "staged-maturity",
+      "capabilities": ["maturity-staging"]
     }
   },
   "compatibility": {

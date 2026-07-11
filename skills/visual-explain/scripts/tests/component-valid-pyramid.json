@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "pyramid-demo",
+    "title": "優先度の階層",
+    "summary": "4層のピラミッドで優先構造を示す資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-pyramid",
+        "relationship": {
+          "kind": "layered-priority",
+          "capabilities": ["priority-layering"]
+        },
+        "selection": {
+          "component": "pyramid",
+          "version": 1,
+          "matchedCapabilities": ["priority-layering"]
+        },
+        "caption": "優先度の4層ピラミッド",
+        "certainty": [
+          {"id": "cert-pyramid", "level": "confirmed", "statement": "4層は経営会議で合意。"}
+        ],
+        "sources": [
+          {"id": "src-strategy", "label": "戦略方針 v2", "detail": "優先順位の定義。"}
+        ],
+        "accessibility": {
+          "label": "優先度ピラミッド",
+          "summary": "上から下へ4層の優先度を示す。"
+        },
+        "pyramid": {
+          "tiers": [
+            {"id": "tier-apex", "label": "最優先事項"},
+            {"id": "tier-high", "label": "重要施策", "sub": "四半期で追う重点領域"},
+            {"id": "tier-mid", "label": "維持管理"},
+            {"id": "tier-base", "label": "基盤整備"}
+          ]
+        }
+      }
+    }
+  ]
+}
