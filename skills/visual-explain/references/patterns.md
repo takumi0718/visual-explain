@@ -44,7 +44,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 caption はその図から持ち帰る1文（takeaway）にする。図の説明文（「役割と操作の表」）や操作手順を書かない。読み手が図を1つだけ見て持ち帰るべき結論を書け。
 
 - takeaway が図の特定のセル/ノード/エッジで証明されるなら、canonical IR の `takeawayTargetIds` でその対象を **1〜3件** 指す。
-- 局所の補足は `emphasis` で対象の直近に短く書く（対象ごと最大3件、各ラベル40字以内）。
+- 局所の補足は `emphasis` で対象の直近に短く書く（全体で最大3件、対象ごとに1件まで、各ラベル40字以内）。
 - 図全体がそのまま主張であり、指すべき単一の対象がないときだけ `takeawayScope: "whole"` を明示する。これは「caption 自体が図全体の takeaway だ」という意思表示で、視覚マーカーは付かない。`takeawayScope: "whole"` と `takeawayTargetIds` は併用できない。
 
 ## 共通の文法ブロック
@@ -243,7 +243,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ## カノニカルな matrix / flow / mixed の組み立て例
 
-昇格済みの `matrix` と `flow` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（対象ごと最大3件・各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix` と `flow` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### matrix（二軸分類・交差比較）
 

@@ -26,7 +26,7 @@
 - `--accent-warm`: `--warning` の別名。暖色が必要な既存記述との後方互換だけに使い、新規では `--warning` を使え
 - `--focus`: キーボードフォーカスの輪郭。ほかの用途に流用するな
 
-色は選択・推奨・注意の意味があるときだけ使え。**確度はモノクロバッジ＋線種で表し、意味色を使うな**（confirmed=実線・inferred=破線・unverified=点線）。`request` の ask-kind チップもモノクロにせよ。意味色が出るのは `decision` の選択チップ（選択＝`--accent`）と `decision` の既定案（推奨＝`--positive`）だけである。
+色は選択・推奨・注意の意味があるときだけ使え。**確度はモノクロバッジ＋線種で表し、意味色を使うな**（confirmed=実線・inferred=破線・unverified=点線）。`request` の ask-kind チップもモノクロにせよ。（ask ブロックでは）意味色が出るのは `decision` の選択チップ（選択＝`--accent`）と `decision` の既定案（推奨＝`--positive`）だけである。
 
 **タイプスケール（4）＋行間（2）**
 
