@@ -81,7 +81,7 @@
 
 **v1 描画可能トポロジー（受理条件の fail-closed 化）**: 現行 validation は `ordered-transition` 宣言時のみ循環を禁止し（validation.py:159）、一般の directed-graph では循環・後退エッジ・任意の合流を受理する。これは CSS 中心の spine/branch レイアウトで交差なく描ける範囲を超えるため、canonical flow の受理条件を v1 レイアウト契約に一致させる:
 
-- **前向き制約**: reading order（未指定時はノード宣言順）を線形基準とし、全エッジは source が target より前にあること。後退エッジ・自己ループを禁止 → 循環は宣言 capability に依らず構造的に全面禁止。
+- **前向き制約**: reading order（未指定時はノード宣言順）を線形基準とし、全エッジは source が target より前にあること。後退エッジ・自己ループを禁止 → 循環は宣言 capability に依らず構造的に全面禁止。同一ノード対の並行辺も禁止する（描画の一意性を保つ。関係が複数あるならラベルに併記する）。
 - **分岐/合流上限**: ノードあたり fan-out 最大3・fan-in 最大3。
 - **スキップ接続**: 隣接しないノードへの前向きエッジは許可。renderer が右側レールへ決定論的に割り当て、同時に必要なレール数が3を超える場合は bounded diagnostic（`flow_topology_too_complex`）で fail する。
 - **group 間エッジ**: 前向き制約により自動的に単純化される（前方の group へのみ接続可）。
