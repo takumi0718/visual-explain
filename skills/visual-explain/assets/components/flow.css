@@ -10,6 +10,10 @@
 [data-ve-component="flow"] .ve-flow-arrow { margin: 0 .35rem; color: var(--accent); font-weight: 800; }
 [data-ve-component="flow"] .ve-flow-rel { margin-left: .35rem; color: var(--text-dim); font-size: .85em; }
 [data-ve-component="flow"] .ve-flow-edge-label { margin-left: .35rem; }
+[data-ve-component="flow"] .ve-flow-grouped { display: grid; gap: .6rem; }
+[data-ve-component="flow"] .ve-flow-group { display: grid; gap: .4rem; padding: .5rem .6rem; background: var(--bg); border: 1px solid var(--border); border-radius: .4rem; }
+[data-ve-component="flow"] .ve-flow-group-label { color: var(--text-dim); font-weight: 800; }
+[data-ve-component="flow"] .ve-flow-group-nodes { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0; padding: 0; list-style: none; }
 [data-ve-component="flow"] .ve-flow-notes { margin: .8rem 0 0; padding-left: 1.1rem; color: var(--text-dim); font-size: .9rem; }
 [data-ve-component="flow"] .ve-flow-notes li { margin: .2rem 0; }
 @media (max-width: 42rem) {

@@ -15,6 +15,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from .diagnostics import (
+    ARTIFACT_SEMANTIC_MISMATCH,
     FIXED_REGION_MISMATCH,
     FORBIDDEN_CONTENT_MARKUP,
     INVALID_CONTROLLED_ASSET,
@@ -151,28 +152,50 @@ def validate_content_markup(content_markup: str) -> list[Diagnostic]:
     return parser.diagnostics
 
 
-class _AssetTagCollector(HTMLParser):
+class _StrictSlotParser(HTMLParser):
+    """Consume a controlled slot completely.
+
+    The only permitted content is a sequence of the target asset tag; any other
+    tag, stray non-whitespace text, or comment is recorded as foreign content so
+    the slot cannot smuggle raw JavaScript/CSS or arbitrary HTML past the gate.
+    """
+
     def __init__(self, target: str) -> None:
         super().__init__(convert_charrefs=False)
         self.target = target  # "style" | "script"
-        self.blocks: list[tuple[dict[str, str], list[str]]] = []
-        self._current: list[str] | None = None
+        self.blocks: list[tuple[dict[str, str], str]] = []
+        self.foreign: list[str] = []
+        self._inside = False
         self._attrs: dict[str, str] = {}
+        self._body: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() == self.target:
+        if tag.lower() == self.target and not self._inside:
+            self._inside = True
             self._attrs = {k.lower(): (v or "") for k, v in attrs}
-            self._current = []
+            self._body = []
+        else:
+            self.foreign.append(f"想定外のタグ <{tag}>")
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.foreign.append(f"想定外のタグ <{tag}/>")
 
     def handle_data(self, data: str) -> None:
-        if self._current is not None:
-            self._current.append(data)
+        if self._inside:
+            self._body.append(data)
+        elif data.strip():
+            self.foreign.append("スロット直下に想定外のテキスト")
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == self.target and self._current is not None:
-            self.blocks.append((self._attrs, self._current))
-            self._current = None
+        if tag.lower() == self.target and self._inside:
+            self.blocks.append((self._attrs, "".join(self._body)))
+            self._inside = False
             self._attrs = {}
+            self._body = []
+
+    def handle_comment(self, data: str) -> None:
+        if not self._inside:
+            self.foreign.append("スロット直下に想定外のコメント")
 
 
 def validate_controlled_assets(slots: dict[str, str], registry, components_dir: Path | None) -> list[Diagnostic]:
@@ -184,12 +207,15 @@ def validate_controlled_assets(slots: dict[str, str], registry, components_dir: 
 
 def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, components_dir: Path | None) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    collector = _AssetTagCollector(tag)
+    collector = _StrictSlotParser(tag)
     collector.feed(markup)
     collector.close()
+    # The slot must be whitespace plus allowlisted asset blocks and nothing else.
+    if collector.foreign:
+        diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET,
+                                      f"{slot_type} スロットに許可されない内容があります"))
     seen: set[str] = set()
-    for attrs, body_parts in collector.blocks:
-        body = "".join(body_parts)
+    for attrs, body in collector.blocks:
         component_id = attrs.get("data-ve-component")
         version_raw = attrs.get("data-ve-contract-version")
         asset_id = attrs.get("data-ve-asset")
@@ -254,6 +280,73 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
+class _ArtifactSemanticParser(HTMLParser):
+    """Collect semantic IDs and per-element relationship/association attributes."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.semantic_ids: set[str] = set()
+        self.row_refs: list[str] = []
+        self.col_refs: list[str] = []
+        self.diagnostics: list[Diagnostic] = []
+
+    def _check(self, attrs: list[tuple[str, str | None]]) -> None:
+        d = {k.lower(): (v or "") for k, v in attrs}
+        if "data-ve-semantic-id" in d:
+            self.semantic_ids.add(d["data-ve-semantic-id"])
+        has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
+        if any(has.values()) and not all(has.values()):
+            self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+        has_row = "data-ve-row-id" in d
+        has_col = "data-ve-column-id" in d
+        if has_row != has_col:
+            self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+        if has_row:
+            self.row_refs.append(d.get("data-ve-row-id", ""))
+        if has_col:
+            self.col_refs.append(d.get("data-ve-column-id", ""))
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._check(attrs)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._check(attrs)
+
+    def finish(self) -> None:
+        for ref in self.row_refs:
+            if ref not in self.semantic_ids:
+                self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
+        for ref in self.col_refs:
+            if ref not in self.semantic_ids:
+                self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+
+
+_CANONICAL_SECTION_RE = re.compile(
+    r'<section\b[^>]*data-ve-section-kind="canonical"[^>]*>(.*?)</section>', re.DOTALL)
+
+
+def validate_artifact_semantics(content: str) -> list[Diagnostic]:
+    """Artifact-only static/semantic integrity, usable without an in-memory manifest.
+
+    Verifies flow edge attributes (from/to/relation together), matrix cell
+    associations (row+column together, referencing real headers), and that every
+    canonical section preserves a visible caption and its certainty/source notes.
+    """
+    parser = _ArtifactSemanticParser()
+    parser.feed(content)
+    parser.close()
+    parser.finish()
+    diagnostics = list(parser.diagnostics)
+    for body in _CANONICAL_SECTION_RE.findall(content):
+        if "<figcaption" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
+        if "data-ve-semantic-id=" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
+        if "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
+    return diagnostics
+
+
 def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expected=None,
                          components_dir: Path | None = None) -> list[Diagnostic]:
     """Run the four-layer checker. Legacy documents pass unchanged.
@@ -274,6 +367,7 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
     if "content" in slots:
         diagnostics += validate_content_markup(content)
         diagnostics += validate_final_provenance(content)
+        diagnostics += validate_artifact_semantics(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

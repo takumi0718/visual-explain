@@ -35,10 +35,27 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
     caption_id = f"{ir.id}-caption"
     summary_id = f"{ir.id}-summary"
 
-    node_items = "".join(
-        f'<li data-ve-semantic-id="{_esc(nid)}">{_esc(node_by_id[nid].label)}</li>'
-        for nid in reading_order if nid in node_by_id
-    )
+    def node_li(nid: str) -> str:
+        return f'<li data-ve-semantic-id="{_esc(nid)}">{_esc(node_by_id[nid].label)}</li>'
+
+    if flow.groups:
+        # Grouped list: each declared group carries its own semantic ID and label,
+        # and its nodes preserve the overall reading order. Ungrouped nodes follow.
+        group_parts = []
+        for group in flow.groups:
+            inner = "".join(node_li(nid) for nid in reading_order
+                            if nid in node_by_id and node_by_id[nid].group == group.id)
+            group_parts.append(
+                f'<li class="ve-flow-group" data-ve-semantic-id="{_esc(group.id)}">'
+                f'<span class="ve-flow-group-label">{_esc(group.label)}</span>'
+                f'<ol class="ve-flow-group-nodes">{inner}</ol></li>'
+            )
+        ungrouped = "".join(node_li(nid) for nid in reading_order
+                            if nid in node_by_id and node_by_id[nid].group is None)
+        nodes_block = f'<ol class="ve-flow-nodes ve-flow-grouped">{"".join(group_parts)}{ungrouped}</ol>'
+    else:
+        node_items = "".join(node_li(nid) for nid in reading_order if nid in node_by_id)
+        nodes_block = f'<ol class="ve-flow-nodes">{node_items}</ol>'
 
     edge_items = []
     for edge in flow.edges:
@@ -65,10 +82,10 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
 
     markup = (
         f'<figure data-ve-component="flow" role="group"'
-        f' aria-labelledby="{_esc(caption_id)}" aria-describedby="{_esc(summary_id)}">'
+        f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<figcaption id="{_esc(caption_id)}" class="ve-flow-caption">{_esc(ir.caption)}</figcaption>'
         f'<p id="{_esc(summary_id)}" class="ve-flow-summary">{_esc(ir.accessibility.summary)}</p>'
-        f'<ol class="ve-flow-nodes">{node_items}</ol>'
+        f'{nodes_block}'
         f'<ul class="ve-flow-edges">{"".join(edge_items)}</ul>'
         f'<ul class="ve-flow-notes">{"".join(notes)}</ul>'
         f'</figure>'

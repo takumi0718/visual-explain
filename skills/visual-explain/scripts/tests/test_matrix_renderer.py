@@ -86,6 +86,9 @@ class MatrixMarkupTest(unittest.TestCase):
         self.assertNotIn("a<b>", markup)
         self.assertIn("a&lt;b&gt;", markup)
 
+    def test_accessibility_label_preserved_in_dom(self) -> None:
+        self.assertIn(f'aria-label="{self.ir.accessibility.label}"', self.markup)
+
     def test_no_scripts_or_handlers_or_external(self) -> None:
         self.assertNotIn("<script", self.markup)
         self.assertFalse(re.search(r"\son[a-z]+=", self.markup))

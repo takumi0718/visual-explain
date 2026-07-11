@@ -131,6 +131,9 @@ class FlowMarkupTest(unittest.TestCase):
         self.assertNotIn("<x>", markup)
         self.assertIn("&lt;x&gt;", markup)
 
+    def test_accessibility_label_preserved_in_dom(self) -> None:
+        self.assertIn(f'aria-label="{self.ir.accessibility.label}"', self.markup)
+
     def test_css_namespaced_and_responsive(self) -> None:
         css = (SKILL / "assets" / "components" / "flow.css").read_text("utf-8")
         for line in css.splitlines():
@@ -139,6 +142,44 @@ class FlowMarkupTest(unittest.TestCase):
                 continue
             self.assertTrue(s.startswith('[data-ve-component="flow"]'), f"non-namespaced: {s}")
         self.assertIn("@media", css)
+
+
+class FlowGroupsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        raw = json.loads((TESTS / "component-valid-flow-groups.json").read_text("utf-8"))
+        self.ir = validate_canonical_section(raw["sections"][0]["ir"])
+        self.result = render_flow(CanonicalSection(ir=self.ir), FLOW_DEF)
+        self.markup = self.result.markup
+
+    def test_group_ids_and_labels_in_dom(self) -> None:
+        for group in self.ir.flow.groups:
+            self.assertIn(f'data-ve-semantic-id="{group.id}"', self.markup)
+            self.assertIn(group.label, self.markup)
+
+    def test_all_non_section_consumed_ids_in_dom(self) -> None:
+        for sid in self.result.manifest.consumed_semantic_ids:
+            if sid == self.ir.id:
+                continue
+            self.assertIn(f'data-ve-semantic-id="{sid}"', self.markup)
+
+    def test_grouped_reading_order_preserved(self) -> None:
+        self.assertLess(self.markup.index("gn-draft"), self.markup.index("gn-review"))
+        self.assertLess(self.markup.index("gn-review"), self.markup.index("gn-approve"))
+
+    def test_build_and_check_grouped_flow(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as handle:
+            out = Path(handle.name)
+        try:
+            build = subprocess.run(
+                ["python3", str(SKILL / "scripts" / "build_explainer.py"),
+                 "--assembly", str(TESTS / "component-valid-flow-groups.json"), "--output", str(out)],
+                capture_output=True, text=True)
+            self.assertEqual(build.returncode, 0, build.stderr)
+            check = subprocess.run(["bash", str(SKILL / "scripts" / "check.sh"), str(out)],
+                                   capture_output=True, text=True)
+            self.assertEqual(check.returncode, 0, check.stdout + check.stderr)
+        finally:
+            out.unlink(missing_ok=True)
 
 
 class FlowBuildTest(unittest.TestCase):

@@ -46,6 +46,9 @@ FINAL_CHECK_FAILURE = "final_check_failure"
 MANIFEST_DOM_MISMATCH = "manifest_dom_mismatch"
 MISSING_PROVENANCE = "missing_provenance"
 
+# Round 2 — artifact-only semantic/static integrity of the final DOM.
+ARTIFACT_SEMANTIC_MISMATCH = "artifact_semantic_mismatch"
+
 ALL_CODES = frozenset({
     INVALID_RELATIONSHIP_DECLARATION,
     INVALID_COMPONENT_PAYLOAD,
@@ -73,6 +76,7 @@ ALL_CODES = frozenset({
     FINAL_CHECK_FAILURE,
     MANIFEST_DOM_MISMATCH,
     MISSING_PROVENANCE,
+    ARTIFACT_SEMANTIC_MISMATCH,
 })
 
 

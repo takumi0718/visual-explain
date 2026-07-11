@@ -85,23 +85,96 @@ class LayerOneAndFourSafetyTest(unittest.TestCase):
         self.assertEqual(validate_final_provenance(content), [])
 
 
+DIGEST_A = "a" * 64
+
+
+def _manifest(**overrides) -> RenderManifest:
+    base = dict(
+        component_id="matrix", component_version=1, instance_id="sec-1",
+        consumed_semantic_ids=("sec-1", "row-x"), generated_relationship_ids=(),
+        generated_landmark_ids=("sec-1-caption",), asset_ids=("matrix.css",),
+        asset_digests=(DIGEST_A,), declared_dependencies=(), fallback_mode="static-content")
+    base.update(overrides)
+    return RenderManifest(**base)
+
+
+def _expected(manifest):
+    class Expected:
+        manifests = (manifest,)
+        compatibility = ()
+    return Expected()
+
+
+def _good_dom() -> str:
+    return ('<section data-ve-section-kind="canonical" data-ve-component="matrix"'
+            ' data-ve-contract-version="1" data-ve-instance="sec-1" data-ve-fallback="static-content">'
+            '<figcaption id="sec-1-caption">c</figcaption>'
+            '<span data-ve-semantic-id="row-x"></span></section>')
+
+
+def _good_slots() -> dict:
+    return {"styles": f'<style data-ve-asset="matrix.css" data-ve-digest="{DIGEST_A}"></style>', "scripts": ""}
+
+
 class ManifestToDomTest(unittest.TestCase):
+    def check(self, content, manifest, slots=None):
+        return {d.code for d in check_manifest_to_dom(content, slots or _good_slots(), _expected(manifest))}
+
+    def test_valid_manifest_passes(self) -> None:
+        self.assertEqual(check_manifest_to_dom(_good_dom(), _good_slots(), _expected(_manifest())), [])
+
     def test_missing_semantic_id_is_caught(self) -> None:
-        manifest = RenderManifest(
-            component_id="matrix", component_version=1, instance_id="sec-1",
-            consumed_semantic_ids=("sec-1", "row-x"), generated_relationship_ids=(),
-            generated_landmark_ids=(), asset_ids=(), asset_digests=(),
-            declared_dependencies=(), fallback_mode="static-content")
+        dom = _good_dom().replace('<span data-ve-semantic-id="row-x"></span>', "")
+        self.assertIn("manifest_dom_mismatch", self.check(dom, _manifest()))
 
-        class Expected:
-            manifests = (manifest,)
-            compatibility = ()
+    def test_missing_landmark_is_caught(self) -> None:
+        dom = _good_dom().replace('id="sec-1-caption"', 'id="other"')
+        self.assertIn("manifest_dom_mismatch", self.check(dom, _manifest()))
 
-        content = '<section data-ve-instance="sec-1"><span data-ve-semantic-id="row-x"></span></section>'
-        self.assertEqual(check_manifest_to_dom(content, {}, Expected()), [])
-        missing = '<section data-ve-instance="sec-1"></section>'
-        codes = {d.code for d in check_manifest_to_dom(missing, {}, Expected())}
-        self.assertIn("manifest_dom_mismatch", codes)
+    def test_component_mismatch_is_caught(self) -> None:
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_id="flow")))
+
+    def test_version_mismatch_is_caught(self) -> None:
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_version=2)))
+
+    def test_fallback_mismatch_is_caught(self) -> None:
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(fallback_mode="degrade")))
+
+    def test_missing_asset_digest_is_caught(self) -> None:
+        slots = {"styles": '<style data-ve-asset="matrix.css" data-ve-digest="ffff"></style>', "scripts": ""}
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(), slots))
+
+    def test_missing_dependency_is_caught(self) -> None:
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(declared_dependencies=("dep.css",))))
+
+
+class ArtifactSemanticTest(unittest.TestCase):
+    """Standalone (expected=None) checking is artifact-semantic."""
+
+    def diags(self, doc: str) -> set[str]:
+        return {d.code for d in check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)}
+
+    def test_valid_flow_artifact_passes(self) -> None:
+        doc = build("component-valid-flow.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_removed_flow_from_attribute_fails(self) -> None:
+        doc = build("component-valid-flow.json").replace(' data-ve-from="node-draft"', "", 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_removed_flow_relation_attribute_fails(self) -> None:
+        doc = build("component-valid-flow.json").replace(' data-ve-relation="ordered-transition"', "", 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_matrix_cell_missing_column_association_fails(self) -> None:
+        doc = build("component-valid-matrix.json").replace(' data-ve-column-id="col-read"', "", 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_removed_figcaption_fails(self) -> None:
+        import re
+        doc = build("component-valid-matrix.json")
+        doc = re.sub(r"<figcaption[^>]*>.*?</figcaption>", "", doc, count=1, flags=re.DOTALL)
+        self.assertIn("artifact_semantic_mismatch", self.diags(doc))
 
 
 class StaticFirstTest(unittest.TestCase):

@@ -65,7 +65,7 @@ def render_matrix(section: CanonicalSection, definition) -> RenderResult:
 
     markup = (
         f'<figure data-ve-component="matrix" role="group"'
-        f' aria-labelledby="{_esc(caption_id)}" aria-describedby="{_esc(summary_id)}">'
+        f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<figcaption id="{_esc(caption_id)}" class="ve-matrix-caption">{_esc(ir.caption)}</figcaption>'
         f'<p id="{_esc(summary_id)}" class="ve-matrix-summary">{_esc(ir.accessibility.summary)}</p>'
         f'<div class="ve-matrix-scroll">'

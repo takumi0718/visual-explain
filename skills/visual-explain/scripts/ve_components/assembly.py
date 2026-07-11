@@ -62,14 +62,50 @@ def _attr(value: str) -> str:
 
 
 def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
-    """Render one canonical section and wrap it with provenance data attributes."""
+    """Render one canonical section, verifying the renderer at the trust boundary.
+
+    Renderer-reported diagnostics, undeclared emitted assets, and any manifest
+    claim that disagrees with the resolved component (id/version/instance, asset
+    ids/digests, fallback) are canonical-render failures — never silently
+    filtered or trusted.
+    """
     component = resolved.component
     result = resolved.renderer(section, component)
+    failures: list[Diagnostic] = []
+
+    if result.diagnostics:
+        for item in result.diagnostics:
+            failures.append(item if isinstance(item, Diagnostic)
+                            else Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' が診断を報告: {item}"))
     if not isinstance(result.markup, str) or not result.markup.strip():
-        raise ContractError([Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' が空の markup を返しました")])
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' が空の markup を返しました"))
+
+    manifest = result.manifest
+    if (manifest.component_id != component.id or manifest.component_version != component.version
+            or manifest.instance_id != section.ir.id):
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の manifest identity が不一致です"))
+    if not isinstance(manifest.fallback_mode, str) or not manifest.fallback_mode.strip():
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の fallback が未宣言です"))
+
+    style_ids = {a.id for a in component.assets if a.slot == "styles"}
+    script_ids = {a.id for a in component.assets if a.slot == "scripts"}
+    declared = set(result.style_asset_ids) | set(result.script_asset_ids)
+    if not set(result.style_asset_ids) <= style_ids or not set(result.script_asset_ids) <= script_ids:
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' が未宣言のアセットを出力しました"))
+    if set(manifest.asset_ids) != declared:
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の manifest asset ids が宣言と不一致です"))
+    digest_by_id = {a.id: a.digest for a in component.assets}
+    for aid, adig in zip(manifest.asset_ids, manifest.asset_digests):
+        if digest_by_id.get(aid) != adig:
+            failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の manifest digest が不一致です: {aid}"))
+
+    if failures:
+        raise ContractError(failures)
+
     wrapper = (
         f'<section data-ve-section-kind="canonical" data-ve-component="{_attr(component.id)}"'
-        f' data-ve-contract-version="{component.version}" data-ve-instance="{_attr(section.ir.id)}">\n'
+        f' data-ve-contract-version="{component.version}" data-ve-instance="{_attr(section.ir.id)}"'
+        f' data-ve-fallback="{_attr(manifest.fallback_mode)}">\n'
         f'{result.markup}\n</section>'
     )
     style_assets = tuple(
@@ -82,7 +118,7 @@ def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
     )
     return RenderedCanonical(
         instance_id=section.ir.id, markup=wrapper,
-        style_assets=style_assets, script_assets=script_assets, manifest=result.manifest,
+        style_assets=style_assets, script_assets=script_assets, manifest=manifest,
     )
 
 

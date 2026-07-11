@@ -33,10 +33,11 @@ def _figure(ir, component_id: str, digest: str, asset_id: str) -> RenderResult:
     consumed = ir.semantic_ids()
     body = "".join(f'<li data-ve-semantic-id="{esc(sid)}">{esc(sid)}</li>' for sid in consumed)
     markup = (
-        f'<figure data-ve-component="{component_id}" aria-label="{esc(ir.accessibility.label)}">'
+        f'<figure data-ve-component="{component_id}" id="{esc(ir.id)}-figure" aria-label="{esc(ir.accessibility.label)}">'
         f'<figcaption>{esc(ir.caption)}</figcaption>'
         f'<ul>{body}</ul>'
-        f'<p class="evidence">{esc(ir.sources[0].label)}</p></figure>'
+        f'<ul class="ve-{component_id}-notes"><li data-ve-semantic-id="{esc(ir.sources[0].id)}">{esc(ir.sources[0].label)}</li></ul>'
+        f'</figure>'
     )
     manifest = RenderManifest(
         component_id=component_id, component_version=1, instance_id=ir.id,
@@ -184,6 +185,59 @@ class FailureTest(unittest.TestCase):
         # An empty registry yields no candidates → no_matching_component, no output.
         with self.assertRaises(ContractError):
             build_document(raw, Registry(registry_version=1, components=()), MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp)
+
+
+class RendererTrustBoundaryTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        MixedAssemblyTest.setUpClass()
+        cls.registry = MixedAssemblyTest.registry
+        cls.tmp = MixedAssemblyTest.tmp
+        cls.digest = MixedAssemblyTest.matrix_digest
+
+    def _raw(self) -> dict:
+        return json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+
+    def _build(self, renderer) -> str:
+        return build_document(self._raw(), self.registry, {"matrix@1": renderer}, SKELETON, self.tmp)
+
+    def _good(self, section):
+        return _figure(section.ir, "matrix", self.digest, "matrix.css")
+
+    def test_renderer_diagnostics_fail_build(self) -> None:
+        import dataclasses
+        from ve_components.diagnostics import Diagnostic
+        def bad(section, component):
+            base = self._good(section)
+            return dataclasses.replace(base, diagnostics=(Diagnostic("renderer_failure", "renderer が問題を報告"),))
+        with self.assertRaises(ContractError):
+            self._build(bad)
+
+    def test_undeclared_style_asset_fails_build(self) -> None:
+        import dataclasses
+        def bad(section, component):
+            base = self._good(section)
+            return dataclasses.replace(base, style_asset_ids=("ghost.css",))
+        with self.assertRaises(ContractError):
+            self._build(bad)
+
+    def test_manifest_component_mismatch_fails_build(self) -> None:
+        import dataclasses
+        def bad(section, component):
+            base = self._good(section)
+            bogus = dataclasses.replace(base.manifest, component_id="flow")
+            return dataclasses.replace(base, manifest=bogus)
+        with self.assertRaises(ContractError):
+            self._build(bad)
+
+    def test_manifest_asset_ids_disagree_with_declared_fails(self) -> None:
+        import dataclasses
+        def bad(section, component):
+            base = self._good(section)
+            bogus = dataclasses.replace(base.manifest, asset_ids=("matrix.css", "phantom.css"))
+            return dataclasses.replace(base, manifest=bogus)
+        with self.assertRaises(ContractError):
+            self._build(bad)
 
 
 if __name__ == "__main__":

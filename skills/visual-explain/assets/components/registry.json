@@ -38,7 +38,7 @@
       "checkerRules": ["static-content", "semantic-ids", "flow-edges", "escaping", "no-external-reference", "responsive-order"],
       "renderer": "flow@1",
       "assets": [
-        {"id": "flow.css", "slot": "styles", "path": "flow.css", "digest": "09ee13c4f81761542f65c67be19c5e387b30c38e20d82df4116a504831763bee"}
+        {"id": "flow.css", "slot": "styles", "path": "flow.css", "digest": "2e58c3c4def82c34b92f01c0b88b129630ab8bffd345d282fe956ef63032f5ad"}
       ]
     }
   ]
