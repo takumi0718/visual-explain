@@ -10,7 +10,7 @@
 - [x] 6. digests `8a45af59cbe466a0902044aa0e91744186a8ba1766cd28e427f2819774ff227e` (pyramid), `8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe` (stairs)
 - [x] 7. `TRUSTED_RENDERERS["pyramid@1"]` + `["stairs@1"]`
 - [x] 8. registry entries + `pyramid-structure` + `stairs-structure` checker rules
-- [x] 9. four-layer checks + bad fixtures (JSON + bad structure HTML ×2)
+- [x] 9. four-layer checks + bad fixtures (JSON + bad structure HTML ×10)
 - [x] 10. build + full pytest + `check.sh --selftest` + docs sync
 
 ## S3 pyramid + stairs specifics
@@ -23,7 +23,7 @@
 
 ```text
 $ cd skills/visual-explain/scripts && python3 -m pytest tests -q
-361 passed, 97 subtests passed in ~3.9s
+371 passed, 97 subtests passed in ~3.6s
 
 $ python3 build_explainer.py --assembly tests/component-valid-pyramid.json --output tests/pyramid-doc.html
 OK: tests/pyramid-doc.html

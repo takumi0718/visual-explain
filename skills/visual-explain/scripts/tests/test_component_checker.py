@@ -239,6 +239,64 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
         self.assertIn("pyramid の下位層は ve-pyramid-face-dim のみである必要があります", messages)
 
+    def test_pyramid_count_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-count-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid のコンテナは ve-pyramid-count-4 である必要があります", messages)
+
+    def test_pyramid_index_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-index-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid の層 2 は ve-pyramid-index-2 を1つだけ持つ必要があります", messages)
+
+    def test_pyramid_face_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-face-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
+
+    def test_stairs_count_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-count-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("stairs のコンテナは ve-stairs-count-5 である必要があります", messages)
+
+    def test_stairs_index_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-index-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("stairs の段 2 は ve-stairs-index-2 を1つだけ持つ必要があります", messages)
+
+    def test_stairs_empty_note_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-empty-note.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "current 段の ve-stairs-note に可視テキストがありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_stairs_accent_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-accent-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("stairs の tread クラスは ve-stairs-tread-accent のみ許可されます", messages)
+
+    def test_stairs_note_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-note-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-enumeration-missing-semantic-id.html").read_text("utf-8")
