@@ -198,6 +198,11 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = build("component-valid-chevron-loop.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
 
+    def test_vertical_loop_with_horizontal_literal_in_prose_passes(self) -> None:
+        doc = build("component-valid-chevron-loop.json")
+        self.assertIn("ve-chevron-horizontal", doc)
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
     def test_valid_chevron_horizontal_artifact_passes(self) -> None:
         doc = build("component-valid-chevron-horizontal.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))

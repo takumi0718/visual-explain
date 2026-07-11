@@ -7,7 +7,7 @@
 - [x] 3. No new common IR fields — payload dispatch addition only
 - [x] 4. `renderers/chevron.py` + manifest consumes all semantic IDs
 - [x] 5. `assets/components/chevron.css` (tokens only, clip-path chevron shapes)
-- [x] 6. digest `61b562e8f7c7fdc990c4c44002ddb858a761f4f6212ed64ea7211c3ef407bd68`
+- [x] 6. digest `63ae328170721f396b232a1ad2201b4649cbac690a8fc5a697cb641c39d42b4f`
 - [x] 7. `TRUSTED_RENDERERS["chevron@1"]`
 - [x] 8. registry entry + `chevron-structure` checker rule
 - [x] 9. four-layer checks + bad fixtures (JSON + `component-bad-chevron-structure.html`)
@@ -17,14 +17,15 @@
 
 - Vertical centered layout + optional loop rail (renderer-owned, no `data-ve-from/to`)
 - Visually-hidden sentence for last→first step labels when `loop: true`
-- Horizontal arrow chevrons; narrow screens stack vertically
+- Horizontal arrow chevrons with right-center tip + left notch (`clip-path`); narrow screens stack vertically
+- Loop rail aligned to centered column; upward arrowhead toward first step (last→first)
 - `loop:true` ⇔ `closed-loop` capability; `linear-sequence` always required
 
 ## Test evidence
 
 ```text
 $ cd skills/visual-explain/scripts && python3 -m pytest tests -q
-305 passed, 88 subtests passed in ~3.0s
+317 passed, 92 subtests passed in ~3.2s
 
 $ python3 build_explainer.py --assembly tests/component-valid-chevron-loop.json --output tests/chevron-doc.html
 OK: tests/chevron-doc.html

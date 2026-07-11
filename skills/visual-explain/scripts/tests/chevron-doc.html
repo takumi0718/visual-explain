@@ -205,10 +205,13 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="chevron" data-ve-contract-version="1" data-ve-asset="chevron.css" data-ve-digest="61b562e8f7c7fdc990c4c44002ddb858a761f4f6212ed64ea7211c3ef407bd68">[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+  <style data-ve-component="chevron" data-ve-contract-version="1" data-ve-asset="chevron.css" data-ve-digest="63ae328170721f396b232a1ad2201b4649cbac690a8fc5a697cb641c39d42b4f">[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
 [data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
 [data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
 [data-ve-component="chevron"] .ve-chevron-body { position: relative; }
+[data-ve-component="chevron"] .ve-chevron-centered-column {
+  position: relative; width: fit-content; margin-inline: auto;
+}
 [data-ve-component="chevron"] .ve-chevron-steps { list-style: none; margin: 0; padding: 0; }
 [data-ve-component="chevron"] .ve-chevron-centered { width: fit-content; margin-inline: auto; }
 [data-ve-component="chevron"] .ve-chevron-step {
@@ -217,23 +220,26 @@
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1rem), 50% 100%, 0 calc(100% - 1rem));
 }
 [data-ve-component="chevron"] .ve-chevron-horizontal {
-  display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 0; justify-content: center;
 }
 [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
   flex: 1 1 8rem; min-width: 6rem; max-width: 12rem; margin: 0;
-  clip-path: polygon(0.75rem 0, 100% 0, 100% 100%, 0 100%, 0 50%, 0.75rem 0);
+  clip-path: polygon(0.75rem 0, calc(100% - 0.75rem) 0, 100% 50%, calc(100% - 0.75rem) 100%, 0.75rem 100%, 0 50%);
+}
+[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
+  margin-left: -0.75rem;
 }
 [data-ve-component="chevron"] .ve-chevron-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
 [data-ve-component="chevron"] .ve-chevron-label,
 [data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
 [data-ve-component="chevron"] .ve-chevron-description { margin: var(--space-1) 0 0; padding-left: var(--space-2); font-size: var(--fs-small); }
 [data-ve-component="chevron"] .ve-chevron-loop-rail {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 0.5rem;
+  position: absolute; left: calc(-1 * var(--space-2)); top: 0; bottom: 0; width: 0.5rem;
   border-left: 2px solid var(--text-dim);
 }
 [data-ve-component="chevron"] .ve-chevron-loop-rail::after {
-  content: ""; position: absolute; left: -0.35rem; bottom: 0;
-  border: 0.35rem solid transparent; border-top-color: var(--text-dim);
+  content: ""; position: absolute; left: -0.35rem; top: 0;
+  border: 0.35rem solid transparent; border-bottom-color: var(--text-dim);
 }
 [data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
 [data-ve-component="chevron"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
@@ -315,7 +321,7 @@
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section data-ve-section-kind="canonical" data-ve-component="chevron" data-ve-contract-version="1" data-ve-instance="sec-chevron-loop" data-ve-fallback="static-content">
-<figure data-ve-component="chevron" role="group" aria-label="改善サイクルのチェブロン" aria-describedby="sec-chevron-loop-summary"><figcaption id="sec-chevron-loop-caption" class="ve-chevron-caption">改善サイクルの3段</figcaption><p id="sec-chevron-loop-summary" class="ve-chevron-summary">ラベル付き3段と最終段から先頭段への戻りを示す。</p><div class="ve-chevron-body"><div class="ve-chevron-loop-rail" aria-hidden="true"></div><ol class="ve-chevron-steps ve-chevron-centered"><li class="ve-chevron-step" data-ve-semantic-id="step-measure"><span class="ve-chevron-label">計測</span></li><li class="ve-chevron-step" data-ve-semantic-id="step-evaluate"><span class="ve-chevron-label">評価</span></li><li class="ve-chevron-step" data-ve-semantic-id="step-improve"><span class="ve-chevron-label">改善</span></li></ol><ul class="ve-chevron-loop-sentence visually-hidden"><li>最終段〈改善〉から先頭段〈計測〉へ戻る</li></ul></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-loop"><strong>推定:</strong> サイクルは四半期ごとに回す想定。</li><li data-ve-semantic-id="src-pdca"><strong>出典 PDCA ガイド</strong>（計測・評価・改善の反復。）</li></ul></figure>
+<figure data-ve-component="chevron" role="group" aria-label="改善サイクルのチェブロン" aria-describedby="sec-chevron-loop-summary"><figcaption id="sec-chevron-loop-caption" class="ve-chevron-caption">改善サイクルの3段</figcaption><p id="sec-chevron-loop-summary" class="ve-chevron-summary">ラベル付き3段と最終段から先頭段への戻りを示す。</p><div class="ve-chevron-body"><div class="ve-chevron-centered-column"><div class="ve-chevron-loop-rail" aria-hidden="true"></div><ol class="ve-chevron-steps ve-chevron-centered"><li class="ve-chevron-step" data-ve-semantic-id="step-measure"><span class="ve-chevron-label">計測</span></li><li class="ve-chevron-step" data-ve-semantic-id="step-evaluate"><span class="ve-chevron-label">評価</span></li><li class="ve-chevron-step" data-ve-semantic-id="step-improve"><span class="ve-chevron-label">改善</span></li></ol><ul class="ve-chevron-loop-sentence visually-hidden"><li>最終段〈改善〉から先頭段〈計測〉へ戻る</li></ul></div></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-loop"><strong>推定:</strong> サイクルは四半期ごとに回す想定。</li><li data-ve-semantic-id="src-pdca"><strong>出典 PDCA ガイド</strong>（計測・評価・改善の反復（ve-chevron-horizontal は横型専用）。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

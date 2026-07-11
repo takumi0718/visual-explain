@@ -60,6 +60,7 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
 
     loop_rail = ""
     loop_sentence = ""
+    body_inner = list_markup
     if chevron.loop and chevron.orientation == "vertical":
         loop_rail = '<div class="ve-chevron-loop-rail" aria-hidden="true"></div>'
         last_label = chevron.steps[-1].label or ""
@@ -68,6 +69,9 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
             f'<ul class="ve-chevron-loop-sentence visually-hidden">'
             f'<li>最終段〈{_esc(last_label)}〉から先頭段〈{_esc(first_label)}〉へ戻る</li>'
             f'</ul>'
+        )
+        body_inner = (
+            f'<div class="ve-chevron-centered-column">{loop_rail}{list_markup}{loop_sentence}</div>'
         )
 
     notes = []
@@ -93,7 +97,7 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<figcaption id="{_esc(caption_id)}" class="ve-chevron-caption">{_esc(ir.caption)}</figcaption>'
         f'<p id="{_esc(summary_id)}" class="ve-chevron-summary">{_esc(ir.accessibility.summary)}{annotation_note}</p>'
-        f'<div class="ve-chevron-body">{loop_rail}{list_markup}{loop_sentence}</div>'
+        f'<div class="ve-chevron-body">{body_inner}</div>'
         f'<ul class="ve-chevron-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )

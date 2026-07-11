@@ -177,6 +177,56 @@ class ChevronValidationTest(unittest.TestCase):
         )
         expect_violation(ir)
 
+    def test_vertical_description_accepts_one_line(self) -> None:
+        ir = _base_ir(steps=[
+            {"id": "s1", "title": "A", "description": ["一行のみ"]},
+            {"id": "s2", "title": "B", "description": ["一行のみ"]},
+        ])
+        validate_raw(ir)
+
+    def test_vertical_description_accepts_three_lines(self) -> None:
+        ir = _base_ir(steps=[
+            {"id": "s1", "title": "A", "description": ["行1", "行2", "行3"]},
+            {"id": "s2", "title": "B", "description": ["行1", "行2", "行3"]},
+        ])
+        validate_raw(ir)
+
+    def test_vertical_description_rejects_four_lines(self) -> None:
+        ir = _base_ir(steps=[
+            {"id": "s1", "title": "A", "description": ["行1", "行2", "行3", "行4"]},
+            {"id": "s2", "title": "B", "description": ["短"]},
+        ])
+        expect_violation(ir)
+
+    def test_horizontal_description_accepts_two_lines(self) -> None:
+        ir = _base_ir(
+            orientation="horizontal",
+            steps=[
+                {"id": "s1", "description": ["行1", "行2"]},
+                {"id": "s2", "description": ["行1", "行2"]},
+                {"id": "s3", "description": ["行1", "行2"]},
+            ],
+        )
+        validate_raw(ir)
+
+    def test_horizontal_description_rejects_three_lines(self) -> None:
+        ir = _base_ir(
+            orientation="horizontal",
+            steps=[
+                {"id": "s1", "description": ["行1", "行2", "行3"]},
+                {"id": "s2", "description": ["短"]},
+                {"id": "s3", "description": ["短"]},
+            ],
+        )
+        expect_violation(ir)
+
+    def test_rejects_gap_in_descriptions(self) -> None:
+        ir = _base_ir(steps=[
+            {"id": "s1", "title": "A", "description": ["あり"]},
+            {"id": "s2", "title": "B"},
+        ])
+        expect_violation(ir)
+
 
 class ChevronManifestTest(unittest.TestCase):
     def test_registry_entry_is_complete(self) -> None:
@@ -223,6 +273,32 @@ class ChevronMarkupTest(unittest.TestCase):
         self.assertEqual(len(rails), 1)
         self.assertNotIn("data-ve-from", markup)
         self.assertNotIn("data-ve-to", markup)
+
+    def test_loop_wraps_centered_column_for_rail_alignment(self) -> None:
+        _, result = render_fixture("component-valid-chevron-loop.json")
+        self.assertIn("ve-chevron-centered-column", result.markup)
+        self.assertRegex(
+            result.markup,
+            r'<div class="ve-chevron-centered-column">.*?ve-chevron-loop-rail.*?ve-chevron-steps',
+            re.DOTALL,
+        )
+
+    def test_loop_rail_css_points_arrowhead_upward(self) -> None:
+        css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
+        self.assertIn(".ve-chevron-loop-rail::after", css)
+        after_block = css.split(".ve-chevron-loop-rail::after")[1].split("}")[0]
+        self.assertIn("top: 0", after_block)
+        self.assertIn("border-bottom-color", after_block)
+        self.assertNotIn("border-top-color", after_block)
+
+    def test_horizontal_clip_path_has_right_tip_and_left_notch(self) -> None:
+        css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
+        horiz_block = css.split(".ve-chevron-horizontal .ve-chevron-step {")[1].split("}")[0]
+        self.assertIn("clip-path: polygon(", horiz_block)
+        self.assertIn("100% 50%", horiz_block)
+        self.assertIn("0 50%", horiz_block)
+        self.assertIn("calc(100% - 0.75rem)", horiz_block)
+        self.assertIn("0.75rem 0", horiz_block)
 
     def test_loop_adds_visually_hidden_last_to_first_sentence(self) -> None:
         ir, result = render_fixture("component-valid-chevron-loop.json")

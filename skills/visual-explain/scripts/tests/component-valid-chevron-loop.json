@@ -24,7 +24,7 @@
           {"id": "cert-loop", "level": "inferred", "statement": "サイクルは四半期ごとに回す想定。"}
         ],
         "sources": [
-          {"id": "src-pdca", "label": "PDCA ガイド", "detail": "計測・評価・改善の反復。"}
+          {"id": "src-pdca", "label": "PDCA ガイド", "detail": "計測・評価・改善の反復（ve-chevron-horizontal は横型専用）。"}
         ],
         "accessibility": {
           "label": "改善サイクルのチェブロン",
