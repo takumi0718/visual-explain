@@ -1,21 +1,21 @@
-[data-ve-component="flow"] { display: block; min-width: 0; margin: 1.5rem 0; }
-[data-ve-component="flow"] .ve-flow-caption { margin: 0 0 .25rem; font-weight: 700; font-size: 1.1rem; }
-[data-ve-component="flow"] .ve-flow-summary { margin: 0 0 .75rem; color: var(--text-dim); }
-[data-ve-component="flow"] .ve-flow-nodes { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0 0 .9rem; padding: 0; list-style: none; }
-[data-ve-component="flow"] .ve-flow-nodes li { min-width: 0; padding: .55rem .8rem; background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font-weight: 700; }
+[data-ve-component="flow"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="flow"] .ve-flow-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); }
+[data-ve-component="flow"] .ve-flow-summary { margin: 0 0 var(--space-2); color: var(--text-dim); }
+[data-ve-component="flow"] .ve-flow-nodes { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: 0 0 var(--space-2); padding: 0; list-style: none; }
+[data-ve-component="flow"] .ve-flow-nodes li { min-width: 0; padding: var(--space-1) var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font-weight: 700; }
 [data-ve-component="flow"] .ve-flow-nodes li::before { content: counter(ve-flow-step) ". "; counter-increment: ve-flow-step; color: var(--text-dim); font-weight: 800; }
 [data-ve-component="flow"] .ve-flow-nodes { counter-reset: ve-flow-step; }
-[data-ve-component="flow"] .ve-flow-edges { margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
-[data-ve-component="flow"] .ve-flow-edges li { min-width: 0; padding: .55rem .75rem; background: var(--surface); border: 1px solid var(--border); border-left: .25rem solid var(--accent); border-radius: .4rem; }
-[data-ve-component="flow"] .ve-flow-arrow { margin: 0 .35rem; color: var(--accent); font-weight: 800; }
-[data-ve-component="flow"] .ve-flow-rel { margin-left: .35rem; color: var(--text-dim); font-size: .85em; }
-[data-ve-component="flow"] .ve-flow-edge-label { margin-left: .35rem; }
-[data-ve-component="flow"] .ve-flow-grouped { display: grid; gap: .6rem; }
-[data-ve-component="flow"] .ve-flow-group { display: grid; gap: .4rem; padding: .5rem .6rem; background: var(--bg); border: 1px solid var(--border); border-radius: .4rem; }
+[data-ve-component="flow"] .ve-flow-edges { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
+[data-ve-component="flow"] .ve-flow-edges li { min-width: 0; padding: var(--space-1) var(--space-2); background: var(--surface); border: 1px solid var(--border); border-left: .25rem solid var(--border-strong); border-radius: .4rem; }
+[data-ve-component="flow"] .ve-flow-arrow { margin: 0 var(--space-1); color: var(--text-dim); font-weight: 800; }
+[data-ve-component="flow"] .ve-flow-rel { margin-left: var(--space-1); color: var(--text-dim); font-size: .85em; }
+[data-ve-component="flow"] .ve-flow-edge-label { margin-left: var(--space-1); }
+[data-ve-component="flow"] .ve-flow-grouped { display: grid; gap: var(--space-1); }
+[data-ve-component="flow"] .ve-flow-group { display: grid; gap: var(--space-1); padding: var(--space-1); background: var(--bg); border: 1px solid var(--border); border-radius: .4rem; }
 [data-ve-component="flow"] .ve-flow-group-label { color: var(--text-dim); font-weight: 800; }
-[data-ve-component="flow"] .ve-flow-group-nodes { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0; padding: 0; list-style: none; }
-[data-ve-component="flow"] .ve-flow-notes { margin: .8rem 0 0; padding-left: 1.1rem; color: var(--text-dim); font-size: .9rem; }
-[data-ve-component="flow"] .ve-flow-notes li { margin: .2rem 0; }
+[data-ve-component="flow"] .ve-flow-group-nodes { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+[data-ve-component="flow"] .ve-flow-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="flow"] .ve-flow-notes li { margin: 0; }
 @media (max-width: 42rem) {
   [data-ve-component="flow"] .ve-flow-nodes { flex-direction: column; }
 }
