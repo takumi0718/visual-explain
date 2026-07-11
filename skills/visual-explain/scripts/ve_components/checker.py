@@ -295,6 +295,9 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
 # The ``<ol>`` classes under which the trusted flow renderer emits node list
 # items (ungrouped list, grouped outer list, and grouped inner list).
 _NODE_LIST_CLASSES = frozenset({"ve-flow-nodes", "ve-flow-group-nodes"})
+# The class the trusted flow renderer stamps on every node ``<li>`` and nothing
+# else. Recognized nodes are bound to this exact shape.
+_NODE_CLASS = "ve-flow-node"
 # HTML void elements never nest children, so they must not stay on the open
 # element stack and pollute ancestor lookups.
 _VOID_TAGS = frozenset({
@@ -313,10 +316,13 @@ def _class_tokens(attrs: list[tuple[str, str | None]]) -> frozenset[str]:
 class _DomSemanticParser(HTMLParser):
     """Collect node IDs, edges, semantic IDs, and cell associations from a fragment.
 
-    Node identity is structural, not attribute-only: a real renderer node is a
-    node-list ``<li>`` whose non-empty ``data-ve-node-id`` equals its own
-    ``data-ve-semantic-id``. Arbitrary elements — or node-shaped ``<li>`` outside
-    the flow's node list — never count, so they cannot anchor an edge endpoint.
+    Node identity is bound to the renderer's exact node-element shape: a real
+    node is an ``<li class="ve-flow-node">`` that is a DIRECT child of a flow
+    node list (``ol.ve-flow-nodes`` / ``ol.ve-flow-group-nodes``) and whose
+    non-empty ``data-ve-node-id`` equals its own ``data-ve-semantic-id``.
+    Arbitrary elements, node-shaped ``<li>`` outside the node list, and
+    attribute-only ``<li>`` injected into a node list all fail this shape and so
+    can never anchor an edge endpoint.
     """
 
     def __init__(self) -> None:
@@ -330,11 +336,11 @@ class _DomSemanticParser(HTMLParser):
         self.cell_incomplete = False
         self._stack: list[tuple[str, frozenset[str]]] = []
 
-    def _in_node_list(self) -> bool:
-        for tag, classes in reversed(self._stack):
-            if tag == "ol":
-                return bool(classes & _NODE_LIST_CLASSES)
-        return False
+    def _direct_parent_is_node_list(self) -> bool:
+        if not self._stack:
+            return False
+        tag, classes = self._stack[-1]
+        return tag == "ol" and bool(classes & _NODE_LIST_CLASSES)
 
     def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         d = {k.lower(): (v or "") for k, v in attrs}
@@ -342,7 +348,8 @@ class _DomSemanticParser(HTMLParser):
             self.semantic_ids.add(d["data-ve-semantic-id"])
         node_id = d.get("data-ve-node-id")
         if (tag == "li" and node_id and d.get("data-ve-semantic-id") == node_id
-                and self._in_node_list()):
+                and _NODE_CLASS in _class_tokens(attrs)
+                and self._direct_parent_is_node_list()):
             self.node_ids.add(node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):

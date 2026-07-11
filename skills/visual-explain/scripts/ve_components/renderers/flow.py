@@ -36,7 +36,10 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
     summary_id = f"{ir.id}-summary"
 
     def node_li(nid: str) -> str:
-        return (f'<li data-ve-semantic-id="{_esc(nid)}" data-ve-node-id="{_esc(nid)}">'
+        # The ve-flow-node class marks this as a genuine renderer node element.
+        # The artifact checker binds recognized nodes to this exact shape so an
+        # arbitrary node-list child cannot masquerade as an endpoint target.
+        return (f'<li class="ve-flow-node" data-ve-semantic-id="{_esc(nid)}" data-ve-node-id="{_esc(nid)}">'
                 f'{_esc(node_by_id[nid].label)}</li>')
 
     if flow.groups:

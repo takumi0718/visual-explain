@@ -235,6 +235,18 @@ class ArtifactSemanticTest(unittest.TestCase):
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
+    def test_flow_endpoint_rejects_matching_li_injected_into_node_list(self) -> None:
+        # An <li> with matching attributes injected DIRECTLY inside the flow's
+        # node list must still not count as a node: recognized nodes are bound to
+        # the renderer's exact node-element shape (its node class), so an
+        # arbitrary node-list child cannot become an endpoint target.
+        doc = build("component-valid-flow.json")
+        tampered = doc.replace(
+            '<ol class="ve-flow-nodes">',
+            '<ol class="ve-flow-nodes"><li data-ve-node-id="ghost" data-ve-semantic-id="ghost">Ghost</li>', 1,
+        ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
     def test_flow_endpoint_cannot_reference_node_in_other_flow(self) -> None:
         # Two canonical flow sections; an edge in the first references a real
         # node of the second. Endpoint identity is scoped per canonical flow, so
