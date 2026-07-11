@@ -214,6 +214,40 @@ class ArtifactSemanticTest(unittest.TestCase):
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
+    def test_flow_endpoint_rejects_arbitrary_matching_attributes(self) -> None:
+        # A non-node element carrying data-ve-node-id AND an equal
+        # data-ve-semantic-id must still NOT count as a node: only a real
+        # renderer node element (a node-list <li>) may anchor an endpoint.
+        doc = build("component-valid-flow.json")
+        tampered = doc.replace(
+            '<ul class="ve-flow-edges">',
+            '<ul class="ve-flow-edges"><span data-ve-node-id="ghost" data-ve-semantic-id="ghost"></span>', 1,
+        ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_flow_endpoint_rejects_matching_li_outside_node_list(self) -> None:
+        # Even an <li> with matching attributes counts only inside the flow's
+        # node list; an <li> smuggled into the edge list is not a real node.
+        doc = build("component-valid-flow.json")
+        tampered = doc.replace(
+            '<ul class="ve-flow-edges">',
+            '<ul class="ve-flow-edges"><li data-ve-node-id="ghost" data-ve-semantic-id="ghost"></li>', 1,
+        ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_flow_endpoint_cannot_reference_node_in_other_flow(self) -> None:
+        # Two canonical flow sections; an edge in the first references a real
+        # node of the second. Endpoint identity is scoped per canonical flow, so
+        # this must fail.
+        from ve_components.checker import validate_artifact_semantics
+        doc = build("component-valid-flow.json")
+        content = doc.split("VE-CONTROLLED:CONTENT:BEGIN -->")[1].split("<!-- VE-CONTROLLED:CONTENT:END")[0]
+        second = content.replace("node-draft", "n2-draft").replace("node-review", "n2-review").replace("node-approve", "n2-approve")
+        # First flow's opening edge now points at the second flow's node.
+        first = content.replace('data-ve-to="node-review"', 'data-ve-to="n2-review"', 1)
+        diags = {d.code for d in validate_artifact_semantics(first + second)}
+        self.assertIn("artifact_semantic_mismatch", diags)
+
     def test_matrix_cell_missing_column_association_fails(self) -> None:
         doc = build("component-valid-matrix.json").replace(' data-ve-column-id="col-read"', "", 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(doc))

@@ -292,8 +292,32 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
+# The ``<ol>`` classes under which the trusted flow renderer emits node list
+# items (ungrouped list, grouped outer list, and grouped inner list).
+_NODE_LIST_CLASSES = frozenset({"ve-flow-nodes", "ve-flow-group-nodes"})
+# HTML void elements never nest children, so they must not stay on the open
+# element stack and pollute ancestor lookups.
+_VOID_TAGS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+})
+
+
+def _class_tokens(attrs: list[tuple[str, str | None]]) -> frozenset[str]:
+    for name, value in attrs:
+        if name.lower() == "class" and value:
+            return frozenset(value.split())
+    return frozenset()
+
+
 class _DomSemanticParser(HTMLParser):
-    """Collect node IDs, edges, semantic IDs, and cell associations from a fragment."""
+    """Collect node IDs, edges, semantic IDs, and cell associations from a fragment.
+
+    Node identity is structural, not attribute-only: a real renderer node is a
+    node-list ``<li>`` whose non-empty ``data-ve-node-id`` equals its own
+    ``data-ve-semantic-id``. Arbitrary elements — or node-shaped ``<li>`` outside
+    the flow's node list — never count, so they cannot anchor an edge endpoint.
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -304,17 +328,21 @@ class _DomSemanticParser(HTMLParser):
         self.row_refs: list[str] = []
         self.col_refs: list[str] = []
         self.cell_incomplete = False
+        self._stack: list[tuple[str, frozenset[str]]] = []
 
-    def _check(self, attrs: list[tuple[str, str | None]]) -> None:
+    def _in_node_list(self) -> bool:
+        for tag, classes in reversed(self._stack):
+            if tag == "ol":
+                return bool(classes & _NODE_LIST_CLASSES)
+        return False
+
+    def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         d = {k.lower(): (v or "") for k, v in attrs}
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
-        # A real flow node element carries a non-empty data-ve-node-id equal to
-        # its own data-ve-semantic-id. An element that merely exposes
-        # data-ve-node-id (or one whose semantic id disagrees) is not a node and
-        # must never anchor an edge endpoint.
         node_id = d.get("data-ve-node-id")
-        if node_id and d.get("data-ve-semantic-id") == node_id:
+        if (tag == "li" and node_id and d.get("data-ve-semantic-id") == node_id
+                and self._in_node_list()):
             self.node_ids.add(node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):
@@ -331,10 +359,20 @@ class _DomSemanticParser(HTMLParser):
             self.col_refs.append(d.get("data-ve-column-id", ""))
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self._check(attrs)
+        tag = tag.lower()
+        self._check(tag, attrs)
+        if tag not in _VOID_TAGS:
+            self._stack.append((tag, _class_tokens(attrs)))
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self._check(attrs)
+        self._check(tag.lower(), attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        for i in range(len(self._stack) - 1, -1, -1):
+            if self._stack[i][0] == tag:
+                del self._stack[i:]
+                return
 
 
 def _parse_dom(fragment: str) -> _DomSemanticParser:

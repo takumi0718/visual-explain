@@ -443,14 +443,17 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bo
     start_id = raw.get("startId")
     if start_id is not None and start_id not in node_ids:
         col.add(INVALID_COMPONENT_PAYLOAD, f"startId '{start_id}' が存在しません", path)
+    # Absent readingOrder means "use the renderer's node-order fallback". An
+    # explicitly present readingOrder (including []) is a claim about the order
+    # and must be a unique permutation of exactly the declared node IDs — no
+    # unknown, duplicate, or missing IDs — so the rendered order can never
+    # silently drop, repeat, or reorder-away a node.
+    has_reading_order = "readingOrder" in raw
     reading_order = raw.get("readingOrder", [])
-    if reading_order and not isinstance(reading_order, list):
+    if has_reading_order and not isinstance(reading_order, list):
         col.add(INVALID_COMPONENT_PAYLOAD, "readingOrder は配列である必要があります", path)
         reading_order = []
-    # When present, readingOrder must be a unique permutation of exactly the
-    # declared flow node IDs — no unknown, duplicate, or missing IDs — so the
-    # rendered order can never silently drop or repeat a node.
-    if reading_order:
+    elif has_reading_order:
         seen_order: set[str] = set()
         for rid in reading_order:
             if rid not in node_ids:

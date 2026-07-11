@@ -262,6 +262,23 @@ class FlowReadingOrderPermutationTest(unittest.TestCase):
             validate_canonical_section(_grouped_ir(["b1", "b2"]))
         self.assertIn("invalid_component_payload", ctx.exception.codes)
 
+    def test_present_empty_reading_order_rejected_ungrouped(self) -> None:
+        # An explicitly present but empty readingOrder for a non-empty flow is
+        # not a permutation of the node IDs and must be rejected — it is not the
+        # same as an absent order.
+        self.assertIn("invalid_component_payload", self.reject_ungrouped([]))
+
+    def test_present_empty_reading_order_rejected_grouped(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_canonical_section(_grouped_ir([]))
+        self.assertIn("invalid_component_payload", ctx.exception.codes)
+
+    def test_absent_reading_order_allowed(self) -> None:
+        # No readingOrder key at all: the renderer's node-order fallback is
+        # intended, so validation must accept it.
+        ir = validate_canonical_section(flow_ir(lambda ir: ir["flow"].pop("readingOrder", None)))
+        self.assertEqual(ir.flow.reading_order, ())
+
 
 class FlowBuildTest(unittest.TestCase):
     def test_build_and_check_flow_fixture(self) -> None:
