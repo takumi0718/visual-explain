@@ -36,6 +36,19 @@ def render_fixture():
     return ir, render_flow(CanonicalSection(ir=ir), FLOW_DEF)
 
 
+def _load(name: str) -> dict:
+    return json.loads((TESTS / name).read_text("utf-8"))
+
+
+def _render(raw: dict) -> RenderResult:
+    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    return render_flow(CanonicalSection(ir=ir), FLOW_DEF)
+
+
+def _render_flow_fixture(name: str) -> RenderResult:
+    return _render(_load(name))
+
+
 def codes(err: ContractError) -> set[str]:
     return err.codes
 
@@ -107,7 +120,8 @@ class FlowMarkupTest(unittest.TestCase):
             self.assertIn(f'data-ve-from="{edge.source}"', self.markup)
             self.assertIn(f'data-ve-to="{edge.target}"', self.markup)
             self.assertIn(f'data-ve-relation="{edge.relation}"', self.markup)
-        self.assertIn("→", self.markup)
+        # Adjacent transitions render as inline spine links with a downward arrow.
+        self.assertIn("↓", self.markup)
 
     def test_visible_certainty_and_source(self) -> None:
         self.assertIn("レビュー運用手順", self.markup)
@@ -141,7 +155,11 @@ class FlowMarkupTest(unittest.TestCase):
             if not s or s.startswith("/*") or s.startswith("@media") or s == "}":
                 continue
             self.assertTrue(s.startswith('[data-ve-component="flow"]'), f"non-namespaced: {s}")
-        self.assertIn("@media", css)
+        # The spine+rails grid stays laid out on every viewport and scrolls
+        # horizontally rather than reflowing: a scroll container plus a canvas
+        # min-width is the responsive mechanism.
+        self.assertIn("overflow-x: auto", css)
+        self.assertIn("min-width: 24rem", css)
 
 
 class FlowGroupsTest(unittest.TestCase):
@@ -310,6 +328,45 @@ class FlowBuildTest(unittest.TestCase):
             self.assertEqual(check.returncode, 0, check.stdout + check.stderr)
         finally:
             out.unlink(missing_ok=True)
+
+
+class SpineLayoutTest(unittest.TestCase):
+    def test_adjacent_edge_becomes_inline_link(self) -> None:
+        result = _render_flow_fixture("component-valid-flow.json")
+        self.assertIn('class="ve-flow-link"', result.markup)
+        self.assertNotIn('class="ve-flow-rail"', result.markup)
+
+    def test_skip_edge_becomes_rail_with_lane(self) -> None:
+        raw = _load("component-valid-flow.json")
+        ir = raw["sections"][0]["ir"]
+        ir["flow"]["edges"].append(
+            {"id": "edge-skip", "from": "node-draft", "to": "node-approve",
+             "relation": "branching", "label": "即時承認"})
+        result = _render(raw)
+        self.assertIn('data-ve-semantic-id="edge-skip"', result.markup)
+        self.assertIn("ve-rail-lane-0", result.markup)
+        self.assertRegex(result.markup, r"ve-rail-\d+-\d+")  # 行スパンクラスが付与されている
+
+    def test_visible_edges_match_ir_exactly(self) -> None:
+        # 信頼境界の extract_flow_dom が新構造でも from/to/relation を全件回収できる
+        from ve_components.checker import extract_flow_dom
+        raw = _load("component-valid-flow.json")
+        result = _render(raw)
+        nodes, edges, incomplete = extract_flow_dom(result.markup)
+        self.assertFalse(incomplete)
+        declared = {(e["from"], e["to"], e["relation"]) for e in raw["sections"][0]["ir"]["flow"]["edges"]}
+        self.assertEqual(edges, declared)
+
+    def test_hidden_edge_list_has_no_data_attrs(self) -> None:
+        result = _render_flow_fixture("component-valid-flow.json")
+        hidden = result.markup.split('class="ve-flow-edges visually-hidden"', 1)[1]
+        hidden = hidden.split("</ul>", 1)[0]
+        self.assertNotIn("data-ve-from", hidden)
+
+    def test_annotated_node_marked(self) -> None:
+        result = _render_flow_fixture("component-valid-flow-annotated.json")
+        self.assertIn("ve-takeaway-target", result.markup)
+        self.assertIn('<span class="ve-emphasis">ここで滞留が発生</span>', result.markup)
 
 
 if __name__ == "__main__":

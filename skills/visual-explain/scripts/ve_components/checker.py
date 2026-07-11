@@ -292,10 +292,13 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
-# The ``<ol>`` classes under which the trusted flow renderer emits node list
-# items (ungrouped list, grouped outer list, and grouped inner list).
-_NODE_LIST_CLASSES = frozenset({"ve-flow-nodes", "ve-flow-group-nodes"})
-# The class the trusted flow renderer stamps on every node ``<li>`` and nothing
+# The single ``<ol>`` (the spine+rails grid) under which the trusted flow
+# renderer emits every station. A real node lives two levels down: a
+# ``span.ve-flow-node`` inside a ``li.ve-flow-station`` inside this canvas.
+_NODE_LIST_CLASSES = frozenset({"ve-flow-canvas"})
+# The class on the ``<li>`` that directly wraps a node span.
+_STATION_CLASS = "ve-flow-station"
+# The class the trusted flow renderer stamps on every node element and nothing
 # else. Recognized nodes are bound to this exact shape.
 _NODE_CLASS = "ve-flow-node"
 # HTML void elements never nest children, so they must not stay on the open
@@ -317,12 +320,12 @@ class _DomSemanticParser(HTMLParser):
     """Collect node IDs, edges, semantic IDs, and cell associations from a fragment.
 
     Node identity is bound to the renderer's exact node-element shape: a real
-    node is an ``<li class="ve-flow-node">`` that is a DIRECT child of a flow
-    node list (``ol.ve-flow-nodes`` / ``ol.ve-flow-group-nodes``) and whose
-    non-empty ``data-ve-node-id`` equals its own ``data-ve-semantic-id``.
-    Arbitrary elements, node-shaped ``<li>`` outside the node list, and
-    attribute-only ``<li>`` injected into a node list all fail this shape and so
-    can never anchor an edge endpoint.
+    node is a ``class="ve-flow-node"`` element that is a DIRECT child of a
+    ``li.ve-flow-station`` which is itself a DIRECT child of the flow canvas
+    (``ol.ve-flow-canvas``), and whose non-empty ``data-ve-node-id`` equals its
+    own ``data-ve-semantic-id``. Arbitrary elements, node-shaped elements outside
+    a station, and attribute-only elements injected into the canvas all fail this
+    shape and so can never anchor an edge endpoint.
     """
 
     def __init__(self) -> None:
@@ -336,20 +339,23 @@ class _DomSemanticParser(HTMLParser):
         self.cell_incomplete = False
         self._stack: list[tuple[str, frozenset[str]]] = []
 
-    def _direct_parent_is_node_list(self) -> bool:
-        if not self._stack:
+    def _is_station_in_canvas(self) -> bool:
+        # Parent must be li.ve-flow-station whose own parent is ol.ve-flow-canvas.
+        if len(self._stack) < 2:
             return False
-        tag, classes = self._stack[-1]
-        return tag == "ol" and bool(classes & _NODE_LIST_CLASSES)
+        ptag, pclasses = self._stack[-1]
+        gtag, gclasses = self._stack[-2]
+        return (ptag == "li" and _STATION_CLASS in pclasses
+                and gtag == "ol" and bool(gclasses & _NODE_LIST_CLASSES))
 
     def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         d = {k.lower(): (v or "") for k, v in attrs}
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
         node_id = d.get("data-ve-node-id")
-        if (tag == "li" and node_id and d.get("data-ve-semantic-id") == node_id
+        if (node_id and d.get("data-ve-semantic-id") == node_id
                 and _NODE_CLASS in _class_tokens(attrs)
-                and self._direct_parent_is_node_list()):
+                and self._is_station_in_canvas()):
             self.node_ids.add(node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):

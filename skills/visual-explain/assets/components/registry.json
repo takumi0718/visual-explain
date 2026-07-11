@@ -29,7 +29,7 @@
       "semanticResponsibility": "明示的な順序・有向遷移・分岐の関係のみを担う。",
       "requiredInputs": ["caption", "accessibility", "nodes", "edges"],
       "optionalInputs": ["certainty", "sources", "groups", "startId", "readingOrder"],
-      "behavior": "静的な意味づけされたノード列と辺の一覧を描画する。",
+      "behavior": "静的な spine とレールでノードと接続を同一視野に描画する。",
       "slots": ["caption", "certainty", "source", "accessibility"],
       "accessibility": "見出しと caption/summary を持つラベル付き figure、順序付きノードと有向辺の一覧。",
       "responsive": true,
@@ -38,7 +38,7 @@
       "checkerRules": ["static-content", "semantic-ids", "flow-edges", "escaping", "no-external-reference", "responsive-order"],
       "renderer": "flow@1",
       "assets": [
-        {"id": "flow.css", "slot": "styles", "path": "flow.css", "digest": "a506d1ffa3ef77cec96379698345b73862edd1a0558814a2b89c91c5e87d5d47"}
+        {"id": "flow.css", "slot": "styles", "path": "flow.css", "digest": "3e4c50127e9bc6b617fd2a98d2e0809dcdd2c8acb83b23f85e4412609aec5598"}
       ]
     }
   ]
