@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "flow-demo",
+    "title": "レビュー承認の流れ",
+    "summary": "提案が承認に至るまでの順序と分岐を判断するための資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-review-flow",
+        "relationship": {
+          "kind": "directed-graph",
+          "capabilities": ["ordered-transition", "directed-transition"]
+        },
+        "selection": {
+          "component": "flow",
+          "version": 1,
+          "matchedCapabilities": ["ordered-transition", "directed-transition"]
+        },
+        "caption": "提案から承認までの遷移",
+        "certainty": [
+          {"id": "cert-flow-confirmed", "level": "confirmed", "statement": "起案から一次レビューへの遷移は運用で確定。"},
+          {"id": "cert-flow-inferred", "level": "inferred", "statement": "承認後の公開は既定運用からの推定。"}
+        ],
+        "sources": [
+          {"id": "src-runbook", "label": "レビュー運用手順", "detail": "2026-05 版の承認フロー。"}
+        ],
+        "accessibility": {
+          "label": "レビュー承認フロー",
+          "summary": "起案・一次レビュー・承認の順に遷移する有向グラフ。"
+        },
+        "flow": {
+          "nodes": [
+            {"id": "node-draft", "label": "起案"},
+            {"id": "node-review", "label": "一次レビュー"},
+            {"id": "node-approve", "label": "承認"}
+          ],
+          "edges": [
+            {"id": "edge-draft-review", "from": "node-draft", "to": "node-review", "relation": "ordered-transition", "label": "提出"},
+            {"id": "edge-review-approve", "from": "node-review", "to": "node-approve", "relation": "directed-transition", "label": "合意"}
+          ],
+          "startId": "node-draft"
+        },
+        "takeawayTargetIds": ["edge-review-approve"],
+        "emphasis": [{"targetId": "node-review", "label": "ここで滞留が発生"}]
+      }
+    }
+  ]
+}

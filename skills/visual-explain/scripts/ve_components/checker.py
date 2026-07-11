@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .diagnostics import (
     ARTIFACT_SEMANTIC_MISMATCH,
+    ASK_CONTRACT_VIOLATION,
     FIXED_REGION_MISMATCH,
     FORBIDDEN_CONTENT_MARKUP,
     INVALID_CONTROLLED_ASSET,
@@ -149,7 +150,151 @@ def validate_content_markup(content_markup: str) -> list[Diagnostic]:
     parser = _ContentSafetyParser()
     parser.feed(content_markup)
     parser.close()
-    return parser.diagnostics
+    diagnostics = list(parser.diagnostics)
+    diagnostics.extend(validate_ask_blocks(content_markup))
+    return diagnostics
+
+
+_ASK_KINDS = frozenset({"decision", "request", "hypothesis"})
+_ASK_ROLES = frozenset({"user", "agent", "third-party"})
+_CERTAINTY_CLASSES = frozenset({"confirmed", "inferred", "unverified"})
+
+
+class _AskParser(HTMLParser):
+    """Collect structural and content-quality facts for each data-ask subtree.
+
+    Nesting is depth-scoped (mirrors ``_DomSemanticParser``): a stack of open
+    ``data-ask`` blocks plus a stack of open "text scopes" (question, option
+    tradeoff, no-default-reason, request step, claim, verify). ``handle_data``
+    appends to every text scope currently open for a block, so nested markup
+    (e.g. a certainty badge inside a claim) still counts toward the claim's
+    own text without a separate accumulator.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.blocks: list[dict] = []
+        self._stack: list[tuple[dict, int]] = []
+        self._scopes: list[tuple[int, dict, str, int | None]] = []
+        self._depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._depth += 1
+        attr = dict(attrs)
+        classes = frozenset((attr.get("class") or "").split())
+        if "data-ask" in attr:
+            block = {
+                "kind": attr.get("data-ask") or "",
+                "question_texts": [],
+                "options": 0,
+                "option_records": [],
+                "defaults": 0,
+                "no_default_reason_texts": [],
+                "roles": [],
+                "role_labels": 0,
+                "role_texts": [],
+                "claims": 0,
+                "claim_texts": [],
+                "claim_certainty": 0,
+                "claim_certainty_valid": 0,
+                "verify_texts": [],
+                "_claim_depth": None,
+            }
+            self.blocks.append(block)
+            self._stack.append((block, self._depth))
+        for block, _block_depth in self._stack:
+            if "ask-question" in classes:
+                block["question_texts"].append("")
+                self._scopes.append((self._depth, block, "question_texts", len(block["question_texts"]) - 1))
+            if "data-ask-option" in attr:
+                block["options"] += 1
+                block["option_records"].append({"tradeoffs": 0, "text": ""})
+            if "ask-tradeoff" in classes and block["option_records"]:
+                block["option_records"][-1]["tradeoffs"] += 1
+                self._scopes.append((self._depth, block, "option_tradeoff_text", None))
+            if "data-ask-default" in attr:
+                block["defaults"] += 1
+            if "ask-no-default-reason" in classes:
+                block["no_default_reason_texts"].append("")
+                self._scopes.append((self._depth, block, "no_default_reason_texts", len(block["no_default_reason_texts"]) - 1))
+            if "data-ask-role" in attr:
+                block["roles"].append(attr.get("data-ask-role") or "")
+                if attr.get("data-ask-role-label"):
+                    block["role_labels"] += 1
+                block["role_texts"].append("")
+                self._scopes.append((self._depth, block, "role_texts", len(block["role_texts"]) - 1))
+            if "ask-claim" in classes:
+                block["claims"] += 1
+                block["claim_texts"].append("")
+                self._scopes.append((self._depth, block, "claim_texts", len(block["claim_texts"]) - 1))
+                block["_claim_depth"] = self._depth
+            if "certainty" in classes and block["_claim_depth"] is not None and self._depth > block["_claim_depth"]:
+                block["claim_certainty"] += 1
+                if len(classes & _CERTAINTY_CLASSES) == 1:
+                    block["claim_certainty_valid"] += 1
+            if "ask-verify" in classes:
+                block["verify_texts"].append("")
+                self._scopes.append((self._depth, block, "verify_texts", len(block["verify_texts"]) - 1))
+
+    def handle_data(self, data: str) -> None:
+        for _depth, block, field, idx in self._scopes:
+            if field == "option_tradeoff_text":
+                block["option_records"][-1]["text"] += data
+            else:
+                block[field][idx] += data
+
+    def handle_endtag(self, tag: str) -> None:
+        while self._scopes and self._scopes[-1][0] == self._depth:
+            self._scopes.pop()
+        if self._stack and self._stack[-1][1] == self._depth:
+            block, _ = self._stack[-1]
+            if block["_claim_depth"] == self._depth:
+                block["_claim_depth"] = None
+            self._stack.pop()
+        self._depth -= 1
+
+
+def validate_ask_blocks(content_markup: str) -> list[Diagnostic]:
+    """Validate every ``data-ask`` subtree's DOM structure and content quality."""
+    parser = _AskParser()
+    parser.feed(content_markup)
+    parser.close()
+    diags: list[Diagnostic] = []
+    for block in parser.blocks:
+        kind = block["kind"]
+        if kind not in _ASK_KINDS:
+            diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, f"未知の ask 種別 '{kind}'"))
+            continue
+        if kind == "decision":
+            if len(block["question_texts"]) != 1 or not block["question_texts"][0].strip():
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision には非空の ask-question がちょうど1つ必要です"))
+            if block["options"] < 2:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision には選択肢が2件以上必要です"))
+            if any(rec["tradeoffs"] != 1 or not rec["text"].strip() for rec in block["option_records"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "各選択肢には非空テキストの ask-tradeoff がちょうど1つ必要です"))
+            if block["defaults"] > 1:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision の既定案は最大1件です"))
+            if block["defaults"] == 0 and (
+                len(block["no_default_reason_texts"]) != 1 or not block["no_default_reason_texts"][0].strip()
+            ):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "既定案なしの decision には非空の ask-no-default-reason が必要です"))
+        elif kind == "request":
+            if not block["roles"]:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "request には data-ask-role 付きの手順が1件以上必要です"))
+            if any(role not in _ASK_ROLES for role in block["roles"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "data-ask-role は user/agent/third-party のみ有効です"))
+            if block["role_labels"] != len(block["roles"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "各手順に data-ask-role-label（表示ラベル）が必要です"))
+            if any(not text.strip() for text in block["role_texts"]):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "request の各手順には非空の動作テキストが必要です"))
+        else:  # hypothesis
+            if len(block["claim_texts"]) != 1 or not block["claim_texts"][0].strip():
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "hypothesis には非空の ask-claim がちょうど1つ必要です"))
+            if block["claim_certainty"] != 1 or block["claim_certainty_valid"] != 1:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "hypothesis の ask-claim には確度クラスがちょうど1つ必要です"))
+            if len(block["verify_texts"]) != 1 or not block["verify_texts"][0].strip():
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "hypothesis には非空の ask-verify がちょうど1つ必要です"))
+    return diags
 
 
 class _StrictSlotParser(HTMLParser):
@@ -292,10 +437,13 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
-# The ``<ol>`` classes under which the trusted flow renderer emits node list
-# items (ungrouped list, grouped outer list, and grouped inner list).
-_NODE_LIST_CLASSES = frozenset({"ve-flow-nodes", "ve-flow-group-nodes"})
-# The class the trusted flow renderer stamps on every node ``<li>`` and nothing
+# The single ``<ol>`` (the spine+rails grid) under which the trusted flow
+# renderer emits every station. A real node lives two levels down: a
+# ``span.ve-flow-node`` inside a ``li.ve-flow-station`` inside this canvas.
+_NODE_LIST_CLASSES = frozenset({"ve-flow-canvas"})
+# The class on the ``<li>`` that directly wraps a node span.
+_STATION_CLASS = "ve-flow-station"
+# The class the trusted flow renderer stamps on every node element and nothing
 # else. Recognized nodes are bound to this exact shape.
 _NODE_CLASS = "ve-flow-node"
 # HTML void elements never nest children, so they must not stay on the open
@@ -317,12 +465,12 @@ class _DomSemanticParser(HTMLParser):
     """Collect node IDs, edges, semantic IDs, and cell associations from a fragment.
 
     Node identity is bound to the renderer's exact node-element shape: a real
-    node is an ``<li class="ve-flow-node">`` that is a DIRECT child of a flow
-    node list (``ol.ve-flow-nodes`` / ``ol.ve-flow-group-nodes``) and whose
-    non-empty ``data-ve-node-id`` equals its own ``data-ve-semantic-id``.
-    Arbitrary elements, node-shaped ``<li>`` outside the node list, and
-    attribute-only ``<li>`` injected into a node list all fail this shape and so
-    can never anchor an edge endpoint.
+    node is a ``class="ve-flow-node"`` element that is a DIRECT child of a
+    ``li.ve-flow-station`` which is itself a DIRECT child of the flow canvas
+    (``ol.ve-flow-canvas``), and whose non-empty ``data-ve-node-id`` equals its
+    own ``data-ve-semantic-id``. Arbitrary elements, node-shaped elements outside
+    a station, and attribute-only elements injected into the canvas all fail this
+    shape and so can never anchor an edge endpoint.
     """
 
     def __init__(self) -> None:
@@ -336,20 +484,23 @@ class _DomSemanticParser(HTMLParser):
         self.cell_incomplete = False
         self._stack: list[tuple[str, frozenset[str]]] = []
 
-    def _direct_parent_is_node_list(self) -> bool:
-        if not self._stack:
+    def _is_station_in_canvas(self) -> bool:
+        # Parent must be li.ve-flow-station whose own parent is ol.ve-flow-canvas.
+        if len(self._stack) < 2:
             return False
-        tag, classes = self._stack[-1]
-        return tag == "ol" and bool(classes & _NODE_LIST_CLASSES)
+        ptag, pclasses = self._stack[-1]
+        gtag, gclasses = self._stack[-2]
+        return (ptag == "li" and _STATION_CLASS in pclasses
+                and gtag == "ol" and bool(gclasses & _NODE_LIST_CLASSES))
 
     def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         d = {k.lower(): (v or "") for k, v in attrs}
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
         node_id = d.get("data-ve-node-id")
-        if (tag == "li" and node_id and d.get("data-ve-semantic-id") == node_id
+        if (node_id and d.get("data-ve-semantic-id") == node_id
                 and _NODE_CLASS in _class_tokens(attrs)
-                and self._direct_parent_is_node_list()):
+                and self._is_station_in_canvas()):
             self.node_ids.add(node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):

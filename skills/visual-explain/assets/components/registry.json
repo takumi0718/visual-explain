@@ -5,40 +5,101 @@
       "id": "matrix",
       "version": 1,
       "relationshipKind": "two-axis",
-      "capabilities": ["two-axis-classification", "intersection-comparison"],
+      "capabilities": [
+        "two-axis-classification",
+        "intersection-comparison"
+      ],
       "semanticResponsibility": "二軸分類と交差の比較のみを担う。",
-      "requiredInputs": ["caption", "accessibility", "rows", "columns", "cells"],
-      "optionalInputs": ["certainty", "sources"],
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "rows",
+        "columns",
+        "cells"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
       "behavior": "静的な意味づけされた表を描画する。",
-      "slots": ["caption", "certainty", "source", "accessibility"],
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
       "accessibility": "見出しセルと caption/summary を持つラベル付き figure/table。",
       "responsive": true,
       "dependencies": [],
       "fallback": "static-content",
-      "checkerRules": ["static-content", "semantic-ids", "matrix-references", "escaping", "no-external-reference", "responsive-order"],
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "matrix-references",
+        "escaping",
+        "no-external-reference",
+        "responsive-order"
+      ],
       "renderer": "matrix@1",
       "assets": [
-        {"id": "matrix.css", "slot": "styles", "path": "matrix.css", "digest": "0382a6e969c9a34fd9330853bb239a673a9ab8bb49d9f932205ef4005546ff9f"}
+        {
+          "id": "matrix.css",
+          "slot": "styles",
+          "path": "matrix.css",
+          "digest": "8df780dc1ba4d99e17d78344fb6723d377ec162ad5110fac972984dc13c01805"
+        }
       ]
     },
     {
       "id": "flow",
       "version": 1,
       "relationshipKind": "directed-graph",
-      "capabilities": ["ordered-transition", "directed-transition", "branching"],
+      "capabilities": [
+        "ordered-transition",
+        "directed-transition",
+        "branching"
+      ],
       "semanticResponsibility": "明示的な順序・有向遷移・分岐の関係のみを担う。",
-      "requiredInputs": ["caption", "accessibility", "nodes", "edges"],
-      "optionalInputs": ["certainty", "sources", "groups", "startId", "readingOrder"],
-      "behavior": "静的な意味づけされたノード列と辺の一覧を描画する。",
-      "slots": ["caption", "certainty", "source", "accessibility"],
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "nodes",
+        "edges"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources",
+        "groups",
+        "startId",
+        "readingOrder"
+      ],
+      "behavior": "静的な spine とレールでノードと接続を同一視野に描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
       "accessibility": "見出しと caption/summary を持つラベル付き figure、順序付きノードと有向辺の一覧。",
       "responsive": true,
       "dependencies": [],
       "fallback": "static-content",
-      "checkerRules": ["static-content", "semantic-ids", "flow-edges", "escaping", "no-external-reference", "responsive-order"],
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "flow-edges",
+        "escaping",
+        "no-external-reference",
+        "responsive-order"
+      ],
       "renderer": "flow@1",
       "assets": [
-        {"id": "flow.css", "slot": "styles", "path": "flow.css", "digest": "2e58c3c4def82c34b92f01c0b88b129630ab8bffd345d282fe956ef63032f5ad"}
+        {
+          "id": "flow.css",
+          "slot": "styles",
+          "path": "flow.css",
+          "digest": "e9dab25d5c11e0e0293ba0b4d67a9cf7e3b284c7205b424b3ad57c95a07c59cb"
+        }
       ]
     }
   ]

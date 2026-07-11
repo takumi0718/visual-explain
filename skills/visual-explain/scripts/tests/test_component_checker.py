@@ -72,6 +72,9 @@ class LayerOneAndFourSafetyTest(unittest.TestCase):
     def test_content_style(self) -> None:
         self.assertIn("forbidden_content_markup", self.check("component-bad-content-style.html"))
 
+    def test_ask_decision_single_option(self) -> None:
+        self.assertIn("ask_contract_violation", self.check("bad-ask-decision.html"))
+
     def test_asset_hash(self) -> None:
         self.assertIn("invalid_controlled_asset", self.check("component-bad-asset-hash.html"))
 
@@ -199,8 +202,8 @@ class ArtifactSemanticTest(unittest.TestCase):
         # make a rewritten from/to reference resolve.
         doc = build("component-valid-flow.json")
         tampered = doc.replace(
-            '<ul class="ve-flow-edges">',
-            '<ul class="ve-flow-edges"><li data-ve-node-id="ghost"></li>', 1,
+            '<ul class="ve-flow-edges visually-hidden">',
+            '<ul class="ve-flow-edges visually-hidden"><li data-ve-node-id="ghost"></li>', 1,
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
@@ -209,41 +212,42 @@ class ArtifactSemanticTest(unittest.TestCase):
         # data-ve-semantic-id is not a real node and cannot anchor an endpoint.
         doc = build("component-valid-flow.json")
         tampered = doc.replace(
-            '<ul class="ve-flow-edges">',
-            '<ul class="ve-flow-edges"><li data-ve-semantic-id="other" data-ve-node-id="ghost"></li>', 1,
+            '<ul class="ve-flow-edges visually-hidden">',
+            '<ul class="ve-flow-edges visually-hidden"><li data-ve-semantic-id="other" data-ve-node-id="ghost"></li>', 1,
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_flow_endpoint_rejects_arbitrary_matching_attributes(self) -> None:
-        # A non-node element carrying data-ve-node-id AND an equal
-        # data-ve-semantic-id must still NOT count as a node: only a real
-        # renderer node element (a node-list <li>) may anchor an endpoint.
+        # A bare element carrying data-ve-node-id AND an equal data-ve-semantic-id
+        # must still NOT count as a node: only a real renderer node element (a
+        # ve-flow-node span inside a station in the canvas) may anchor an endpoint.
         doc = build("component-valid-flow.json")
         tampered = doc.replace(
-            '<ul class="ve-flow-edges">',
-            '<ul class="ve-flow-edges"><span data-ve-node-id="ghost" data-ve-semantic-id="ghost"></span>', 1,
+            '<ul class="ve-flow-edges visually-hidden">',
+            '<ul class="ve-flow-edges visually-hidden"><span data-ve-node-id="ghost" data-ve-semantic-id="ghost"></span>', 1,
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
-    def test_flow_endpoint_rejects_matching_li_outside_node_list(self) -> None:
-        # Even an <li> with matching attributes counts only inside the flow's
-        # node list; an <li> smuggled into the edge list is not a real node.
+    def test_flow_endpoint_rejects_matching_node_outside_canvas(self) -> None:
+        # Even a full ve-flow-node span counts only inside a station in the
+        # canvas; one smuggled into the edge list is not a real node.
         doc = build("component-valid-flow.json")
         tampered = doc.replace(
-            '<ul class="ve-flow-edges">',
-            '<ul class="ve-flow-edges"><li data-ve-node-id="ghost" data-ve-semantic-id="ghost"></li>', 1,
+            '<ul class="ve-flow-edges visually-hidden">',
+            '<ul class="ve-flow-edges visually-hidden"><span class="ve-flow-node" data-ve-node-id="ghost" data-ve-semantic-id="ghost">Ghost</span>', 1,
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
-    def test_flow_endpoint_rejects_matching_li_injected_into_node_list(self) -> None:
-        # An <li> with matching attributes injected DIRECTLY inside the flow's
-        # node list must still not count as a node: recognized nodes are bound to
-        # the renderer's exact node-element shape (its node class), so an
-        # arbitrary node-list child cannot become an endpoint target.
+    def test_flow_endpoint_rejects_station_span_without_node_class(self) -> None:
+        # A span injected DIRECTLY into a station in the canvas must still not
+        # count as a node unless it carries the ve-flow-node class: recognized
+        # nodes are bound to the renderer's exact node-element shape (its node
+        # class), so an arbitrary station child cannot become an endpoint target.
         doc = build("component-valid-flow.json")
         tampered = doc.replace(
-            '<ol class="ve-flow-nodes">',
-            '<ol class="ve-flow-nodes"><li data-ve-node-id="ghost" data-ve-semantic-id="ghost">Ghost</li>', 1,
+            '<ol class="ve-flow-canvas">',
+            '<ol class="ve-flow-canvas"><li class="ve-flow-station">'
+            '<span data-ve-node-id="ghost" data-ve-semantic-id="ghost">Ghost</span></li>', 1,
         ).replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
@@ -330,6 +334,39 @@ class MixedAndWeakModelFinalTest(unittest.TestCase):
                 self.assertNotEqual(proc.returncode, 0)
                 self.assertFalse(out.exists())
                 self.assertIn("forbidden_content_markup", proc.stderr)
+
+
+class VerificationMatrixTest(unittest.TestCase):
+    """The spec's verification fixture matrix: authored documents must pass the
+    four-layer checker, and the branching flow assembly must build with rails and
+    group labels. These are component documents (empty controlled markers), so
+    the checker's content-safety, ask, and artifact layers apply."""
+
+    DOCS = ["matrix-doc-long-titles.html", "matrix-doc-mixed-density.html",
+            "matrix-doc-all-notations.html"]
+
+    def _check(self, name: str) -> list:
+        raw = (TESTS / name).read_text("utf-8")
+        return check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)
+
+    def test_verification_docs_pass_checker(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(doc=name):
+                self.assertEqual(self._check(name), [])
+
+    def test_verification_docs_pass_via_check_sh(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(doc=name):
+                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
+                                      capture_output=True, text=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    def test_branching_flow_assembly_builds(self) -> None:
+        # The renderer routes the skip (branching) edge onto a right-hand rail
+        # and stamps a group-label row for each contiguous group run.
+        html_doc = build("assembly-branching-flow.json")
+        self.assertIn("ve-flow-rail", html_doc)
+        self.assertIn("ve-flow-group-label", html_doc)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>visual-explain 資料</title>
+  <title>ビジュアル基準 v1 デザインゲート</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -204,6 +204,59 @@
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <style>
+    /* ===== matrix.css （assets/components/matrix.css の写し） ===== */
+    [data-ve-component="matrix"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+    [data-ve-component="matrix"] .ve-matrix-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+    [data-ve-component="matrix"] .ve-matrix-summary { margin: 0 0 var(--space-2); color: var(--text-dim); max-width: var(--w-narrative); }
+    [data-ve-component="matrix"] .ve-matrix-scroll { max-width: 100%; overflow-x: auto; }
+    [data-ve-component="matrix"] table { width: 100%; min-width: 32rem; border-collapse: collapse; }
+    [data-ve-component="matrix"] th,
+    [data-ve-component="matrix"] td { padding: var(--space-1) var(--space-2) var(--space-1) 0; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: transparent; }
+    [data-ve-component="matrix"] thead th { border-bottom: 1px solid var(--border-strong); font-weight: 700; font-size: var(--fs-small); }
+    [data-ve-component="matrix"] tbody th { font-weight: 700; }
+    [data-ve-component="matrix"] .ve-matrix-corner { border: 0; }
+    [data-ve-component="matrix"] .ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 6%, transparent); }
+    [data-ve-component="matrix"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: .85em; font-weight: 700; }
+    [data-ve-component="matrix"] .ve-matrix-refs { display: block; margin-top: var(--space-1); }
+    [data-ve-component="matrix"] .ve-cert { display: inline-block; margin-right: var(--space-1); font-size: .8em; font-weight: 700; }
+    [data-ve-component="matrix"] .ve-cert-confirmed,
+    [data-ve-component="matrix"] .ve-cert-inferred,
+    [data-ve-component="matrix"] .ve-cert-unverified { color: var(--text-dim); }
+    [data-ve-component="matrix"] .ve-src { display: inline-block; font-size: .8em; color: var(--text-dim); }
+    [data-ve-component="matrix"] .ve-matrix-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+    [data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
+
+    /* ===== flow.css （Task 6 の確定 spine＋レール構造を先取り。承認対象の見た目） ===== */
+    [data-ve-component="flow"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+    [data-ve-component="flow"] .ve-flow-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+    [data-ve-component="flow"] .ve-flow-summary { margin: 0 0 var(--space-2); color: var(--text-dim); max-width: var(--w-narrative); }
+    [data-ve-component="flow"] .ve-flow-scroll { max-width: 100%; overflow-x: auto; }
+    [data-ve-component="flow"] .ve-flow-canvas { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, var(--space-3)); grid-auto-rows: min-content; min-width: 24rem; margin: 0; padding: 0; list-style: none; }
+    [data-ve-component="flow"] .ve-flow-canvas > li { min-width: 0; }
+    [data-ve-component="flow"] .ve-flow-station, [data-ve-component="flow"] .ve-flow-link, [data-ve-component="flow"] .ve-flow-group-label { grid-column: 1; }
+    [data-ve-component="flow"] .ve-flow-node { display: block; padding: var(--space-1) var(--space-2); background: var(--surface); border-radius: .4rem; font-weight: 700; }
+    [data-ve-component="flow"] .ve-flow-station.in-group .ve-flow-node { border-left: 2px solid var(--border-strong); border-radius: 0 .4rem .4rem 0; }
+    [data-ve-component="flow"] .ve-flow-link { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-1); align-items: center; padding: var(--space-1) var(--space-2); color: var(--text-dim); }
+    [data-ve-component="flow"] .ve-flow-arrow { color: var(--text-dim); font-weight: 700; }
+    [data-ve-component="flow"] .ve-flow-edge-label { min-width: 0; }
+    [data-ve-component="flow"] .ve-flow-rel { font-size: var(--fs-small); color: var(--text-faint); }
+    [data-ve-component="flow"] .ve-flow-group-label { color: var(--text-faint); font-size: var(--fs-small); font-weight: 700; letter-spacing: .06em; padding: var(--space-1) 0 0; }
+    [data-ve-component="flow"] .ve-flow-rail { position: relative; border-right: 2px solid var(--border-strong); border-top: 2px solid var(--border-strong); border-bottom: 2px solid var(--border-strong); border-top-right-radius: .4rem; border-bottom-right-radius: .4rem; writing-mode: vertical-rl; font-size: var(--fs-small); color: var(--text-dim); padding: var(--space-1) 0; }
+    [data-ve-component="flow"] .ve-flow-rail::after { content: "\25C0"; position: absolute; inset-block-end: -0.15rem; inset-inline-start: -0.5rem; color: var(--text-dim); font-size: .7rem; writing-mode: horizontal-tb; }
+    [data-ve-component="flow"] .ve-rail-lane-0 { grid-column: 2; }
+    [data-ve-component="flow"] .ve-rail-lane-1 { grid-column: 3; }
+    [data-ve-component="flow"] .ve-rail-lane-2 { grid-column: 4; }
+    [data-ve-component="flow"] .ve-flow-node.ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+    [data-ve-component="flow"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: .85em; font-weight: 700; }
+    [data-ve-component="flow"] .ve-flow-notes { margin: var(--space-2) 0 0; padding-left: var(--space-3); color: var(--text-dim); font-size: var(--fs-small); }
+    [data-ve-component="flow"] .ve-flow-notes li { margin: 0; }
+
+    /* ===== モック専用: 未生成の事前生成レールクラス1本ぶんの grid-row を手当て ===== */
+    [data-ve-component="flow"] .ve-rail-demo { grid-column: 2; grid-row: 4 / 12; }
+  </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
   (() => {
@@ -269,19 +322,238 @@
   </script>
   <main>
     <!-- CONTENT:BEGIN -->
-    <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
-    <div data-connect="known -> unknown"></div><div id="known"></div>
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+
+    <h1>ビジュアル基準 v1 デザインゲート</h1>
+    <p class="claim">この文書は目視レビュー専用のモックであり、checker には掛けない。代表4画面で「色＝判断状態のみ」「左端整列」「型階層」を目で確認するためのものである。</p>
+
+    <!-- 画面1: 第一画面（疎モード） -->
+    <section aria-labelledby="s1">
+      <h2 id="s1">代表4画面を承認できれば、以降の描画実装は見た目の判断を蒸し返さずに進められる。</h2>
+      <div class="first-screen">
+        <h1>visual-explain のビジュアル基準 v1 を、モノクロ構造＋判断3色・4段階の型階層・8pxグリッドで確定する。</h1>
+        <p class="subtitle decision">あなたが決めること: <strong>この4画面の見た目を「正」として承認するか、指摘を戻して再提示させるか</strong>。</p>
+        <ul class="conditions">
+          <li>light / dark の両テーマで、色が付くのは判断状態（選択・推奨・注意）だけであること。</li>
+          <li>広幅1280pxと狭幅390pxの双方で、見出し・本文・図・キャプションの左端が一直線に揃うこと。</li>
+        </ul>
+      </div>
     </section>
-    <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+
+    <!-- 画面2: 高密度 matrix -->
+    <section aria-labelledby="s2">
+      <h2 id="s2">見た目案を一覧で並べると、判断3色を残しつつ構造をモノクロ化する案が最も認知負荷が低い。</h2>
+      <div class="matrix">
+        <table>
+          <thead>
+            <tr>
+              <th class="matrix-label" scope="col">検討した見た目案</th>
+              <th class="matrix-label" scope="col">認知負荷</th>
+              <th class="matrix-label" scope="col">実装コスト</th>
+              <th class="matrix-label" scope="col">判定</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">現行の多色UIを維持</th>
+              <td class="matrix-cell">高（色の意味が曖昧）</td>
+              <td class="matrix-cell">小</td>
+              <td class="matrix-cell">却下</td>
+            </tr>
+            <tr class="option-card" data-tone="accent">
+              <th class="matrix-label" scope="row">モノクロ構造＋判断3色 v1</th>
+              <td class="matrix-cell">低</td>
+              <td class="matrix-cell">中</td>
+              <td class="matrix-cell">採用</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">完全モノクロ（判断色なし）</th>
+              <td class="matrix-cell">中（状態が読めない）</td>
+              <td class="matrix-cell">小</td>
+              <td class="matrix-cell">却下</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">フルカラー・カテゴリ配色</th>
+              <td class="matrix-cell">高</td>
+              <td class="matrix-cell">大</td>
+              <td class="matrix-cell">却下</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">白黒＋単一アクセント（2色）</th>
+              <td class="matrix-cell">中</td>
+              <td class="matrix-cell">小</td>
+              <td class="matrix-cell">保留</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">ダーク優先・ライト従属</th>
+              <td class="matrix-cell">中</td>
+              <td class="matrix-cell">中</td>
+              <td class="matrix-cell">却下</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">型階層を6段に拡張</th>
+              <td class="matrix-cell">中（差が細かすぎる）</td>
+              <td class="matrix-cell">中</td>
+              <td class="matrix-cell">却下</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">8pxグリッド＋4段型階層</th>
+              <td class="matrix-cell">低</td>
+              <td class="matrix-cell">中</td>
+              <td class="matrix-cell">併用採用</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure data-ve-component="matrix" role="group" aria-label="色の役割の対照" aria-describedby="m-sum">
+        <figcaption class="ve-matrix-caption">色は判断状態にだけ残し、構造からは外すのが v1 の分岐点である。</figcaption>
+        <p id="m-sum" class="ve-matrix-summary">現行と v1 で各要素の色の根拠がどう変わるかを対照する。 注釈: 判断の分岐点</p>
+        <div class="ve-matrix-scroll">
+          <table>
+            <thead>
+              <tr>
+                <td class="ve-matrix-corner"></td>
+                <th scope="col">現行の色</th>
+                <th scope="col">v1 基準の色</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">KPI数値</th>
+                <td data-ve-semantic-id="c1" data-ve-row-id="r1" data-ve-column-id="k1">意味のない青字</td>
+                <td class="ve-takeaway-target" data-ve-semantic-id="c2" data-ve-row-id="r1" data-ve-column-id="k2" data-ve-takeaway="true">本文色（構造扱い）<span class="ve-emphasis">判断の分岐点</span></td>
+              </tr>
+              <tr>
+                <th scope="row">選択案カード</th>
+                <td data-ve-semantic-id="c3" data-ve-row-id="r2" data-ve-column-id="k1">青（意味あり）</td>
+                <td data-ve-semantic-id="c4" data-ve-row-id="r2" data-ve-column-id="k2">青のまま（判断色）</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="ve-matrix-notes">
+          <li><span class="ve-cert ve-cert-confirmed">確定</span> 実装済みトークンに基づく対照である。</li>
+        </ul>
+      </figure>
     </section>
+
+    <!-- 画面3: flow（spine＋レール） -->
+    <section aria-labelledby="s3">
+      <h2 id="s3">承認フローは縦の背骨で読め、軽微な改訂だけがレールで承認へ直行する。</h2>
+      <figure data-ve-component="flow" role="group" aria-label="デザインゲートの承認フロー" aria-describedby="f-sum">
+        <figcaption class="ve-flow-caption">起案から Task 5 着手までは一本道で、例外の近道はレール1本に限られる。</figcaption>
+        <p id="f-sum" class="ve-flow-summary">6ノード・2フェーズ・スキップエッジ1本。接続とレールはすべてモノクロで描く。</p>
+        <div class="ve-flow-scroll">
+          <ol class="ve-flow-canvas">
+            <li class="ve-flow-group-label" data-ve-semantic-id="g1">起案フェーズ</li>
+            <li class="ve-flow-station in-group">
+              <span class="ve-flow-node" data-ve-semantic-id="n1" data-ve-node-id="n1">起案（提案1文を書く）</span>
+            </li>
+            <li class="ve-flow-link" data-ve-semantic-id="e1" data-ve-from="n1" data-ve-to="n2" data-ve-relation="ordered-transition">
+              <span class="ve-flow-arrow" aria-hidden="true">&#8595;</span>
+              <span class="ve-flow-edge-label">skeleton へ反映</span><span class="ve-flow-rel">順序遷移</span>
+            </li>
+            <li class="ve-flow-station in-group">
+              <span class="ve-flow-node" data-ve-semantic-id="n2" data-ve-node-id="n2">skeleton 改訂</span>
+            </li>
+            <li class="ve-flow-group-label" data-ve-semantic-id="g2">承認フェーズ</li>
+            <li class="ve-flow-link" data-ve-semantic-id="e2" data-ve-from="n2" data-ve-to="n3" data-ve-relation="ordered-transition">
+              <span class="ve-flow-arrow" aria-hidden="true">&#8595;</span>
+              <span class="ve-flow-edge-label">検証へ</span><span class="ve-flow-rel">順序遷移</span>
+            </li>
+            <li class="ve-flow-station in-group">
+              <span class="ve-flow-node" data-ve-semantic-id="n3" data-ve-node-id="n3">監査テスト（225件）</span>
+            </li>
+            <li class="ve-flow-link" data-ve-semantic-id="e3" data-ve-from="n3" data-ve-to="n4" data-ve-relation="ordered-transition">
+              <span class="ve-flow-arrow" aria-hidden="true">&#8595;</span>
+              <span class="ve-flow-edge-label">全緑で通過</span><span class="ve-flow-rel">順序遷移</span>
+            </li>
+            <li class="ve-flow-station in-group">
+              <span class="ve-flow-node" data-ve-semantic-id="n4" data-ve-node-id="n4">デザインゲート（目視4条件）</span>
+            </li>
+            <li class="ve-flow-link" data-ve-semantic-id="e4" data-ve-from="n4" data-ve-to="n5" data-ve-relation="ordered-transition">
+              <span class="ve-flow-arrow" aria-hidden="true">&#8595;</span>
+              <span class="ve-flow-edge-label">合否表を通過</span><span class="ve-flow-rel">順序遷移</span>
+            </li>
+            <li class="ve-flow-station in-group">
+              <span class="ve-flow-node" data-ve-semantic-id="n5" data-ve-node-id="n5">ユーザー承認</span>
+            </li>
+            <li class="ve-flow-link" data-ve-semantic-id="e5" data-ve-from="n5" data-ve-to="n6" data-ve-relation="ordered-transition">
+              <span class="ve-flow-arrow" aria-hidden="true">&#8595;</span>
+              <span class="ve-flow-edge-label">正として確定</span><span class="ve-flow-rel">順序遷移</span>
+            </li>
+            <li class="ve-flow-station in-group">
+              <span class="ve-flow-node" data-ve-semantic-id="n6" data-ve-node-id="n6">Task 5 以降に着手</span>
+            </li>
+            <li class="ve-flow-rail ve-rail-lane-0 ve-rail-demo" data-ve-semantic-id="e9" data-ve-from="n2" data-ve-to="n5" data-ve-relation="branching">
+              <span class="ve-flow-edge-label">軽微時は直接承認</span>
+            </li>
+          </ol>
+        </div>
+        <ul class="ve-flow-edges visually-hidden">
+          <li>起案 から skeleton 改訂 へ、順序遷移で進む。</li>
+          <li>skeleton 改訂 から 監査テスト へ、順序遷移で進む。</li>
+          <li>監査テスト から デザインゲート へ、順序遷移で進む。</li>
+          <li>デザインゲート から ユーザー承認 へ、順序遷移で進む。</li>
+          <li>ユーザー承認 から Task 5 以降に着手 へ、順序遷移で進む。</li>
+          <li>skeleton 改訂 から ユーザー承認 へ、軽微時のみ分岐して直接進む。</li>
+        </ul>
+        <ul class="ve-flow-notes">
+          <li>スキップエッジは軽微な改訂のみ有効という運用上の分岐であり、既定の経路ではない。</li>
+        </ul>
+      </figure>
+    </section>
+
+    <!-- 画面4: ask 3種 -->
+    <section aria-labelledby="s4">
+      <h2 id="s4">決定・依頼・仮説の3種の ask は同じ枠を共有し、色が付くのは決定の選択チップと既定案バッジだけである。</h2>
+
+      <div class="ask" data-ask="decision">
+        <p class="ask-kind">判断してください</p>
+        <p class="ask-question">この4画面の見た目を v1 の「正」として確定しますか？</p>
+        <ul class="ask-options">
+          <li data-ask-option data-ask-default><span>今すぐ承認する</span><span class="ask-tradeoff">後続タスクへ即着手できる一方、微修正は次サイクル送りになる</span></li>
+          <li data-ask-option><span>指摘を戻して再提示させる</span><span class="ask-tradeoff">仕上がりは上がるが承認が1サイクル遅れる</span></li>
+        </ul>
+      </div>
+
+      <div class="ask" data-ask="request">
+        <p class="ask-kind">お願いする動作</p>
+        <ol class="ask-steps">
+          <li data-ask-role="user" data-ask-role-label="あなた">light/dark×広幅/狭幅の4条件でモックを開き合否表を確認する</li>
+          <li data-ask-role="agent" data-ask-role-label="Claude">不合格項目を skeleton トークンへ反映して再提示する</li>
+          <li data-ask-role="third-party" data-ask-role-label="レビュアー">最終差分を監査テストと目視で相互確認する</li>
+        </ol>
+      </div>
+
+      <div class="ask" data-ask="hypothesis">
+        <p class="ask-kind">検証待ちの仮説</p>
+        <p class="ask-claim">第一画面だけで「何の話か」「何を決めるか」が3秒で言える <span class="certainty inferred">推論</span></p>
+        <p class="ask-verify">検証方法: 初見の同僚に第一画面のみを見せ、主題と判断を口頭で言えるか確認する</p>
+      </div>
+    </section>
+
+    <!-- 監査用: すべての表記を一望する -->
+    <section aria-labelledby="s5">
+      <h2 id="s5">すべての表記を一望すると、色が付くのは判断状態だけだと監査できる。</h2>
+      <p class="claim">確度は色ではなく枠線の種類で示す: <span class="certainty confirmed">確定</span><span class="certainty inferred">推論</span><span class="certainty unverified">未検証</span> の3種。</p>
+      <figure class="figure">
+        <div class="compare">
+          <div class="option-card" data-tone="positive">推奨（緑）: 既定案。読み手が迷わず初期選択を掴める。</div>
+          <div class="option-card" data-tone="warning">注意（橙）: 差し戻し。承認が遅れる副作用を明示する。</div>
+        </div>
+        <figcaption>色は判断状態（推奨=緑・注意=橙・選択=青）にのみ割り当て、構造・文章・図の骨格はすべてモノクロで保つ。</figcaption>
+      </figure>
+    </section>
+
+    <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

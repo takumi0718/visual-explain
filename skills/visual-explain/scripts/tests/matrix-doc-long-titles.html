@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>visual-explain 資料</title>
+  <title>承認フローの手戻りは、引き継ぎ境界の受け入れ確認で減らせる</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -204,6 +204,8 @@
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
   (() => {
@@ -269,19 +271,34 @@
   </script>
   <main>
     <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
-    <div data-connect="known -> unknown"></div><div id="known"></div>
+      <h1>承認フローの手戻りは、引き継ぎ境界の受け入れ確認で減らせる</h1>
+      <p class="subtitle decision"><strong>あなたが決めること:</strong> 引き継ぎ境界に受け入れ確認を挟む試行を、次スプリントで開始するか決めます。</p>
+      <ul class="conditions">
+        <li>手戻りの主因が引き継ぎ境界での差し戻しだと確認できていること</li>
+        <li>受け入れ確認を足してもレビュー全体の所要時間が延びすぎないこと</li>
+      </ul>
     </section>
-    <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+
+    <section aria-labelledby="lt-finding">
+      <h2 id="lt-finding">承認フローの手戻りは3箇所に集中しており、いずれもレビュー担当の引き継ぎ境界で発生している</h2>
+      <p class="claim">直近90日の差し戻しは、起案から一次レビュー、一次から二次レビュー、二次レビューから承認への3つの引き継ぎでほぼ全て起きています。<span class="certainty confirmed">確認済み</span></p>
+      <p class="evidence">これは正規見本のための想定データで、特定のチームやツールの実測値ではありません。3箇所以外の工程では差し戻しがほとんど観測されませんでした。</p>
     </section>
+
+    <section aria-labelledby="lt-fix">
+      <h2 id="lt-fix">引き継ぎ境界に受け入れ確認を1つ挟むだけで、手戻りの主因である差し戻しを未然に防げる見込みだ</h2>
+      <p class="claim">受け手が着手前に前工程の成果物を点検すれば、差し戻しの多くは引き継ぎ時点で解消できると見込んでいます。<span class="certainty inferred">推論</span></p>
+      <p class="evidence">この見込みは差し戻しの発生位置からの推論であり、実際の削減率は試行で測る必要があります。確認の追加が新たな待ち時間を生む可能性も残ります。</p>
+    </section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

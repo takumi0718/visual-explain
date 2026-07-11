@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>visual-explain 資料</title>
+  <title>障害告知は一次チャネルをアプリ内通知に定め、他は補助に回す</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -204,6 +204,8 @@
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
   (() => {
@@ -269,19 +271,53 @@
   </script>
   <main>
     <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
-    <div data-connect="known -> unknown"></div><div id="known"></div>
+      <h1>障害告知は一次チャネルをアプリ内通知に定め、他は補助に回す</h1>
+      <p class="subtitle decision"><strong>あなたが決めること:</strong> 一次チャネルをアプリ内通知に切り替えるか、現状のメール中心を維持するか決めます。</p>
+      <ul class="conditions">
+        <li>告知の到達確認が取れることを最優先とし、コストは次点で判断すること</li>
+        <li>アプリ未導入の利用者向けに補助チャネルを残せること</li>
+      </ul>
     </section>
-    <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+
+    <section aria-labelledby="md-compare">
+      <h2 id="md-compare">アプリ内通知だけが到達確認と即時性を両立し、一次チャネルの条件を満たす</h2>
+      <p class="claim">8つの候補のうち、到達確認・即時性・コストの条件を同時に満たすのはアプリ内通知だけです。<span class="certainty inferred">推論</span></p>
+      <figure class="figure">
+        <div class="matrix">
+          <table>
+            <thead>
+              <tr>
+                <th class="matrix-label" scope="col">チャネル</th>
+                <th class="matrix-label" scope="col">主な利点</th>
+                <th class="matrix-label" scope="col">主な制約</th>
+                <th class="matrix-label" scope="col">概算の運用コスト</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th class="matrix-label" scope="row">メール</th><td class="matrix-cell">ほぼ全利用者に届く</td><td class="matrix-cell">開封が遅く到達確認が弱い</td><td class="matrix-cell">低</td></tr>
+              <tr class="option-card" data-tone="accent"><th class="matrix-label" scope="row">アプリ内通知</th><td class="matrix-cell">即時に表示し既読を取得できる</td><td class="matrix-cell">アプリ未導入者には届かない</td><td class="matrix-cell">中</td></tr>
+              <tr><th class="matrix-label" scope="row">プッシュ通知</th><td class="matrix-cell">アプリ外でも即時に届く</td><td class="matrix-cell">許可率に左右され取りこぼす</td><td class="matrix-cell">中</td></tr>
+              <tr><th class="matrix-label" scope="row">SMS</th><td class="matrix-cell">電話番号だけで届く</td><td class="matrix-cell">1通ごとに課金が発生する</td><td class="matrix-cell">高</td></tr>
+              <tr><th class="matrix-label" scope="row">Webhook</th><td class="matrix-cell">外部システムへ機械連携できる</td><td class="matrix-cell">人間の利用者には見えない</td><td class="matrix-cell">低</td></tr>
+              <tr><th class="matrix-label" scope="row">Slack連携</th><td class="matrix-cell">運用担当へ即座に共有できる</td><td class="matrix-cell">一般利用者は対象外</td><td class="matrix-cell">低</td></tr>
+              <tr><th class="matrix-label" scope="row">RSS</th><td class="matrix-cell">購読者が任意に取得できる</td><td class="matrix-cell">能動的な確認に依存する</td><td class="matrix-cell">低</td></tr>
+              <tr><th class="matrix-label" scope="row">通知なし</th><td class="matrix-cell">運用の手間がかからない</td><td class="matrix-cell">障害が利用者に伝わらない</td><td class="matrix-cell">なし</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figcaption>到達確認と即時性を両立するのはアプリ内通知だけで、他は片方を欠く。</figcaption>
+      </figure>
+      <p class="evidence">これは正規見本のための想定比較で、実在サービスの計測値ではありません。コストは相対的な目安で実額ではありません。</p>
     </section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

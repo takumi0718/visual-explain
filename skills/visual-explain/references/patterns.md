@@ -2,6 +2,12 @@
 
 この資料では、固定骨格の `TITLE:BEGIN` と `TITLE:END` の間に非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ置き、本文は `CONTENT:BEGIN` と `CONTENT:END` の間だけを編集する。`{{...}}` の未解決プレースホルダーやタイトル内のマークアップは使わない。ほかの領域は1バイトも変更しない。図はここにある HTML 契約どおりに埋め、座標、独自 CSS、独自 JavaScript を追加しない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
+## 共通契約
+
+- **見出しはアクションタイトル**にする。述語を持つ自己完結した主張だけを見出しにし、トピック名（「性能について」「代替案」）を禁じる。「案Aは案Bより速いが検証が要る」のように、見出しだけで何を判断すべきかが分かる一文にする。1見出し＝1洞察、40〜50字を目安にする。資料型テンプレートが必須と定める末尾の固定セクション見出し（「リスクと弱い前提」「不確かな点」「限界・確度」「限界・反証・確度」）は構造上のランドマークであり、アクションタイトル契約の適用外とする。それ以外の全セクション見出しには契約を適用する。
+- **horizontal logic 自己検査**: 資料を完成させる前に、見出しだけを上から順に読め。見出しの列だけで承認/却下を判断できなければ、見出しを書き直す。
+- **キャプションは takeaway**にする。図のキャプションはその図から持ち帰る1文にし、図の説明文・操作手順・凡例の言い換えを書かない（下記「図のキャプション規約」）。
+
 ## Pi/Katsura Qwen 固有の保守的縮退
 
 Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文どおりに保持するか引用する。順序が明示的な必須事実でない限り矢印や連番を描かず、許される推論は対象の直近で **推論** と明記する。因果・順序が不確かなら、flow ではなく `matrix`、`terms`、または文章を使う。この追加制約は同モデル専用であり、一般の図契約を緩めない。
@@ -10,7 +16,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ### 提案承認型
 
-1. 第一画面は `first-screen` を使い、提案または推奨を1文、**あなたが決めること**を1文、判断を左右する条件を最大2件だけ置く。同じ判断文を末尾に重複させない。第三者が第一画面を3秒見て「何の話か」「何を判断するか」を答えられる状態にする。
+1. 第一画面は `first-screen` を使い、`h1` タイトルに資料全体の主張を1文で置く（述語を持つ1文にしてトピック名を禁じ、40字目安。`<title>` 要素と同文にする）。続けて `subtitle` に**あなたが決めること**を1文で置く（判断のない資料型では「この資料が答える問い」を1文にする）。最後に判断を左右する条件を最大2件だけ置く。同じ判断文を末尾に重複させない。第三者が第一画面を3秒見て「何の話か」「何を判断するか」を答えられる状態にする。
 2. 新出用語が多いときだけ、先に用語表を置く。
 3. 現状と問題を図で示す。
 4. 提案は before/after を等しい大きさで並べる。
@@ -19,7 +25,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ### 仕組み理解型
 
-1. TL;DR で仕組みを一言で示す。
+1. TL;DR で仕組みを一言で示す。`subtitle` を使う場合は、あなたが決めることの代わりに「この資料が答える問い」を1文で示す。
 2. 新出用語が多いときだけ、先に用語表を置く。
 3. 全体地図で zoom-out の構造を示す。
 4. 主要フローでデータまたは処理の流れを示す。動きが核心ならステッパーを使う。
@@ -28,10 +34,18 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ### 調査報告型
 
-1. 結論または推奨を最初に示す。
+1. 結論または推奨を最初に示す。`subtitle` を使う場合は、あなたが決めることの代わりに「この資料が答える問い」を1文で示す。
 2. 主要な発見は、1発見につき1ブロックにし、近傍に出典リンクを置く。
 3. 定量データが必要なときだけ可視化する。
 4. 末尾に「限界・反証・確度」を置く。
+
+## 図のキャプション規約
+
+caption はその図から持ち帰る1文（takeaway）にする。図の説明文（「役割と操作の表」）や操作手順を書かない。読み手が図を1つだけ見て持ち帰るべき結論を書け。
+
+- takeaway が図の特定のセル/ノード/エッジで証明されるなら、canonical IR の `takeawayTargetIds` でその対象を **1〜3件** 指す。
+- 局所の補足は `emphasis` で対象の直近に短く書く（全体で最大3件、対象ごとに1件まで、各ラベル40字以内）。
+- 図全体がそのまま主張であり、指すべき単一の対象がないときだけ `takeawayScope: "whole"` を明示する。これは「caption 自体が図全体の takeaway だ」という意思表示で、視覚マーカーは付かない。`takeawayScope: "whole"` と `takeawayTargetIds` は併用できない。
 
 ## 共通の文法ブロック
 
@@ -42,18 +56,63 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
   <p class="claim">この節で答える主張を1行で書く。</p>
   <figure class="figure">
     <!-- この節の図または表 -->
-    <figcaption>図だけでは伝わらない最小限の補足。</figcaption>
+    <figcaption>この図から持ち帰る1文（takeaway）。説明文を書かない。</figcaption>
   </figure>
   <p class="evidence">根拠を2〜3行で、主張の近くに書く。</p>
   <details class="deep-dive"><summary>補足の検証過程</summary><pre>必要な詳細</pre></details>
 </section>
 ```
 
+### ask ブロック — 未決事項・依頼・検証待ち主張
+
+読み手に判断・行動・検証を求める箇所は ask ブロックで明示する。使い分けは次の1行ずつ。
+
+- **未決事項は `decision`**: これから決める選択。選択肢を2件以上並べ、各選択肢にトレードオフを添える。
+- **ユーザーへの依頼は `request`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
+- **検証待ち主張は `hypothesis`**: まだ確証がない主張と、その検証方法。
+
+`decision`。選択肢は2件以上。既定案（推奨）は1件が原則で、`data-ask-default` を付ける。既定案を0件にするなら `.ask-no-default-reason` で理由を書け（既定を示さない理由の明示が必須）。選択チップは青（`--accent`）、既定案は緑（`--positive`）で示される。
+
+```html
+<div class="ask" data-ask="decision">
+  <p class="ask-kind">判断してください</p>
+  <p class="ask-question">注釈を今回に含めますか？</p>
+  <ul class="ask-options">
+    <li data-ask-option data-ask-default><span>含める</span><span class="ask-tradeoff">変更量が増える</span></li>
+    <li data-ask-option><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>
+  </ul>
+</div>
+```
+
+`request`。各手順に `data-ask-role`（`user` / `agent` などの意味ロール）と、表示名の `data-ask-role-label` を付ける。ロールは日本語表示名ではなく意味的な値にする。ask-kind チップはモノクロで、警告色にしない。
+
+```html
+<div class="ask" data-ask="request">
+  <p class="ask-kind">お願いする動作</p>
+  <ol class="ask-steps">
+    <li data-ask-role="user" data-ask-role-label="あなた">specをレビューする</li>
+    <li data-ask-role="agent" data-ask-role-label="Claude">planを執筆する</li>
+  </ol>
+</div>
+```
+
+`hypothesis`。主張には確度バッジ（`certainty` の3値）を `ask-claim` の中に置き、`ask-verify` で検証方法を書く。ask-kind チップはモノクロ。
+
+```html
+<div class="ask" data-ask="hypothesis">
+  <p class="ask-kind">検証待ちの仮説</p>
+  <p class="ask-claim">見出しだけで判断できる <span class="certainty inferred">推論</span></p>
+  <p class="ask-verify">検証方法: 見出し列のみで判断内容を言えるか確認する</p>
+</div>
+```
+
 ## 図フォーマット
 
-### flow — 直線パイプライン・手順
+### flow — 順序・有向遷移・分岐
 
-番号付きの順序が意味を持つときに使う。ノードは直接の兄弟にし、CSS の矢印に任せる。
+番号付きの順序や有向の遷移が意味を持つときに使う。昇格済みの canonical flow は**縦の spine**（読み順に上から下）で描かれ、**分岐・スキップは右側のレール**に載る。受理条件は**前向き（reading order 上で必ず下向き）・並行辺禁止・自己ループ禁止・分岐と合流はそれぞれ3以下・同時レール3以下・行予算28以下（ノード＋隣接リンク＋group ラベル行の合計）**である。これを超える構造は受理されない。受理不能なら flow をやめて `matrix` か文章へ縮退せよ（密度目安は flow 12ノード程度、`design-system.md` を参照）。canonical flow の IR での書き方は末尾の組み立て例を見よ。
+
+互換節や単純な直線手順は、次のインライン `flow` を使ってよい。ノードは直接の兄弟にし、CSS の矢印に任せる。
 
 ```html
 <ol class="flow">
@@ -93,7 +152,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ### matrix — トレードオフ・監査・ステータス
 
-比較軸を列見出しにしたセマンティックな表を使う。縦罫線は使わず、横罫線だけで行を区切る。選択案は `option-card` と `data-tone="accent"` を組み合わせ、淡い背景だけで示す。選択案でも文字色、罫線色、枠色は変えない。セル内の記号だけに意味を持たせない。
+比較軸を列見出しにしたセマンティックな表を使う。縦罫線は使わず、横罫線だけで行を区切る。選択案は `option-card` と `data-tone="accent"` を組み合わせ、淡い背景だけで示す。選択案でも文字色、罫線色、枠色は変えない。セル内の記号だけに意味を持たせない。1画面あたり10行程度を目安にし、超えるなら軸を見直すか表を分ける。
 
 ```html
 <div class="matrix">
@@ -184,7 +243,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ## カノニカルな matrix / flow / mixed の組み立て例
 
-昇格済みの `matrix` と `flow` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。
+昇格済みの `matrix` と `flow` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### matrix（二軸分類・交差比較）
 
@@ -199,7 +258,8 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
         "id": "sec-doc-matrix",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison"]},
         "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
-        "caption": "役割 × 操作の許可範囲",
+        "caption": "閲覧者は書き込みだけ不可、それ以外は全許可",
+        "takeawayTargetIds": ["d-c4"],
         "certainty": [{"id": "d-cert", "level": "confirmed", "statement": "管理者の全操作は仕様で確定。"}],
         "sources": [{"id": "d-src", "label": "権限仕様 v3"}],
         "accessibility": {"label": "許可マトリクス", "summary": "行が役割、列が操作の表。"},
@@ -221,6 +281,8 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ### flow（順序・有向遷移・分岐）
 
+前向き・fan 3以下・レール3以下・行予算28以下を守る。超える構造は受理されないため、matrix か文章へ縮退する。
+
 ```json
 {
   "schemaVersion": 1,
@@ -232,7 +294,8 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
         "id": "sec-doc-flow",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition"]},
         "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
-        "caption": "提案から承認までの遷移",
+        "caption": "一次レビューの合意なしに承認へ進めない",
+        "takeawayTargetIds": ["f-e2"],
         "certainty": [{"id": "f-cert", "level": "confirmed", "statement": "起案から一次レビューへの遷移は確定。"}],
         "sources": [{"id": "f-src", "label": "レビュー運用手順"}],
         "accessibility": {"label": "承認フロー", "summary": "起案・一次レビュー・承認の順の有向グラフ。"},
@@ -265,7 +328,8 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
         "id": "sec-mx",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification"]},
         "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification"]},
-        "caption": "役割 × 操作",
+        "caption": "管理者は読み取りを許可される",
+        "takeawayScope": "whole",
         "certainty": [{"id": "mx-c", "level": "confirmed", "statement": "確定。"}],
         "sources": [{"id": "mx-s", "label": "権限仕様"}],
         "accessibility": {"label": "許可マトリクス", "summary": "行が役割、列が操作。"},
@@ -288,7 +352,8 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
         "id": "sec-fl",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition"]},
         "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition"]},
-        "caption": "承認の流れ",
+        "caption": "起案は承認へ進む",
+        "takeawayScope": "whole",
         "certainty": [{"id": "fl-c", "level": "confirmed", "statement": "確定。"}],
         "sources": [{"id": "fl-s", "label": "運用手順"}],
         "accessibility": {"label": "承認フロー", "summary": "起案・承認の順。"},

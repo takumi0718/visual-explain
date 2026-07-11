@@ -27,6 +27,19 @@ Required facts:
 - A premortem works by asking readers to generate causal reasons for a hypothetical failure, rather than merely listing risks.
 - `~/.agents/skills` is a de facto skill discovery convention; Claude Code has its own discovery-path exception.
 
+## 検証 fixture マトリクス（spec 対応）
+
+spec の「検証 fixture マトリクス」を満たす4文書。いずれも現行 skeleton から生成し、`../check.sh` を通す。
+
+- `matrix-doc-long-titles.html`: 45〜50字の日本語アクションタイトル見出しを2節に持ち、長い見出しでも折り返し・整列が破綻しないことを固定する（構造層・表層）。
+- `matrix-doc-mixed-density.html`: 疎な第一画面（提案1文＋判断1文＋条件2件）と8行×4列の高密度 matrix（選択案に `data-tone="accent"`）を同居させ、密度差の表示を固定する（構造層・表層）。
+- `matrix-doc-all-notations.html`: `data-tone="accent|positive|warning"` の option-card、確度3値バッジ、`decision`/`request`/`hypothesis` の ask 3種、takeaway キャプションと出所注釈を1文書に同時収載し、記法層を網羅する。
+- `assembly-branching-flow.json`: 6ノード・group 2つ・隣接エッジ4・スキップ（`branching`）1・`takeawayTargetIds`1件・`emphasis`1件の canonical flow。前向き・fan≤3・レール≤3・行予算≤28を満たし、`build_explainer.py` でビルドして `ve-flow-rail`／`ve-flow-group-label`／注釈が出ることを固定する（flow 契約とトポロジー）。
+
+## Design-gate mock
+
+`mock-design-gate.html` はデザインゲート専用（checker 対象外・目視レビュー用）。
+
 ## Title fixture contract
 
 Every ordinary fixture has one `TITLE:BEGIN`/`TITLE:END` slot containing one non-empty plain-text `<title>` element. The negative title fixtures isolate empty, markup, unresolved-placeholder, and missing-marker diagnostics.

@@ -173,6 +173,33 @@ class FailureTest(unittest.TestCase):
             build_document(raw, Registry(registry_version=1, components=()), MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp)
 
 
+class MatrixAnnotationRenderTest(unittest.TestCase):
+    def setUp(self) -> None:
+        MixedAssemblyTest.setUpClass()
+
+    def _build_with_annotation(self):
+        raw = json.loads((TESTS / "component-valid-mixed.json").read_text("utf-8"))
+        for section in raw["sections"]:
+            if section.get("kind") == "canonical" and "matrix" in section["ir"]:
+                cell_id = section["ir"]["matrix"]["cells"][0]["id"]
+                section["ir"]["takeawayTargetIds"] = [cell_id]
+                section["ir"]["emphasis"] = [{"targetId": cell_id, "label": "判断の分岐点"}]
+                doc = build_document(raw, MixedAssemblyTest.registry, MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp)
+                return doc, cell_id
+        raise AssertionError("matrix section not found")
+
+    def test_takeaway_target_marked(self) -> None:
+        doc, cell_id = self._build_with_annotation()
+        self.assertIn(f'data-ve-semantic-id="{esc(cell_id)}" data-ve-row-id=', doc)
+        self.assertIn('data-ve-takeaway="true"', doc)
+        self.assertIn('class="ve-takeaway-target"', doc)
+
+    def test_emphasis_label_rendered_and_in_summary(self) -> None:
+        doc, _ = self._build_with_annotation()
+        self.assertIn('<span class="ve-emphasis">判断の分岐点</span>', doc)
+        self.assertIn("注釈: 判断の分岐点", doc)
+
+
 class RendererTrustBoundaryTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

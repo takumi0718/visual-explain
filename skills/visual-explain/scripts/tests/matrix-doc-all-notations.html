@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>visual-explain 資料</title>
+  <title>視覚基準v1の記法は、意味色・確度・askを1つの総合見本にまとめる</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -204,6 +204,8 @@
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
   (() => {
@@ -269,19 +271,76 @@
   </script>
   <main>
     <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
-    <div data-connect="known -> unknown"></div><div id="known"></div>
+      <h1>視覚基準v1の記法は、意味色・確度・askを1つの総合見本にまとめる</h1>
+      <p class="subtitle decision"><strong>あなたが決めること:</strong> この記法一式を今後の説明資料の標準として採用するか決めます。</p>
+      <ul class="conditions">
+        <li>意味色が選択・推奨・注意の3状態だけに対応していること</li>
+        <li>確度を確認済み・推論・未確認の3値でテキスト表記できること</li>
+      </ul>
     </section>
-    <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+
+    <section aria-labelledby="an-tones">
+      <h2 id="an-tones">意味色は選択・推奨・注意の3状態だけを表し、装飾には使わない</h2>
+      <p class="claim">option-card の data-tone は、選択（accent）・推奨（positive）・注意（warning）の判断状態にだけ対応します。<span class="certainty confirmed">確認済み</span></p>
+      <figure class="figure">
+        <div class="matrix">
+          <table>
+            <thead>
+              <tr>
+                <th class="matrix-label" scope="col">状態</th>
+                <th class="matrix-label" scope="col">意味</th>
+                <th class="matrix-label" scope="col">この資料での使い方</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="option-card" data-tone="accent"><th class="matrix-label" scope="row">選択 (accent)</th><td class="matrix-cell">いま選んでいる案や現在地</td><td class="matrix-cell">採用予定の記法セット</td></tr>
+              <tr class="option-card" data-tone="positive"><th class="matrix-label" scope="row">推奨 (positive)</th><td class="matrix-cell">望ましい既定の選択</td><td class="matrix-cell">decision の既定案に対応</td></tr>
+              <tr class="option-card" data-tone="warning"><th class="matrix-label" scope="row">注意 (warning)</th><td class="matrix-cell">未確認または警告</td><td class="matrix-cell">検証待ちの前提を示す</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figcaption>色は3つの判断状態にだけ対応し、行の意味は文字でも読める。</figcaption>
+      </figure>
+      <p class="evidence">色だけに意味を持たせず、各行の状態名と説明を文字で併記しています。見込みには推論を<span class="certainty inferred">推論</span>、未検証の事項には未確認を<span class="certainty unverified">未確認</span>付けて区別します。</p>
+      <details class="source-note"><summary>出所</summary><p>視覚基準 v1 のデザインシステム規範（design-system.md）に基づく説明用の要約です。</p></details>
     </section>
+
+    <section aria-labelledby="an-asks">
+      <h2 id="an-asks">未決・依頼・検証待ちは decision・request・hypothesis で種別を明示する</h2>
+      <p class="claim">読み手に判断・行動・検証を求める箇所は、3種類の ask ブロックで種別を分けて示します。<span class="certainty confirmed">確認済み</span></p>
+
+      <div class="ask" data-ask="decision">
+        <p class="ask-kind">判断してください</p>
+        <p class="ask-question">この記法セットを説明資料の標準として採用しますか？</p>
+        <ul class="ask-options">
+          <li data-ask-option data-ask-default><span>今回から採用する</span><span class="ask-tradeoff">既存資料の書き換えが必要になる</span></li>
+          <li data-ask-option><span>試行期間を設ける</span><span class="ask-tradeoff">標準化が遅れ表記が混在する</span></li>
+        </ul>
+      </div>
+
+      <div class="ask" data-ask="request">
+        <p class="ask-kind">お願いする動作</p>
+        <ol class="ask-steps">
+          <li data-ask-role="user" data-ask-role-label="あなた">この総合見本の記法をレビューする</li>
+          <li data-ask-role="agent" data-ask-role-label="Claude">合意した記法で既存の説明資料を更新する</li>
+        </ol>
+      </div>
+
+      <div class="ask" data-ask="hypothesis">
+        <p class="ask-kind">検証待ちの仮説</p>
+        <p class="ask-claim">見出しと確度バッジだけで判断の要点を追える <span class="certainty inferred">推論</span></p>
+        <p class="ask-verify">検証方法: 第三者に見出し列と確度だけを見せ、何を判断すべきか言えるか確認する</p>
+      </div>
+    </section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

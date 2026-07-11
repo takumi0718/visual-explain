@@ -23,7 +23,16 @@
     },
     "accessibility": {"$ref": "#/$defs/accessibility"},
     "matrix": {"$ref": "#/$defs/matrixPayload"},
-    "flow": {"$ref": "#/$defs/flowPayload"}
+    "flow": {"$ref": "#/$defs/flowPayload"},
+    "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+    "takeawayScope": {"enum": ["targets", "whole"]},
+    "emphasis": {
+      "type": "array", "maxItems": 3,
+      "items": {"type": "object", "additionalProperties": false,
+                "required": ["targetId", "label"],
+                "properties": {"targetId": {"type": "string"},
+                                "label": {"type": "string", "minLength": 1, "maxLength": 40}}}
+    }
   },
   "oneOf": [
     {"required": ["matrix"], "not": {"required": ["flow"]}},
