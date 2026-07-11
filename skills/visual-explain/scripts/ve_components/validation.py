@@ -137,6 +137,32 @@ def validate_canonical_section(raw: object) -> CanonicalIR:
     return ir
 
 
+_ANNOTATION_TARGET_LABELS = {
+    "matrix": "セル",
+    "flow": "ノード/エッジ",
+    "enumeration": "項目",
+}
+
+
+def _run_payload_validator(
+    payload_kind: str,
+    raw: dict,
+    path: str,
+    col: DiagnosticCollector,
+    relationship: RelationshipDeclaration | None,
+) -> object | None:
+    validator = _PAYLOAD_VALIDATORS.get(payload_kind)
+    if validator is None:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"未登録のペイロード種別 '{payload_kind}'", path)
+        return None
+    payload_path = f"{path}.{payload_kind}"
+    payload_raw = raw.get(payload_kind)
+    if payload_kind == "flow":
+        acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
+        return validator(payload_raw, payload_path, col, acyclic=acyclic)
+    return validator(payload_raw, payload_path, col)
+
+
 def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> CanonicalIR | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "canonical IR はオブジェクトである必要があります", path)
@@ -166,6 +192,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     matrix = None
     flow = None
     enumeration = None
+    validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
     if len(present) == 0:
         col.add(INVALID_COMPONENT_PAYLOAD, "コンポーネント ペイロードが必要です", path)
@@ -176,20 +203,16 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         payload_kind = present[0]
     else:
         payload_kind = present[0]
+        validated_payload = _run_payload_validator(payload_kind, raw, path, col, relationship)
         if payload_kind == "matrix":
-            matrix = _validate_matrix(raw.get("matrix"), f"{path}.matrix", col)
+            matrix = validated_payload
         elif payload_kind == "flow":
-            acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
-            flow = _validate_flow(raw.get("flow"), f"{path}.flow", col, acyclic=acyclic)
-        else:
-            enumeration = _validate_enumeration(raw.get("enumeration"), f"{path}.enumeration", col)
+            flow = validated_payload
+        elif payload_kind == "enumeration":
+            enumeration = validated_payload
 
-    cell_ids = {c.id for c in matrix.cells} if matrix is not None else set()
-    node_ids = {n.id for n in flow.nodes} if flow is not None else set()
-    edge_ids = {e.id for e in flow.edges} if flow is not None else set()
-    item_ids = {item.id for item in enumeration.items} if enumeration is not None else set()
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
-        raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids, item_ids
+        raw, path, col, caption, payload_kind, validated_payload
     )
 
     # Cross-consistency: component choice must match the present payload and kind.
@@ -226,7 +249,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     )
 
 
-def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids, item_ids=()):
+def _validate_annotations(raw, path, col, caption, payload_kind, payload):
     # 注釈は opt-in: 3フィールドのいずれも無い既存 IR は無検査で通す（後方互換）。
     # いずれか1つでも指定されたら契約全体を検査する。
     if not ({"takeawayTargetIds", "takeawayScope", "emphasis"} & set(raw)):
@@ -238,15 +261,14 @@ def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_
     target_list = targets if isinstance(targets, list) else []
     if targets is not None and not isinstance(targets, list):
         col.add(INVALID_COMPONENT_PAYLOAD, "takeawayTargetIds は配列が必要です", path)
-    if payload_kind == "matrix":
-        allowed = cell_ids
-        kind_label = "セル"
-    elif payload_kind == "flow":
-        allowed = node_ids | edge_ids
-        kind_label = "ノード/エッジ"
-    else:
-        allowed = set(item_ids)
+    target_extractor = ANNOTATION_TARGETS.get(payload_kind)
+    if target_extractor is None:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"注釈対象が未登録のペイロード '{payload_kind}'", path)
+        allowed: set[str] = set()
         kind_label = "項目"
+    else:
+        allowed = target_extractor(payload)
+        kind_label = _ANNOTATION_TARGET_LABELS.get(payload_kind, "項目")
     if scope == "targets" and len(target_list) == 0:
         col.add(INVALID_COMPONENT_PAYLOAD,
                 "takeawayTargetIds が0件です (図全体が対象なら takeawayScope: \"whole\" を明示してください)", path)

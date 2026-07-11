@@ -189,6 +189,14 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-enumeration-structure.html").read_text("utf-8")))
 
+    def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-enumeration-missing-semantic-id.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "enumeration ブロックに data-ve-semantic-id がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
     def test_enumeration_with_flow_attrs_fails(self) -> None:
         doc = build("component-valid-enumeration.json")
         tampered = doc.replace(

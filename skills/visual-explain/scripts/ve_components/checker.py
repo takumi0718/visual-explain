@@ -552,11 +552,18 @@ _COMPONENT_RE = re.compile(r'data-ve-component="([^"]+)"')
 
 def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    blocks = re.findall(r'class="[^"]*ve-enum-block[^"]*"[^>]*data-ve-semantic-id="([^"]+)"', body)
-    if len(blocks) < 2 or len(blocks) > 6:
+    block_attrs = re.findall(r'<li\s+([^>]*\bve-enum-block\b[^>]*)>', body)
+    if len(block_attrs) < 2 or len(block_attrs) > 6:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      f"enumeration は2〜6項目である必要があります (found {len(blocks)})"))
-    for bid in blocks:
+                                      f"enumeration は2〜6項目である必要があります (found {len(block_attrs)})"))
+    if len(block_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in block_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "enumeration ブロックに data-ve-semantic-id がありません"))
+    for attrs in block_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        bid = match.group(1)
         if bid not in parser.semantic_ids:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           f"enumeration 項目 '{bid}' に意味 ID がありません"))

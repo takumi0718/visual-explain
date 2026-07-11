@@ -68,5 +68,95 @@ class V2CoreValidationTest(unittest.TestCase):
                 self.assertIn("enumeration_structure_violation", self._codes(_load(name)))
 
 
+class PayloadDispatchRegistryTest(unittest.TestCase):
+    """Regression: dispatch tables route payloads; no implicit enumeration fallback."""
+
+    def test_payload_validators_dispatch_registered_component(self) -> None:
+        import ve_components.validation as v
+        from ve_components.diagnostics import DiagnosticCollector
+
+        enum_calls: list[str] = []
+        stub_calls: list[str] = []
+        real_enum = v._PAYLOAD_VALIDATORS["enumeration"]
+
+        def tracking_enumeration(raw, path, col):
+            enum_calls.append(path)
+            return real_enum(raw, path, col)
+
+        def stub_validator(raw, path, col):
+            stub_calls.append(path)
+            return object()
+
+        raw = copy.deepcopy(_load("component-valid-enumeration.json"))
+        ir_raw = _ir(raw)
+        ir_raw.pop("enumeration")
+        ir_raw["__stub__"] = {"marker": True}
+
+        original_validators = dict(v._PAYLOAD_VALIDATORS)
+        original_keys = v._PAYLOAD_KEYS
+        try:
+            v._PAYLOAD_VALIDATORS["__stub__"] = stub_validator
+            v._PAYLOAD_VALIDATORS["enumeration"] = tracking_enumeration
+            v._PAYLOAD_KEYS = frozenset({*original_keys, "__stub__"})
+            col = DiagnosticCollector()
+            v._validate_canonical_ir(ir_raw, "ir", col)
+            self.assertEqual(stub_calls, ["ir.__stub__"])
+            self.assertEqual(enum_calls, [])
+        finally:
+            v._PAYLOAD_VALIDATORS.clear()
+            v._PAYLOAD_VALIDATORS.update(original_validators)
+            v._PAYLOAD_KEYS = original_keys
+
+    def test_annotation_targets_dispatch_registered_component(self) -> None:
+        import ve_components.validation as v
+        from ve_components.diagnostics import DiagnosticCollector
+
+        raw = copy.deepcopy(_load("component-valid-enumeration.json"))
+        ir_raw = _ir(raw)
+        ir_raw.pop("enumeration")
+        ir_raw["__stub__"] = {"marker": True}
+        ir_raw["takeawayTargetIds"] = ["stub-target"]
+
+        original_validators = dict(v._PAYLOAD_VALIDATORS)
+        original_targets = dict(v.ANNOTATION_TARGETS)
+        original_keys = v._PAYLOAD_KEYS
+        try:
+            v._PAYLOAD_VALIDATORS["__stub__"] = lambda raw, path, col: object()
+            v.ANNOTATION_TARGETS["__stub__"] = lambda _payload: {"stub-target"}
+            v.ANNOTATION_TARGETS["enumeration"] = lambda _payload: {"wrong-target"}
+            v._PAYLOAD_KEYS = frozenset({*original_keys, "__stub__"})
+            col = DiagnosticCollector()
+            targets, scope, _emphasis = v._validate_annotations(
+                ir_raw, "ir", col, ir_raw["caption"], "__stub__", object(),
+            )
+            self.assertEqual(targets, ("stub-target",))
+            self.assertFalse(col)
+        finally:
+            v._PAYLOAD_VALIDATORS.clear()
+            v._PAYLOAD_VALIDATORS.update(original_validators)
+            v.ANNOTATION_TARGETS.clear()
+            v.ANNOTATION_TARGETS.update(original_targets)
+            v._PAYLOAD_KEYS = original_keys
+
+    def test_unregistered_payload_kind_is_rejected(self) -> None:
+        import ve_components.validation as v
+        from ve_components.diagnostics import DiagnosticCollector
+
+        raw = copy.deepcopy(_load("component-valid-enumeration.json"))
+        ir_raw = _ir(raw)
+        ir_raw.pop("enumeration")
+        ir_raw["__orphan__"] = {"marker": True}
+
+        original_keys = v._PAYLOAD_KEYS
+        try:
+            v._PAYLOAD_KEYS = frozenset({*original_keys, "__orphan__"})
+            col = DiagnosticCollector()
+            v._validate_canonical_ir(ir_raw, "ir", col)
+            codes = [d.code for d in col.diagnostics]
+            self.assertIn("invalid_component_payload", codes)
+        finally:
+            v._PAYLOAD_KEYS = original_keys
+
+
 if __name__ == "__main__":
     unittest.main()
