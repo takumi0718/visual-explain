@@ -17,6 +17,15 @@ def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
+def _step_endpoint_name(step, index: int) -> str:
+    """Accessible loop endpoint: label, then title, then renderer ordinal."""
+    if step.label and str(step.label).strip():
+        return str(step.label).strip()
+    if step.title and str(step.title).strip():
+        return str(step.title).strip()
+    return f"ステップ {index}"
+
+
 def render_chevron(section: CanonicalSection, definition) -> RenderResult:
     ir = section.ir
     chevron = ir.chevron
@@ -63,11 +72,11 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
     body_inner = list_markup
     if chevron.loop and chevron.orientation == "vertical":
         loop_rail = '<div class="ve-chevron-loop-rail" aria-hidden="true"></div>'
-        last_label = chevron.steps[-1].label or ""
-        first_label = chevron.steps[0].label or ""
+        last_name = _step_endpoint_name(chevron.steps[-1], len(chevron.steps))
+        first_name = _step_endpoint_name(chevron.steps[0], 1)
         loop_sentence = (
             f'<ul class="ve-chevron-loop-sentence visually-hidden">'
-            f'<li>最終段〈{_esc(last_label)}〉から先頭段〈{_esc(first_label)}〉へ戻る</li>'
+            f'<li>最終段〈{_esc(last_name)}〉から先頭段〈{_esc(first_name)}〉へ戻る</li>'
             f'</ul>'
         )
         body_inner = (

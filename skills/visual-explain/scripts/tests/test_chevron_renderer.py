@@ -300,14 +300,60 @@ class ChevronMarkupTest(unittest.TestCase):
         self.assertIn("calc(100% - 0.75rem)", horiz_block)
         self.assertIn("0.75rem 0", horiz_block)
 
+    def test_narrow_screen_resets_horizontal_overlap_margin(self) -> None:
+        css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
+        media_block = css.split("@media (max-width: 40rem)")[1]
+        self.assertIn(".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step", media_block)
+        reset_block = media_block.split(
+            ".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step"
+        )[1].split("}")[0]
+        self.assertIn("margin-left: 0", reset_block)
+
     def test_loop_adds_visually_hidden_last_to_first_sentence(self) -> None:
         ir, result = render_fixture("component-valid-chevron-loop.json")
         hidden = re.search(r'<ul class="ve-chevron-loop-sentence visually-hidden">(.*?)</ul>', result.markup, re.DOTALL)
         self.assertIsNotNone(hidden)
         last_label = ir.chevron.steps[-1].label
         first_label = ir.chevron.steps[0].label
+        self.assertTrue(last_label and first_label)
         self.assertIn(last_label, hidden.group(1))
         self.assertIn(first_label, hidden.group(1))
+        self.assertRegex(hidden.group(1), rf"最終段〈{re.escape(last_label)}〉から先頭段〈{re.escape(first_label)}〉へ戻る")
+
+    def test_number_mode_loop_names_nonempty_endpoints_last_to_first(self) -> None:
+        ir, result = render_fixture("component-valid-chevron-loop-number.json")
+        hidden = re.search(r'<ul class="ve-chevron-loop-sentence visually-hidden">(.*?)</ul>', result.markup, re.DOTALL)
+        self.assertIsNotNone(hidden)
+        last_title = ir.chevron.steps[-1].title
+        first_title = ir.chevron.steps[0].title
+        self.assertTrue(last_title and first_title)
+        sentence = hidden.group(1)
+        self.assertIn(last_title, sentence)
+        self.assertIn(first_title, sentence)
+        self.assertRegex(sentence, rf"最終段〈{re.escape(last_title)}〉から先頭段〈{re.escape(first_title)}〉へ戻る")
+        self.assertLess(sentence.index(first_title), sentence.index("へ戻る"))
+
+    def test_number_mode_loop_falls_back_to_ordinal_when_no_label_or_title(self) -> None:
+        from ve_components.renderers.chevron import render_chevron
+        raw = _base_ir(
+            loop=True,
+            blockContent="number",
+            steps=[
+                {"id": "s1", "description": ["行1"]},
+                {"id": "s2", "description": ["行2"]},
+                {"id": "s3", "description": ["行3"]},
+            ],
+        )
+        raw["relationship"]["capabilities"] = ["linear-sequence", "closed-loop"]
+        raw["selection"]["matchedCapabilities"] = ["linear-sequence", "closed-loop"]
+        ir = validate_canonical_section(raw)
+        result = render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
+        hidden = re.search(r'<ul class="ve-chevron-loop-sentence visually-hidden">(.*?)</ul>', result.markup, re.DOTALL)
+        self.assertIsNotNone(hidden)
+        sentence = hidden.group(1)
+        self.assertIn("ステップ 3", sentence)
+        self.assertIn("ステップ 1", sentence)
+        self.assertRegex(sentence, r"最終段〈ステップ 3〉から先頭段〈ステップ 1〉へ戻る")
 
     def test_horizontal_variant_has_no_loop_rail(self) -> None:
         _, result = render_fixture("component-valid-chevron-horizontal.json")

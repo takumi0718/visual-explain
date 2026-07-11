@@ -205,7 +205,7 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="chevron" data-ve-contract-version="1" data-ve-asset="chevron.css" data-ve-digest="63ae328170721f396b232a1ad2201b4649cbac690a8fc5a697cb641c39d42b4f">[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+  <style data-ve-component="chevron" data-ve-contract-version="1" data-ve-asset="chevron.css" data-ve-digest="9cb02dcd5510cc426818b7a0a51cb3c6d6436737e17c7e0df1d09e0762d3a48e">[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
 [data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
 [data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
 [data-ve-component="chevron"] .ve-chevron-body { position: relative; }
@@ -250,6 +250,9 @@
   [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
     max-width: none;
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1rem), 50% 100%, 0 calc(100% - 1rem));
+  }
+  [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
+    margin-left: 0;
   }
 }
 </style>
