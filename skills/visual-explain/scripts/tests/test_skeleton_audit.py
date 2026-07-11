@@ -120,5 +120,43 @@ class TypeScaleTest(unittest.TestCase):
             self.assertIn(token, SKELETON)
 
 
+class ColorDisciplineAuditTest(unittest.TestCase):
+    def test_component_css_is_monochrome(self):
+        # 意味色トークンと生 hex は component CSS に現れない（色は判断状態専用で、
+        # skeleton の data-tone / ask 規則だけが意味色を持てる）
+        for css, label in zip(COMPONENT_CSS, ("matrix.css", "flow.css")):
+            for token in ("--accent", "--positive", "--warning"):
+                self.assertNotIn(token, css, f"{label} が意味色 {token} を参照しています")
+            self.assertNotRegex(css, r"#[0-9a-fA-F]{3,8}\b", f"{label} に生の色指定があります")
+
+    def test_semantic_colors_only_on_judgment_selectors(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        # 意味色を参照してよいセレクタ行の allowlist を検査する。
+        # 各エントリは実在するルールにのみ対応させ、判断状態としての意味を明記する
+        # （マッチしない項目は監査の抜け穴になるため置かない）。
+        allowed = (
+            # matrix/option-card の data-tone 属性: accent=選択, positive=推奨, warning=注意
+            "data-tone",
+            # ask ブロックの decision kind バッジと既定案マーカー（選択=accent, 既定案=positive）
+            ".ask",
+            # decision ask 内の強調文字（選択の強調 = accent-strong）
+            ".decision",
+            # 文書全体のリンク色（accent-strong = 選択・現在地の強調というリンクのアフォーダンス）
+            "a ",
+            # ステッパーの現在地インジケータ（accent = 現在地の強調、design-system.md の定義に合致）
+            ".step-panel.is-current",
+            # 接続線を描画できないときに JS が挿入する警告メッセージ（warning = 注意の意味）
+            ".connector-warning",
+        )
+        for rule in style.split("}"):
+            if "{" not in rule:
+                continue
+            selector, body = rule.rsplit("{", 1)
+            if any(t in body for t in ("--accent", "--positive", "--warning")) \
+                    and "--accent:" not in body and "--positive:" not in body and "--warning:" not in body:
+                self.assertTrue(any(a in selector for a in allowed),
+                                f"意味色が判断状態以外のセレクタに使われています: {selector.strip()[:80]}")
+
+
 if __name__ == "__main__":
     unittest.main()

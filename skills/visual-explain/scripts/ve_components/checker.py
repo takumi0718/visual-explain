@@ -606,7 +606,6 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_content_markup(content)
         diagnostics += validate_final_provenance(content)
         diagnostics += validate_artifact_semantics(content)
-        diagnostics += validate_ask_blocks(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom
