@@ -215,6 +215,14 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-chevron-structure.html").read_text("utf-8")))
 
+    def test_pyramid_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-pyramid-structure.html").read_text("utf-8")))
+
+    def test_stairs_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-stairs-structure.html").read_text("utf-8")))
+
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-enumeration-missing-semantic-id.html").read_text("utf-8")
@@ -456,6 +464,34 @@ class ChevronDocRegressionTest(unittest.TestCase):
             with self.subTest(name=name):
                 raw = (TESTS / name).read_text("utf-8")
                 self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class PyramidDocRegressionTest(unittest.TestCase):
+    """Committed pyramid-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_pyramid_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "pyramid-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_pyramid_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "pyramid-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class StairsDocRegressionTest(unittest.TestCase):
+    """Committed stairs-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_stairs_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "stairs-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_stairs_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "stairs-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
 
 
 if __name__ == "__main__":

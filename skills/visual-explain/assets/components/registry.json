@@ -194,6 +194,98 @@
           "digest": "9cb02dcd5510cc426818b7a0a51cb3c6d6436737e17c7e0df1d09e0762d3a48e"
         }
       ]
+    },
+    {
+      "id": "pyramid",
+      "version": 1,
+      "relationshipKind": "layered-priority",
+      "capabilities": [
+        "priority-layering"
+      ],
+      "semanticResponsibility": "上ほど重要な優先階層のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "tiers"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なピラミッド形状で優先度の階層を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と優先層の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "pyramid-structure"
+      ],
+      "renderer": "pyramid@1",
+      "assets": [
+        {
+          "id": "pyramid.css",
+          "slot": "styles",
+          "path": "pyramid.css",
+          "digest": "8a45af59cbe466a0902044aa0e91744186a8ba1766cd28e427f2819774ff227e"
+        }
+      ]
+    },
+    {
+      "id": "stairs",
+      "version": 1,
+      "relationshipKind": "staged-maturity",
+      "capabilities": [
+        "maturity-staging"
+      ],
+      "semanticResponsibility": "到達したら留まる成熟度段階のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "stages"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的な階段形状で成熟度段階と現在地を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と成熟度段階の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "stairs-structure"
+      ],
+      "renderer": "stairs@1",
+      "assets": [
+        {
+          "id": "stairs.css",
+          "slot": "styles",
+          "path": "stairs.css",
+          "digest": "8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe"
+        }
+      ]
     }
   ]
 }

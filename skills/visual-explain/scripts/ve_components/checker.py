@@ -616,9 +616,68 @@ def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagn
     return diagnostics
 
 
+def _check_pyramid_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    tier_attrs = re.findall(r'<li\s+([^>]*\bve-pyramid-tier\b[^>]*)>', body)
+    if len(tier_attrs) < 3 or len(tier_attrs) > 4:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"pyramid は3〜4層である必要があります (found {len(tier_attrs)})"))
+    if len(tier_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in tier_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "pyramid 層に data-ve-semantic-id がありません"))
+    for attrs in tier_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        tid = match.group(1)
+        if tid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"pyramid 層 '{tid}' に意味 ID がありません"))
+    strong_faces = sum("ve-pyramid-face-strong" in attrs for attrs in tier_attrs)
+    if strong_faces != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "pyramid の頂点層は ve-pyramid-face-strong を1つだけ持つ必要があります"))
+    return diagnostics
+
+
+def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    stage_attrs = re.findall(r'<li\s+([^>]*\bve-stairs-stage\b[^>]*)>', body)
+    if len(stage_attrs) < 3 or len(stage_attrs) > 5:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"stairs は3〜5段である必要があります (found {len(stage_attrs)})"))
+    if len(stage_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in stage_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "stairs 段に data-ve-semantic-id がありません"))
+    accent_count = 0
+    for attrs in stage_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        sid = match.group(1)
+        if sid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"stairs 段 '{sid}' に意味 ID がありません"))
+        if "ve-stairs-tread-accent" in attrs:
+            accent_count += 1
+            if "ve-stairs-note" not in attrs and not re.search(
+                rf'data-ve-semantic-id="{re.escape(sid)}"[^>]*>.*?ve-stairs-note',
+                body,
+                re.DOTALL,
+            ):
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "current 段には ve-stairs-note が必要です"))
+    if accent_count > 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "stairs の accent 段は最大1つです"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
     "chevron": _check_chevron_artifact,
+    "pyramid": _check_pyramid_artifact,
+    "stairs": _check_stairs_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(
