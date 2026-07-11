@@ -227,6 +227,34 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-logic-tree-structure.html").read_text("utf-8")))
 
+    def test_logic_tree_missing_leaf_id_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-missing-leaf-id.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("logic-tree leaf に data-ve-semantic-id がありません" in m for m in messages)
+            or any("logic-tree の意味 ID" in m for m in messages),
+            messages,
+        )
+
+    def test_logic_tree_extra_connector_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-extra-connector.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("logic-tree の connector は枝数と一致する必要があります" in m for m in messages),
+            messages,
+        )
+
+    def test_logic_tree_data_connect_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-data-connect.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("logic-tree connector に data-connect は許可されていません", messages)
+
     def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")

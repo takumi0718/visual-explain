@@ -773,6 +773,38 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
     return diagnostics
 
 
+def _extract_logic_tree_ids(body: str) -> tuple[str | None, list[str], list[str]]:
+    root_id = None
+    root_match = re.search(
+        r'<div\s+([^>]*\bclass="[^"]*\bve-logic-tree-root\b(?!-)[^"]*"[^>]*)>',
+        body,
+    )
+    if root_match:
+        id_match = re.search(r'data-ve-semantic-id="([^"]+)"', root_match.group(1))
+        if id_match:
+            root_id = id_match.group(1)
+    branch_ids: list[str] = []
+    for attrs in re.findall(r'<div\s+([^>]*\bve-logic-tree-branch\b[^>]*)>', body):
+        id_match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if id_match:
+            branch_ids.append(id_match.group(1))
+    leaf_ids: list[str] = []
+    for attrs in re.findall(r'<li\s+([^>]*\bve-logic-tree-leaf\b[^>]*)>', body):
+        id_match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if id_match:
+            leaf_ids.append(id_match.group(1))
+    return root_id, branch_ids, leaf_ids
+
+
+_LOGIC_TREE_FORBIDDEN_CONNECTOR_ATTRS = (
+    "data-ve-semantic-id",
+    "data-ve-from",
+    "data-ve-to",
+    "data-ve-relation",
+    "data-connect",
+)
+
+
 def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     branch_rows = re.findall(
@@ -790,23 +822,28 @@ def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Di
         prefix="ve-logic-tree",
         label="logic-tree",
     ))
-    root_match = re.search(
-        r'<div\s+([^>]*\bclass="[^"]*\bve-logic-tree-root\b(?!-)[^"]*"[^>]*)>',
-        body,
-    )
-    if root_match is None:
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "logic-tree の root がありません"))
-    elif 'data-ve-semantic-id="' not in root_match.group(1):
+
+    root_id, branch_ids, leaf_ids = _extract_logic_tree_ids(body)
+    if root_id is None:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "logic-tree root に data-ve-semantic-id がありません"))
-    branch_blocks = re.findall(
-        r'<div\s+([^>]*\bve-logic-tree-branch\b[^>]*)>',
-        body,
-    )
-    if branch_count != sum('data-ve-semantic-id="' in attrs for attrs in branch_blocks):
+    leaf_blocks = re.findall(r'<li\s+([^>]*\bve-logic-tree-leaf\b[^>]*)>', body)
+    if len(leaf_blocks) != sum('data-ve-semantic-id="' in attrs for attrs in leaf_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree leaf に data-ve-semantic-id がありません"))
+    if branch_count != len(branch_ids):
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "logic-tree 枝に data-ve-semantic-id がありません"))
+
+    tree_ids = ([root_id] if root_id else []) + branch_ids + leaf_ids
+    if len(tree_ids) != len(set(tree_ids)):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の意味 ID が重複しています"))
+    for tid in tree_ids:
+        if body.count(f'data-ve-semantic-id="{tid}"') != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"logic-tree の意味 ID '{tid}' は DOM に1回だけ現れる必要があります"))
+
     for index, attrs in enumerate(branch_rows):
         classes = _class_tokens_from_attr_string(attrs)
         position = index + 1
@@ -815,17 +852,34 @@ def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Di
         if index_tokens != {expected_index}:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           f"logic-tree の枝 {position} は {expected_index} を1つだけ持つ必要があります"))
-    connectors = re.findall(r'<[^>]*\bve-logic-tree-connector\b[^>]*>', body)
-    if len(connectors) < branch_count:
+
+    spines = re.findall(r'<[^>]*\bclass="[^"]*\bve-logic-tree-spine\b(?!-)[^"]*"[^>]*>', body)
+    if len(spines) != 1:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "logic-tree の connector が不足しています"))
-    for tag in connectors:
-        if "data-ve-semantic-id" in tag or "data-ve-from" in tag or "data-ve-to" in tag:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "logic-tree connector に関係属性は許可されていません"))
-        if 'aria-hidden="true"' not in tag:
+                                      "logic-tree の spine は1本である必要があります"))
+    root_stems = re.findall(r'<[^>]*\bve-logic-tree-root-stem\b[^>]*>', body)
+    if len(root_stems) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の root-stem は1本である必要があります"))
+    spine_columns = re.findall(r'<[^>]*\bve-logic-tree-spine-column\b[^>]*>', body)
+    if len(spine_columns) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine-column は1つである必要があります"))
+
+    connectors = re.findall(r'<[^>]*\bve-logic-tree-connector\b[^>]*>', body)
+    if len(connectors) != branch_count:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"logic-tree の connector は枝数と一致する必要があります (found {len(connectors)}, expected {branch_count})"))
+    for tag in connectors + spines + root_stems:
+        for forbidden in _LOGIC_TREE_FORBIDDEN_CONNECTOR_ATTRS:
+            if forbidden in tag:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"logic-tree connector に {forbidden} は許可されていません"))
+                break
+        if 'aria-hidden="true"' not in tag and "ve-logic-tree-connector" in tag:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           "logic-tree connector は aria-hidden である必要があります"))
+
     if "ve-logic-tree-layout-horizontal" not in body:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "logic-tree に ve-logic-tree-layout-horizontal がありません"))
@@ -834,6 +888,15 @@ def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Di
     if root_pos >= 0 and branches_pos >= 0 and root_pos > branches_pos:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "logic-tree の DOM 順序は root が branches より前である必要があります"))
+    spine_pos = body.find('class="ve-logic-tree-spine"')
+    if spine_pos < 0:
+        spine_pos = body.find("ve-logic-tree-spine>")
+    if root_pos >= 0 and spine_pos >= 0 and spine_pos < root_pos:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine は root の後である必要があります"))
+    if spine_pos >= 0 and branches_pos >= 0 and spine_pos > branches_pos:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine は branches より前である必要があります"))
     return diagnostics
 
 

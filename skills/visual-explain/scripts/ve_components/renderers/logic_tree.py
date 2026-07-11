@@ -1,7 +1,7 @@
 """Static, accessible renderer for the semantic ``logic-tree`` component.
 
-Hierarchical decomposition with root left and branches right. Renderer-owned
-grid/border connectors (no flow relationship attributes).
+Hierarchical decomposition with root left and branches right. Produces a shared
+vertical spine with per-branch connectors (grid + border, no flow attributes).
 """
 from __future__ import annotations
 
@@ -80,7 +80,13 @@ def render_logic_tree(section: CanonicalSection, definition) -> RenderResult:
 
     tree_markup = (
         f'<div class="ve-logic-tree-layout ve-logic-tree-layout-horizontal">'
-        f'<div class="ve-logic-tree-root-cell">{root_markup}</div>'
+        f'<div class="ve-logic-tree-root-cell">'
+        f'{root_markup}'
+        f'<span class="ve-logic-tree-root-stem" aria-hidden="true"></span>'
+        f'</div>'
+        f'<div class="ve-logic-tree-spine-column" aria-hidden="true">'
+        f'<span class="ve-logic-tree-spine"></span>'
+        f'</div>'
         f'<ol class="ve-logic-tree-branches ve-logic-tree-count-{count}">'
         f'{"".join(branch_rows)}</ol></div>'
     )

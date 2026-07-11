@@ -250,13 +250,38 @@ class LogicTreeMarkupTest(unittest.TestCase):
 
     def test_connectors_are_presentation_only(self) -> None:
         connectors = re.findall(r'<[^>]*\bve-logic-tree-connector\b[^>]*>', self.markup)
-        self.assertGreaterEqual(len(connectors), len(self.ir.logic_tree.branches))
+        self.assertEqual(len(connectors), len(self.ir.logic_tree.branches))
         for tag in connectors:
             self.assertIn('aria-hidden="true"', tag)
             self.assertNotIn("data-ve-semantic-id", tag)
             self.assertNotIn("data-ve-from", tag)
             self.assertNotIn("data-ve-to", tag)
             self.assertNotIn("data-connect", tag)
+
+    def test_shared_spine_topology_in_dom(self) -> None:
+        spines = re.findall(
+            r'<[^>]*\bclass="[^"]*\bve-logic-tree-spine\b(?!-)[^"]*"[^>]*>',
+            self.markup,
+        )
+        self.assertEqual(len(spines), 1)
+        root_stems = re.findall(r'<[^>]*\bve-logic-tree-root-stem\b[^>]*>', self.markup)
+        self.assertEqual(len(root_stems), 1)
+        self.assertIn("ve-logic-tree-spine-column", self.markup)
+        root_pos = self.markup.index("ve-logic-tree-root-stem")
+        spine_pos = self.markup.index('class="ve-logic-tree-spine"')
+        branches_pos = self.markup.index("ve-logic-tree-branches")
+        self.assertLess(root_pos, spine_pos)
+        self.assertLess(spine_pos, branches_pos)
+
+    def test_spine_topology_in_css(self) -> None:
+        css = (COMPONENTS / "logic-tree.css").read_text("utf-8")
+        self.assertIn(".ve-logic-tree-spine", css)
+        spine_block = css.split(".ve-logic-tree-spine {")[1].split("}")[0]
+        self.assertIn("border-left", spine_block)
+        stem_block = css.split(".ve-logic-tree-root-stem {")[1].split("}")[0]
+        self.assertIn("border-top", stem_block)
+        connector_block = css.split(".ve-logic-tree-connector {")[1].split("}")[0]
+        self.assertIn("border-top", connector_block)
 
     def test_branch_count_and_index_classes(self) -> None:
         count = len(self.ir.logic_tree.branches)
