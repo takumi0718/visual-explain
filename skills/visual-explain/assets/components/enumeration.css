@@ -4,7 +4,7 @@
 [data-ve-component="enumeration"] .ve-enum-items { list-style: none; margin: 0; padding: 0; }
 [data-ve-component="enumeration"] .ve-enum-list-centered { width: fit-content; margin-inline: auto; }
 [data-ve-component="enumeration"] .ve-enum-columns { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
-[data-ve-component="enumeration"] .ve-enum-block { background: var(--text-dim); color: var(--bg); padding: var(--space-2); margin: 0 0 var(--space-2); border-radius: var(--radius); font-size: var(--fs-figure); }
+[data-ve-component="enumeration"] .ve-enum-block { background: var(--text-dim); color: var(--bg); padding: var(--space-2); margin: 0 0 var(--space-2); border-radius: var(--radius); font-size: var(--fs-figure); text-align: center; }
 [data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { flex: 1 1 10rem; min-width: 8rem; max-width: 14rem; margin: 0; }
 [data-ve-component="enumeration"] .ve-enum-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
 [data-ve-component="enumeration"] .ve-enum-label,
