@@ -223,6 +223,22 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-stairs-structure.html").read_text("utf-8")))
 
+    def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_pyramid_face_order_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-face-order.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
+        self.assertIn("pyramid の下位層は ve-pyramid-face-dim のみである必要があります", messages)
+
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-enumeration-missing-semantic-id.html").read_text("utf-8")
