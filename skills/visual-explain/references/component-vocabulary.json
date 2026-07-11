@@ -1,0 +1,19 @@
+{
+  "vocabularyVersion": 1,
+  "components": {
+    "matrix": {
+      "contractVersion": 1,
+      "relationshipKind": "two-axis",
+      "capabilities": ["two-axis-classification", "intersection-comparison"]
+    },
+    "flow": {
+      "contractVersion": 1,
+      "relationshipKind": "directed-graph",
+      "capabilities": ["ordered-transition", "directed-transition", "branching"]
+    }
+  },
+  "compatibility": {
+    "sources": ["legacy-html-insertion"],
+    "reasons": ["unmigrated-format", "weak-model-degradation"]
+  }
+}

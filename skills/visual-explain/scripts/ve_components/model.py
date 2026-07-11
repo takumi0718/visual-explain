@@ -1,0 +1,209 @@
+"""Immutable typed model for the component foundation.
+
+Every authoring value becomes a frozen dataclass only after validation. The
+model never carries HTML, CSS, JavaScript, or coordinates; renderers turn these
+semantic records into markup, and manifests record what was consumed.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Callable, Optional
+
+# ---------------------------------------------------------------------------
+# Document + assembly envelope
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class DocumentMetadata:
+    id: str
+    title: str
+    summary: str
+
+
+@dataclass(frozen=True)
+class RelationshipDeclaration:
+    kind: str
+    capabilities: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ExplicitSelection:
+    component: str
+    version: int
+    matched_capabilities: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CertaintyAssertion:
+    id: str
+    level: str
+    statement: str
+
+
+@dataclass(frozen=True)
+class Source:
+    id: str
+    label: str
+    detail: str = ""
+
+
+@dataclass(frozen=True)
+class AccessibilityInfo:
+    label: str
+    summary: str
+
+
+# ---------------------------------------------------------------------------
+# Payloads
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class AxisEntry:
+    id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class MatrixCell:
+    id: str
+    row_id: str
+    column_id: str
+    content: str
+    certainty_ref: Optional[str] = None
+    source_ref: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class MatrixPayload:
+    rows: tuple[AxisEntry, ...]
+    columns: tuple[AxisEntry, ...]
+    cells: tuple[MatrixCell, ...]
+
+
+@dataclass(frozen=True)
+class FlowNode:
+    id: str
+    label: str
+    group: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class FlowEdge:
+    id: str
+    source: str
+    target: str
+    relation: str
+    label: str = ""
+
+
+@dataclass(frozen=True)
+class FlowGroup:
+    id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class FlowPayload:
+    nodes: tuple[FlowNode, ...]
+    edges: tuple[FlowEdge, ...]
+    groups: tuple[FlowGroup, ...] = ()
+    start_id: Optional[str] = None
+    reading_order: tuple[str, ...] = ()
+
+
+# ---------------------------------------------------------------------------
+# Sections
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CanonicalIR:
+    id: str
+    relationship: RelationshipDeclaration
+    selection: ExplicitSelection
+    caption: str
+    certainty: tuple[CertaintyAssertion, ...]
+    sources: tuple[Source, ...]
+    accessibility: AccessibilityInfo
+    matrix: Optional[MatrixPayload] = None
+    flow: Optional[FlowPayload] = None
+
+    @property
+    def payload_kind(self) -> str:
+        return "matrix" if self.matrix is not None else "flow"
+
+    def semantic_ids(self) -> tuple[str, ...]:
+        ids: list[str] = [self.id]
+        ids.extend(c.id for c in self.certainty)
+        ids.extend(s.id for s in self.sources)
+        if self.matrix is not None:
+            ids.extend(r.id for r in self.matrix.rows)
+            ids.extend(c.id for c in self.matrix.columns)
+            ids.extend(c.id for c in self.matrix.cells)
+        if self.flow is not None:
+            ids.extend(n.id for n in self.flow.nodes)
+            ids.extend(e.id for e in self.flow.edges)
+            ids.extend(g.id for g in self.flow.groups)
+        return tuple(ids)
+
+
+@dataclass(frozen=True)
+class CanonicalSection:
+    ir: CanonicalIR
+
+
+@dataclass(frozen=True)
+class CompatibilityProvenance:
+    source: str
+    reason: str
+    format: str
+
+
+@dataclass(frozen=True)
+class CompatibilitySection:
+    id: str
+    markup: str
+    provenance: CompatibilityProvenance
+
+
+@dataclass(frozen=True)
+class AssemblyRequest:
+    schema_version: int
+    document: DocumentMetadata
+    sections: tuple[object, ...]  # CanonicalSection | CompatibilitySection, order preserved
+
+
+# ---------------------------------------------------------------------------
+# Render results and manifests
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class RenderManifest:
+    component_id: str
+    component_version: int
+    instance_id: str
+    consumed_semantic_ids: tuple[str, ...]
+    generated_relationship_ids: tuple[str, ...]
+    generated_landmark_ids: tuple[str, ...]
+    asset_ids: tuple[str, ...]
+    asset_digests: tuple[str, ...]
+    declared_dependencies: tuple[str, ...]
+    fallback_mode: str
+
+
+@dataclass(frozen=True)
+class RenderResult:
+    markup: str
+    style_asset_ids: tuple[str, ...]
+    script_asset_ids: tuple[str, ...]
+    manifest: RenderManifest
+    diagnostics: tuple[object, ...] = ()
+
+
+# A renderer turns a validated canonical section plus its resolved component
+# definition into a RenderResult. Kept structural to avoid import cycles with
+# the registry module.
+RendererFn = Callable[..., RenderResult]

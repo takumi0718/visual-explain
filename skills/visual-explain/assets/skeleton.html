@@ -97,6 +97,7 @@
     .flow { display: flex; align-items: stretch; gap: 1.75rem; }
     .flow .flow-node { flex: 1 1 10rem; }
     .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + .45rem); color: var(--accent); font-weight: 700; transform: translateY(-50%); }
+    .flow[data-connect] > .flow-node:not(:last-of-type)::after { content: none; }
     .layers { display: grid; gap: .75rem; }
     .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: .75rem; align-items: center; }
     .lane-label { color: var(--text-dim); font-weight: 700; }
@@ -160,12 +161,17 @@
 
     @media (max-width: 42rem) {
       main { width: min(100% - 1rem, 72rem); padding-top: 1rem; }
+      .theme-control { width: min(100% - 1rem, 72rem); }
+      .theme-control button { max-width: 100%; white-space: normal; }
       .flow { flex-direction: column; gap: 1.5rem; }
+      .flow .flow-node { flex: 0 1 auto; }
       .flow .flow-node:not(:last-child)::after { top: calc(100% + .75rem); left: 50%; transform: translateX(-50%) rotate(90deg); }
       .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: .4rem; }
       .compare { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
   (() => {
@@ -231,19 +237,14 @@
   </script>
   <main>
     <!-- CONTENT:BEGIN -->
-    <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">資料の内容をここに記入します。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 判断する内容を1文で記入します。</p>
-      <ul class="conditions"><li>判断条件 1</li><li>判断条件 2</li></ul>
-    </section>
-    <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>リスクと弱い前提を記入します。</p>
-      <h2>不確かな点</h2><p>未確認の点を記入します。</p>
-    </section>
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

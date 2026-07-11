@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Validate visual-explain HTML without dependencies beyond Python's standard library.
+# Public CLI (unchanged): check.sh <html> --type <proposal|system|research>,
+# check.sh --selftest. New: check.sh <html> auto-detects legacy type or the
+# component route and additionally runs the four-layer component checker.
 set -euo pipefail
 
-SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-exec python3 - "$SCRIPT_DIR" "$@" <<'PY'
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SKELETON="$SCRIPT_DIR/../assets/skeleton.html"
+REGISTRY="$SCRIPT_DIR/../assets/components/registry.json"
+
+set +e
+python3 - "$SCRIPT_DIR" "$@" <<'PY'
 from __future__ import annotations
 
 import hashlib
@@ -17,6 +24,21 @@ TITLE_BEGIN = b"<!-- TITLE:BEGIN -->"
 TITLE_END = b"<!-- TITLE:END -->"
 CONTENT_BEGIN = b"<!-- CONTENT:BEGIN -->"
 CONTENT_END = b"<!-- CONTENT:END -->"
+# Controlled component slots that live in the fixed head/script regions. Their
+# bodies are variable (trusted, hash-verified assets injected at build time), so
+# they are normalized away before the fixed-region comparison. The content slot
+# lives inside the already-variable CONTENT body and needs no stripping here.
+CONTROLLED_FIXED_SLOTS = (b"COMPONENT-STYLES", b"COMPONENT-SCRIPTS")
+
+
+def strip_fixed_controlled(raw: bytes) -> bytes:
+    for name in CONTROLLED_FIXED_SLOTS:
+        pattern = re.compile(
+            rb"[ \t]*<!-- VE-CONTROLLED:" + name + rb":BEGIN -->.*?<!-- VE-CONTROLLED:" + name + rb":END -->[ \t]*\n?",
+            re.DOTALL,
+        )
+        raw = pattern.sub(b"", raw)
+    return raw
 FORBIDDEN_TAGS = {"script", "style", "meta", "iframe", "form", "object", "embed"}
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
@@ -227,9 +249,11 @@ def pattern_checks(content: str, type_name: str, inspector: ContentInspector, er
         for required in ("リスクと弱い前提", "不確かな点"):
             if required not in inspector.headings:
                 errors.append(f"proposal: 末尾節「{required}」が必要です")
-    else:
+    elif type_name == "system":
         if "限界・確度" not in inspector.headings:
-            errors.append(f"{type_name}: 末尾節「限界・確度」が必要です")
+            errors.append("system: 末尾節「限界・確度」が必要です")
+    elif "限界・反証・確度" not in inspector.headings:
+        errors.append("research: 末尾節「限界・反証・確度」が必要です")
 
     if re.search(r"animation(?:-iteration-count)?\s*:[^;}]*\binfinite\b", content, re.IGNORECASE):
         errors.append("禁止アニメーション: infinite 指定は使えません")
@@ -251,7 +275,7 @@ def pattern_checks(content: str, type_name: str, inspector: ContentInspector, er
             break
 
 
-def check_file(html_path: Path, type_name: str, skeleton_path: Path) -> list[str]:
+def check_file(html_path: Path, type_name: str | None, skeleton_path: Path) -> list[str]:
     errors: list[str] = []
     try:
         candidate = html_path.read_bytes()
@@ -261,7 +285,7 @@ def check_file(html_path: Path, type_name: str, skeleton_path: Path) -> list[str
         skeleton = skeleton_path.read_bytes()
     except OSError as exc:
         return [f"skeleton.htmlを読めません: {exc}"]
-    content_bytes, title_bytes = fixed_regions_match(candidate, skeleton, errors)
+    content_bytes, title_bytes = fixed_regions_match(strip_fixed_controlled(candidate), strip_fixed_controlled(skeleton), errors)
     try:
         full_text = candidate.decode("utf-8")
         content = content_bytes.decode("utf-8")
@@ -280,12 +304,28 @@ def check_file(html_path: Path, type_name: str, skeleton_path: Path) -> list[str
     inspector.close()
     inspector.finish()
     errors.extend(inspector.errors)
-    pattern_checks(content, type_name, inspector, errors)
+    # type_name is None for component/mixed documents, whose closing sections are
+    # driven by the canonical route rather than the legacy pattern requirements.
+    if type_name is not None:
+        pattern_checks(content, type_name, inspector, errors)
     return errors
 
 
+def is_component_document(raw: bytes) -> bool:
+    return (b"VE-CONTROLLED:" in raw or b"data-ve-component" in raw
+            or b"data-ve-section-kind" in raw)
+
+
+def detect_legacy_type(content_text: str) -> str:
+    if "限界・反証・確度" in content_text:
+        return "research"
+    if "限界・確度" in content_text:
+        return "system"
+    return "proposal"
+
+
 def usage() -> int:
-    print("usage: check.sh <生成HTML> --type <proposal|system|research> | check.sh --selftest", file=sys.stderr)
+    print("usage: check.sh <生成HTML> [--type <proposal|system|research>] | check.sh --selftest", file=sys.stderr)
     return 2
 
 
@@ -315,6 +355,7 @@ def run_selftest(script_dir: Path) -> int:
         ("valid-system.html", "system", ()),
         ("valid-research.html", "research", ()),
         ("bad-system-closing.html", "system", ("system: 末尾節「限界・確度」が必要です",)),
+        ("valid-system.html", "research", ("research: 末尾節「限界・反証・確度」が必要です",)),
     ]
     passed = failed = 0
     skeleton = script_dir.parent / "assets" / "skeleton.html"
@@ -339,17 +380,55 @@ def main(argv: list[str]) -> int:
     args = argv[1:]
     if args == ["--selftest"]:
         return run_selftest(script_dir)
-    if len(args) != 3 or args[1] != "--type" or args[2] not in {"proposal", "system", "research"}:
+    skeleton = script_dir.parent / "assets" / "skeleton.html"
+    if len(args) == 3 and args[1] == "--type" and args[2] in {"proposal", "system", "research"}:
+        html_path, type_name = Path(args[0]), args[2]
+    elif len(args) == 1:
+        html_path = Path(args[0])
+        try:
+            raw = html_path.read_bytes()
+        except OSError as exc:
+            print(f"FAIL: 生成HTMLを読めません: {exc}")
+            return 1
+        if is_component_document(raw):
+            type_name = None  # universal safety only; component layers run separately
+        else:
+            type_name = detect_legacy_type(raw.decode("utf-8", errors="replace"))
+    else:
         return usage()
-    errors = check_file(Path(args[0]), args[2], script_dir.parent / "assets" / "skeleton.html")
+    errors = check_file(html_path, type_name, skeleton)
     if errors:
         for error in errors:
             print(f"FAIL: {error}")
         return 1
-    print("PASS")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
 PY
+embedded_status=$?
+set -e
+
+# --selftest and usage errors are fully handled by the embedded checker.
+if [ "${1:-}" = "--selftest" ]; then
+  exit "$embedded_status"
+fi
+if [ "$embedded_status" -eq 2 ]; then
+  exit 2
+fi
+
+# Run the four-layer component checker on the same document. It recognizes a
+# pre-migration legacy document (no markers/data-ve) and passes it unchanged.
+DOC="$1"
+DOC_ABS="$(CDPATH= cd -- "$(dirname -- "$DOC")" && pwd)/$(basename -- "$DOC")"
+set +e
+python3 "$SCRIPT_DIR/check_component_html.py" "$DOC_ABS" "$SKELETON" "$REGISTRY"
+component_status=$?
+set -e
+
+if [ "$embedded_status" -eq 0 ] && [ "$component_status" -eq 0 ]; then
+  echo "PASS"
+  exit 0
+fi
+exit 1

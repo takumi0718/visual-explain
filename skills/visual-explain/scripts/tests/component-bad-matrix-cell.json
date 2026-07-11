@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "bad-matrix-cell",
+    "title": "権限モデルの二軸整理",
+    "summary": "役割と操作の交差で許可範囲を判断するための資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-access-matrix",
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 1,
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "caption": "役割 × 操作の許可範囲",
+        "certainty": [
+          {
+            "id": "cert-confirmed",
+            "level": "confirmed",
+            "statement": "管理者の全操作は仕様で確定済み。"
+          },
+          {
+            "id": "cert-inferred",
+            "level": "inferred",
+            "statement": "閲覧者の書き込み不可は既定方針からの推定。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-spec",
+            "label": "権限仕様 v3",
+            "detail": "2026-06 版の権限表。"
+          }
+        ],
+        "accessibility": {
+          "label": "役割と操作の許可マトリクス",
+          "summary": "行が役割、列が操作を表し、各セルが許可の有無を示す表。"
+        },
+        "matrix": {
+          "rows": [
+            {
+              "id": "row-admin",
+              "label": "管理者"
+            },
+            {
+              "id": "row-viewer",
+              "label": "閲覧者"
+            }
+          ],
+          "columns": [
+            {
+              "id": "col-read",
+              "label": "読み取り"
+            },
+            {
+              "id": "col-write",
+              "label": "書き込み"
+            }
+          ],
+          "cells": [
+            {
+              "id": "cell-admin-read",
+              "rowId": "row-ghost",
+              "columnId": "col-read",
+              "content": "許可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            },
+            {
+              "id": "cell-admin-write",
+              "rowId": "row-admin",
+              "columnId": "col-write",
+              "content": "許可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            },
+            {
+              "id": "cell-viewer-read",
+              "rowId": "row-viewer",
+              "columnId": "col-read",
+              "content": "許可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            },
+            {
+              "id": "cell-viewer-write",
+              "rowId": "row-viewer",
+              "columnId": "col-write",
+              "content": "不可",
+              "certaintyRef": "cert-inferred",
+              "sourceRef": "src-spec"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

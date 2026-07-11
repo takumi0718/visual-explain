@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "weak-model-bad-style",
+    "title": "弱モデル互換にCSS混入",
+    "summary": "互換マークアップに任意のCSSを含めた不正例。"
+  },
+  "sections": [
+    {
+      "kind": "compatibility",
+      "id": "sec-weak-bad-style",
+      "markup": "<figure class=\"matrix\"><style>.matrix{color:red}</style><figcaption>役割</figcaption></figure>",
+      "provenance": {"source": "legacy-html-insertion", "reason": "weak-model-degradation", "format": "matrix"}
+    }
+  ]
+}

@@ -97,6 +97,7 @@
     .flow { display: flex; align-items: stretch; gap: 1.75rem; }
     .flow .flow-node { flex: 1 1 10rem; }
     .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + .45rem); color: var(--accent); font-weight: 700; transform: translateY(-50%); }
+    .flow[data-connect] > .flow-node:not(:last-of-type)::after { content: none; }
     .layers { display: grid; gap: .75rem; }
     .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: .75rem; align-items: center; }
     .lane-label { color: var(--text-dim); font-weight: 700; }
@@ -160,7 +161,10 @@
 
     @media (max-width: 42rem) {
       main { width: min(100% - 1rem, 72rem); padding-top: 1rem; }
+      .theme-control { width: min(100% - 1rem, 72rem); }
+      .theme-control button { max-width: 100%; white-space: normal; }
       .flow { flex-direction: column; gap: 1.5rem; }
+      .flow .flow-node { flex: 0 1 auto; }
       .flow .flow-node:not(:last-child)::after { top: calc(100% + .75rem); left: 50%; transform: translateX(-50%) rotate(90deg); }
       .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: .4rem; }
       .compare { grid-template-columns: 1fr; }
@@ -232,7 +236,7 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <section class="first-screen"><p class="proposal">仕組みを説明します。</p></section>
-    <section class="closing-section"><h2>限界・確度</h2><p>推論を含みます。</p></section>
+    <section class="closing-section"><h2>限界・反証・確度</h2><p>推論を含みます。</p></section>
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
