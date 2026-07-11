@@ -8,6 +8,7 @@ checker rules in Tasks 5-6.
 from __future__ import annotations
 
 from ..model import RendererFn
+from .chevron import render_chevron
 from .enumeration import render_enumeration
 from .flow import render_flow
 from .matrix import render_matrix
@@ -16,4 +17,5 @@ TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "matrix@1": render_matrix,
     "flow@1": render_flow,
     "enumeration@1": render_enumeration,
+    "chevron@1": render_chevron,
 }

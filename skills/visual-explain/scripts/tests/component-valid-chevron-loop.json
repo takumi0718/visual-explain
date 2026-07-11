@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "chevron-loop-demo",
+    "title": "閉ループの改善サイクル",
+    "summary": "縦型ラベルチェブロンで計測→評価→改善の循環を示す。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-chevron-loop",
+        "relationship": {
+          "kind": "ordered-sequence",
+          "capabilities": ["linear-sequence", "closed-loop"]
+        },
+        "selection": {
+          "component": "chevron",
+          "version": 1,
+          "matchedCapabilities": ["linear-sequence", "closed-loop"]
+        },
+        "caption": "改善サイクルの3段",
+        "certainty": [
+          {"id": "cert-loop", "level": "inferred", "statement": "サイクルは四半期ごとに回す想定。"}
+        ],
+        "sources": [
+          {"id": "src-pdca", "label": "PDCA ガイド", "detail": "計測・評価・改善の反復。"}
+        ],
+        "accessibility": {
+          "label": "改善サイクルのチェブロン",
+          "summary": "ラベル付き3段と最終段から先頭段への戻りを示す。"
+        },
+        "chevron": {
+          "steps": [
+            {"id": "step-measure", "label": "計測"},
+            {"id": "step-evaluate", "label": "評価"},
+            {"id": "step-improve", "label": "改善"}
+          ],
+          "orientation": "vertical",
+          "blockContent": "label",
+          "loop": true
+        }
+      }
+    }
+  ]
+}
