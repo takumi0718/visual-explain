@@ -143,17 +143,17 @@ git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外
 - 許される推論には対象の直近で **推論** と明記する。
 - 因果・順序に確信がなければ、`matrix`、`terms`、または簡潔な文章へ縮退し、flow 図にしない。
 
-## カノニカルなコンポーネント（matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree）
+## カノニカルなコンポーネント（matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall）
 
-二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree` を、次の1つの意思決定列で使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。
+二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree`、加算的ブリッジ（開始→増減→終了）は `waterfall` を、次の1つの意思決定列で使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止、waterfall bars/columns など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。
 
-1. **関係を宣言する** — canonical IR に `relationship.kind`（`two-axis`、`directed-graph`、`parallel-enumeration`、`ordered-sequence`、`layered-priority`、`staged-maturity`、`hierarchical-decomposition` など）と `capabilities` を書く。散文から方向やコンポーネントを推測させない。
+1. **関係を宣言する** — canonical IR に `relationship.kind`（`two-axis`、`directed-graph`、`parallel-enumeration`、`ordered-sequence`、`layered-priority`、`staged-maturity`、`hierarchical-decomposition`、`additive-bridge` など）と `capabilities` を書く。散文から方向やコンポーネントを推測させない。
 2. **レジストリで発見する** — 宣言した関係とケイパビリティで候補を絞る（集合包含のみ、ランキングなし）。
 3. **決定的な候補から明示選択する** — `selection.component` と `version` を候補集合から明示的に選ぶ。
 4. **一致ケイパビリティの理由を記録する** — `selection.matchedCapabilities` は宣言とレジストリの両方に存在する必要がある。
 5. **ビルドして検証する** — `python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>` で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書）を検証する。
 
-matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
+matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
 
 ## 弱モデル劣化と互換節
 

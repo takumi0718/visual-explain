@@ -63,6 +63,8 @@ CHEVRON_STRUCTURE_VIOLATION = "chevron_structure_violation"
 PYRAMID_STRUCTURE_VIOLATION = "pyramid_structure_violation"
 STAIRS_STRUCTURE_VIOLATION = "stairs_structure_violation"
 LOGIC_TREE_STRUCTURE_VIOLATION = "logic_tree_structure_violation"
+WATERFALL_STRUCTURE_VIOLATION = "waterfall_structure_violation"
+WATERFALL_ARITHMETIC_MISMATCH = "waterfall_arithmetic_mismatch"
 
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
@@ -103,6 +105,8 @@ ALL_CODES = frozenset({
     PYRAMID_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,
     LOGIC_TREE_STRUCTURE_VIOLATION,
+    WATERFALL_STRUCTURE_VIOLATION,
+    WATERFALL_ARITHMETIC_MISMATCH,
 })
 
 

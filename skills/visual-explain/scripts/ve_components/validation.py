@@ -8,6 +8,7 @@ direction and component choice are never inferred from prose.
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 from pathlib import Path
 
 from .diagnostics import (
@@ -24,10 +25,13 @@ from .diagnostics import (
     MISSING_REQUIRED_SLOT,
     PYRAMID_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,
+    WATERFALL_ARITHMETIC_MISMATCH,
+    WATERFALL_STRUCTURE_VIOLATION,
     ContractError,
     DiagnosticCollector,
 )
 from .flow_layout import assign_rails, check_row_budget, check_topology, edge_spans, order_index
+from .numeric import is_numeric, to_decimal, waterfall_scale_values
 from .model import (
     AccessibilityInfo,
     AssemblyRequest,
@@ -60,6 +64,9 @@ from .model import (
     Source,
     StairsPayload,
     StairsStage,
+    WaterfallEndpoint,
+    WaterfallPayload,
+    WaterfallStep,
 )
 
 _VOCAB_PATH = Path(__file__).resolve().parents[1].parent / "references" / "component-vocabulary.json"
@@ -95,7 +102,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
-    "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "logic-tree",
+    "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -118,6 +125,10 @@ _PYRAMID_KEYS = {"tiers"}
 _PYRAMID_TIER_KEYS = {"id", "label", "sub"}
 _STAIRS_KEYS = {"stages"}
 _STAIRS_STAGE_KEYS = {"id", "label", "note", "current"}
+_WATERFALL_KEYS = {"displayPrecision", "orientation", "start", "steps", "end"}
+_WATERFALL_ENDPOINT_KEYS = {"id", "label", "value", "valueText"}
+_WATERFALL_STEP_KEYS = {"id", "label", "delta", "valueText", "tone"}
+_WATERFALL_TONES = frozenset({"positive", "warning", "neutral"})
 _LOGIC_TREE_KEYS = {"root", "branches"}
 _LOGIC_TREE_ROOT_KEYS = {"id", "label"}
 _LOGIC_TREE_BRANCH_KEYS = {"id", "label", "leaves"}
@@ -168,6 +179,7 @@ _ANNOTATION_TARGET_LABELS = {
     "chevron": "ステップ",
     "pyramid": "層",
     "stairs": "段",
+    "waterfall": "開始/段/終了",
     "logic-tree": "枝/葉",
 }
 
@@ -225,6 +237,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     chevron = None
     pyramid = None
     stairs = None
+    waterfall = None
     logic_tree = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
@@ -250,6 +263,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
             pyramid = validated_payload
         elif payload_kind == "stairs":
             stairs = validated_payload
+        elif payload_kind == "waterfall":
+            waterfall = validated_payload
         elif payload_kind == "logic-tree":
             logic_tree = validated_payload
 
@@ -288,6 +303,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         chevron=chevron,
         pyramid=pyramid,
         stairs=stairs,
+        waterfall=waterfall,
         logic_tree=logic_tree,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
@@ -859,6 +875,144 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
     return StairsPayload(stages=tuple(stages))
 
 
+def _parse_numeric_field(raw: object, path: str, col: DiagnosticCollector) -> int | Decimal | None:
+    if isinstance(raw, bool):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "数値フィールドに bool は許可されません", path)
+        return None
+    if isinstance(raw, float):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "数値フィールドに float は許可されません", path)
+        return None
+    if not is_numeric(raw):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "数値フィールドは int または Decimal である必要があります", path)
+        return None
+    return raw
+
+
+def _validate_waterfall_endpoint(
+    raw: object, path: str, col: DiagnosticCollector,
+) -> WaterfallEndpoint | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "endpoint はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _WATERFALL_ENDPOINT_KEYS, path, col, payload_code=WATERFALL_STRUCTURE_VIOLATION)
+    eid = raw.get("id")
+    if not _nonblank_str(eid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "id は空にできません", path)
+    label = raw.get("label")
+    if not _nonblank_str(label):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "label は空にできません", path)
+    elif len(str(label)) > 12:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "label は12字以内です", path)
+    value = _parse_numeric_field(raw.get("value"), f"{path}.value", col)
+    value_text = raw.get("valueText")
+    if not _nonblank_str(value_text):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "valueText は空にできません", path)
+    elif len(str(value_text)) > 16:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "valueText は16字以内です", path)
+    if value is None or not _nonblank_str(eid) or not _nonblank_str(label) or not _nonblank_str(value_text):
+        return None
+    return WaterfallEndpoint(
+        id=eid, label=label, value=value, value_text=value_text,
+    )
+
+
+def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> WaterfallPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "waterfall はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _WATERFALL_KEYS, path, col, payload_code=WATERFALL_STRUCTURE_VIOLATION)
+
+    display_precision = _parse_numeric_field(raw.get("displayPrecision"), f"{path}.displayPrecision", col)
+    if display_precision is not None:
+        if to_decimal(display_precision) <= Decimal(0):
+            col.add(WATERFALL_STRUCTURE_VIOLATION, "displayPrecision は正である必要があります", path)
+
+    orientation = raw.get("orientation", "bars")
+    if orientation not in ("bars", "columns"):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, f"未知の orientation '{orientation}'", path)
+        orientation = "bars"
+
+    start = _validate_waterfall_endpoint(raw.get("start"), f"{path}.start", col)
+    end = _validate_waterfall_endpoint(raw.get("end"), f"{path}.end", col)
+
+    steps_raw = raw.get("steps")
+    if not isinstance(steps_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "steps は配列である必要があります", path)
+        return None
+
+    step_count = len(steps_raw)
+    if orientation == "bars":
+        if step_count < 1 or step_count > 4:
+            col.add(WATERFALL_STRUCTURE_VIOLATION,
+                    f"bars の steps は1〜4件である必要があります (found {step_count})", path)
+    elif step_count < 1 or step_count > 7:
+        col.add(WATERFALL_STRUCTURE_VIOLATION,
+                f"columns の steps は1〜7件である必要があります (found {step_count})", path)
+
+    steps: list[WaterfallStep] = []
+    for i, item in enumerate(steps_raw):
+        p = f"{path}.steps[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "step はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _WATERFALL_STEP_KEYS, p, col, payload_code=WATERFALL_STRUCTURE_VIOLATION)
+        sid = item.get("id")
+        if not _nonblank_str(sid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "step.id は空にできません", p)
+        label = item.get("label")
+        if not _nonblank_str(label):
+            col.add(WATERFALL_STRUCTURE_VIOLATION, "step.label は空にできません", p)
+        elif len(str(label)) > 12:
+            col.add(WATERFALL_STRUCTURE_VIOLATION, "label は12字以内です", p)
+        delta = _parse_numeric_field(item.get("delta"), f"{p}.delta", col)
+        tone = item.get("tone")
+        if tone not in _WATERFALL_TONES:
+            col.add(WATERFALL_STRUCTURE_VIOLATION, "tone は positive/warning/neutral である必要があります", p)
+        value_text = item.get("valueText")
+        if not _nonblank_str(value_text):
+            col.add(WATERFALL_STRUCTURE_VIOLATION, "valueText は空にできません", p)
+        elif len(str(value_text)) > 16:
+            col.add(WATERFALL_STRUCTURE_VIOLATION, "valueText は16字以内です", p)
+        if delta is None or not _nonblank_str(sid) or not _nonblank_str(label) or not _nonblank_str(value_text):
+            continue
+        steps.append(WaterfallStep(
+            id=sid, label=label, delta=delta, value_text=value_text,
+            tone=tone if isinstance(tone, str) else "",
+        ))
+
+    if display_precision is None or start is None or end is None:
+        if col:
+            return None
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "displayPrecision は必須です", path)
+        return None
+
+    if col:
+        return None
+
+    payload = WaterfallPayload(
+        display_precision=display_precision,
+        orientation=orientation,
+        start=start,
+        steps=tuple(steps),
+        end=end,
+    )
+    _, lo, hi = waterfall_scale_values(payload)
+    if lo == hi:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "range が 0 のため描画できません", path)
+        return None
+
+    total = to_decimal(start.value)
+    for step in steps:
+        total += to_decimal(step.delta)
+    tolerance = to_decimal(display_precision) / Decimal(2)
+    if abs(total - to_decimal(end.value)) > tolerance:
+        col.add(WATERFALL_ARITHMETIC_MISMATCH,
+                "start + Σdelta と end.value が displayPrecision/2 を超えて不一致です", path)
+        return None
+
+    return payload
+
+
 def _validate_logic_tree(raw: object, path: str, col: DiagnosticCollector) -> LogicTreePayload | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "logic-tree はオブジェクトである必要があります", path)
@@ -1189,6 +1343,15 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     stairs = raw.get("stairs")
     if isinstance(stairs, dict):
         collect(stairs.get("stages"))
+    waterfall = raw.get("waterfall")
+    if isinstance(waterfall, dict):
+        start = waterfall.get("start")
+        if isinstance(start, dict) and isinstance(start.get("id"), str):
+            ids.append(start["id"])
+        collect(waterfall.get("steps"))
+        end = waterfall.get("end")
+        if isinstance(end, dict) and isinstance(end.get("id"), str):
+            ids.append(end["id"])
     logic_tree = raw.get("logic-tree")
     if isinstance(logic_tree, dict):
         root = logic_tree.get("root")
@@ -1221,6 +1384,7 @@ _PAYLOAD_VALIDATORS = {
     "chevron": _validate_chevron,
     "pyramid": _validate_pyramid,
     "stairs": _validate_stairs,
+    "waterfall": _validate_waterfall,
     "logic-tree": _validate_logic_tree,
 }
 
@@ -1251,6 +1415,12 @@ def _annotation_targets_stairs(payload: StairsPayload | None) -> set[str]:
     return {stage.id for stage in payload.stages} if payload is not None else set()
 
 
+def _annotation_targets_waterfall(payload: WaterfallPayload | None) -> set[str]:
+    if payload is None:
+        return set()
+    return {payload.start.id, payload.end.id, *(step.id for step in payload.steps)}
+
+
 def _annotation_targets_logic_tree(payload: LogicTreePayload | None) -> set[str]:
     if payload is None:
         return set()
@@ -1268,6 +1438,7 @@ ANNOTATION_TARGETS = {
     "chevron": _annotation_targets_chevron,
     "pyramid": _annotation_targets_pyramid,
     "stairs": _annotation_targets_stairs,
+    "waterfall": _annotation_targets_waterfall,
     "logic-tree": _annotation_targets_logic_tree,
 }
 

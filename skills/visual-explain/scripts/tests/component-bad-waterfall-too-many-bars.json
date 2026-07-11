@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "bad-wf-many", "title": "bad", "summary": "bad"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-bad-wf-many",
+      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
+      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "bad",
+      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
+      "sources": [{"id": "s1", "label": "x"}],
+      "accessibility": {"label": "x", "summary": "x"},
+      "waterfall": {
+        "displayPrecision": 1,
+        "orientation": "bars",
+        "start": {"id": "st", "label": "開始", "value": 10, "valueText": "10件"},
+        "steps": [
+          {"id": "s1", "label": "a", "delta": 1, "tone": "positive", "valueText": "+1件"},
+          {"id": "s2", "label": "b", "delta": 1, "tone": "positive", "valueText": "+1件"},
+          {"id": "s3", "label": "c", "delta": 1, "tone": "positive", "valueText": "+1件"},
+          {"id": "s4", "label": "d", "delta": 1, "tone": "positive", "valueText": "+1件"},
+          {"id": "s5", "label": "e", "delta": 1, "tone": "positive", "valueText": "+1件"}
+        ],
+        "end": {"id": "en", "label": "終了", "value": 15, "valueText": "15件"}
+      }
+    }
+  }]
+}

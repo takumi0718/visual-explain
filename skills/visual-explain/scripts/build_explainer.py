@@ -16,6 +16,7 @@ import os
 import sys
 import tempfile
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -102,7 +103,7 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     try:
-        raw_assembly = json.loads(Path(args.assembly).read_text("utf-8"))
+        raw_assembly = json.loads(Path(args.assembly).read_text("utf-8"), parse_float=Decimal)
     except (OSError, json.JSONDecodeError) as exc:
         print(f"FAIL: アセンブリを読めません: {exc}", file=sys.stderr)
         return 1

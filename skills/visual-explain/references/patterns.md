@@ -241,9 +241,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
@@ -253,6 +253,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **構成の分解** → `logic-tree`（`hierarchical-decomposition` / `mece-decomposition`）。**読者がたどる判断分岐は decision-tree（バックログ）** — 誤用は選択ガイドで防ぐ。MECE 性は機械検証できないため caption / certainty で主張する。
 - **優先の階層（上ほど重要・少ない）** → `pyramid`（`layered-priority` / `priority-layering`）。**単なる並列3項目は enumeration、優先構造だけ pyramid** — pyramid は誤用しない。
 - **到達したら留まる状態（成熟度・移行フェーズ）** → `stairs`（`staged-maturity` / `maturity-staging`）。**流れる工程は chevron**。
+- **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。`orientation: "bars"`（行型・既定）は狭い画面向き、`orientation: "columns"`（横並び縦棒）は広い画面向き。**columns は狭い画面では bars を推奨**（レンダラは縮退せず横スクロールで溢れさせる）。
 
 ### matrix（二軸分類・交差比較）
 
@@ -489,6 +490,39 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       }
     }
   ]
+}
+```
+
+### waterfall（加算的ブリッジ）
+
+`displayPrecision` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。幾何（百分率クラス）は補助的で、値の伝達は `valueText` が主である。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-waterfall", "title": "件数ブリッジ", "summary": "開始から増減を経て終了へ。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-waterfall",
+      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
+      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "件数の増減ブリッジ",
+      "certainty": [{"id": "wf-cert", "level": "confirmed", "statement": "台帳と一致。"}],
+      "sources": [{"id": "wf-src", "label": "件数台帳"}],
+      "accessibility": {"label": "ウォーターフォール", "summary": "開始値から増減を経て終了値へ。"},
+      "waterfall": {
+        "displayPrecision": 1,
+        "orientation": "bars",
+        "start": {"id": "wf-start", "label": "開始", "value": 30, "valueText": "30件"},
+        "steps": [
+          {"id": "wf-s1", "label": "減少", "delta": -50, "tone": "warning", "valueText": "−50件"},
+          {"id": "wf-s2", "label": "回復", "delta": 45, "tone": "positive", "valueText": "+45件"}
+        ],
+        "end": {"id": "wf-end", "label": "終了", "value": 25, "valueText": "25件"}
+      }
+    }
+  }]
 }
 ```
 

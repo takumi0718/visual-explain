@@ -7,6 +7,7 @@ semantic records into markup, and manifests record what was consumed.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Callable, Optional
 
 # ---------------------------------------------------------------------------
@@ -176,6 +177,32 @@ class StairsPayload:
 
 
 @dataclass(frozen=True)
+class WaterfallEndpoint:
+    id: str
+    label: str
+    value: int | Decimal
+    value_text: str
+
+
+@dataclass(frozen=True)
+class WaterfallStep:
+    id: str
+    label: str
+    delta: int | Decimal
+    value_text: str
+    tone: str
+
+
+@dataclass(frozen=True)
+class WaterfallPayload:
+    display_precision: int | Decimal
+    orientation: str
+    start: WaterfallEndpoint
+    steps: tuple[WaterfallStep, ...]
+    end: WaterfallEndpoint
+
+
+@dataclass(frozen=True)
 class LogicTreeLeaf:
     id: str
     text: str
@@ -220,6 +247,7 @@ class CanonicalIR:
     chevron: Optional[ChevronPayload] = None
     pyramid: Optional[PyramidPayload] = None
     stairs: Optional[StairsPayload] = None
+    waterfall: Optional[WaterfallPayload] = None
     logic_tree: Optional[LogicTreePayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
@@ -239,6 +267,8 @@ class CanonicalIR:
             return "pyramid"
         if self.stairs is not None:
             return "stairs"
+        if self.waterfall is not None:
+            return "waterfall"
         if self.logic_tree is not None:
             return "logic-tree"
         raise ValueError("canonical IR has no payload")
@@ -263,6 +293,10 @@ class CanonicalIR:
             ids.extend(tier.id for tier in self.pyramid.tiers)
         if self.stairs is not None:
             ids.extend(stage.id for stage in self.stairs.stages)
+        if self.waterfall is not None:
+            ids.append(self.waterfall.start.id)
+            ids.extend(step.id for step in self.waterfall.steps)
+            ids.append(self.waterfall.end.id)
         if self.logic_tree is not None:
             ids.append(self.logic_tree.root.id)
             for branch in self.logic_tree.branches:

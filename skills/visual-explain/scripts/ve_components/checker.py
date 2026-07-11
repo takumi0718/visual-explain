@@ -773,6 +773,51 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
     return diagnostics
 
 
+def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    bar_blocks = re.findall(
+        r'<div\s+([^>]*\bve-waterfall-bar\b[^>]*)>.*?</div>',
+        body,
+        re.DOTALL,
+    )
+    if not bar_blocks:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に棒がありません"))
+        return diagnostics
+
+    for attrs in bar_blocks:
+        classes = _class_tokens_from_attr_string(attrs)
+        starts = [c for c in classes if c.startswith("ve-wf-start-")]
+        lens = [c for c in classes if c.startswith("ve-wf-len-")]
+        if len(starts) != 1 or len(lens) != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒は ve-wf-start/len を1つずつ持つ必要があります"))
+            continue
+        for token in starts + lens:
+            suffix = token.rsplit("-", 1)[-1]
+            if not suffix.isdigit() or not (0 <= int(suffix) <= 100):
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"waterfall 百分率クラス '{token}' が範囲外です"))
+
+    if "ve-waterfall-notes" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "waterfall に ve-waterfall-notes がありません"))
+
+    has_bars = "ve-wf-bars" in body
+    has_columns = "ve-wf-columns" in body
+    if has_bars == has_columns:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "waterfall は ve-wf-bars か ve-wf-columns のどちらか一方である必要があります"))
+    if has_columns and "ve-waterfall-scroll" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "columns waterfall に横スクロールコンテナがありません"))
+
+    for sid in parser.semantic_ids:
+        if sid not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"waterfall 意味 ID '{sid}' が DOM にありません"))
+    return diagnostics
+
+
 def _find_tags_with_exact_class(body: str, tag: str, class_name: str) -> list[tuple[int, str]]:
     """Return (start_index, attrs) for tags whose class token set includes class_name exactly."""
     results: list[tuple[int, str]] = []
@@ -920,6 +965,7 @@ COMPONENT_ARTIFACT_CHECKS = {
     "chevron": _check_chevron_artifact,
     "pyramid": _check_pyramid_artifact,
     "stairs": _check_stairs_artifact,
+    "waterfall": _check_waterfall_artifact,
     "logic-tree": _check_logic_tree_artifact,
 }
 

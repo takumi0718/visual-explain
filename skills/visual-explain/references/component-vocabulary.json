@@ -35,6 +35,11 @@
       "contractVersion": 1,
       "relationshipKind": "hierarchical-decomposition",
       "capabilities": ["mece-decomposition"]
+    },
+    "waterfall": {
+      "contractVersion": 1,
+      "relationshipKind": "additive-bridge",
+      "capabilities": ["additive-bridging"]
     }
   },
   "compatibility": {

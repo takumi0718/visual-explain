@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "waterfall-columns-demo",
+    "title": "ウォーターフォール（横並び）",
+    "summary": "5段の縦棒ブリッジを横スクロールで表示。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-waterfall-columns",
+        "relationship": {
+          "kind": "additive-bridge",
+          "capabilities": ["additive-bridging"]
+        },
+        "selection": {
+          "component": "waterfall",
+          "version": 1,
+          "matchedCapabilities": ["additive-bridging"]
+        },
+        "caption": "売上の段階変化",
+        "certainty": [
+          {"id": "cert-wfc", "level": "confirmed", "statement": "各段は監査済み。"}
+        ],
+        "sources": [
+          {"id": "src-wfc", "label": "売上レポート"}
+        ],
+        "accessibility": {
+          "label": "横並びウォーターフォール",
+          "summary": "開始から5段の増減を経て終了へ。"
+        },
+        "waterfall": {
+          "displayPrecision": 1,
+          "orientation": "columns",
+          "start": {"id": "wfc-start", "label": "期首", "value": 100, "valueText": "100件"},
+          "steps": [
+            {"id": "wfc-s1", "label": "増", "delta": 10, "tone": "positive", "valueText": "+10件"},
+            {"id": "wfc-s2", "label": "減", "delta": -20, "tone": "warning", "valueText": "−20件"},
+            {"id": "wfc-s3", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"},
+            {"id": "wfc-s4", "label": "減", "delta": -30, "tone": "warning", "valueText": "−30件"},
+            {"id": "wfc-s5", "label": "増", "delta": 15, "tone": "positive", "valueText": "+15件"}
+          ],
+          "end": {"id": "wfc-end", "label": "期末", "value": 80, "valueText": "80件"}
+        }
+      }
+    }
+  ]
+}
