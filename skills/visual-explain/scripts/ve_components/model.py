@@ -150,6 +150,31 @@ class ChevronPayload:
     loop: bool = False
 
 
+@dataclass(frozen=True)
+class PyramidTier:
+    id: str
+    label: str
+    sub: str = ""
+
+
+@dataclass(frozen=True)
+class PyramidPayload:
+    tiers: tuple[PyramidTier, ...]
+
+
+@dataclass(frozen=True)
+class StairsStage:
+    id: str
+    label: str
+    note: str = ""
+    current: bool = False
+
+
+@dataclass(frozen=True)
+class StairsPayload:
+    stages: tuple[StairsStage, ...]
+
+
 # ---------------------------------------------------------------------------
 # Sections
 # ---------------------------------------------------------------------------
@@ -168,6 +193,8 @@ class CanonicalIR:
     flow: Optional[FlowPayload] = None
     enumeration: Optional[EnumerationPayload] = None
     chevron: Optional[ChevronPayload] = None
+    pyramid: Optional[PyramidPayload] = None
+    stairs: Optional[StairsPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
@@ -182,6 +209,10 @@ class CanonicalIR:
             return "enumeration"
         if self.chevron is not None:
             return "chevron"
+        if self.pyramid is not None:
+            return "pyramid"
+        if self.stairs is not None:
+            return "stairs"
         raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
@@ -200,6 +231,10 @@ class CanonicalIR:
             ids.extend(item.id for item in self.enumeration.items)
         if self.chevron is not None:
             ids.extend(step.id for step in self.chevron.steps)
+        if self.pyramid is not None:
+            ids.extend(tier.id for tier in self.pyramid.tiers)
+        if self.stairs is not None:
+            ids.extend(stage.id for stage in self.stairs.stages)
         return tuple(ids)
 
 

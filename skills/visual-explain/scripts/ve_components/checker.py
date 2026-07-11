@@ -567,6 +567,50 @@ def _chevron_steps_orientation(body: str) -> str | None:
     return "vertical"
 
 
+def _class_tokens_from_attr_string(attrs: str) -> frozenset[str]:
+    match = re.search(r'\bclass="([^"]*)"', attrs)
+    if not match:
+        return frozenset()
+    return frozenset(match.group(1).split())
+
+
+def _visible_text(fragment: str) -> str:
+    text = re.sub(r"<!--.*?-->", "", fragment, flags=re.DOTALL)
+    text = re.sub(r"<[^>]+>", "", text)
+    return text.strip()
+
+
+def _exact_index_token(prefix: str, classes: frozenset[str]) -> frozenset[str]:
+    return {c for c in classes if c.startswith(f"{prefix}-index-")}
+
+
+def _exact_count_token(prefix: str, classes: frozenset[str]) -> frozenset[str]:
+    return {c for c in classes if c.startswith(f"{prefix}-count-")}
+
+
+def _check_count_index_container(
+    body: str,
+    *,
+    container_pattern: str,
+    item_count: int,
+    prefix: str,
+    label: str,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    container_match = re.search(container_pattern, body)
+    if container_match is None:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"{label} のコンテナが見つかりません"))
+        return diagnostics
+    container_classes = _class_tokens_from_attr_string(container_match.group(1))
+    expected_count = f"{prefix}-count-{item_count}"
+    count_tokens = _exact_count_token(prefix, container_classes)
+    if count_tokens != {expected_count}:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"{label} のコンテナは {expected_count} である必要があります"))
+    return diagnostics
+
+
 def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     block_attrs = re.findall(r'<li\s+([^>]*\bve-enum-block\b[^>]*)>', body)
@@ -616,9 +660,124 @@ def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagn
     return diagnostics
 
 
+def _check_pyramid_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    tier_blocks = re.findall(
+        r'<li\s+([^>]*\bve-pyramid-tier\b[^>]*)>(.*?)</li>',
+        body,
+        re.DOTALL,
+    )
+    tier_count = len(tier_blocks)
+    if tier_count < 3 or tier_count > 4:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"pyramid は3〜4層である必要があります (found {tier_count})"))
+    diagnostics.extend(_check_count_index_container(
+        body,
+        container_pattern=r'<ul\s+([^>]*\bve-pyramid-tiers\b[^>]*)>',
+        item_count=tier_count,
+        prefix="ve-pyramid",
+        label="pyramid",
+    ))
+    if tier_count != sum('data-ve-semantic-id="' in attrs for attrs, _ in tier_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "pyramid 層に data-ve-semantic-id がありません"))
+    for index, (attrs, _inner) in enumerate(tier_blocks):
+        classes = _class_tokens_from_attr_string(attrs)
+        position = index + 1
+        expected_index = f"ve-pyramid-index-{position}"
+        index_tokens = _exact_index_token("ve-pyramid", classes)
+        if index_tokens != {expected_index}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"pyramid の層 {position} は {expected_index} を1つだけ持つ必要があります"))
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        tid = match.group(1)
+        if tid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"pyramid 層 '{tid}' に意味 ID がありません"))
+        face_tokens = {c for c in classes if c.startswith("ve-pyramid-face-")}
+        if index == 0:
+            if face_tokens != {"ve-pyramid-face-strong"}:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "pyramid の先頭層は ve-pyramid-face-strong のみである必要があります"))
+        else:
+            if face_tokens != {"ve-pyramid-face-dim"}:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "pyramid の下位層は ve-pyramid-face-dim のみである必要があります"))
+    return diagnostics
+
+
+def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    stage_blocks = re.findall(
+        r'<li\s+([^>]*\bve-stairs-stage\b[^>]*)>(.*?)</li>',
+        body,
+        re.DOTALL,
+    )
+    stage_count = len(stage_blocks)
+    if stage_count < 3 or stage_count > 5:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"stairs は3〜5段である必要があります (found {stage_count})"))
+    diagnostics.extend(_check_count_index_container(
+        body,
+        container_pattern=r'<ol\s+([^>]*\bve-stairs-stages\b[^>]*)>',
+        item_count=stage_count,
+        prefix="ve-stairs",
+        label="stairs",
+    ))
+    if stage_count != sum('data-ve-semantic-id="' in attrs for attrs, _ in stage_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "stairs 段に data-ve-semantic-id がありません"))
+    accent_count = 0
+    for index, (attrs, inner) in enumerate(stage_blocks):
+        classes = _class_tokens_from_attr_string(attrs)
+        position = index + 1
+        expected_index = f"ve-stairs-index-{position}"
+        index_tokens = _exact_index_token("ve-stairs", classes)
+        if index_tokens != {expected_index}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"stairs の段 {position} は {expected_index} を1つだけ持つ必要があります"))
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        sid = match.group(1)
+        if sid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"stairs 段 '{sid}' に意味 ID がありません"))
+        tread_tokens = {c for c in classes if c.startswith("ve-stairs-tread-")}
+        if tread_tokens and tread_tokens != {"ve-stairs-tread-accent"}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "stairs の tread クラスは ve-stairs-tread-accent のみ許可されます"))
+        if "ve-stairs-tread-accent" in classes:
+            accent_count += 1
+            note_spans = re.findall(
+                r'<span\s+class="([^"]*)"[^>]*>(.*?)</span>',
+                inner,
+                re.DOTALL,
+            )
+            note_texts = [
+                _visible_text(content)
+                for cls, content in note_spans
+                if "ve-stairs-note" in frozenset(cls.split())
+            ]
+            if not note_texts:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "current 段のブロック内に ve-stairs-note がありません"))
+            elif not any(text for text in note_texts):
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "current 段の ve-stairs-note に可視テキストがありません"))
+    if accent_count > 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "stairs の accent 段は最大1つです"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
     "chevron": _check_chevron_artifact,
+    "pyramid": _check_pyramid_artifact,
+    "stairs": _check_stairs_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(

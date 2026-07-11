@@ -241,16 +241,17 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / chevron / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
 - **並列列挙（順序なし）** → `enumeration`（`parallel-enumeration` / `parallel-itemization`）。番号は識別子であり順序の宣言ではない。
 - **線形順序（分岐なし）** → `chevron`（`ordered-sequence` / `linear-sequence`）。順序のテスト: 「並べ替えても意味が変わらない」なら enumeration、「順序が本質」なら chevron。
 - **分岐・合流は `directed-graph`（flow）、線形は `ordered-sequence`（chevron）** — `relationship.kind` で送り分ける。capability `branching` の有無は説明上の目印であり、発見機構ではない。
-- **優先の階層（上ほど重要・少ない）** → `pyramid`（将来スライス）。**単なる並列3項目は enumeration の仕事** — pyramid は誤用しない。
+- **優先の階層（上ほど重要・少ない）** → `pyramid`（`layered-priority` / `priority-layering`）。**単なる並列3項目は enumeration、優先構造だけ pyramid** — pyramid は誤用しない。
+- **到達したら留まる状態（成熟度・移行フェーズ）** → `stairs`（`staged-maturity` / `maturity-staging`）。**流れる工程は chevron**。
 
 ### matrix（二軸分類・交差比較）
 
@@ -383,6 +384,73 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
           "orientation": "vertical",
           "blockContent": "number",
           "loop": false
+        }
+      }
+    }
+  ]
+}
+```
+
+### pyramid（優先階層）
+
+3〜4層（上から下＝頂点から基盤）。`label` 12字以内、`sub` 30字以内。頂点層のみ強調面。幅は `ve-pyramid-count-{3,4}` と `ve-pyramid-index-{n}` の列挙クラスで割り当てる。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-pyramid", "title": "優先度の階層", "summary": "上ほど重要な4層を示す。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-pyramid",
+        "relationship": {"kind": "layered-priority", "capabilities": ["priority-layering"]},
+        "selection": {"component": "pyramid", "version": 1, "matchedCapabilities": ["priority-layering"]},
+        "caption": "優先度の4層ピラミッド",
+        "certainty": [{"id": "p-cert", "level": "confirmed", "statement": "4層は経営会議で合意。"}],
+        "sources": [{"id": "p-src", "label": "戦略方針 v2"}],
+        "accessibility": {"label": "優先度ピラミッド", "summary": "上から下へ4層の優先度を示す。"},
+        "pyramid": {
+          "tiers": [
+            {"id": "p-apex", "label": "最優先事項"},
+            {"id": "p-high", "label": "重要施策", "sub": "四半期で追う重点領域"},
+            {"id": "p-mid", "label": "維持管理"},
+            {"id": "p-base", "label": "基盤整備"}
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+### stairs（成熟度階段）
+
+3〜5段（低い段から高い段）。`label` 14字以内、`note` 20字以内。`current: true` は最大1件で `note` 必須。現在地段のみ accent。高さは `ve-stairs-count-{3..5}` と `ve-stairs-index-{n}` の列挙クラスで割り当てる。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-stairs", "title": "成熟度の階段", "summary": "5段で成熟度と現在地を示す。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-stairs",
+        "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging"]},
+        "selection": {"component": "stairs", "version": 1, "matchedCapabilities": ["maturity-staging"]},
+        "caption": "成熟度の5段階",
+        "certainty": [{"id": "s-cert", "level": "confirmed", "statement": "5段は成熟度モデルに準拠。"}],
+        "sources": [{"id": "s-src", "label": "成熟度モデル v1"}],
+        "accessibility": {"label": "成熟度階段", "summary": "低い段から高い段へ5段の成熟度を示す。"},
+        "stairs": {
+          "stages": [
+            {"id": "s-1", "label": "未整備"},
+            {"id": "s-2", "label": "部分導入"},
+            {"id": "s-3", "label": "標準化", "current": true, "note": "ここにいる"},
+            {"id": "s-4", "label": "最適化"},
+            {"id": "s-5", "label": "自律運用"}
+          ]
         }
       }
     }

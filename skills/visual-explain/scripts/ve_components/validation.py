@@ -21,6 +21,8 @@ from .diagnostics import (
     INVALID_MATRIX_REFERENCE,
     INVALID_RELATIONSHIP_DECLARATION,
     MISSING_REQUIRED_SLOT,
+    PYRAMID_STRUCTURE_VIOLATION,
+    STAIRS_STRUCTURE_VIOLATION,
     ContractError,
     DiagnosticCollector,
 )
@@ -47,8 +49,12 @@ from .model import (
     FlowPayload,
     MatrixCell,
     MatrixPayload,
+    PyramidPayload,
+    PyramidTier,
     RelationshipDeclaration,
     Source,
+    StairsPayload,
+    StairsStage,
 )
 
 _VOCAB_PATH = Path(__file__).resolve().parents[1].parent / "references" / "component-vocabulary.json"
@@ -84,7 +90,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
-    "matrix", "flow", "enumeration", "chevron",
+    "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -103,6 +109,10 @@ _ENUMERATION_KEYS = {"items", "presentation", "blockContent"}
 _ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description"}
 _CHEVRON_KEYS = {"steps", "orientation", "blockContent", "loop"}
 _CHEVRON_STEP_KEYS = {"id", "label", "title", "description"}
+_PYRAMID_KEYS = {"tiers"}
+_PYRAMID_TIER_KEYS = {"id", "label", "sub"}
+_STAIRS_KEYS = {"stages"}
+_STAIRS_STAGE_KEYS = {"id", "label", "note", "current"}
 _DOCUMENT_KEYS = {"id", "title", "summary"}
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
@@ -147,6 +157,8 @@ _ANNOTATION_TARGET_LABELS = {
     "flow": "ノード/エッジ",
     "enumeration": "項目",
     "chevron": "ステップ",
+    "pyramid": "層",
+    "stairs": "段",
 }
 
 
@@ -201,6 +213,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     flow = None
     enumeration = None
     chevron = None
+    pyramid = None
+    stairs = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
     if len(present) == 0:
@@ -221,6 +235,10 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
             enumeration = validated_payload
         elif payload_kind == "chevron":
             chevron = validated_payload
+        elif payload_kind == "pyramid":
+            pyramid = validated_payload
+        elif payload_kind == "stairs":
+            stairs = validated_payload
 
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
         raw, path, col, caption, payload_kind, validated_payload
@@ -255,6 +273,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         flow=flow,
         enumeration=enumeration,
         chevron=chevron,
+        pyramid=pyramid,
+        stairs=stairs,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
@@ -721,6 +741,110 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
     return ChevronPayload(steps=tuple(steps), orientation=orientation, block_content=block_content, loop=loop)
 
 
+def _validate_pyramid(raw: object, path: str, col: DiagnosticCollector) -> PyramidPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "pyramid はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _PYRAMID_KEYS, path, col)
+    tiers_raw = raw.get("tiers")
+    if not isinstance(tiers_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "tiers は配列である必要があります", path)
+        return None
+    count = len(tiers_raw)
+    if count < 3 or count > 4:
+        col.add(PYRAMID_STRUCTURE_VIOLATION,
+                f"tiers は3〜4件である必要があります (found {count})", path)
+
+    tiers: list[PyramidTier] = []
+    for i, item in enumerate(tiers_raw):
+        p = f"{path}.tiers[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "tier はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _PYRAMID_TIER_KEYS, p, col)
+        tid = item.get("id")
+        if not _nonblank_str(tid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "tier.id は空にできません", p)
+        label = item.get("label")
+        if not _nonblank_str(label):
+            col.add(PYRAMID_STRUCTURE_VIOLATION, "tier.label は空にできません", p)
+        elif len(str(label)) > 12:
+            col.add(PYRAMID_STRUCTURE_VIOLATION, "label は12字以内です", p)
+        sub = item.get("sub", "")
+        if sub is not None and sub != "":
+            if not isinstance(sub, str) or not sub.strip():
+                col.add(PYRAMID_STRUCTURE_VIOLATION, "sub は空にできません", p)
+            elif len(sub) > 30:
+                col.add(PYRAMID_STRUCTURE_VIOLATION, "sub は30字以内です", p)
+        tiers.append(PyramidTier(
+            id=tid, label=label if isinstance(label, str) else "",
+            sub=sub if isinstance(sub, str) else "",
+        ))
+
+    if col:
+        return None
+    return PyramidPayload(tiers=tuple(tiers))
+
+
+def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> StairsPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "stairs はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _STAIRS_KEYS, path, col)
+    stages_raw = raw.get("stages")
+    if not isinstance(stages_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "stages は配列である必要があります", path)
+        return None
+    count = len(stages_raw)
+    if count < 3 or count > 5:
+        col.add(STAIRS_STRUCTURE_VIOLATION,
+                f"stages は3〜5件である必要があります (found {count})", path)
+
+    stages: list[StairsStage] = []
+    current_count = 0
+    for i, item in enumerate(stages_raw):
+        p = f"{path}.stages[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "stage はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _STAIRS_STAGE_KEYS, p, col)
+        sid = item.get("id")
+        if not _nonblank_str(sid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "stage.id は空にできません", p)
+        label = item.get("label")
+        if not _nonblank_str(label):
+            col.add(STAIRS_STRUCTURE_VIOLATION, "stage.label は空にできません", p)
+        elif len(str(label)) > 14:
+            col.add(STAIRS_STRUCTURE_VIOLATION, "label は14字以内です", p)
+        note = item.get("note", "")
+        current = item.get("current", False)
+        if not isinstance(current, bool):
+            col.add(INVALID_COMPONENT_PAYLOAD, "current は真偽値である必要があります", p)
+            current = False
+        if current:
+            current_count += 1
+            if not _nonblank_str(note):
+                col.add(STAIRS_STRUCTURE_VIOLATION,
+                        "current:true の stage には note が必須です", p)
+        if note is not None and note != "":
+            if not isinstance(note, str) or not note.strip():
+                col.add(STAIRS_STRUCTURE_VIOLATION, "note は空にできません", p)
+            elif len(note) > 20:
+                col.add(STAIRS_STRUCTURE_VIOLATION, "note は20字以内です", p)
+        stages.append(StairsStage(
+            id=sid, label=label if isinstance(label, str) else "",
+            note=note if isinstance(note, str) else "",
+            current=current,
+        ))
+
+    if current_count > 1:
+        col.add(STAIRS_STRUCTURE_VIOLATION, "current:true は最大1件です", path)
+
+    if col:
+        return None
+    return StairsPayload(stages=tuple(stages))
+
+
 def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bool = False) -> FlowPayload | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "flow はオブジェクトである必要があります", path)
@@ -954,6 +1078,12 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     chevron = raw.get("chevron")
     if isinstance(chevron, dict):
         collect(chevron.get("steps"))
+    pyramid = raw.get("pyramid")
+    if isinstance(pyramid, dict):
+        collect(pyramid.get("tiers"))
+    stairs = raw.get("stairs")
+    if isinstance(stairs, dict):
+        collect(stairs.get("stages"))
     seen: set[str] = set()
     for value in ids:
         if value in seen:
@@ -970,6 +1100,8 @@ _PAYLOAD_VALIDATORS = {
     "flow": _validate_flow,
     "enumeration": _validate_enumeration,
     "chevron": _validate_chevron,
+    "pyramid": _validate_pyramid,
+    "stairs": _validate_stairs,
 }
 
 
@@ -991,11 +1123,21 @@ def _annotation_targets_chevron(payload: ChevronPayload | None) -> set[str]:
     return {step.id for step in payload.steps} if payload is not None else set()
 
 
+def _annotation_targets_pyramid(payload: PyramidPayload | None) -> set[str]:
+    return {tier.id for tier in payload.tiers} if payload is not None else set()
+
+
+def _annotation_targets_stairs(payload: StairsPayload | None) -> set[str]:
+    return {stage.id for stage in payload.stages} if payload is not None else set()
+
+
 ANNOTATION_TARGETS = {
     "matrix": _annotation_targets_matrix,
     "flow": _annotation_targets_flow,
     "enumeration": _annotation_targets_enumeration,
     "chevron": _annotation_targets_chevron,
+    "pyramid": _annotation_targets_pyramid,
+    "stairs": _annotation_targets_stairs,
 }
 
 

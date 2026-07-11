@@ -59,6 +59,10 @@ ENUMERATION_STRUCTURE_VIOLATION = "enumeration_structure_violation"
 # S2 — chevron structure codes.
 CHEVRON_STRUCTURE_VIOLATION = "chevron_structure_violation"
 
+# S3 — pyramid / stairs structure codes.
+PYRAMID_STRUCTURE_VIOLATION = "pyramid_structure_violation"
+STAIRS_STRUCTURE_VIOLATION = "stairs_structure_violation"
+
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
 
@@ -95,6 +99,8 @@ ALL_CODES = frozenset({
     ASK_CONTRACT_VIOLATION,
     ENUMERATION_STRUCTURE_VIOLATION,
     CHEVRON_STRUCTURE_VIOLATION,
+    PYRAMID_STRUCTURE_VIOLATION,
+    STAIRS_STRUCTURE_VIOLATION,
 })
 
 
