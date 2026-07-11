@@ -548,6 +548,23 @@ def extract_flow_dom(markup: str) -> tuple[set[str], set[tuple[str, str, str]], 
 
 
 _COMPONENT_RE = re.compile(r'data-ve-component="([^"]+)"')
+_CHEVRON_STEPS_OL_RE = re.compile(
+    r'<ol[^>]*class="([^"]*\bve-chevron-steps\b[^"]*)"[^>]*>',
+    re.IGNORECASE,
+)
+
+
+def _chevron_steps_orientation(body: str) -> str | None:
+    """Return 'horizontal' or 'vertical' from chevron <ol> class tokens only."""
+    match = _CHEVRON_STEPS_OL_RE.search(body)
+    if match is None:
+        return None
+    classes = match.group(1).split()
+    if "ve-chevron-horizontal" in classes:
+        return "horizontal"
+    if "ve-chevron-centered" in classes:
+        return "vertical"
+    return "vertical"
 
 
 def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
@@ -570,8 +587,38 @@ def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[D
     return diagnostics
 
 
+def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    step_attrs = re.findall(r'<li\s+([^>]*\bve-chevron-step\b[^>]*)>', body)
+    if len(step_attrs) < 2 or len(step_attrs) > 6:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"chevron は2〜6段である必要があります (found {len(step_attrs)})"))
+    if len(step_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in step_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "chevron ステップに data-ve-semantic-id がありません"))
+    for attrs in step_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        sid = match.group(1)
+        if sid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"chevron ステップ '{sid}' に意味 ID がありません"))
+    loop_rails = re.findall(r'class="[^"]*\bve-chevron-loop-rail\b[^"]*"', body)
+    orientation = _chevron_steps_orientation(body)
+    is_horizontal = orientation == "horizontal"
+    if is_horizontal and loop_rails:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "horizontal chevron に loop レールは許可されていません"))
+    if not is_horizontal and len(loop_rails) > 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "vertical chevron の loop レールは最大1本です"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
+    "chevron": _check_chevron_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(

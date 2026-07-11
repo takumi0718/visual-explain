@@ -44,6 +44,11 @@ class LayerTwoBuildRejectionTest(unittest.TestCase):
         "component-bad-enumeration-label-missing.json",
         "component-bad-enumeration-too-many.json",
         "component-bad-enumeration-empty-block.json",
+        "component-bad-chevron-loop-horizontal.json",
+        "component-bad-chevron-loop-capability-mismatch.json",
+        "component-bad-chevron-title-in-horizontal.json",
+        "component-bad-chevron-no-visible-content.json",
+        "component-bad-chevron-too-few-horizontal.json",
     ]
 
     def test_bad_assemblies_raise(self) -> None:
@@ -185,9 +190,30 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = build("component-valid-enumeration.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
 
+    def test_valid_chevron_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_loop_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron-loop.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_vertical_loop_with_horizontal_literal_in_prose_passes(self) -> None:
+        doc = build("component-valid-chevron-loop.json")
+        self.assertIn("ve-chevron-horizontal", doc)
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_horizontal_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron-horizontal.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
     def test_enumeration_structure_html_fails(self) -> None:
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-enumeration-structure.html").read_text("utf-8")))
+
+    def test_chevron_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-chevron-structure.html").read_text("utf-8")))
 
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
         from ve_components.checker import check_final_document
@@ -410,6 +436,26 @@ class EnumerationDocRegressionTest(unittest.TestCase):
     def test_committed_enumeration_doc_passes_four_layer_checker(self) -> None:
         raw = (TESTS / "enumeration-doc.html").read_text("utf-8")
         self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class ChevronDocRegressionTest(unittest.TestCase):
+    """Committed chevron inspection documents must pass the same gate as check.sh."""
+
+    DOCS = ["chevron-doc.html", "chevron-horizontal-doc.html"]
+
+    def test_committed_chevron_docs_pass_check_sh(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(name=name):
+                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
+                                      capture_output=True, text=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_chevron_docs_pass_four_layer_checker(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(name=name):
+                raw = (TESTS / name).read_text("utf-8")
+                self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
 
 
 if __name__ == "__main__":

@@ -147,6 +147,53 @@
           "digest": "81218908d6aaf2840db4d829c6a5da4e4a6bc4f955bbb42ff7e1a00d5c08fd44"
         }
       ]
+    },
+    {
+      "id": "chevron",
+      "version": 1,
+      "relationshipKind": "ordered-sequence",
+      "capabilities": [
+        "linear-sequence",
+        "closed-loop"
+      ],
+      "semanticResponsibility": "分岐のない線形順序と閉ループのみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "steps"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なチェブロン形状で順序付きステップを描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と順序付きステップの一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "chevron-structure"
+      ],
+      "renderer": "chevron@1",
+      "assets": [
+        {
+          "id": "chevron.css",
+          "slot": "styles",
+          "path": "chevron.css",
+          "digest": "9cb02dcd5510cc426818b7a0a51cb3c6d6436737e17c7e0df1d09e0762d3a48e"
+        }
+      ]
     }
   ]
 }

@@ -15,6 +15,11 @@
       "contractVersion": 1,
       "relationshipKind": "parallel-enumeration",
       "capabilities": ["parallel-itemization"]
+    },
+    "chevron": {
+      "contractVersion": 1,
+      "relationshipKind": "ordered-sequence",
+      "capabilities": ["linear-sequence", "closed-loop"]
     }
   },
   "compatibility": {

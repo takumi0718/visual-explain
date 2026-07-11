@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "chevron-horizontal-demo",
+    "title": "横型チェブロンの工程",
+    "summary": "横型番号チェブロンで4工程の線形順序を示す。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-chevron-horizontal",
+        "relationship": {
+          "kind": "ordered-sequence",
+          "capabilities": ["linear-sequence"]
+        },
+        "selection": {
+          "component": "chevron",
+          "version": 1,
+          "matchedCapabilities": ["linear-sequence"]
+        },
+        "caption": "横型の4工程",
+        "certainty": [
+          {"id": "cert-h", "level": "confirmed", "statement": "工程順は固定。"}
+        ],
+        "sources": [
+          {"id": "src-h", "label": "工程定義", "detail": "左から右への順序。"}
+        ],
+        "accessibility": {
+          "label": "横型チェブロン",
+          "summary": "左向き矢羽4段で線形順序を示す。"
+        },
+        "chevron": {
+          "steps": [
+            {"id": "h1", "description": ["要件を確定する"]},
+            {"id": "h2", "description": ["設計をレビューする"]},
+            {"id": "h3", "description": ["実装を完了する"]},
+            {"id": "h4", "description": ["検証を通過する"]}
+          ],
+          "orientation": "horizontal",
+          "blockContent": "number",
+          "loop": false
+        }
+      }
+    }
+  ]
+}

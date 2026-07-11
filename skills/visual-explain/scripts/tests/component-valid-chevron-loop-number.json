@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "chevron-loop-number-demo",
+    "title": "番号モードの閉ループ",
+    "summary": "縦型番号チェブロンでタイトル付き3段の循環を示す。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-chevron-loop-number",
+        "relationship": {
+          "kind": "ordered-sequence",
+          "capabilities": ["linear-sequence", "closed-loop"]
+        },
+        "selection": {
+          "component": "chevron",
+          "version": 1,
+          "matchedCapabilities": ["linear-sequence", "closed-loop"]
+        },
+        "caption": "番号付き改善サイクル",
+        "certainty": [
+          {"id": "cert-loop-num", "level": "confirmed", "statement": "3段は手順書に準拠。"}
+        ],
+        "sources": [
+          {"id": "src-loop-num", "label": "手順書", "detail": "計測から改善まで。"}
+        ],
+        "accessibility": {
+          "label": "番号付き閉ループチェブロン",
+          "summary": "番号付き3段と最終段から先頭段への戻りを示す。"
+        },
+        "chevron": {
+          "steps": [
+            {"id": "n-measure", "title": "計測", "description": ["指標を収集する"]},
+            {"id": "n-evaluate", "title": "評価", "description": ["結果を分析する"]},
+            {"id": "n-improve", "title": "改善", "description": ["施策を実施する"]}
+          ],
+          "orientation": "vertical",
+          "blockContent": "number",
+          "loop": true
+        }
+      }
+    }
+  ]
+}
