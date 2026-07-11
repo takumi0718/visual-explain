@@ -282,10 +282,10 @@ class DocumentationConsistencyTest(unittest.TestCase):
         for raw in assemblies:
             validate_assembly(raw)  # raises on any contract violation
 
-    def test_only_matrix_and_flow_in_production_registry(self) -> None:
+    def test_production_registry_matches_vocabulary(self) -> None:
         from ve_components.registry import load_registry
         registry = load_registry(SKILL / "assets" / "components" / "registry.json")
-        self.assertEqual({c.id for c in registry.components}, {"matrix", "flow"})
+        self.assertEqual({c.id for c in registry.components}, set(VOCABULARY["components"]))
 
     def test_documented_tokens_are_in_vocabulary(self) -> None:
         components = VOCABULARY["components"]

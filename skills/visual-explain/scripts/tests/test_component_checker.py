@@ -40,6 +40,10 @@ class LayerTwoBuildRejectionTest(unittest.TestCase):
         "component-bad-combined-relationship.json",
         "component-bad-flow-edge.json",
         "component-bad-matrix-cell.json",
+        "component-bad-enumeration-gap-description.json",
+        "component-bad-enumeration-label-missing.json",
+        "component-bad-enumeration-too-many.json",
+        "component-bad-enumeration-empty-block.json",
     ]
 
     def test_bad_assemblies_raise(self) -> None:
@@ -176,6 +180,23 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_valid_flow_artifact_passes(self) -> None:
         doc = build("component-valid-flow.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_enumeration_artifact_passes(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_enumeration_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-enumeration-structure.html").read_text("utf-8")))
+
+    def test_enumeration_with_flow_attrs_fails(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        tampered = doc.replace(
+            '<li class="ve-enum-block"',
+            '<li class="ve-enum-block" data-ve-from="item-a" data-ve-to="item-b" data-ve-relation="ordered-transition"',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_removed_flow_from_attribute_fails(self) -> None:
         doc = build("component-valid-flow.json").replace(' data-ve-from="node-draft"', "", 1)

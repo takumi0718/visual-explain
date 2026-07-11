@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "enumeration-columns",
+    "title": "横並びラベル列挙",
+    "summary": "columns 表示でラベル付き並列項目を示す資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-enum-columns",
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": ["parallel-itemization"]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 1,
+          "matchedCapabilities": ["parallel-itemization"]
+        },
+        "caption": "横並びの並列ラベル",
+        "certainty": [
+          {"id": "cert-enum-col", "level": "confirmed", "statement": "4項目は同じ優先度で並列。"}
+        ],
+        "sources": [
+          {"id": "src-brief", "label": "企画ブリーフ", "detail": "2026-06 版。"}
+        ],
+        "accessibility": {
+          "label": "横並び列挙",
+          "summary": "ラベル付きの4項目を横並びで示す。"
+        },
+        "enumeration": {
+          "items": [
+            {"id": "col-a", "label": "コスト"},
+            {"id": "col-b", "label": "品質"},
+            {"id": "col-c", "label": "速度"},
+            {"id": "col-d", "label": "リスク"}
+          ],
+          "presentation": "columns",
+          "blockContent": "label"
+        }
+      }
+    }
+  ]
+}

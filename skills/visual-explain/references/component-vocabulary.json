@@ -10,6 +10,11 @@
       "contractVersion": 1,
       "relationshipKind": "directed-graph",
       "capabilities": ["ordered-transition", "directed-transition", "branching"]
+    },
+    "enumeration": {
+      "contractVersion": 1,
+      "relationshipKind": "parallel-enumeration",
+      "capabilities": ["parallel-itemization"]
     }
   },
   "compatibility": {

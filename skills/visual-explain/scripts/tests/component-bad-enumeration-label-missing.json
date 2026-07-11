@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "bad-enum-label",
+    "title": "ラベル欠落",
+    "summary": "label モードで label が無い列挙。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad-label",
+        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
+        "selection": {"component": "enumeration", "version": 1, "matchedCapabilities": ["parallel-itemization"]},
+        "caption": "ラベル欠落",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "列挙", "summary": "不正 fixture。"},
+        "enumeration": {
+          "items": [
+            {"id": "a", "label": "A"},
+            {"id": "b"}
+          ],
+          "presentation": "list",
+          "blockContent": "label"
+        }
+      }
+    }
+  ]
+}

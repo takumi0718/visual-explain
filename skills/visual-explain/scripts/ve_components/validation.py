@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .diagnostics import (
     DUPLICATE_SEMANTIC_ID,
+    ENUMERATION_STRUCTURE_VIOLATION,
     FORBIDDEN_AUTHORING_FIELD,
     INVALID_COMPATIBILITY_PROVENANCE,
     INVALID_COMPONENT_PAYLOAD,
@@ -34,6 +35,8 @@ from .model import (
     CompatibilitySection,
     DocumentMetadata,
     EmphasisAnnotation,
+    EnumerationItem,
+    EnumerationPayload,
     ExplicitSelection,
     FlowEdge,
     FlowGroup,
@@ -54,8 +57,10 @@ def load_vocabulary() -> dict:
 
 VOCABULARY = load_vocabulary()
 _COMPONENTS = VOCABULARY["components"]
+_PAYLOAD_KEYS = frozenset(_COMPONENTS.keys())
 _KIND_TO_COMPONENT = {c["relationshipKind"]: name for name, c in _COMPONENTS.items()}
 _ALL_CAPABILITIES = {cap for c in _COMPONENTS.values() for cap in c["capabilities"]}
+_FLOW_RELATIONS = frozenset(_COMPONENTS["flow"]["capabilities"])
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
 _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
 
@@ -75,7 +80,8 @@ FORBIDDEN_AUTHORING_KEYS = {
 }
 
 _IR_KEYS = {
-    "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility", "matrix", "flow",
+    "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
+    "matrix", "flow", "enumeration",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -90,6 +96,8 @@ _FLOW_KEYS = {"nodes", "edges", "groups", "startId", "readingOrder"}
 _NODE_KEYS = {"id", "label", "group"}
 _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
 _GROUP_KEYS = {"id", "label"}
+_ENUMERATION_KEYS = {"items", "presentation", "blockContent"}
+_ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description"}
 _DOCUMENT_KEYS = {"id", "title", "summary"}
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
@@ -157,32 +165,38 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
 
     matrix = None
     flow = None
-    has_matrix = "matrix" in raw
-    has_flow = "flow" in raw
-    if has_matrix and has_flow:
-        col.add(INVALID_COMPONENT_PAYLOAD, "matrix と flow を同時に指定できません", path)
-    elif not has_matrix and not has_flow:
-        col.add(INVALID_COMPONENT_PAYLOAD, "matrix か flow のいずれかのペイロードが必要です", path)
-    elif has_matrix:
-        matrix = _validate_matrix(raw.get("matrix"), f"{path}.matrix", col)
+    enumeration = None
+    present = [key for key in _PAYLOAD_KEYS if key in raw]
+    if len(present) == 0:
+        col.add(INVALID_COMPONENT_PAYLOAD, "コンポーネント ペイロードが必要です", path)
+        payload_kind = "matrix"
+    elif len(present) > 1:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                f"ペイロードは1つだけ指定できます ({', '.join(present)})", path)
+        payload_kind = present[0]
     else:
-        acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
-        flow = _validate_flow(raw.get("flow"), f"{path}.flow", col, acyclic=acyclic)
+        payload_kind = present[0]
+        if payload_kind == "matrix":
+            matrix = _validate_matrix(raw.get("matrix"), f"{path}.matrix", col)
+        elif payload_kind == "flow":
+            acyclic = relationship is not None and "ordered-transition" in relationship.capabilities
+            flow = _validate_flow(raw.get("flow"), f"{path}.flow", col, acyclic=acyclic)
+        else:
+            enumeration = _validate_enumeration(raw.get("enumeration"), f"{path}.enumeration", col)
 
-    payload_kind = "matrix" if matrix is not None else "flow"
     cell_ids = {c.id for c in matrix.cells} if matrix is not None else set()
     node_ids = {n.id for n in flow.nodes} if flow is not None else set()
     edge_ids = {e.id for e in flow.edges} if flow is not None else set()
+    item_ids = {item.id for item in enumeration.items} if enumeration is not None else set()
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
-        raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids
+        raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids, item_ids
     )
 
     # Cross-consistency: component choice must match the present payload and kind.
-    if selection is not None:
-        expected_component = "matrix" if has_matrix and not has_flow else ("flow" if has_flow and not has_matrix else None)
-        if expected_component is not None and selection.component != expected_component:
+    if selection is not None and len(present) == 1:
+        if selection.component != present[0]:
             col.add(INVALID_COMPONENT_PAYLOAD,
-                    f"selection.component '{selection.component}' がペイロード '{expected_component}' と一致しません", path)
+                    f"selection.component '{selection.component}' がペイロード '{present[0]}' と一致しません", path)
         if relationship is not None and relationship.kind in _KIND_TO_COMPONENT:
             kind_component = _KIND_TO_COMPONENT[relationship.kind]
             if kind_component != selection.component:
@@ -205,13 +219,14 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         accessibility=accessibility,
         matrix=matrix,
         flow=flow,
+        enumeration=enumeration,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
     )
 
 
-def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids):
+def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_ids, edge_ids, item_ids=()):
     # 注釈は opt-in: 3フィールドのいずれも無い既存 IR は無検査で通す（後方互換）。
     # いずれか1つでも指定されたら契約全体を検査する。
     if not ({"takeawayTargetIds", "takeawayScope", "emphasis"} & set(raw)):
@@ -223,8 +238,15 @@ def _validate_annotations(raw, path, col, caption, payload_kind, cell_ids, node_
     target_list = targets if isinstance(targets, list) else []
     if targets is not None and not isinstance(targets, list):
         col.add(INVALID_COMPONENT_PAYLOAD, "takeawayTargetIds は配列が必要です", path)
-    allowed = cell_ids if payload_kind == "matrix" else (node_ids | edge_ids)
-    kind_label = "セル" if payload_kind == "matrix" else "ノード/エッジ"
+    if payload_kind == "matrix":
+        allowed = cell_ids
+        kind_label = "セル"
+    elif payload_kind == "flow":
+        allowed = node_ids | edge_ids
+        kind_label = "ノード/エッジ"
+    else:
+        allowed = set(item_ids)
+        kind_label = "項目"
     if scope == "targets" and len(target_list) == 0:
         col.add(INVALID_COMPONENT_PAYLOAD,
                 "takeawayTargetIds が0件です (図全体が対象なら takeawayScope: \"whole\" を明示してください)", path)
@@ -455,6 +477,99 @@ def _validate_axis(raw: object, path: str, col: DiagnosticCollector) -> tuple[Ax
     return tuple(out)
 
 
+def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> EnumerationPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "enumeration はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _ENUMERATION_KEYS, path, col)
+    presentation = raw.get("presentation", "list")
+    block_content = raw.get("blockContent", "number")
+    if presentation not in ("list", "columns"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"presentation '{presentation}' は list か columns のみ有効です", path)
+        presentation = "list"
+    if block_content not in ("number", "label"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"blockContent '{block_content}' は number か label のみ有効です", path)
+        block_content = "number"
+
+    items_raw = raw.get("items")
+    if not isinstance(items_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "items は配列である必要があります", path)
+        return None
+    count = len(items_raw)
+    max_items = 4 if presentation == "columns" else 6
+    if count < 2 or count > max_items:
+        col.add(ENUMERATION_STRUCTURE_VIOLATION,
+                f"items は2〜{max_items}件である必要があります (presentation={presentation})", path)
+
+    desc_max_lines = 4 if presentation == "columns" else 3
+    desc_max_chars = 40 if presentation == "columns" else 60
+
+    items: list[EnumerationItem] = []
+    has_description: list[bool] = []
+    for i, item in enumerate(items_raw):
+        p = f"{path}.items[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _ENUMERATION_ITEM_KEYS, p, col)
+        iid = item.get("id")
+        if not _nonblank_str(iid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.id は空にできません", p)
+        label = item.get("label")
+        title = item.get("title")
+        desc_raw = item.get("description")
+        desc_lines: list[str] = []
+        if desc_raw is not None:
+            if not isinstance(desc_raw, list) or not desc_raw:
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "description は非空の配列である必要があります", p)
+            else:
+                if len(desc_raw) > desc_max_lines:
+                    col.add(ENUMERATION_STRUCTURE_VIOLATION,
+                            f"description は最大{desc_max_lines}行です", p)
+                for j, line in enumerate(desc_raw):
+                    if not isinstance(line, str) or not line.strip():
+                        col.add(ENUMERATION_STRUCTURE_VIOLATION, f"description[{j}] は空にできません", p)
+                    elif len(line) > desc_max_chars:
+                        col.add(ENUMERATION_STRUCTURE_VIOLATION,
+                                f"description[{j}] は{desc_max_chars}字以内です", p)
+                    else:
+                        desc_lines.append(line)
+        has_description.append(bool(desc_lines))
+
+        if block_content == "label":
+            if not _nonblank_str(label):
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:label では label が必須です", p)
+            elif len(str(label)) > 16:
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "label は16字以内です", p)
+            if title is not None:
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:label では title は禁止です", p)
+        else:
+            if label is not None:
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:number では label は禁止です", p)
+            if title is not None:
+                if not _nonblank_str(title):
+                    col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は空にできません", p)
+                elif len(str(title)) > 30:
+                    col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は30字以内です", p)
+            if not (title and str(title).strip()) and not desc_lines:
+                col.add(ENUMERATION_STRUCTURE_VIOLATION,
+                        "number モードでは各 item に title か description が必要です", p)
+
+        items.append(EnumerationItem(
+            id=iid, label=label if isinstance(label, str) else None,
+            title=title if isinstance(title, str) else None,
+            description=tuple(desc_lines),
+        ))
+
+    if has_description and not all(has_description) and any(has_description):
+        col.add(ENUMERATION_STRUCTURE_VIOLATION,
+                "description は全 item で省略するか全 item で指定する必要があります", path)
+
+    if col:
+        return None
+    return EnumerationPayload(items=tuple(items), presentation=presentation, block_content=block_content)
+
+
 def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bool = False) -> FlowPayload | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "flow はオブジェクトである必要があります", path)
@@ -510,7 +625,7 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bo
             col.add(INVALID_FLOW_EDGE, f"edge.to '{to}' が存在しません", p)
         if _nonblank_str(frm) and frm == to:
             col.add(INVALID_FLOW_EDGE, "自己ループは許可されていません", p)
-        if rel not in _ALL_CAPABILITIES:
+        if rel not in _FLOW_RELATIONS:
             col.add(INVALID_FLOW_EDGE, f"未知の relation '{rel}'", p)
         edges.append(FlowEdge(id=eid, source=frm, target=to, relation=rel, label=item.get("label", "")))
 
@@ -682,11 +797,46 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
         collect(flow.get("nodes"))
         collect(flow.get("edges"))
         collect(flow.get("groups"))
+    enumeration = raw.get("enumeration")
+    if isinstance(enumeration, dict):
+        collect(enumeration.get("items"))
     seen: set[str] = set()
     for value in ids:
         if value in seen:
             col.add(DUPLICATE_SEMANTIC_ID, f"意味 ID '{value}' が重複しています", path)
         seen.add(value)
+
+
+# ---------------------------------------------------------------------------
+# Payload dispatch (S1 generalization)
+# ---------------------------------------------------------------------------
+
+_PAYLOAD_VALIDATORS = {
+    "matrix": _validate_matrix,
+    "flow": _validate_flow,
+    "enumeration": _validate_enumeration,
+}
+
+
+def _annotation_targets_matrix(payload: MatrixPayload | None) -> set[str]:
+    return {c.id for c in payload.cells} if payload is not None else set()
+
+
+def _annotation_targets_flow(payload: FlowPayload | None) -> set[str]:
+    if payload is None:
+        return set()
+    return {n.id for n in payload.nodes} | {e.id for e in payload.edges}
+
+
+def _annotation_targets_enumeration(payload: EnumerationPayload | None) -> set[str]:
+    return {item.id for item in payload.items} if payload is not None else set()
+
+
+ANNOTATION_TARGETS = {
+    "matrix": _annotation_targets_matrix,
+    "flow": _annotation_targets_flow,
+    "enumeration": _annotation_targets_enumeration,
+}
 
 
 # ---------------------------------------------------------------------------
