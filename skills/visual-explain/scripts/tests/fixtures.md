@@ -27,6 +27,10 @@ Required facts:
 - A premortem works by asking readers to generate causal reasons for a hypothetical failure, rather than merely listing risks.
 - `~/.agents/skills` is a de facto skill discovery convention; Claude Code has its own discovery-path exception.
 
+## Design-gate mock
+
+`mock-design-gate.html` はデザインゲート専用（checker 対象外・目視レビュー用）。
+
 ## Title fixture contract
 
 Every ordinary fixture has one `TITLE:BEGIN`/`TITLE:END` slot containing one non-empty plain-text `<title>` element. The negative title fixtures isolate empty, markup, unresolved-placeholder, and missing-marker diagnostics.
