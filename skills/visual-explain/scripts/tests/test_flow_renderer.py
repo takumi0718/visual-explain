@@ -182,6 +182,47 @@ class FlowGroupsTest(unittest.TestCase):
             out.unlink(missing_ok=True)
 
 
+def _grouped_ir(reading_order):
+    return {
+        "id": "sec-grp-order",
+        "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition", "branching"]},
+        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
+        "caption": "順序保持のグループ",
+        "certainty": [{"id": "oc", "level": "confirmed", "statement": "s"}],
+        "sources": [{"id": "os", "label": "L"}],
+        "accessibility": {"label": "lab", "summary": "sum"},
+        "flow": {
+            "groups": [{"id": "grp-a", "label": "Aグループ"}, {"id": "grp-b", "label": "Bグループ"}],
+            "nodes": [
+                {"id": "a1", "label": "A1", "group": "grp-a"},
+                {"id": "b1", "label": "B1", "group": "grp-b"},
+                {"id": "b2", "label": "B2", "group": "grp-b"}
+            ],
+            "edges": [
+                {"id": "eo1", "from": "b1", "to": "b2", "relation": "ordered-transition"},
+                {"id": "eo2", "from": "b2", "to": "a1", "relation": "directed-transition"}
+            ],
+            "startId": "b1",
+            "readingOrder": reading_order
+        }
+    }
+
+
+class FlowGroupReadingOrderTest(unittest.TestCase):
+    def test_reading_order_wins_over_group_declaration_order(self) -> None:
+        # groups declared [A, B] but reading order presents the B group first.
+        ir = validate_canonical_section(_grouped_ir(["b1", "b2", "a1"]))
+        markup = render_flow(CanonicalSection(ir=ir), FLOW_DEF).markup
+        self.assertLess(markup.index("b1"), markup.index("b2"))
+        self.assertLess(markup.index("b2"), markup.index("a1"))
+        self.assertLess(markup.index("grp-b"), markup.index("grp-a"))
+
+    def test_non_contiguous_group_reading_order_rejected(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_canonical_section(_grouped_ir(["b1", "a1", "b2"]))
+        self.assertIn("invalid_component_payload", ctx.exception.codes)
+
+
 class FlowBuildTest(unittest.TestCase):
     def test_build_and_check_flow_fixture(self) -> None:
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as handle:

@@ -75,6 +75,22 @@ class LayerOneAndFourSafetyTest(unittest.TestCase):
     def test_asset_hash(self) -> None:
         self.assertIn("invalid_controlled_asset", self.check("component-bad-asset-hash.html"))
 
+    def test_unclosed_script(self) -> None:
+        self.assertIn("invalid_controlled_asset", self.check("component-bad-unclosed-script.html"))
+
+    def test_unclosed_style(self) -> None:
+        self.assertIn("invalid_controlled_asset", self.check("component-bad-unclosed-style.html"))
+
+    def test_unclosed_script_fails_via_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "component-bad-unclosed-script.html")],
+                              capture_output=True, text=True)
+        self.assertNotEqual(proc.returncode, 0)
+
+    def test_unclosed_style_fails_via_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "component-bad-unclosed-style.html")],
+                              capture_output=True, text=True)
+        self.assertNotEqual(proc.returncode, 0)
+
     def test_missing_compatibility_provenance(self) -> None:
         self.assertIn("missing_provenance", self.check("component-bad-compatibility-provenance.html"))
 
@@ -164,6 +180,16 @@ class ArtifactSemanticTest(unittest.TestCase):
 
     def test_removed_flow_relation_attribute_fails(self) -> None:
         doc = build("component-valid-flow.json").replace(' data-ve-relation="ordered-transition"', "", 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_flow_from_ghost_reference_fails(self) -> None:
+        # An edge endpoint that is not a node in this canonical flow must fail,
+        # even though all three attributes are still present.
+        doc = build("component-valid-flow.json").replace('data-ve-from="node-draft"', 'data-ve-from="ghost"', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_flow_to_ghost_reference_fails(self) -> None:
+        doc = build("component-valid-flow.json").replace('data-ve-to="node-review"', 'data-ve-to="ghost"', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(doc))
 
     def test_matrix_cell_missing_column_association_fails(self) -> None:

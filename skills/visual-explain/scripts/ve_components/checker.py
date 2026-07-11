@@ -192,10 +192,22 @@ class _StrictSlotParser(HTMLParser):
             self._inside = False
             self._attrs = {}
             self._body = []
+        else:
+            # A stray or mismatched end tag (e.g. </style> inside <script>, or a
+            # close with no open) is fail-closed foreign content.
+            self.foreign.append(f"想定外の終了タグ </{tag}>")
 
     def handle_comment(self, data: str) -> None:
         if not self._inside:
             self.foreign.append("スロット直下に想定外のコメント")
+
+    def close(self) -> None:
+        super().close()
+        if self._inside:
+            # An unclosed <style>/<script> must never leave the slot in a
+            # successful empty state — reject at EOF.
+            self.foreign.append("未閉じのアセットタグがあります")
+            self._inside = False
 
 
 def validate_controlled_assets(slots: dict[str, str], registry, components_dir: Path | None) -> list[Diagnostic]:
@@ -280,27 +292,34 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
-class _ArtifactSemanticParser(HTMLParser):
-    """Collect semantic IDs and per-element relationship/association attributes."""
+class _DomSemanticParser(HTMLParser):
+    """Collect node IDs, edges, semantic IDs, and cell associations from a fragment."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.semantic_ids: set[str] = set()
+        self.node_ids: set[str] = set()
+        self.edges: list[tuple[str, str, str]] = []
+        self.incomplete_edge = False
         self.row_refs: list[str] = []
         self.col_refs: list[str] = []
-        self.diagnostics: list[Diagnostic] = []
+        self.cell_incomplete = False
 
     def _check(self, attrs: list[tuple[str, str | None]]) -> None:
         d = {k.lower(): (v or "") for k, v in attrs}
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
+        if "data-ve-node-id" in d:
+            self.node_ids.add(d["data-ve-node-id"])
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
-        if any(has.values()) and not all(has.values()):
-            self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+        if all(has.values()):
+            self.edges.append((d["data-ve-from"], d["data-ve-to"], d["data-ve-relation"]))
+        elif any(has.values()):
+            self.incomplete_edge = True
         has_row = "data-ve-row-id" in d
         has_col = "data-ve-column-id" in d
         if has_row != has_col:
-            self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+            self.cell_incomplete = True
         if has_row:
             self.row_refs.append(d.get("data-ve-row-id", ""))
         if has_col:
@@ -312,13 +331,18 @@ class _ArtifactSemanticParser(HTMLParser):
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._check(attrs)
 
-    def finish(self) -> None:
-        for ref in self.row_refs:
-            if ref not in self.semantic_ids:
-                self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
-        for ref in self.col_refs:
-            if ref not in self.semantic_ids:
-                self.diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+
+def _parse_dom(fragment: str) -> _DomSemanticParser:
+    parser = _DomSemanticParser()
+    parser.feed(fragment)
+    parser.close()
+    return parser
+
+
+def extract_flow_dom(markup: str) -> tuple[set[str], set[tuple[str, str, str]], bool]:
+    """Return (node ids, edge (from,to,relation) triples, any-incomplete-edge)."""
+    parser = _parse_dom(markup)
+    return parser.node_ids, set(parser.edges), parser.incomplete_edge
 
 
 _CANONICAL_SECTION_RE = re.compile(
@@ -328,16 +352,29 @@ _CANONICAL_SECTION_RE = re.compile(
 def validate_artifact_semantics(content: str) -> list[Diagnostic]:
     """Artifact-only static/semantic integrity, usable without an in-memory manifest.
 
-    Verifies flow edge attributes (from/to/relation together), matrix cell
-    associations (row+column together, referencing real headers), and that every
-    canonical section preserves a visible caption and its certainty/source notes.
+    Within each canonical section: flow edges must carry from/to/relation and both
+    endpoints must be node semantic IDs of that same flow; matrix cells must carry
+    both row and column IDs referencing real headers; and caption/certainty/source
+    notes must survive.
     """
-    parser = _ArtifactSemanticParser()
-    parser.feed(content)
-    parser.close()
-    parser.finish()
-    diagnostics = list(parser.diagnostics)
+    diagnostics: list[Diagnostic] = []
     for body in _CANONICAL_SECTION_RE.findall(content):
+        parser = _parse_dom(body)
+        if parser.incomplete_edge:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+        for frm, to, _rel in parser.edges:
+            if frm not in parser.node_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
+            if to not in parser.node_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
+        if parser.cell_incomplete:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+        for ref in parser.row_refs:
+            if ref not in parser.semantic_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
+        for ref in parser.col_refs:
+            if ref not in parser.semantic_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
         if "<figcaption" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
         if "data-ve-semantic-id=" not in body:

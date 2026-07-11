@@ -15,6 +15,8 @@ from ve_components.assembly import compose_sections, process_compatibility_secti
 from ve_components.diagnostics import ContractError
 from ve_components.model import RenderManifest, RenderResult
 from ve_components.registry import Registry, load_registry
+from ve_components.renderers.flow import render_flow
+from ve_components.renderers.matrix import render_matrix
 from ve_components.validation import validate_assembly
 from build_explainer import build_document
 
@@ -29,23 +31,10 @@ def esc(value: str) -> str:
     return html.escape(str(value))
 
 
-def _figure(ir, component_id: str, digest: str, asset_id: str) -> RenderResult:
-    consumed = ir.semantic_ids()
-    body = "".join(f'<li data-ve-semantic-id="{esc(sid)}">{esc(sid)}</li>' for sid in consumed)
-    markup = (
-        f'<figure data-ve-component="{component_id}" id="{esc(ir.id)}-figure" aria-label="{esc(ir.accessibility.label)}">'
-        f'<figcaption>{esc(ir.caption)}</figcaption>'
-        f'<ul>{body}</ul>'
-        f'<ul class="ve-{component_id}-notes"><li data-ve-semantic-id="{esc(ir.sources[0].id)}">{esc(ir.sources[0].label)}</li></ul>'
-        f'</figure>'
-    )
-    manifest = RenderManifest(
-        component_id=component_id, component_version=1, instance_id=ir.id,
-        consumed_semantic_ids=consumed, generated_relationship_ids=(),
-        generated_landmark_ids=(f"{ir.id}-figure",), asset_ids=(asset_id,),
-        asset_digests=(digest,), declared_dependencies=(), fallback_mode="static-content",
-    )
-    return RenderResult(markup=markup, style_asset_ids=(asset_id,), script_asset_ids=(), manifest=manifest)
+# The mixed-assembly tests use the real production renderers against an isolated
+# temp registry/asset dir. This exercises the full trust boundary (renderer
+# markup verified against the source IR), which a generic double cannot.
+REAL_RENDERERS = {"matrix@1": render_matrix, "flow@1": render_flow}
 
 
 class MixedAssemblyTest(unittest.TestCase):
@@ -66,10 +55,7 @@ class MixedAssemblyTest(unittest.TestCase):
             ],
         }
         cls.registry = load_registry(registry_dict)
-        cls.renderers = {
-            "matrix@1": lambda section, component: _figure(section.ir, "matrix", cls.matrix_digest, "matrix.css"),
-            "flow@1": lambda section, component: _figure(section.ir, "flow", cls.flow_digest, "flow.css"),
-        }
+        cls.renderers = REAL_RENDERERS
 
     @staticmethod
     def _entry(cid, kind, caps, asset, digest):
@@ -195,49 +181,74 @@ class RendererTrustBoundaryTest(unittest.TestCase):
         cls.tmp = MixedAssemblyTest.tmp
         cls.digest = MixedAssemblyTest.matrix_digest
 
-    def _raw(self) -> dict:
-        return json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+    def _build_matrix(self, renderer) -> str:
+        raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+        return build_document(raw, self.registry, {"matrix@1": renderer}, SKELETON, self.tmp)
 
-    def _build(self, renderer) -> str:
-        return build_document(self._raw(), self.registry, {"matrix@1": renderer}, SKELETON, self.tmp)
+    def _build_flow(self, renderer) -> str:
+        raw = json.loads((TESTS / "component-valid-flow.json").read_text("utf-8"))
+        return build_document(raw, self.registry, {"flow@1": renderer}, SKELETON, self.tmp)
 
-    def _good(self, section):
-        return _figure(section.ir, "matrix", self.digest, "matrix.css")
+    @staticmethod
+    def _mutate_matrix(**changes):
+        import dataclasses
+        def renderer(section, component):
+            base = render_matrix(section, component)
+            manifest_changes = changes.pop("_manifest", None)
+            result = dataclasses.replace(base, **changes)
+            if manifest_changes is not None:
+                result = dataclasses.replace(result, manifest=dataclasses.replace(base.manifest, **manifest_changes))
+            return result
+        return renderer
 
     def test_renderer_diagnostics_fail_build(self) -> None:
-        import dataclasses
         from ve_components.diagnostics import Diagnostic
-        def bad(section, component):
-            base = self._good(section)
-            return dataclasses.replace(base, diagnostics=(Diagnostic("renderer_failure", "renderer が問題を報告"),))
         with self.assertRaises(ContractError):
-            self._build(bad)
+            self._build_matrix(self._mutate_matrix(diagnostics=(Diagnostic("renderer_failure", "報告"),)))
 
     def test_undeclared_style_asset_fails_build(self) -> None:
-        import dataclasses
-        def bad(section, component):
-            base = self._good(section)
-            return dataclasses.replace(base, style_asset_ids=("ghost.css",))
         with self.assertRaises(ContractError):
-            self._build(bad)
+            self._build_matrix(self._mutate_matrix(style_asset_ids=("ghost.css",)))
 
     def test_manifest_component_mismatch_fails_build(self) -> None:
-        import dataclasses
-        def bad(section, component):
-            base = self._good(section)
-            bogus = dataclasses.replace(base.manifest, component_id="flow")
-            return dataclasses.replace(base, manifest=bogus)
         with self.assertRaises(ContractError):
-            self._build(bad)
+            self._build_matrix(self._mutate_matrix(_manifest={"component_id": "flow"}))
 
     def test_manifest_asset_ids_disagree_with_declared_fails(self) -> None:
-        import dataclasses
-        def bad(section, component):
-            base = self._good(section)
-            bogus = dataclasses.replace(base.manifest, asset_ids=("matrix.css", "phantom.css"))
-            return dataclasses.replace(base, manifest=bogus)
         with self.assertRaises(ContractError):
-            self._build(bad)
+            self._build_matrix(self._mutate_matrix(_manifest={"asset_ids": ("matrix.css", "phantom.css")}))
+
+    def test_asset_ids_digests_length_mismatch_fails(self) -> None:
+        with self.assertRaises(ContractError):
+            self._build_matrix(self._mutate_matrix(_manifest={"asset_digests": ()}))
+
+    def test_manifest_drops_semantic_id_fails(self) -> None:
+        def renderer(section, component):
+            import dataclasses
+            base = render_matrix(section, component)
+            dropped = base.manifest.consumed_semantic_ids[:-1]
+            return dataclasses.replace(base, manifest=dataclasses.replace(base.manifest, consumed_semantic_ids=dropped))
+        with self.assertRaises(ContractError):
+            self._build_matrix(renderer)
+
+    def test_flow_manifest_drops_relationship_id_fails(self) -> None:
+        def renderer(section, component):
+            import dataclasses
+            base = render_flow(section, component)
+            return dataclasses.replace(base, manifest=dataclasses.replace(base.manifest, generated_relationship_ids=()))
+        with self.assertRaises(ContractError):
+            self._build_flow(renderer)
+
+    def test_flow_renderer_reversed_edge_fails_build(self) -> None:
+        def renderer(section, component):
+            base = render_flow(section, component)
+            import dataclasses
+            reversed_markup = base.markup.replace(
+                'data-ve-from="node-draft" data-ve-to="node-review"',
+                'data-ve-from="node-review" data-ve-to="node-draft"')
+            return dataclasses.replace(base, markup=reversed_markup)
+        with self.assertRaises(ContractError):
+            self._build_flow(renderer)
 
 
 if __name__ == "__main__":

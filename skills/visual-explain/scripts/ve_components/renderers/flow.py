@@ -36,23 +36,34 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
     summary_id = f"{ir.id}-summary"
 
     def node_li(nid: str) -> str:
-        return f'<li data-ve-semantic-id="{_esc(nid)}">{_esc(node_by_id[nid].label)}</li>'
+        return (f'<li data-ve-semantic-id="{_esc(nid)}" data-ve-node-id="{_esc(nid)}">'
+                f'{_esc(node_by_id[nid].label)}</li>')
 
     if flow.groups:
-        # Grouped list: each declared group carries its own semantic ID and label,
-        # and its nodes preserve the overall reading order. Ungrouped nodes follow.
-        group_parts = []
-        for group in flow.groups:
-            inner = "".join(node_li(nid) for nid in reading_order
-                            if nid in node_by_id and node_by_id[nid].group == group.id)
-            group_parts.append(
-                f'<li class="ve-flow-group" data-ve-semantic-id="{_esc(group.id)}">'
-                f'<span class="ve-flow-group-label">{_esc(group.label)}</span>'
-                f'<ol class="ve-flow-group-nodes">{inner}</ol></li>'
-            )
-        ungrouped = "".join(node_li(nid) for nid in reading_order
-                            if nid in node_by_id and node_by_id[nid].group is None)
-        nodes_block = f'<ol class="ve-flow-nodes ve-flow-grouped">{"".join(group_parts)}{ungrouped}</ol>'
+        # Emit the global reading order verbatim; contiguous runs of the same
+        # group become a labelled group block. Validation guarantees each group's
+        # nodes are contiguous, so a group appears exactly once and the declared
+        # reading order is never reordered by group declaration order.
+        group_label = {g.id: g.label for g in flow.groups}
+        ordered = [nid for nid in reading_order if nid in node_by_id]
+        blocks: list[str] = []
+        i = 0
+        while i < len(ordered):
+            group_id = node_by_id[ordered[i]].group
+            run: list[str] = []
+            while i < len(ordered) and node_by_id[ordered[i]].group == group_id:
+                run.append(ordered[i])
+                i += 1
+            inner = "".join(node_li(nid) for nid in run)
+            if group_id is None:
+                blocks.append(inner)
+            else:
+                blocks.append(
+                    f'<li class="ve-flow-group" data-ve-semantic-id="{_esc(group_id)}">'
+                    f'<span class="ve-flow-group-label">{_esc(group_label.get(group_id, group_id))}</span>'
+                    f'<ol class="ve-flow-group-nodes">{inner}</ol></li>'
+                )
+        nodes_block = f'<ol class="ve-flow-nodes ve-flow-grouped">{"".join(blocks)}</ol>'
     else:
         node_items = "".join(node_li(nid) for nid in reading_order if nid in node_by_id)
         nodes_block = f'<ol class="ve-flow-nodes">{node_items}</ol>'

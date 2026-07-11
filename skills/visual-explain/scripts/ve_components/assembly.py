@@ -11,7 +11,7 @@ from __future__ import annotations
 import html
 from dataclasses import dataclass
 
-from .checker import validate_content_markup
+from .checker import extract_flow_dom, validate_content_markup
 from .diagnostics import DUPLICATE_SECTION_ID, RENDERER_FAILURE, ContractError, Diagnostic
 from .model import CanonicalSection, CompatibilitySection, RenderManifest
 from .registry import (
@@ -94,10 +94,31 @@ def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
         failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' が未宣言のアセットを出力しました"))
     if set(manifest.asset_ids) != declared:
         failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の manifest asset ids が宣言と不一致です"))
+    if len(manifest.asset_ids) != len(manifest.asset_digests):
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の asset ids と digests が1対1ではありません"))
     digest_by_id = {a.id: a.digest for a in component.assets}
     for aid, adig in zip(manifest.asset_ids, manifest.asset_digests):
         if digest_by_id.get(aid) != adig:
             failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の manifest digest が不一致です: {aid}"))
+
+    # Manifest completeness against the source IR: no semantic or relationship ID
+    # may be silently omitted to escape the final DOM gate.
+    if set(manifest.consumed_semantic_ids) != set(section.ir.semantic_ids()):
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の consumed_semantic_ids が IR と不一致です"))
+    required_rel = {e.id for e in section.ir.flow.edges} if section.ir.flow is not None else set()
+    if set(manifest.generated_relationship_ids) != required_rel:
+        failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の generated_relationship_ids が IR の辺と不一致です"))
+
+    # For flow, the rendered edges/endpoints/relations must equal the IR exactly
+    # (no dropped, reversed, or invented edges/nodes).
+    if section.ir.flow is not None and isinstance(result.markup, str):
+        dom_nodes, dom_edges, incomplete = extract_flow_dom(result.markup)
+        if incomplete:
+            failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の flow 辺属性が不完全です"))
+        if dom_nodes != {n.id for n in section.ir.flow.nodes}:
+            failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の flow ノードが IR と不一致です"))
+        if dom_edges != {(e.source, e.target, e.relation) for e in section.ir.flow.edges}:
+            failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の flow 端点/関係が IR と不一致です"))
 
     if failures:
         raise ContractError(failures)

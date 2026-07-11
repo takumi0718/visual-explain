@@ -455,11 +455,39 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bo
     # single dangling edge does not cascade into confusing reachability noise.
     if len(col.diagnostics) == start_len:
         _check_flow_integrity(node_ids, edges, start_id, list(reading_order), acyclic, path, col)
+        if groups:
+            order = list(reading_order) if reading_order else [n.id for n in nodes]
+            _check_group_reading_order(nodes, order, path, col)
 
     return FlowPayload(
         nodes=tuple(nodes), edges=tuple(edges), groups=groups,
         start_id=start_id, reading_order=tuple(reading_order),
     )
+
+
+def _check_group_reading_order(nodes: list[FlowNode], order: list[str], path: str, col: DiagnosticCollector) -> None:
+    """Each group's nodes must be contiguous in the reading order.
+
+    The promoted flow contract renders groups as contiguous blocks. If the global
+    reading order interleaves two groups, the grouped rendering cannot honor it
+    without reordering, so such a combination is rejected rather than silently
+    reordered. Ungrouped runs may repeat freely.
+    """
+    group_of = {n.id: n.group for n in nodes}
+    unset = object()
+    prev: object = unset
+    closed: set[str] = set()
+    for nid in order:
+        group = group_of.get(nid)
+        if group == prev:
+            continue
+        if isinstance(group, str) and group in closed:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"group '{group}' のノードが readingOrder 上で不連続です (group と readingOrder が両立しません)", path)
+            return
+        if isinstance(prev, str):
+            closed.add(prev)
+        prev = group
 
 
 def _check_flow_integrity(node_ids: set[str], edges: list[FlowEdge], start_id, reading_order: list[str],

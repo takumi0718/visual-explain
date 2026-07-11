@@ -135,6 +135,30 @@ class ControlledAssetTest(unittest.TestCase):
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=SKILL / "assets" / "components")
         self.assertIn("invalid_controlled_asset", codes(diags))
 
+    def test_unclosed_script_slot_fails_closed(self) -> None:
+        slots = {"styles": "", "scripts": "<script>alert(1);/*"}
+        self.assertIn("invalid_controlled_asset", codes(validate_controlled_assets(slots, REGISTRY, None)))
+
+    def test_unclosed_style_slot_fails_closed(self) -> None:
+        slots = {"styles": "<style>.x{color:red}", "scripts": ""}
+        self.assertIn("invalid_controlled_asset", codes(validate_controlled_assets(slots, REGISTRY, None)))
+
+    def test_mismatched_end_tag_fails_closed(self) -> None:
+        slots = {"styles": "", "scripts": "<script></style>"}
+        self.assertIn("invalid_controlled_asset", codes(validate_controlled_assets(slots, REGISTRY, None)))
+
+    def test_stray_close_tag_fails_closed(self) -> None:
+        slots = {"styles": "</style>", "scripts": ""}
+        self.assertIn("invalid_controlled_asset", codes(validate_controlled_assets(slots, REGISTRY, None)))
+
+    def test_unclosed_script_document_fails_check_final(self) -> None:
+        sb = "<!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->"
+        se = "<!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->"
+        b, e = SKELETON.index(sb) + len(sb), SKELETON.index(se)
+        doc = SKELETON[:b] + "\n  <script>alert(1);/*\n  " + SKELETON[e:]
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=SKILL / "assets" / "components")
+        self.assertIn("invalid_controlled_asset", codes(diags))
+
 
 class BadFixtureTest(unittest.TestCase):
     """The four Task 3 bad fixtures fail the safety layer where required."""
