@@ -223,6 +223,10 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-stairs-structure.html").read_text("utf-8")))
 
+    def test_logic_tree_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-logic-tree-structure.html").read_text("utf-8")))
+
     def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")
@@ -565,6 +569,20 @@ class StairsDocRegressionTest(unittest.TestCase):
 
     def test_committed_stairs_doc_passes_four_layer_checker(self) -> None:
         raw = (TESTS / "stairs-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class LogicTreeDocRegressionTest(unittest.TestCase):
+    """Committed logic-tree-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_logic_tree_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "logic-tree-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_logic_tree_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "logic-tree-doc.html").read_text("utf-8")
         self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
 
 

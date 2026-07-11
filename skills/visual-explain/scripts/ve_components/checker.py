@@ -773,11 +773,76 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
     return diagnostics
 
 
+def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    branch_rows = re.findall(
+        r'<li\s+([^>]*\bve-logic-tree-branch-row\b[^>]*)>',
+        body,
+    )
+    branch_count = len(branch_rows)
+    if branch_count < 2 or branch_count > 4:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"logic-tree は2〜4枝である必要があります (found {branch_count})"))
+    diagnostics.extend(_check_count_index_container(
+        body,
+        container_pattern=r'<ol\s+([^>]*\bve-logic-tree-branches\b[^>]*)>',
+        item_count=branch_count,
+        prefix="ve-logic-tree",
+        label="logic-tree",
+    ))
+    root_match = re.search(
+        r'<div\s+([^>]*\bclass="[^"]*\bve-logic-tree-root\b(?!-)[^"]*"[^>]*)>',
+        body,
+    )
+    if root_match is None:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の root がありません"))
+    elif 'data-ve-semantic-id="' not in root_match.group(1):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree root に data-ve-semantic-id がありません"))
+    branch_blocks = re.findall(
+        r'<div\s+([^>]*\bve-logic-tree-branch\b[^>]*)>',
+        body,
+    )
+    if branch_count != sum('data-ve-semantic-id="' in attrs for attrs in branch_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree 枝に data-ve-semantic-id がありません"))
+    for index, attrs in enumerate(branch_rows):
+        classes = _class_tokens_from_attr_string(attrs)
+        position = index + 1
+        expected_index = f"ve-logic-tree-index-{position}"
+        index_tokens = _exact_index_token("ve-logic-tree", classes)
+        if index_tokens != {expected_index}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"logic-tree の枝 {position} は {expected_index} を1つだけ持つ必要があります"))
+    connectors = re.findall(r'<[^>]*\bve-logic-tree-connector\b[^>]*>', body)
+    if len(connectors) < branch_count:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の connector が不足しています"))
+    for tag in connectors:
+        if "data-ve-semantic-id" in tag or "data-ve-from" in tag or "data-ve-to" in tag:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "logic-tree connector に関係属性は許可されていません"))
+        if 'aria-hidden="true"' not in tag:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "logic-tree connector は aria-hidden である必要があります"))
+    if "ve-logic-tree-layout-horizontal" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree に ve-logic-tree-layout-horizontal がありません"))
+    root_pos = body.find("ve-logic-tree-root")
+    branches_pos = body.find("ve-logic-tree-branches")
+    if root_pos >= 0 and branches_pos >= 0 and root_pos > branches_pos:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の DOM 順序は root が branches より前である必要があります"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
     "chevron": _check_chevron_artifact,
     "pyramid": _check_pyramid_artifact,
     "stairs": _check_stairs_artifact,
+    "logic-tree": _check_logic_tree_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(

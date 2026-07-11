@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "logic-tree-bad-depth",
+    "title": "深さ違反",
+    "summary": "葉にleavesを持つ不正IR。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-lt-depth",
+        "relationship": {
+          "kind": "hierarchical-decomposition",
+          "capabilities": ["mece-decomposition"]
+        },
+        "selection": {
+          "component": "logic-tree",
+          "version": 1,
+          "matchedCapabilities": ["mece-decomposition"]
+        },
+        "caption": "深さ違反",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "ロジックツリー", "summary": "葉の下にさらに枝がある。"},
+        "logic-tree": {
+          "root": {"id": "root-topic", "label": "全体"},
+          "branches": [
+            {"id": "branch-a", "label": "枝A"},
+            {
+              "id": "branch-b",
+              "label": "枝B",
+              "leaves": [
+                {
+                  "id": "leaf-1",
+                  "text": "詳細",
+                  "leaves": [{"id": "leaf-nested", "text": "孫"}]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

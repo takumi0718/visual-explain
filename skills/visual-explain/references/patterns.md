@@ -241,15 +241,16 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
 - **並列列挙（順序なし）** → `enumeration`（`parallel-enumeration` / `parallel-itemization`）。番号は識別子であり順序の宣言ではない。
 - **線形順序（分岐なし）** → `chevron`（`ordered-sequence` / `linear-sequence`）。順序のテスト: 「並べ替えても意味が変わらない」なら enumeration、「順序が本質」なら chevron。
 - **分岐・合流は `directed-graph`（flow）、線形は `ordered-sequence`（chevron）** — `relationship.kind` で送り分ける。capability `branching` の有無は説明上の目印であり、発見機構ではない。
+- **構成の分解** → `logic-tree`（`hierarchical-decomposition` / `mece-decomposition`）。**読者がたどる判断分岐は decision-tree（バックログ）** — 誤用は選択ガイドで防ぐ。MECE 性は機械検証できないため caption / certainty で主張する。
 - **優先の階層（上ほど重要・少ない）** → `pyramid`（`layered-priority` / `priority-layering`）。**単なる並列3項目は enumeration、優先構造だけ pyramid** — pyramid は誤用しない。
 - **到達したら留まる状態（成熟度・移行フェーズ）** → `stairs`（`staged-maturity` / `maturity-staging`）。**流れる工程は chevron**。
 
@@ -450,6 +451,39 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
             {"id": "s-3", "label": "標準化", "current": true, "note": "ここにいる"},
             {"id": "s-4", "label": "最適化"},
             {"id": "s-5", "label": "自律運用"}
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+### logic-tree（構成の分解）
+
+2〜4枝。`root.label` 20字以内、`branch.label` 16字以内、`leaf.text` 40字以内。各枝の leaf は0〜2件。深さは root → branch → leaf の2段固定。接続線はレンダラ所有（grid＋境界線、`data-ve-from/to` 禁止）。狭い画面では root 上・枝下の縦積み（DOM 順序は root が先）。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-logic-tree", "title": "構成の分解", "summary": "3枝で全体テーマを分解する。"},
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-logic-tree",
+        "relationship": {"kind": "hierarchical-decomposition", "capabilities": ["mece-decomposition"]},
+        "selection": {"component": "logic-tree", "version": 1, "matchedCapabilities": ["mece-decomposition"]},
+        "caption": "全体テーマの3枝分解",
+        "certainty": [{"id": "lt-cert", "level": "inferred", "statement": "分解はレビューで合意（MECE は機械未検証）。"}],
+        "sources": [{"id": "lt-src", "label": "分解メモ v1"}],
+        "accessibility": {"label": "ロジックツリー", "summary": "左に全体、右に枝と詳細を示す。"},
+        "logic-tree": {
+          "root": {"id": "lt-root", "label": "全体テーマ"},
+          "branches": [
+            {"id": "lt-a", "label": "市場機会"},
+            {"id": "lt-b", "label": "実装負債", "leaves": [{"id": "lt-b1", "text": "レガシー連携"}]},
+            {"id": "lt-c", "label": "運用体制", "leaves": [{"id": "lt-c1", "text": "オンコール"}, {"id": "lt-c2", "text": "権限委譲"}]}
           ]
         }
       }

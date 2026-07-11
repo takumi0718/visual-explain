@@ -20,6 +20,7 @@ from .diagnostics import (
     INVALID_FLOW_EDGE,
     INVALID_MATRIX_REFERENCE,
     INVALID_RELATIONSHIP_DECLARATION,
+    LOGIC_TREE_STRUCTURE_VIOLATION,
     MISSING_REQUIRED_SLOT,
     PYRAMID_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,
@@ -47,6 +48,10 @@ from .model import (
     FlowGroup,
     FlowNode,
     FlowPayload,
+    LogicTreeBranch,
+    LogicTreeLeaf,
+    LogicTreePayload,
+    LogicTreeRoot,
     MatrixCell,
     MatrixPayload,
     PyramidPayload,
@@ -90,7 +95,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
-    "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs",
+    "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "logic-tree",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -113,6 +118,10 @@ _PYRAMID_KEYS = {"tiers"}
 _PYRAMID_TIER_KEYS = {"id", "label", "sub"}
 _STAIRS_KEYS = {"stages"}
 _STAIRS_STAGE_KEYS = {"id", "label", "note", "current"}
+_LOGIC_TREE_KEYS = {"root", "branches"}
+_LOGIC_TREE_ROOT_KEYS = {"id", "label"}
+_LOGIC_TREE_BRANCH_KEYS = {"id", "label", "leaves"}
+_LOGIC_TREE_LEAF_KEYS = {"id", "text"}
 _DOCUMENT_KEYS = {"id", "title", "summary"}
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
@@ -159,6 +168,7 @@ _ANNOTATION_TARGET_LABELS = {
     "chevron": "ステップ",
     "pyramid": "層",
     "stairs": "段",
+    "logic-tree": "枝/葉",
 }
 
 
@@ -215,6 +225,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     chevron = None
     pyramid = None
     stairs = None
+    logic_tree = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
     if len(present) == 0:
@@ -239,6 +250,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
             pyramid = validated_payload
         elif payload_kind == "stairs":
             stairs = validated_payload
+        elif payload_kind == "logic-tree":
+            logic_tree = validated_payload
 
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
         raw, path, col, caption, payload_kind, validated_payload
@@ -275,6 +288,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         chevron=chevron,
         pyramid=pyramid,
         stairs=stairs,
+        logic_tree=logic_tree,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
@@ -845,6 +859,97 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
     return StairsPayload(stages=tuple(stages))
 
 
+def _validate_logic_tree(raw: object, path: str, col: DiagnosticCollector) -> LogicTreePayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "logic-tree はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _LOGIC_TREE_KEYS, path, col)
+
+    root_raw = raw.get("root")
+    if not isinstance(root_raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "root はオブジェクトである必要があります", path)
+        root_raw = {}
+    root_path = f"{path}.root"
+    _check_keys(root_raw, _LOGIC_TREE_ROOT_KEYS, root_path, col)
+    root_id = root_raw.get("id")
+    if not _nonblank_str(root_id):
+        col.add(INVALID_COMPONENT_PAYLOAD, "root.id は空にできません", root_path)
+    root_label = root_raw.get("label")
+    if not _nonblank_str(root_label):
+        col.add(LOGIC_TREE_STRUCTURE_VIOLATION, "root.label は空にできません", root_path)
+    elif len(str(root_label)) > 20:
+        col.add(LOGIC_TREE_STRUCTURE_VIOLATION, "root.label は20字以内です", root_path)
+
+    branches_raw = raw.get("branches")
+    if not isinstance(branches_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "branches は配列である必要があります", path)
+        return None
+    branch_count = len(branches_raw)
+    if branch_count < 2 or branch_count > 4:
+        col.add(LOGIC_TREE_STRUCTURE_VIOLATION,
+                f"branches は2〜4件である必要があります (found {branch_count})", path)
+
+    branches: list[LogicTreeBranch] = []
+    for i, item in enumerate(branches_raw):
+        p = f"{path}.branches[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "branch はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _LOGIC_TREE_BRANCH_KEYS, p, col)
+        bid = item.get("id")
+        if not _nonblank_str(bid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "branch.id は空にできません", p)
+        label = item.get("label")
+        if not _nonblank_str(label):
+            col.add(LOGIC_TREE_STRUCTURE_VIOLATION, "branch.label は空にできません", p)
+        elif len(str(label)) > 16:
+            col.add(LOGIC_TREE_STRUCTURE_VIOLATION, "branch.label は16字以内です", p)
+
+        leaves_raw = item.get("leaves", [])
+        if leaves_raw is None:
+            leaves_raw = []
+        if not isinstance(leaves_raw, list):
+            col.add(INVALID_COMPONENT_PAYLOAD, "leaves は配列である必要があります", p)
+            leaves_raw = []
+        leaf_count = len(leaves_raw)
+        if leaf_count > 2:
+            col.add(LOGIC_TREE_STRUCTURE_VIOLATION,
+                    f"leaves は各 branch で0〜2件である必要があります (found {leaf_count})", p)
+
+        leaves: list[LogicTreeLeaf] = []
+        for j, leaf_item in enumerate(leaves_raw):
+            lp = f"{p}.leaves[{j}]"
+            if not isinstance(leaf_item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "leaf はオブジェクトである必要があります", lp)
+                continue
+            _check_keys(leaf_item, _LOGIC_TREE_LEAF_KEYS, lp, col)
+            lid = leaf_item.get("id")
+            if not _nonblank_str(lid):
+                col.add(INVALID_COMPONENT_PAYLOAD, "leaf.id は空にできません", lp)
+            text = leaf_item.get("text")
+            if not _nonblank_str(text):
+                col.add(LOGIC_TREE_STRUCTURE_VIOLATION, "leaf.text は空にできません", lp)
+            elif len(str(text)) > 40:
+                col.add(LOGIC_TREE_STRUCTURE_VIOLATION, "leaf.text は40字以内です", lp)
+            leaves.append(LogicTreeLeaf(
+                id=lid, text=text if isinstance(text, str) else "",
+            ))
+
+        branches.append(LogicTreeBranch(
+            id=bid, label=label if isinstance(label, str) else "",
+            leaves=tuple(leaves),
+        ))
+
+    if col:
+        return None
+    return LogicTreePayload(
+        root=LogicTreeRoot(
+            id=root_id, label=root_label if isinstance(root_label, str) else "",
+        ),
+        branches=tuple(branches),
+    )
+
+
 def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bool = False) -> FlowPayload | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "flow はオブジェクトである必要があります", path)
@@ -1084,6 +1189,20 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     stairs = raw.get("stairs")
     if isinstance(stairs, dict):
         collect(stairs.get("stages"))
+    logic_tree = raw.get("logic-tree")
+    if isinstance(logic_tree, dict):
+        root = logic_tree.get("root")
+        if isinstance(root, dict) and isinstance(root.get("id"), str):
+            ids.append(root["id"])
+        branches = logic_tree.get("branches")
+        if isinstance(branches, list):
+            for branch in branches:
+                if isinstance(branch, dict):
+                    if isinstance(branch.get("id"), str):
+                        ids.append(branch["id"])
+                    for leaf in branch.get("leaves") or []:
+                        if isinstance(leaf, dict) and isinstance(leaf.get("id"), str):
+                            ids.append(leaf["id"])
     seen: set[str] = set()
     for value in ids:
         if value in seen:
@@ -1102,6 +1221,7 @@ _PAYLOAD_VALIDATORS = {
     "chevron": _validate_chevron,
     "pyramid": _validate_pyramid,
     "stairs": _validate_stairs,
+    "logic-tree": _validate_logic_tree,
 }
 
 
@@ -1131,6 +1251,16 @@ def _annotation_targets_stairs(payload: StairsPayload | None) -> set[str]:
     return {stage.id for stage in payload.stages} if payload is not None else set()
 
 
+def _annotation_targets_logic_tree(payload: LogicTreePayload | None) -> set[str]:
+    if payload is None:
+        return set()
+    targets = {payload.root.id}
+    targets.update(branch.id for branch in payload.branches)
+    for branch in payload.branches:
+        targets.update(leaf.id for leaf in branch.leaves)
+    return targets
+
+
 ANNOTATION_TARGETS = {
     "matrix": _annotation_targets_matrix,
     "flow": _annotation_targets_flow,
@@ -1138,6 +1268,7 @@ ANNOTATION_TARGETS = {
     "chevron": _annotation_targets_chevron,
     "pyramid": _annotation_targets_pyramid,
     "stairs": _annotation_targets_stairs,
+    "logic-tree": _annotation_targets_logic_tree,
 }
 
 
