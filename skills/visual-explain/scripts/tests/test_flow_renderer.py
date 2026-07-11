@@ -234,11 +234,25 @@ class FlowReadingOrderPermutationTest(unittest.TestCase):
         return codes(ctx.exception)
 
     def test_ungrouped_valid_permutation_accepted(self) -> None:
-        ir = validate_canonical_section(
-            flow_ir(lambda ir: ir["flow"].__setitem__(
-                "readingOrder", ["node-approve", "node-draft", "node-review"])))
+        # component-valid-flow.json's two edges form a linear chain
+        # (draft -> review -> approve), which forces a single forward order
+        # for those three nodes under v1 topology. To exercise genuine
+        # permutation freedom (an order that differs from declaration order)
+        # without tripping the forward-edge constraint, add a node reachable
+        # only from node-draft with no other ordering constraint, and move it
+        # ahead of node-review/node-approve in the reading order.
+        def mutate(ir):
+            ir["flow"]["nodes"].append({"id": "node-extra", "label": "参考資料"})
+            ir["flow"]["edges"].append({
+                "id": "edge-draft-extra", "from": "node-draft", "to": "node-extra",
+                "relation": "directed-transition", "label": "参照",
+            })
+            ir["flow"]["readingOrder"] = ["node-draft", "node-extra", "node-review", "node-approve"]
+
+        ir = validate_canonical_section(flow_ir(mutate))
         self.assertEqual(
-            list(ir.flow.reading_order), ["node-approve", "node-draft", "node-review"])
+            list(ir.flow.reading_order),
+            ["node-draft", "node-extra", "node-review", "node-approve"])
 
     def test_ungrouped_duplicate_id_rejected(self) -> None:
         # All nodes present, but node-draft is repeated.

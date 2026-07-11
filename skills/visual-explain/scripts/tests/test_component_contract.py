@@ -306,5 +306,23 @@ class DocumentationConsistencyTest(unittest.TestCase):
                     self.assertIn(section.provenance.reason, reasons)
 
 
+class FlowTopologyContractTest(unittest.TestCase):
+    def test_backward_edge_rejected(self) -> None:
+        raw = load("component-bad-flow-backward.json")
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(raw)
+        self.assertIn("flow_topology_violation", codes(ctx.exception))
+
+    def test_valid_flow_still_accepted(self) -> None:
+        raw = load("component-valid-flow.json")
+        request = validate_assembly(raw)
+        self.assertEqual(len(request.sections), 1)
+
+    def test_valid_flow_groups_still_accepted(self) -> None:
+        raw = load("component-valid-flow-groups.json")
+        request = validate_assembly(raw)
+        self.assertEqual(len(request.sections), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

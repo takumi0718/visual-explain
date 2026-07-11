@@ -22,6 +22,7 @@ from .diagnostics import (
     ContractError,
     DiagnosticCollector,
 )
+from .flow_layout import assign_rails, check_topology, edge_spans, order_index
 from .model import (
     AccessibilityInfo,
     AssemblyRequest,
@@ -473,6 +474,20 @@ def _validate_flow(raw: object, path: str, col: DiagnosticCollector, acyclic: bo
         if groups:
             order = list(reading_order) if reading_order else [n.id for n in nodes]
             _check_group_reading_order(nodes, order, path, col)
+
+    # v1 drawable topology: forward-only edges, no self-loops/parallel edges,
+    # bounded fan-out/fan-in, and skip edges must fit in the rail cap. Checked
+    # unconditionally (independent of the block above) because check_topology
+    # and edge_spans tolerate edges whose endpoints are unknown IDs (already
+    # reported separately as invalid_flow_edge) by skipping them.
+    topo = check_topology(nodes, edges, list(reading_order))
+    for diag in topo:
+        col.add(diag.code, diag.message, path)
+    if not topo:
+        index = order_index(nodes, list(reading_order))
+        _, rail_diags = assign_rails(edge_spans(edges, index))
+        for diag in rail_diags:
+            col.add(diag.code, diag.message, path)
 
     return FlowPayload(
         nodes=tuple(nodes), edges=tuple(edges), groups=groups,
