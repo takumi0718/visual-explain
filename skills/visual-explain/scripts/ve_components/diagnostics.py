@@ -42,6 +42,10 @@ DUPLICATE_SECTION_ID = "duplicate_section_id"
 RENDERER_FAILURE = "renderer_failure"
 FINAL_CHECK_FAILURE = "final_check_failure"
 
+# Task 1 — flow topology codes.
+FLOW_TOPOLOGY_VIOLATION = "flow_topology_violation"
+FLOW_TOPOLOGY_TOO_COMPLEX = "flow_topology_too_complex"
+
 # Task 7 — manifest-to-DOM / final provenance codes.
 MANIFEST_DOM_MISMATCH = "manifest_dom_mismatch"
 MISSING_PROVENANCE = "missing_provenance"
@@ -77,6 +81,8 @@ ALL_CODES = frozenset({
     MANIFEST_DOM_MISMATCH,
     MISSING_PROVENANCE,
     ARTIFACT_SEMANTIC_MISMATCH,
+    FLOW_TOPOLOGY_VIOLATION,
+    FLOW_TOPOLOGY_TOO_COMPLEX,
 })
 
 
