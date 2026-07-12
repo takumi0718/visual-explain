@@ -9,9 +9,10 @@ relationships, chooses components, merges graphs, or creates connectors.
 from __future__ import annotations
 
 import html
+import re
 from dataclasses import dataclass
 
-from .checker import extract_flow_dom, validate_content_markup
+from .checker import extract_flow_dom, validate_content_markup, RENDERER_SVG_ALLOWLIST
 from .diagnostics import DUPLICATE_SECTION_ID, RENDERER_FAILURE, ContractError, Diagnostic
 from .model import CanonicalSection, CompatibilitySection, RenderManifest
 from .registry import (
@@ -59,6 +60,19 @@ class CompositionResult:
 
 def _attr(value: str) -> str:
     return html.escape(str(value), quote=True)
+
+
+_SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
+
+
+def _svg_root_ids(markup: str) -> tuple[str, ...]:
+    ids: list[str] = []
+    for match in _SVG_OPEN_RE.finditer(markup):
+        attrs = match.group(1)
+        id_match = re.search(r'\bid="([^"]+)"', attrs)
+        if id_match:
+            ids.append(id_match.group(1))
+    return tuple(ids)
 
 
 def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
@@ -119,6 +133,15 @@ def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
             failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の flow ノードが IR と不一致です"))
         if dom_edges != {(e.source, e.target, e.relation) for e in section.ir.flow.edges}:
             failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の flow 端点/関係が IR と不一致です"))
+
+    emitted_svg_ids = _svg_root_ids(result.markup) if isinstance(result.markup, str) else ()
+    declared_svg_ids = tuple(manifest.svg_root_ids)
+    if emitted_svg_ids != declared_svg_ids:
+        failures.append(Diagnostic(RENDERER_FAILURE,
+                                   f"renderer '{component.key}' の SVG ルートが manifest.svg_root_ids と不一致です"))
+    if declared_svg_ids and component.key not in RENDERER_SVG_ALLOWLIST:
+        failures.append(Diagnostic(RENDERER_FAILURE,
+                                   f"renderer '{component.key}' は SVG 出力を宣言できません"))
 
     if failures:
         raise ContractError(failures)

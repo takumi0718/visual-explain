@@ -17,11 +17,14 @@ from pathlib import Path
 from .diagnostics import (
     ARTIFACT_SEMANTIC_MISMATCH,
     ASK_CONTRACT_VIOLATION,
+    EVIDENCE_MAP_STRUCTURE_VIOLATION,
     FIXED_REGION_MISMATCH,
     FORBIDDEN_CONTENT_MARKUP,
     INVALID_CONTROLLED_ASSET,
     MISSING_CONTROLLED_MARKER,
     MISSING_PROVENANCE,
+    RENDERER_SVG_VIOLATION,
+    SLOPE_STRUCTURE_VIOLATION,
     Diagnostic,
 )
 from .validation import VOCABULARY
@@ -31,6 +34,29 @@ _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
 _COMPONENTS = set(VOCABULARY["components"])
 _SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
 _ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
+
+RENDERER_SVG_ALLOWLIST = frozenset({"slope@1"})
+
+_SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "desc"})
+_SVG_ATTR_ALLOWLIST = {
+    "svg": frozenset({"id", "class", "viewBox", "preserveAspectRatio", "role", "aria-label", "aria-describedby"}),
+    "g": frozenset({"class", "data-ve-semantic-id", "data-ve-takeaway"}),
+    "line": frozenset({"class", "x1", "y1", "x2", "y2", "data-ve-semantic-id", "data-ve-takeaway"}),
+    "circle": frozenset({"class", "cx", "cy", "r", "data-ve-semantic-id", "data-ve-takeaway"}),
+    "text": frozenset({"class", "x", "y", "text-anchor"}),
+    "title": frozenset(),
+    "desc": frozenset(),
+}
+_SVG_INT_COORD_RE = re.compile(r"^-?[0-9]+$")
+_SVG_R_RE = re.compile(r"^[0-9]+$")
+_SVG_VIEWBOX_EXACT = "0 0 600 220"
+_SVG_PRESERVE_EXACT = "xMidYMid meet"
+_SVG_TEXT_ANCHOR = frozenset({"start", "middle", "end"})
+_SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
+_WRAPPER_SECTION_RE = re.compile(
+    r'<section\b([^>]*)data-ve-section-kind="([^"]+)"([^>]*)>(.*?)</section>',
+    re.DOTALL,
+)
 
 STYLES_BEGIN = "<!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->"
 STYLES_END = "<!-- VE-CONTROLLED:COMPONENT-STYLES:END -->"
@@ -983,6 +1009,239 @@ def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Di
     return diagnostics
 
 
+class _SvgSubtreeParser(HTMLParser):
+    """Validate one SVG subtree against the closed element/attribute allowlist."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.diagnostics: list[Diagnostic] = []
+        self._svg_depth = 0
+
+    def _reject(self, message: str) -> None:
+        self.diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, message))
+
+    def _check_value(self, tag: str, name: str, value: str) -> None:
+        if name == "viewBox":
+            if value != _SVG_VIEWBOX_EXACT:
+                self._reject(f"viewBox は '{_SVG_VIEWBOX_EXACT}' の完全一致である必要があります")
+        elif name == "preserveAspectRatio":
+            if value != _SVG_PRESERVE_EXACT:
+                self._reject(f"preserveAspectRatio は '{_SVG_PRESERVE_EXACT}' のみ許可されます")
+        elif name == "text-anchor":
+            if value not in _SVG_TEXT_ANCHOR:
+                self._reject(f"text-anchor '{value}' は許可されていません")
+        elif name == "r":
+            if not _SVG_R_RE.match(value):
+                self._reject(f"属性 r の値 '{value}' が不正です")
+        elif name in {"x", "y", "x1", "y1", "x2", "y2", "cx", "cy"}:
+            if not _SVG_INT_COORD_RE.match(value):
+                self._reject(f"座標属性 {name} の値 '{value}' は整数である必要があります")
+
+    def _check_element(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag not in _SVG_ALLOWED_TAGS:
+            self._reject(f"許可されていない SVG 要素 <{tag}>")
+            return
+        allowed = _SVG_ATTR_ALLOWLIST[tag]
+        allowed_lower = {name.lower(): name for name in allowed}
+        for name, value in attrs:
+            if ":" in name:
+                self._reject(f"名前空間属性 '{name}' は許可されていません")
+                continue
+            lname = name.lower()
+            if lname not in allowed_lower:
+                self._reject(f"<{tag}> に許可されていない属性 '{name}'")
+                continue
+            if value is None:
+                self._reject(f"<{tag}> の属性 '{name}' に値が必要です")
+                continue
+            self._check_value(tag, allowed_lower[lname], value)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag_l = tag.lower()
+        if tag_l == "svg":
+            self._svg_depth += 1
+            if self._svg_depth > 1:
+                self._reject("入れ子の <svg> は許可されていません")
+        if self._svg_depth > 0:
+            self._check_element(tag_l, attrs)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "svg" and self._svg_depth > 0:
+            self._svg_depth -= 1
+
+
+def _section_attr(attrs: str, name: str) -> str | None:
+    match = _ATTR_RE(name).search(attrs)
+    return match.group(1) if match else None
+
+
+def _validate_svg_subtree(fragment: str) -> list[Diagnostic]:
+    parser = _SvgSubtreeParser()
+    parser.feed(fragment)
+    parser.close()
+    return parser.diagnostics
+
+
+def validate_renderer_svg(content: str) -> list[Diagnostic]:
+    """Enforce allowlisted SVG placement and per-element attribute grammars."""
+    diagnostics: list[Diagnostic] = []
+    for match in _WRAPPER_SECTION_RE.finditer(content):
+        attrs = match.group(1) + match.group(3)
+        kind = match.group(2)
+        body = match.group(4)
+        component = _section_attr(attrs, "data-ve-component")
+        version = _section_attr(attrs, "data-ve-contract-version")
+        instance = _section_attr(attrs, "data-ve-instance")
+        svg_matches = list(_SVG_OPEN_RE.finditer(body))
+        if not svg_matches:
+            continue
+        component_key = f"{component}@{version}" if component and version else ""
+        allowed = (
+            kind == "canonical"
+            and component_key in RENDERER_SVG_ALLOWLIST
+        )
+        if not allowed:
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
+            ))
+            continue
+        if len(svg_matches) != 1:
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                "slope セクションの <svg> は1個である必要があります",
+            ))
+        for svg_match in svg_matches:
+            svg_attrs = svg_match.group(1)
+            if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
+                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "xmlns 宣言は許可されていません"))
+            expected_id = f"{instance}-svg" if instance else ""
+            sid = _section_attr(svg_attrs, "id")
+            if sid != expected_id:
+                diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"<svg> id は '{expected_id}' である必要があります",
+                ))
+            start = svg_match.start()
+            end = body.find("</svg>", svg_match.end())
+            if end == -1:
+                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "<svg> が閉じられていません"))
+                continue
+            subtree = body[start:end + len("</svg>")]
+            diagnostics.extend(_validate_svg_subtree(subtree))
+    outside = content
+    for match in _WRAPPER_SECTION_RE.finditer(content):
+        outside = outside.replace(match.group(0), "")
+    if _SVG_OPEN_RE.search(outside):
+        diagnostics.append(Diagnostic(
+            RENDERER_SVG_VIOLATION,
+            "セクション外の <svg> は許可されていません",
+        ))
+    return diagnostics
+
+
+def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    item_attrs = re.findall(r'<line\s+([^>]*\bve-slope-item\b[^>]*)>', body)
+    item_count = len(item_attrs)
+    if item_count < 1 or item_count > 5:
+        diagnostics.append(Diagnostic(
+            SLOPE_STRUCTURE_VIOLATION,
+            f"slope は1〜5項目である必要があります (found {item_count})",
+        ))
+    for attrs in item_attrs:
+        if 'data-ve-semantic-id="' not in attrs:
+            diagnostics.append(Diagnostic(
+                SLOPE_STRUCTURE_VIOLATION,
+                "slope 項目に data-ve-semantic-id がありません",
+            ))
+    svg_matches = list(_SVG_OPEN_RE.finditer(body))
+    if len(svg_matches) != 1:
+        diagnostics.append(Diagnostic(
+            SLOPE_STRUCTURE_VIOLATION,
+            "slope には <svg> がちょうど1つ必要です",
+        ))
+    return diagnostics
+
+
+def _notes_semantic_ids(body: str, notes_class: str) -> set[str]:
+    notes_match = re.search(
+        rf'<ul[^>]*class="[^"]*\b{re.escape(notes_class)}\b[^"]*"[^>]*>(.*?)</ul>',
+        body,
+        re.DOTALL,
+    )
+    if notes_match is None:
+        return set()
+    return set(re.findall(r'data-ve-semantic-id="([^"]+)"', notes_match.group(1)))
+
+
+def _check_evidence_map_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    card_blocks = re.findall(
+        r'<div\s+([^>]*\bve-em-evidence-card\b[^>]*)>(.*?)</div>',
+        body,
+        re.DOTALL,
+    )
+    card_count = len(card_blocks)
+    if card_count < 2 or card_count > 4:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            f"evidence-map は根拠2〜4件である必要があります (found {card_count})",
+        ))
+
+    conclusion_blocks = re.findall(r'<div\s+([^>]*\bve-em-conclusion\b[^>]*)>', body)
+    if len(conclusion_blocks) != 1:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            "evidence-map には結論カードがちょうど1つ必要です",
+        ))
+    elif "ve-em-border-strong" not in conclusion_blocks[0]:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            "結論カードに ve-em-border-strong がありません",
+        ))
+
+    note_ids = _notes_semantic_ids(body, "ve-evidence-map-notes")
+    for attrs, inner in card_blocks:
+        if "data-ve-from" in attrs or "data-ve-to" in attrs:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに data-ve-from/to は許可されていません",
+            ))
+        cert_ref_match = re.search(r'data-ve-certainty-ref="([^"]+)"', attrs)
+        if cert_ref_match is None:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに data-ve-certainty-ref がありません",
+            ))
+        elif cert_ref_match.group(1) not in note_ids:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                f"certaintyRef '{cert_ref_match.group(1)}' が注記に解決できません",
+            ))
+        source_ref_match = re.search(r'data-ve-source-ref="([^"]+)"', attrs)
+        if source_ref_match is not None and source_ref_match.group(1) not in note_ids:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                f"sourceRef '{source_ref_match.group(1)}' が注記に解決できません",
+            ))
+        if "ve-cert" not in inner:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに確度バッジがありません",
+            ))
+        elif not _visible_text(inner):
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードの確度バッジに可視テキストがありません",
+            ))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
     "chevron": _check_chevron_artifact,
@@ -990,6 +1249,8 @@ COMPONENT_ARTIFACT_CHECKS = {
     "stairs": _check_stairs_artifact,
     "waterfall": _check_waterfall_artifact,
     "logic-tree": _check_logic_tree_artifact,
+    "slope": _check_slope_artifact,
+    "evidence-map": _check_evidence_map_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(
@@ -1072,6 +1333,7 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_content_markup(content)
         diagnostics += validate_final_provenance(content)
         diagnostics += validate_artifact_semantics(content)
+        diagnostics += validate_renderer_svg(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom
