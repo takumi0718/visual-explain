@@ -864,8 +864,11 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "columns waterfall に横スクロールコンテナがありません"))
 
-    row_blocks = _find_tags_with_exact_class(body, "div", "ve-waterfall-row")
-    for _, attrs in row_blocks:
+    row_attrs = re.findall(
+        r'<div\s+([^>]*\bve-waterfall-row\b[^>]*)>',
+        body,
+    )
+    for attrs in row_attrs:
         if _semantic_id_from_attrs(attrs) is not None:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           "waterfall row に data-ve-semantic-id は許可されていません"))
@@ -1166,9 +1169,7 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
 
 def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    row_attrs = [
-        attrs for _, attrs in _find_tags_with_exact_class(body, "g", "ve-slope-row")
-    ]
+    row_attrs = re.findall(r'<g\s+([^>]*\bve-slope-row\b[^>]*)>', body)
     item_count = len(row_attrs)
     if item_count < 1 or item_count > 5:
         diagnostics.append(Diagnostic(
