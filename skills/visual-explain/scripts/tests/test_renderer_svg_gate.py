@@ -84,6 +84,38 @@ class RendererSvgGateTest(unittest.TestCase):
         )]
         self.assertEqual(codes.count("slope_structure_violation"), 1)
 
+    def test_slope_missing_line_fixture(self) -> None:
+        codes = [d.code for d in check_final_document(
+            (TESTS / "component-bad-slope-missing-line.html").read_text("utf-8"),
+            SKELETON,
+            REGISTRY,
+            components_dir=COMPONENTS,
+        )]
+        self.assertIn("slope_structure_violation", codes)
+        messages = " ".join(d.message for d in check_final_document(
+            (TESTS / "component-bad-slope-missing-line.html").read_text("utf-8"),
+            SKELETON,
+            REGISTRY,
+            components_dir=COMPONENTS,
+        ) if d.code == "slope_structure_violation")
+        self.assertIn("line.ve-slope-item", messages)
+
+    def test_slope_duplicate_line_fixture(self) -> None:
+        codes = [d.code for d in check_final_document(
+            (TESTS / "component-bad-slope-duplicate-line.html").read_text("utf-8"),
+            SKELETON,
+            REGISTRY,
+            components_dir=COMPONENTS,
+        )]
+        self.assertIn("slope_structure_violation", codes)
+        messages = " ".join(d.message for d in check_final_document(
+            (TESTS / "component-bad-slope-duplicate-line.html").read_text("utf-8"),
+            SKELETON,
+            REGISTRY,
+            components_dir=COMPONENTS,
+        ) if d.code == "slope_structure_violation")
+        self.assertIn("line.ve-slope-item", messages)
+
 
 class RenderCanonicalSvgGateTest(unittest.TestCase):
     def test_undeclared_svg_is_renderer_failure(self) -> None:

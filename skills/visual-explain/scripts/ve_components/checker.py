@@ -1169,18 +1169,28 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
 
 def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    row_attrs = re.findall(r'<g\s+([^>]*\bve-slope-row\b[^>]*)>', body)
-    item_count = len(row_attrs)
+    row_blocks = re.findall(
+        r'<g\s+([^>]*\bve-slope-row\b[^>]*)>(.*?)</g>',
+        body,
+        re.DOTALL,
+    )
+    item_count = len(row_blocks)
     if item_count < 1 or item_count > 5:
         diagnostics.append(Diagnostic(
             SLOPE_STRUCTURE_VIOLATION,
             f"slope は1〜5項目である必要があります (found {item_count})",
         ))
-    for attrs in row_attrs:
+    for attrs, inner in row_blocks:
         if 'data-ve-semantic-id="' not in attrs:
             diagnostics.append(Diagnostic(
                 SLOPE_STRUCTURE_VIOLATION,
                 "slope 項目に data-ve-semantic-id がありません",
+            ))
+        line_items = re.findall(r'<line\s+[^>]*\bve-slope-item\b', inner)
+        if len(line_items) != 1:
+            diagnostics.append(Diagnostic(
+                SLOPE_STRUCTURE_VIOLATION,
+                "slope 項目は line.ve-slope-item を1本だけ持つ必要があります",
             ))
     svg_matches = list(_SVG_OPEN_RE.finditer(body))
     if len(svg_matches) != 1:

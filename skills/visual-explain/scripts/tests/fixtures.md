@@ -168,7 +168,9 @@ S6 スライスで追加したスロープ・論拠地図と renderer-svg ゲー
 | `component-bad-slope-three-points-shape.json` | 3点形状フィールド → `invalid_component_payload` |
 | `component-bad-slope-float-value.json` | float 値 → `slope_structure_violation` |
 | `component-bad-slope-too-many-items.json` | 6項目 → `slope_structure_violation` |
-| `component-bad-slope-structure.html` | 6本の `line.ve-slope-item` → `slope_structure_violation` |
+| `component-bad-slope-structure.html` | 6 row → `slope_structure_violation` |
+| `component-bad-slope-missing-line.html` | row 内 `line.ve-slope-item` 欠落 → `slope_structure_violation` |
+| `component-bad-slope-duplicate-line.html` | row 内 `line.ve-slope-item` 重複 → `slope_structure_violation` |
 | `component-valid-evidence-map.json` | 結論1・根拠2の有効 IR |
 | `component-bad-evidence-map-unresolved-certainty.json` | 未解決 certaintyRef → `evidence_map_structure_violation` |
 | `component-bad-evidence-map-unresolved-source.json` | 未解決 sourceRef → `evidence_map_structure_violation` |
