@@ -41,7 +41,7 @@ _SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "d
 _SVG_ATTR_ALLOWLIST = {
     "svg": frozenset({"id", "class", "viewBox", "preserveAspectRatio", "role", "aria-label", "aria-describedby"}),
     "g": frozenset({"class", "data-ve-semantic-id", "data-ve-takeaway"}),
-    "line": frozenset({"class", "x1", "y1", "x2", "y2", "data-ve-semantic-id", "data-ve-takeaway"}),
+    "line": frozenset({"class", "x1", "y1", "x2", "y2"}),
     "circle": frozenset({"class", "cx", "cy", "r", "data-ve-semantic-id", "data-ve-takeaway"}),
     "text": frozenset({"class", "x", "y", "text-anchor"}),
     "title": frozenset(),
@@ -811,6 +811,10 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
         return diagnostics
 
     for attrs, inner in bar_blocks:
+        bar_sid = _semantic_id_from_attrs(attrs)
+        if bar_sid is None:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒に data-ve-semantic-id がありません"))
         classes = _class_tokens_from_attr_string(attrs)
         starts = [c for c in classes if c.startswith("ve-wf-start-")]
         lens = [c for c in classes if c.startswith("ve-wf-len-")]
@@ -859,6 +863,22 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
     if has_columns and "ve-waterfall-scroll" not in body:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "columns waterfall に横スクロールコンテナがありません"))
+
+    row_blocks = _find_tags_with_exact_class(body, "div", "ve-waterfall-row")
+    for _, attrs in row_blocks:
+        if _semantic_id_from_attrs(attrs) is not None:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall row に data-ve-semantic-id は許可されていません"))
+
+    bar_ids = [_semantic_id_from_attrs(attrs) for attrs, _ in bar_blocks]
+    bar_ids = [sid for sid in bar_ids if sid is not None]
+    if len(bar_ids) != len(set(bar_ids)):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "waterfall の意味 ID が重複しています"))
+    for sid in bar_ids:
+        if body.count(f'data-ve-semantic-id="{sid}"') != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"waterfall の意味 ID '{sid}' は DOM に1回だけ現れる必要があります"))
 
     for sid in parser.semantic_ids:
         if sid not in body:
@@ -1146,14 +1166,16 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
 
 def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    item_attrs = re.findall(r'<line\s+([^>]*\bve-slope-item\b[^>]*)>', body)
-    item_count = len(item_attrs)
+    row_attrs = [
+        attrs for _, attrs in _find_tags_with_exact_class(body, "g", "ve-slope-row")
+    ]
+    item_count = len(row_attrs)
     if item_count < 1 or item_count > 5:
         diagnostics.append(Diagnostic(
             SLOPE_STRUCTURE_VIOLATION,
             f"slope は1〜5項目である必要があります (found {item_count})",
         ))
-    for attrs in item_attrs:
+    for attrs in row_attrs:
         if 'data-ve-semantic-id="' not in attrs:
             diagnostics.append(Diagnostic(
                 SLOPE_STRUCTURE_VIOLATION,

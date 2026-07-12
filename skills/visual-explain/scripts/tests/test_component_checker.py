@@ -231,6 +231,16 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")))
 
+    def test_waterfall_duplicate_semantic_id_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("waterfall の意味 ID" in m and "1回だけ" in m for m in messages),
+            messages,
+        )
+
     def test_waterfall_missing_value_html_fails(self) -> None:
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-waterfall-missing-value.html").read_text("utf-8")))

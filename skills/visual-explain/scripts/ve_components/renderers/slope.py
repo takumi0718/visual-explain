@@ -44,9 +44,9 @@ def render_slope(section: CanonicalSection, definition) -> RenderResult:
             if item.id in emphasis_by_id else ""
         )
         item_blocks.append(
-            f'<g class="ve-slope-row ve-slope-index-{index}">'
-            f'<line class="ve-slope-item ve-slope-tone-{_esc(item.tone)}{takeaway_cls}"'
-            f' data-ve-semantic-id="{_esc(item.id)}"{takeaway_attr}'
+            f'<g class="ve-slope-row ve-slope-index-{index}{takeaway_cls}"'
+            f' data-ve-semantic-id="{_esc(item.id)}"{takeaway_attr}>'
+            f'<line class="ve-slope-item ve-slope-tone-{_esc(item.tone)}"'
             f' x1="{_FROM_X}" y1="{y1}" x2="{_TO_X}" y2="{y2}">{emphasis_html}</line>'
             f'<text class="ve-slope-value ve-slope-value-from" x="{_FROM_X}" y="{y1 - 8}"'
             f' text-anchor="end">{_esc(item.from_value_text)}</text>'

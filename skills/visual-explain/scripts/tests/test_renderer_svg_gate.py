@@ -6,7 +6,8 @@ import unittest
 from pathlib import Path
 
 from ve_components.assembly import render_canonical
-from ve_components.checker import RENDERER_SVG_ALLOWLIST, check_final_document
+from ve_components.checker import RENDERER_SVG_ALLOWLIST, _SVG_ATTR_ALLOWLIST, check_final_document
+from ve_components.checker import _validate_svg_subtree
 from ve_components.diagnostics import RENDERER_FAILURE, RENDERER_SVG_VIOLATION, ContractError
 from ve_components.model import CanonicalSection
 from ve_components.registry import ResolvedComponent, load_registry
@@ -40,6 +41,31 @@ def _check(name: str) -> set[str]:
 class RendererSvgGateTest(unittest.TestCase):
     def test_allowlist_contains_only_slope(self) -> None:
         self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@1"}))
+
+    def test_line_allowlist_matches_committed_spec(self) -> None:
+        self.assertEqual(
+            _SVG_ATTR_ALLOWLIST["line"],
+            frozenset({"class", "x1", "y1", "x2", "y2"}),
+        )
+
+    def test_line_rejects_semantic_attributes(self) -> None:
+        svg = (
+            '<svg id="sec-slope-svg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet">'
+            '<line class="ve-slope-item" data-ve-semantic-id="sl-up" x1="120" y1="110" x2="480" y2="110"></line>'
+            '</svg>'
+        )
+        codes = {d.code for d in _validate_svg_subtree(svg)}
+        self.assertIn(RENDERER_SVG_VIOLATION, codes)
+
+    def test_g_accepts_slope_semantic_attributes(self) -> None:
+        svg = (
+            '<svg id="sec-slope-svg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet">'
+            '<g class="ve-slope-row" data-ve-semantic-id="sl-up" data-ve-takeaway="true">'
+            '<line class="ve-slope-item" x1="120" y1="110" x2="480" y2="110"></line>'
+            '</g>'
+            '</svg>'
+        )
+        self.assertEqual(_validate_svg_subtree(svg), [])
 
     def test_bad_svg_fixtures_raise_violation(self) -> None:
         for name in BAD_SVG_FIXTURES:

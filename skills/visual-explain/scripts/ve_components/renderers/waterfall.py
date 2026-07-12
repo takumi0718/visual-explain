@@ -58,7 +58,7 @@ def _render_bar(
     takeaway_attr = ' data-ve-takeaway="true"' if takeaway else ""
     emphasis_html = f'<span class="ve-emphasis">{_esc(emphasis)}</span>' if emphasis else ""
     markup = (
-        f'<div class="ve-waterfall-row" data-ve-semantic-id="{_esc(semantic_id)}">'
+        f'<div class="ve-waterfall-row">'
         f'<span class="ve-waterfall-label">{_esc(label)}</span>'
         f'<div class="ve-waterfall-track">'
         f'<div class="ve-waterfall-bar {_class_pair(start, length)}{tone_cls}{takeaway_cls}"'

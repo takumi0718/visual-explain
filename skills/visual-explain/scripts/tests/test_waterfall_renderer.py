@@ -371,31 +371,35 @@ class WaterfallMarkupTest(unittest.TestCase):
         for step in wf.steps:
             self.assertIn(step.value_text, self.markup)
 
+    def test_each_semantic_id_appears_once_in_dom(self) -> None:
+        wf = self.ir.waterfall
+        assert wf is not None
+        bar_ids = [wf.start.id, wf.end.id, *(step.id for step in wf.steps)]
+        for sid in bar_ids:
+            self.assertEqual(
+                self.markup.count(f'data-ve-semantic-id="{sid}"'),
+                1,
+                sid,
+            )
+
     def test_tone_classes_only_on_steps(self) -> None:
         wf = self.ir.waterfall
         assert wf is not None
-        start_block = re.search(
-            rf'data-ve-semantic-id="{re.escape(wf.start.id)}"[^>]*>.*?</div>',
-            self.markup,
-            re.DOTALL,
-        )
-        end_block = re.search(
-            rf'data-ve-semantic-id="{re.escape(wf.end.id)}"[^>]*>.*?</div>',
-            self.markup,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(start_block)
-        self.assertIsNotNone(end_block)
-        for block in (start_block.group(0), end_block.group(0)):
-            self.assertNotRegex(block, r"ve-wf-tone-")
-        for step in wf.steps:
-            step_block = re.search(
-                rf'data-ve-semantic-id="{re.escape(step.id)}"[^>]*>.*?</div>',
+        bar_blocks = {
+            m.group(1): m.group(0)
+            for m in re.finditer(
+                r'<div\s+[^>]*\bve-waterfall-bar\b[^>]*data-ve-semantic-id="([^"]+)"[^>]*>.*?</div>',
                 self.markup,
                 re.DOTALL,
             )
-            self.assertIsNotNone(step_block)
-            self.assertIn(f"ve-wf-tone-{step.tone}", step_block.group(0))
+        }
+        self.assertIn(wf.start.id, bar_blocks)
+        self.assertIn(wf.end.id, bar_blocks)
+        for block in (bar_blocks[wf.start.id], bar_blocks[wf.end.id]):
+            self.assertNotRegex(block, r"ve-wf-tone-")
+        for step in wf.steps:
+            self.assertIn(step.id, bar_blocks)
+            self.assertIn(f"ve-wf-tone-{step.tone}", bar_blocks[step.id])
 
     def test_dashed_connectors_between_consecutive_bars(self) -> None:
         connectors = re.findall(r'<span\s+[^>]*\bve-waterfall-connector\b', self.markup)
