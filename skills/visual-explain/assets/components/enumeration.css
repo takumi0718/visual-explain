@@ -1,0 +1,20 @@
+[data-ve-component="enumeration"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="enumeration"] .ve-enumeration-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="enumeration"] .ve-enumeration-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="enumeration"] .ve-enum-items { list-style: none; margin: 0; padding: 0; }
+[data-ve-component="enumeration"] .ve-enum-list-centered { width: fit-content; margin-inline: auto; }
+[data-ve-component="enumeration"] .ve-enum-columns { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
+[data-ve-component="enumeration"] .ve-enum-block { background: var(--text-dim); color: var(--bg); padding: var(--space-2); margin: 0 0 var(--space-2); border-radius: var(--radius); font-size: var(--fs-figure); text-align: center; }
+[data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { flex: 1 1 10rem; min-width: 8rem; max-width: 14rem; margin: 0; }
+[data-ve-component="enumeration"] .ve-enum-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
+[data-ve-component="enumeration"] .ve-enum-label,
+[data-ve-component="enumeration"] .ve-enum-title { display: block; font-weight: 800; }
+[data-ve-component="enumeration"] .ve-enum-description { margin: var(--space-1) 0 0; padding-left: var(--space-2); font-size: var(--fs-small); }
+[data-ve-component="enumeration"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
+[data-ve-component="enumeration"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="enumeration"] .ve-enumeration-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="enumeration"] .ve-enumeration-notes li { margin: 0; }
+@media (max-width: 40rem) {
+  [data-ve-component="enumeration"] .ve-enum-columns { flex-direction: column; align-items: stretch; }
+  [data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { max-width: none; }
+}

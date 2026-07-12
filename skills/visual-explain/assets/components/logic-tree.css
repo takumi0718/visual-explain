@@ -1,0 +1,90 @@
+[data-ve-component="logic-tree"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="logic-tree"] .ve-logic-tree-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="logic-tree"] .ve-logic-tree-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="logic-tree"] .ve-logic-tree-layout-horizontal {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: stretch;
+  gap: 0;
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-root-cell {
+  display: flex;
+  align-items: center;
+  align-self: center;
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-root {
+  background: var(--border-strong); color: var(--bg);
+  padding: var(--space-2); border-radius: var(--radius);
+  font-size: var(--fs-figure); font-weight: 800; text-align: center;
+  min-width: 8rem;
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-root-stem {
+  display: block;
+  width: var(--space-2);
+  border-top: 2px solid var(--text-dim);
+  flex-shrink: 0;
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-spine-column {
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
+  width: 2px;
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-spine {
+  display: block;
+  width: 0;
+  flex: 1 1 auto;
+  min-height: 100%;
+  border-left: 2px solid var(--text-dim);
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-branches {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; justify-content: space-around;
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-branch-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0;
+  align-items: center;
+  margin: 0 0 var(--space-1);
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-connector {
+  display: block;
+  width: var(--space-2);
+  border-top: 2px solid var(--text-dim);
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-branch {
+  background: var(--text-dim); color: var(--bg);
+  padding: var(--space-2); border-radius: var(--radius);
+  font-size: var(--fs-figure);
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-branch-label { display: block; font-weight: 800; }
+[data-ve-component="logic-tree"] .ve-logic-tree-leaves { list-style: none; margin: var(--space-1) 0 0; padding: 0; }
+[data-ve-component="logic-tree"] .ve-logic-tree-leaf {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1);
+  border-left: 2px solid var(--bg);
+  font-size: var(--fs-small);
+}
+[data-ve-component="logic-tree"] .ve-logic-tree-leaf-text { display: block; }
+[data-ve-component="logic-tree"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
+[data-ve-component="logic-tree"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="logic-tree"] .ve-logic-tree-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="logic-tree"] .ve-logic-tree-notes li { margin: 0; }
+@media (max-width: 40rem) {
+  [data-ve-component="logic-tree"] .ve-logic-tree-layout-horizontal {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    align-items: stretch;
+  }
+  [data-ve-component="logic-tree"] .ve-logic-tree-root-cell { align-self: stretch; }
+  [data-ve-component="logic-tree"] .ve-logic-tree-root { min-width: 0; width: 100%; }
+  [data-ve-component="logic-tree"] .ve-logic-tree-root-stem { display: none; }
+  [data-ve-component="logic-tree"] .ve-logic-tree-spine-column {
+    width: auto; min-height: var(--space-2); align-self: stretch;
+  }
+  [data-ve-component="logic-tree"] .ve-logic-tree-spine {
+    min-height: 0; width: 100%; border-left: none;
+    border-top: 2px solid var(--text-dim);
+  }
+}

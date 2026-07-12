@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "bad-chevron-few-h",
+    "title": "横型は3段未満禁止",
+    "summary": "horizontal は steps 3〜6 件が必要。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad-few-h",
+        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "caption": "段数不足",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
+        "chevron": {
+          "steps": [
+            {"id": "s1", "description": ["説明1"]},
+            {"id": "s2", "description": ["説明2"]}
+          ],
+          "orientation": "horizontal",
+          "blockContent": "number",
+          "loop": false
+        }
+      }
+    }
+  ]
+}

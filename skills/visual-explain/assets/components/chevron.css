@@ -1,0 +1,50 @@
+[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="chevron"] .ve-chevron-body { position: relative; }
+[data-ve-component="chevron"] .ve-chevron-centered-column {
+  position: relative; width: fit-content; margin-inline: auto;
+}
+[data-ve-component="chevron"] .ve-chevron-steps { list-style: none; margin: 0; padding: 0; }
+[data-ve-component="chevron"] .ve-chevron-centered { width: fit-content; margin-inline: auto; }
+[data-ve-component="chevron"] .ve-chevron-step {
+  background: var(--text-dim); color: var(--bg); padding: var(--space-2);
+  margin: 0 0 var(--space-2); font-size: var(--fs-figure); text-align: center;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1rem), 50% 100%, 0 calc(100% - 1rem));
+}
+[data-ve-component="chevron"] .ve-chevron-horizontal {
+  display: flex; flex-wrap: wrap; gap: 0; justify-content: center;
+}
+[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
+  flex: 1 1 8rem; min-width: 6rem; max-width: 12rem; margin: 0;
+  clip-path: polygon(0.75rem 0, calc(100% - 0.75rem) 0, 100% 50%, calc(100% - 0.75rem) 100%, 0.75rem 100%, 0 50%);
+}
+[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
+  margin-left: -0.75rem;
+}
+[data-ve-component="chevron"] .ve-chevron-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
+[data-ve-component="chevron"] .ve-chevron-label,
+[data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
+[data-ve-component="chevron"] .ve-chevron-description { margin: var(--space-1) 0 0; padding-left: var(--space-2); font-size: var(--fs-small); }
+[data-ve-component="chevron"] .ve-chevron-loop-rail {
+  position: absolute; left: calc(-1 * var(--space-2)); top: 0; bottom: 0; width: 0.5rem;
+  border-left: 2px solid var(--text-dim);
+}
+[data-ve-component="chevron"] .ve-chevron-loop-rail::after {
+  content: ""; position: absolute; left: -0.35rem; top: 0;
+  border: 0.35rem solid transparent; border-bottom-color: var(--text-dim);
+}
+[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
+[data-ve-component="chevron"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="chevron"] .ve-chevron-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="chevron"] .ve-chevron-notes li { margin: 0; }
+@media (max-width: 40rem) {
+  [data-ve-component="chevron"] .ve-chevron-horizontal { flex-direction: column; align-items: stretch; }
+  [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
+    max-width: none;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1rem), 50% 100%, 0 calc(100% - 1rem));
+  }
+  [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
+    margin-left: 0;
+  }
+}

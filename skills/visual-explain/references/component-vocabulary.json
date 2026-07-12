@@ -10,6 +10,46 @@
       "contractVersion": 1,
       "relationshipKind": "directed-graph",
       "capabilities": ["ordered-transition", "directed-transition", "branching"]
+    },
+    "enumeration": {
+      "contractVersion": 1,
+      "relationshipKind": "parallel-enumeration",
+      "capabilities": ["parallel-itemization"]
+    },
+    "chevron": {
+      "contractVersion": 1,
+      "relationshipKind": "ordered-sequence",
+      "capabilities": ["linear-sequence", "closed-loop"]
+    },
+    "pyramid": {
+      "contractVersion": 1,
+      "relationshipKind": "layered-priority",
+      "capabilities": ["priority-layering"]
+    },
+    "stairs": {
+      "contractVersion": 1,
+      "relationshipKind": "staged-maturity",
+      "capabilities": ["maturity-staging"]
+    },
+    "logic-tree": {
+      "contractVersion": 1,
+      "relationshipKind": "hierarchical-decomposition",
+      "capabilities": ["mece-decomposition"]
+    },
+    "waterfall": {
+      "contractVersion": 1,
+      "relationshipKind": "additive-bridge",
+      "capabilities": ["additive-bridging"]
+    },
+    "slope": {
+      "contractVersion": 1,
+      "relationshipKind": "two-point-change",
+      "capabilities": ["two-point-comparison"]
+    },
+    "evidence-map": {
+      "contractVersion": 1,
+      "relationshipKind": "claim-support",
+      "capabilities": ["claim-support-mapping"]
     }
   },
   "compatibility": {

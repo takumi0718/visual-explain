@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "bad-wf-arith", "title": "bad", "summary": "bad"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-bad-wf-arith",
+      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
+      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "bad",
+      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
+      "sources": [{"id": "s1", "label": "x"}],
+      "accessibility": {"label": "x", "summary": "x"},
+      "waterfall": {
+        "displayPrecision": 1,
+        "orientation": "bars",
+        "start": {"id": "st", "label": "開始", "value": 30, "valueText": "30件"},
+        "steps": [{"id": "sp", "label": "減", "delta": -50, "tone": "warning", "valueText": "−50件"}],
+        "end": {"id": "en", "label": "終了", "value": 99, "valueText": "99件"}
+      }
+    }
+  }]
+}

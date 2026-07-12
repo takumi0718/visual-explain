@@ -17,19 +17,46 @@ from pathlib import Path
 from .diagnostics import (
     ARTIFACT_SEMANTIC_MISMATCH,
     ASK_CONTRACT_VIOLATION,
+    EVIDENCE_MAP_STRUCTURE_VIOLATION,
     FIXED_REGION_MISMATCH,
     FORBIDDEN_CONTENT_MARKUP,
     INVALID_CONTROLLED_ASSET,
     MISSING_CONTROLLED_MARKER,
     MISSING_PROVENANCE,
+    RENDERER_SVG_VIOLATION,
+    SLOPE_STRUCTURE_VIOLATION,
     Diagnostic,
 )
 from .validation import VOCABULARY
 
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
 _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
+_COMPONENTS = set(VOCABULARY["components"])
 _SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
 _ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
+
+RENDERER_SVG_ALLOWLIST = frozenset({"slope@1"})
+
+_SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "desc"})
+_SVG_ATTR_ALLOWLIST = {
+    "svg": frozenset({"id", "class", "viewBox", "preserveAspectRatio", "role", "aria-label", "aria-describedby"}),
+    "g": frozenset({"class", "data-ve-semantic-id", "data-ve-takeaway"}),
+    "line": frozenset({"class", "x1", "y1", "x2", "y2"}),
+    "circle": frozenset({"class", "cx", "cy", "r", "data-ve-semantic-id", "data-ve-takeaway"}),
+    "text": frozenset({"class", "x", "y", "text-anchor"}),
+    "title": frozenset(),
+    "desc": frozenset(),
+}
+_SVG_INT_COORD_RE = re.compile(r"^-?[0-9]+$")
+_SVG_R_RE = re.compile(r"^[0-9]+$")
+_SVG_VIEWBOX_EXACT = "0 0 600 220"
+_SVG_PRESERVE_EXACT = "xMidYMid meet"
+_SVG_TEXT_ANCHOR = frozenset({"start", "middle", "end"})
+_SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
+_WRAPPER_SECTION_RE = re.compile(
+    r'<section\b([^>]*)data-ve-section-kind="([^"]+)"([^>]*)>(.*?)</section>',
+    re.DOTALL,
+)
 
 STYLES_BEGIN = "<!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->"
 STYLES_END = "<!-- VE-CONTROLLED:COMPONENT-STYLES:END -->"
@@ -546,6 +573,726 @@ def extract_flow_dom(markup: str) -> tuple[set[str], set[tuple[str, str, str]], 
     return parser.node_ids, set(parser.edges), parser.incomplete_edge
 
 
+_COMPONENT_RE = re.compile(r'data-ve-component="([^"]+)"')
+_CHEVRON_STEPS_OL_RE = re.compile(
+    r'<ol[^>]*class="([^"]*\bve-chevron-steps\b[^"]*)"[^>]*>',
+    re.IGNORECASE,
+)
+
+
+def _chevron_steps_orientation(body: str) -> str | None:
+    """Return 'horizontal' or 'vertical' from chevron <ol> class tokens only."""
+    match = _CHEVRON_STEPS_OL_RE.search(body)
+    if match is None:
+        return None
+    classes = match.group(1).split()
+    if "ve-chevron-horizontal" in classes:
+        return "horizontal"
+    if "ve-chevron-centered" in classes:
+        return "vertical"
+    return "vertical"
+
+
+def _class_tokens_from_attr_string(attrs: str) -> frozenset[str]:
+    match = re.search(r'\bclass="([^"]*)"', attrs)
+    if not match:
+        return frozenset()
+    return frozenset(match.group(1).split())
+
+
+def _visible_text(fragment: str) -> str:
+    text = re.sub(r"<!--.*?-->", "", fragment, flags=re.DOTALL)
+    text = re.sub(r"<[^>]+>", "", text)
+    return text.strip()
+
+
+def _exact_index_token(prefix: str, classes: frozenset[str]) -> frozenset[str]:
+    return {c for c in classes if c.startswith(f"{prefix}-index-")}
+
+
+def _exact_count_token(prefix: str, classes: frozenset[str]) -> frozenset[str]:
+    return {c for c in classes if c.startswith(f"{prefix}-count-")}
+
+
+def _check_count_index_container(
+    body: str,
+    *,
+    container_pattern: str,
+    item_count: int,
+    prefix: str,
+    label: str,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    container_match = re.search(container_pattern, body)
+    if container_match is None:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"{label} のコンテナが見つかりません"))
+        return diagnostics
+    container_classes = _class_tokens_from_attr_string(container_match.group(1))
+    expected_count = f"{prefix}-count-{item_count}"
+    count_tokens = _exact_count_token(prefix, container_classes)
+    if count_tokens != {expected_count}:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"{label} のコンテナは {expected_count} である必要があります"))
+    return diagnostics
+
+
+def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    block_attrs = re.findall(r'<li\s+([^>]*\bve-enum-block\b[^>]*)>', body)
+    if len(block_attrs) < 2 or len(block_attrs) > 6:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"enumeration は2〜6項目である必要があります (found {len(block_attrs)})"))
+    if len(block_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in block_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "enumeration ブロックに data-ve-semantic-id がありません"))
+    for attrs in block_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        bid = match.group(1)
+        if bid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"enumeration 項目 '{bid}' に意味 ID がありません"))
+    return diagnostics
+
+
+def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    step_attrs = re.findall(r'<li\s+([^>]*\bve-chevron-step\b[^>]*)>', body)
+    if len(step_attrs) < 2 or len(step_attrs) > 6:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"chevron は2〜6段である必要があります (found {len(step_attrs)})"))
+    if len(step_attrs) != sum('data-ve-semantic-id="' in attrs for attrs in step_attrs):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "chevron ステップに data-ve-semantic-id がありません"))
+    for attrs in step_attrs:
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        sid = match.group(1)
+        if sid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"chevron ステップ '{sid}' に意味 ID がありません"))
+    loop_rails = re.findall(r'class="[^"]*\bve-chevron-loop-rail\b[^"]*"', body)
+    orientation = _chevron_steps_orientation(body)
+    is_horizontal = orientation == "horizontal"
+    if is_horizontal and loop_rails:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "horizontal chevron に loop レールは許可されていません"))
+    if not is_horizontal and len(loop_rails) > 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "vertical chevron の loop レールは最大1本です"))
+    return diagnostics
+
+
+def _check_pyramid_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    tier_blocks = re.findall(
+        r'<li\s+([^>]*\bve-pyramid-tier\b[^>]*)>(.*?)</li>',
+        body,
+        re.DOTALL,
+    )
+    tier_count = len(tier_blocks)
+    if tier_count < 3 or tier_count > 4:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"pyramid は3〜4層である必要があります (found {tier_count})"))
+    diagnostics.extend(_check_count_index_container(
+        body,
+        container_pattern=r'<ul\s+([^>]*\bve-pyramid-tiers\b[^>]*)>',
+        item_count=tier_count,
+        prefix="ve-pyramid",
+        label="pyramid",
+    ))
+    if tier_count != sum('data-ve-semantic-id="' in attrs for attrs, _ in tier_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "pyramid 層に data-ve-semantic-id がありません"))
+    for index, (attrs, _inner) in enumerate(tier_blocks):
+        classes = _class_tokens_from_attr_string(attrs)
+        position = index + 1
+        expected_index = f"ve-pyramid-index-{position}"
+        index_tokens = _exact_index_token("ve-pyramid", classes)
+        if index_tokens != {expected_index}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"pyramid の層 {position} は {expected_index} を1つだけ持つ必要があります"))
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        tid = match.group(1)
+        if tid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"pyramid 層 '{tid}' に意味 ID がありません"))
+        face_tokens = {c for c in classes if c.startswith("ve-pyramid-face-")}
+        if index == 0:
+            if face_tokens != {"ve-pyramid-face-strong"}:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "pyramid の先頭層は ve-pyramid-face-strong のみである必要があります"))
+        else:
+            if face_tokens != {"ve-pyramid-face-dim"}:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "pyramid の下位層は ve-pyramid-face-dim のみである必要があります"))
+    return diagnostics
+
+
+def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    stage_blocks = re.findall(
+        r'<li\s+([^>]*\bve-stairs-stage\b[^>]*)>(.*?)</li>',
+        body,
+        re.DOTALL,
+    )
+    stage_count = len(stage_blocks)
+    if stage_count < 3 or stage_count > 5:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"stairs は3〜5段である必要があります (found {stage_count})"))
+    diagnostics.extend(_check_count_index_container(
+        body,
+        container_pattern=r'<ol\s+([^>]*\bve-stairs-stages\b[^>]*)>',
+        item_count=stage_count,
+        prefix="ve-stairs",
+        label="stairs",
+    ))
+    if stage_count != sum('data-ve-semantic-id="' in attrs for attrs, _ in stage_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "stairs 段に data-ve-semantic-id がありません"))
+    accent_count = 0
+    for index, (attrs, inner) in enumerate(stage_blocks):
+        classes = _class_tokens_from_attr_string(attrs)
+        position = index + 1
+        expected_index = f"ve-stairs-index-{position}"
+        index_tokens = _exact_index_token("ve-stairs", classes)
+        if index_tokens != {expected_index}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"stairs の段 {position} は {expected_index} を1つだけ持つ必要があります"))
+        match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+        if match is None:
+            continue
+        sid = match.group(1)
+        if sid not in parser.semantic_ids:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"stairs 段 '{sid}' に意味 ID がありません"))
+        tread_tokens = {c for c in classes if c.startswith("ve-stairs-tread-")}
+        if tread_tokens and tread_tokens != {"ve-stairs-tread-accent"}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "stairs の tread クラスは ve-stairs-tread-accent のみ許可されます"))
+        if "ve-stairs-tread-accent" in classes:
+            accent_count += 1
+            note_spans = re.findall(
+                r'<span\s+class="([^"]*)"[^>]*>(.*?)</span>',
+                inner,
+                re.DOTALL,
+            )
+            note_texts = [
+                _visible_text(content)
+                for cls, content in note_spans
+                if "ve-stairs-note" in frozenset(cls.split())
+            ]
+            if not note_texts:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "current 段のブロック内に ve-stairs-note がありません"))
+            elif not any(text for text in note_texts):
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "current 段の ve-stairs-note に可視テキストがありません"))
+    if accent_count > 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "stairs の accent 段は最大1つです"))
+    return diagnostics
+
+
+def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    bar_blocks = re.findall(
+        r'<div\s+([^>]*\bve-waterfall-bar\b[^>]*)>(.*?)</div>',
+        body,
+        re.DOTALL,
+    )
+    if not bar_blocks:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に棒がありません"))
+        return diagnostics
+
+    for attrs, inner in bar_blocks:
+        bar_sid = _semantic_id_from_attrs(attrs)
+        if bar_sid is None:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒に data-ve-semantic-id がありません"))
+        classes = _class_tokens_from_attr_string(attrs)
+        starts = [c for c in classes if c.startswith("ve-wf-start-")]
+        lens = [c for c in classes if c.startswith("ve-wf-len-")]
+        if len(starts) != 1 or len(lens) != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒は ve-wf-start/len を1つずつ持つ必要があります"))
+            continue
+        for token in starts + lens:
+            suffix = token.rsplit("-", 1)[-1]
+            if not suffix.isdigit() or not (0 <= int(suffix) <= 100):
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"waterfall 百分率クラス '{token}' が範囲外です"))
+        value_spans = re.findall(
+            r'<span\s+[^>]*\bve-waterfall-value\b[^>]*>([^<]*)</span>',
+            inner,
+        )
+        if len(value_spans) != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒は ve-waterfall-value を1つだけ持つ必要があります"))
+        elif not value_spans[0].strip():
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall 棒の ve-waterfall-value に可視テキストがありません"))
+
+    connector_blocks = re.findall(
+        r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
+        r'(<span\s+[^>]*\bve-waterfall-connector\b[^>]*>\s*</span>)',
+        body,
+        re.DOTALL,
+    )
+    for connector_html in connector_blocks:
+        starts = re.findall(r'\bve-wf-start-(\d+)\b', connector_html)
+        lens = re.findall(r'\bve-wf-len-(\d+)\b', connector_html)
+        if len(starts) != 1 or len(lens) != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall コネクタは ve-wf-start/len を1つずつ持つ必要があります"))
+
+    if "ve-waterfall-notes" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "waterfall に ve-waterfall-notes がありません"))
+
+    has_bars = "ve-wf-bars" in body
+    has_columns = "ve-wf-columns" in body
+    if has_bars == has_columns:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "waterfall は ve-wf-bars か ve-wf-columns のどちらか一方である必要があります"))
+    if has_columns and "ve-waterfall-scroll" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "columns waterfall に横スクロールコンテナがありません"))
+
+    row_attrs = re.findall(
+        r'<div\s+([^>]*\bve-waterfall-row\b[^>]*)>',
+        body,
+    )
+    for attrs in row_attrs:
+        if _semantic_id_from_attrs(attrs) is not None:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "waterfall row に data-ve-semantic-id は許可されていません"))
+
+    bar_ids = [_semantic_id_from_attrs(attrs) for attrs, _ in bar_blocks]
+    bar_ids = [sid for sid in bar_ids if sid is not None]
+    if len(bar_ids) != len(set(bar_ids)):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "waterfall の意味 ID が重複しています"))
+    for sid in bar_ids:
+        if body.count(f'data-ve-semantic-id="{sid}"') != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"waterfall の意味 ID '{sid}' は DOM に1回だけ現れる必要があります"))
+
+    for sid in parser.semantic_ids:
+        if sid not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"waterfall 意味 ID '{sid}' が DOM にありません"))
+    return diagnostics
+
+
+def _find_tags_with_exact_class(body: str, tag: str, class_name: str) -> list[tuple[int, str]]:
+    """Return (start_index, attrs) for tags whose class token set includes class_name exactly."""
+    results: list[tuple[int, str]] = []
+    for match in re.finditer(rf'<{tag}\s+([^>]*)>', body, flags=re.IGNORECASE):
+        attrs = match.group(1)
+        if class_name in _class_tokens_from_attr_string(attrs):
+            results.append((match.start(), attrs))
+    return results
+
+
+def _semantic_id_from_attrs(attrs: str) -> str | None:
+    match = re.search(r'data-ve-semantic-id="([^"]+)"', attrs)
+    return match.group(1) if match else None
+
+
+def _extract_logic_tree_ids(body: str) -> tuple[str | None, list[str], list[str]]:
+    root_tags = _find_tags_with_exact_class(body, "div", "ve-logic-tree-root")
+    root_id = _semantic_id_from_attrs(root_tags[0][1]) if root_tags else None
+    branch_ids = [
+        bid for _, attrs in _find_tags_with_exact_class(body, "div", "ve-logic-tree-branch")
+        if (bid := _semantic_id_from_attrs(attrs)) is not None
+    ]
+    leaf_ids = [
+        lid for _, attrs in _find_tags_with_exact_class(body, "li", "ve-logic-tree-leaf")
+        if (lid := _semantic_id_from_attrs(attrs)) is not None
+    ]
+    return root_id, branch_ids, leaf_ids
+
+
+_LOGIC_TREE_FORBIDDEN_CONNECTOR_ATTRS = (
+    "data-ve-semantic-id",
+    "data-ve-from",
+    "data-ve-to",
+    "data-ve-relation",
+    "data-connect",
+)
+
+
+def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    branch_rows = _find_tags_with_exact_class(body, "li", "ve-logic-tree-branch-row")
+    branch_count = len(branch_rows)
+    if branch_count < 2 or branch_count > 4:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"logic-tree は2〜4枝である必要があります (found {branch_count})"))
+
+    branch_ols = _find_tags_with_exact_class(body, "ol", "ve-logic-tree-branches")
+    if len(branch_ols) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree のコンテナが見つかりません"))
+    else:
+        container_classes = _class_tokens_from_attr_string(branch_ols[0][1])
+        expected_count = f"ve-logic-tree-count-{branch_count}"
+        count_tokens = _exact_count_token("ve-logic-tree", container_classes)
+        if count_tokens != {expected_count}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"logic-tree のコンテナは {expected_count} である必要があります"))
+
+    root_tags = _find_tags_with_exact_class(body, "div", "ve-logic-tree-root")
+    root_id, branch_ids, leaf_ids = _extract_logic_tree_ids(body)
+    if len(root_tags) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の root がありません"))
+    elif root_id is None:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree root に data-ve-semantic-id がありません"))
+
+    leaf_blocks = _find_tags_with_exact_class(body, "li", "ve-logic-tree-leaf")
+    if len(leaf_blocks) != sum(_semantic_id_from_attrs(attrs) is not None for _, attrs in leaf_blocks):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree leaf に data-ve-semantic-id がありません"))
+    if branch_count != len(branch_ids):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree 枝に data-ve-semantic-id がありません"))
+
+    tree_ids = ([root_id] if root_id else []) + branch_ids + leaf_ids
+    if len(tree_ids) != len(set(tree_ids)):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の意味 ID が重複しています"))
+    for tid in tree_ids:
+        if body.count(f'data-ve-semantic-id="{tid}"') != 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"logic-tree の意味 ID '{tid}' は DOM に1回だけ現れる必要があります"))
+
+    for index, (_, attrs) in enumerate(branch_rows):
+        classes = _class_tokens_from_attr_string(attrs)
+        position = index + 1
+        expected_index = f"ve-logic-tree-index-{position}"
+        index_tokens = _exact_index_token("ve-logic-tree", classes)
+        if index_tokens != {expected_index}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"logic-tree の枝 {position} は {expected_index} を1つだけ持つ必要があります"))
+
+    spines = _find_tags_with_exact_class(body, "span", "ve-logic-tree-spine")
+    if len(spines) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine は1本である必要があります"))
+    root_stems = _find_tags_with_exact_class(body, "span", "ve-logic-tree-root-stem")
+    if len(root_stems) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の root-stem は1本である必要があります"))
+    spine_columns = _find_tags_with_exact_class(body, "div", "ve-logic-tree-spine-column")
+    if len(spine_columns) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine-column は1つである必要があります"))
+
+    connectors = _find_tags_with_exact_class(body, "span", "ve-logic-tree-connector")
+    if len(connectors) != branch_count:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      f"logic-tree の connector は枝数と一致する必要があります (found {len(connectors)}, expected {branch_count})"))
+    presentation_attrs = [attrs for _, attrs in connectors + spines + root_stems]
+    for attrs in presentation_attrs:
+        for forbidden in _LOGIC_TREE_FORBIDDEN_CONNECTOR_ATTRS:
+            if forbidden in attrs:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"logic-tree connector に {forbidden} は許可されていません"))
+                break
+    for _, attrs in connectors:
+        if 'aria-hidden="true"' not in attrs:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "logic-tree connector は aria-hidden である必要があります"))
+
+    layout_tags = _find_tags_with_exact_class(body, "div", "ve-logic-tree-layout-horizontal")
+    if len(layout_tags) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree に ve-logic-tree-layout-horizontal がありません"))
+
+    root_pos = root_tags[0][0] if root_tags else -1
+    spine_pos = spines[0][0] if spines else -1
+    branches_pos = branch_ols[0][0] if branch_ols else -1
+    if root_pos >= 0 and branches_pos >= 0 and root_pos > branches_pos:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の DOM 順序は root が branches より前である必要があります"))
+    if root_pos >= 0 and spine_pos >= 0 and spine_pos < root_pos:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine は root の後である必要があります"))
+    if spine_pos >= 0 and branches_pos >= 0 and spine_pos > branches_pos:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                      "logic-tree の spine は branches より前である必要があります"))
+    return diagnostics
+
+
+class _SvgSubtreeParser(HTMLParser):
+    """Validate one SVG subtree against the closed element/attribute allowlist."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.diagnostics: list[Diagnostic] = []
+        self._svg_depth = 0
+
+    def _reject(self, message: str) -> None:
+        self.diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, message))
+
+    def _check_value(self, tag: str, name: str, value: str) -> None:
+        if name == "viewBox":
+            if value != _SVG_VIEWBOX_EXACT:
+                self._reject(f"viewBox は '{_SVG_VIEWBOX_EXACT}' の完全一致である必要があります")
+        elif name == "preserveAspectRatio":
+            if value != _SVG_PRESERVE_EXACT:
+                self._reject(f"preserveAspectRatio は '{_SVG_PRESERVE_EXACT}' のみ許可されます")
+        elif name == "text-anchor":
+            if value not in _SVG_TEXT_ANCHOR:
+                self._reject(f"text-anchor '{value}' は許可されていません")
+        elif name == "r":
+            if not _SVG_R_RE.match(value):
+                self._reject(f"属性 r の値 '{value}' が不正です")
+        elif name in {"x", "y", "x1", "y1", "x2", "y2", "cx", "cy"}:
+            if not _SVG_INT_COORD_RE.match(value):
+                self._reject(f"座標属性 {name} の値 '{value}' は整数である必要があります")
+
+    def _check_element(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag not in _SVG_ALLOWED_TAGS:
+            self._reject(f"許可されていない SVG 要素 <{tag}>")
+            return
+        allowed = _SVG_ATTR_ALLOWLIST[tag]
+        allowed_lower = {name.lower(): name for name in allowed}
+        for name, value in attrs:
+            if ":" in name:
+                self._reject(f"名前空間属性 '{name}' は許可されていません")
+                continue
+            lname = name.lower()
+            if lname not in allowed_lower:
+                self._reject(f"<{tag}> に許可されていない属性 '{name}'")
+                continue
+            if value is None:
+                self._reject(f"<{tag}> の属性 '{name}' に値が必要です")
+                continue
+            self._check_value(tag, allowed_lower[lname], value)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag_l = tag.lower()
+        if tag_l == "svg":
+            self._svg_depth += 1
+            if self._svg_depth > 1:
+                self._reject("入れ子の <svg> は許可されていません")
+        if self._svg_depth > 0:
+            self._check_element(tag_l, attrs)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "svg" and self._svg_depth > 0:
+            self._svg_depth -= 1
+
+
+def _section_attr(attrs: str, name: str) -> str | None:
+    match = _ATTR_RE(name).search(attrs)
+    return match.group(1) if match else None
+
+
+def _validate_svg_subtree(fragment: str) -> list[Diagnostic]:
+    parser = _SvgSubtreeParser()
+    parser.feed(fragment)
+    parser.close()
+    return parser.diagnostics
+
+
+def validate_renderer_svg(content: str) -> list[Diagnostic]:
+    """Enforce allowlisted SVG placement and per-element attribute grammars."""
+    diagnostics: list[Diagnostic] = []
+    for match in _WRAPPER_SECTION_RE.finditer(content):
+        attrs = match.group(1) + match.group(3)
+        kind = match.group(2)
+        body = match.group(4)
+        component = _section_attr(attrs, "data-ve-component")
+        version = _section_attr(attrs, "data-ve-contract-version")
+        instance = _section_attr(attrs, "data-ve-instance")
+        svg_matches = list(_SVG_OPEN_RE.finditer(body))
+        if not svg_matches:
+            continue
+        component_key = f"{component}@{version}" if component and version else ""
+        allowed = (
+            kind == "canonical"
+            and component_key in RENDERER_SVG_ALLOWLIST
+        )
+        if not allowed:
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
+            ))
+            continue
+        if len(svg_matches) != 1:
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                "slope セクションの <svg> は1個である必要があります",
+            ))
+        for svg_match in svg_matches:
+            svg_attrs = svg_match.group(1)
+            if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
+                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "xmlns 宣言は許可されていません"))
+            expected_id = f"{instance}-svg" if instance else ""
+            sid = _section_attr(svg_attrs, "id")
+            if sid != expected_id:
+                diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"<svg> id は '{expected_id}' である必要があります",
+                ))
+            start = svg_match.start()
+            end = body.find("</svg>", svg_match.end())
+            if end == -1:
+                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "<svg> が閉じられていません"))
+                continue
+            subtree = body[start:end + len("</svg>")]
+            diagnostics.extend(_validate_svg_subtree(subtree))
+    outside = content
+    for match in _WRAPPER_SECTION_RE.finditer(content):
+        outside = outside.replace(match.group(0), "")
+    if _SVG_OPEN_RE.search(outside):
+        diagnostics.append(Diagnostic(
+            RENDERER_SVG_VIOLATION,
+            "セクション外の <svg> は許可されていません",
+        ))
+    return diagnostics
+
+
+def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    row_blocks = re.findall(
+        r'<g\s+([^>]*\bve-slope-row\b[^>]*)>(.*?)</g>',
+        body,
+        re.DOTALL,
+    )
+    item_count = len(row_blocks)
+    if item_count < 1 or item_count > 5:
+        diagnostics.append(Diagnostic(
+            SLOPE_STRUCTURE_VIOLATION,
+            f"slope は1〜5項目である必要があります (found {item_count})",
+        ))
+    for attrs, inner in row_blocks:
+        if 'data-ve-semantic-id="' not in attrs:
+            diagnostics.append(Diagnostic(
+                SLOPE_STRUCTURE_VIOLATION,
+                "slope 項目に data-ve-semantic-id がありません",
+            ))
+        line_items = re.findall(r'<line\s+[^>]*\bve-slope-item\b', inner)
+        if len(line_items) != 1:
+            diagnostics.append(Diagnostic(
+                SLOPE_STRUCTURE_VIOLATION,
+                "slope 項目は line.ve-slope-item を1本だけ持つ必要があります",
+            ))
+    svg_matches = list(_SVG_OPEN_RE.finditer(body))
+    if len(svg_matches) != 1:
+        diagnostics.append(Diagnostic(
+            SLOPE_STRUCTURE_VIOLATION,
+            "slope には <svg> がちょうど1つ必要です",
+        ))
+    return diagnostics
+
+
+def _notes_semantic_ids(body: str, notes_class: str) -> set[str]:
+    notes_match = re.search(
+        rf'<ul[^>]*class="[^"]*\b{re.escape(notes_class)}\b[^"]*"[^>]*>(.*?)</ul>',
+        body,
+        re.DOTALL,
+    )
+    if notes_match is None:
+        return set()
+    return set(re.findall(r'data-ve-semantic-id="([^"]+)"', notes_match.group(1)))
+
+
+def _check_evidence_map_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    card_blocks = re.findall(
+        r'<div\s+([^>]*\bve-em-evidence-card\b[^>]*)>(.*?)</div>',
+        body,
+        re.DOTALL,
+    )
+    card_count = len(card_blocks)
+    if card_count < 2 or card_count > 4:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            f"evidence-map は根拠2〜4件である必要があります (found {card_count})",
+        ))
+
+    conclusion_blocks = re.findall(r'<div\s+([^>]*\bve-em-conclusion\b[^>]*)>', body)
+    if len(conclusion_blocks) != 1:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            "evidence-map には結論カードがちょうど1つ必要です",
+        ))
+    elif "ve-em-border-strong" not in conclusion_blocks[0]:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            "結論カードに ve-em-border-strong がありません",
+        ))
+
+    note_ids = _notes_semantic_ids(body, "ve-evidence-map-notes")
+    for attrs, inner in card_blocks:
+        if "data-ve-from" in attrs or "data-ve-to" in attrs:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに data-ve-from/to は許可されていません",
+            ))
+        cert_ref_match = re.search(r'data-ve-certainty-ref="([^"]+)"', attrs)
+        if cert_ref_match is None:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに data-ve-certainty-ref がありません",
+            ))
+        elif cert_ref_match.group(1) not in note_ids:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                f"certaintyRef '{cert_ref_match.group(1)}' が注記に解決できません",
+            ))
+        source_ref_match = re.search(r'data-ve-source-ref="([^"]+)"', attrs)
+        if source_ref_match is not None and source_ref_match.group(1) not in note_ids:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                f"sourceRef '{source_ref_match.group(1)}' が注記に解決できません",
+            ))
+        cert_spans = re.findall(
+            r'<span\s+([^>]*\bve-cert\b[^>]*)>(.*?)</span>',
+            inner,
+            re.DOTALL,
+        )
+        if len(cert_spans) != 1:
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに ve-cert 要素がちょうど1つ必要です",
+            ))
+        else:
+            _attrs, cert_inner = cert_spans[0]
+            if not _visible_text(cert_inner):
+                diagnostics.append(Diagnostic(
+                    EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                    "evidence カードの ve-cert 要素に可視テキストがありません",
+                ))
+    return diagnostics
+
+
+COMPONENT_ARTIFACT_CHECKS = {
+    "enumeration": _check_enumeration_artifact,
+    "chevron": _check_chevron_artifact,
+    "pyramid": _check_pyramid_artifact,
+    "stairs": _check_stairs_artifact,
+    "waterfall": _check_waterfall_artifact,
+    "logic-tree": _check_logic_tree_artifact,
+    "slope": _check_slope_artifact,
+    "evidence-map": _check_evidence_map_artifact,
+}
+
 _CANONICAL_SECTION_RE = re.compile(
     r'<section\b[^>]*data-ve-section-kind="canonical"[^>]*>(.*?)</section>', re.DOTALL)
 
@@ -555,32 +1302,52 @@ def validate_artifact_semantics(content: str) -> list[Diagnostic]:
 
     Within each canonical section: flow edges must carry from/to/relation and both
     endpoints must be node semantic IDs of that same flow; matrix cells must carry
-    both row and column IDs referencing real headers; and caption/certainty/source
+    both row and column IDs referencing real headers; non-flow/matrix components must
+    not carry flow/matrix relationship attributes; and caption/certainty/source
     notes must survive.
     """
     diagnostics: list[Diagnostic] = []
+    component_ids = {cid for cid in _COMPONENTS}
     for body in _CANONICAL_SECTION_RE.findall(content):
+        component_match = _COMPONENT_RE.search(body)
+        component = component_match.group(1) if component_match else ""
         parser = _parse_dom(body)
-        if parser.incomplete_edge:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
-        for frm, to, _rel in parser.edges:
-            if frm not in parser.node_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
-            if to not in parser.node_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
-        if parser.cell_incomplete:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
-        for ref in parser.row_refs:
-            if ref not in parser.semantic_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
-        for ref in parser.col_refs:
-            if ref not in parser.semantic_ids:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+        if component == "flow":
+            if parser.incomplete_edge:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+            for frm, to, _rel in parser.edges:
+                if frm not in parser.node_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
+                if to not in parser.node_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
+        elif component == "matrix":
+            if parser.cell_incomplete:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+            for ref in parser.row_refs:
+                if ref not in parser.semantic_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
+            for ref in parser.col_refs:
+                if ref not in parser.semantic_ids:
+                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+        elif component in component_ids:
+            if parser.incomplete_edge or parser.edges:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"{component} セクションに flow 辺属性は許可されていません"))
+            if parser.cell_incomplete or parser.row_refs or parser.col_refs:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"{component} セクションに matrix セル属性は許可されていません"))
+            checker = COMPONENT_ARTIFACT_CHECKS.get(component)
+            if checker is not None:
+                diagnostics.extend(checker(body, parser))
         if "<figcaption" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
         if "data-ve-semantic-id=" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
-        if "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
+        if component in component_ids:
+            if f"ve-{component}-notes" not in body:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              f"canonical セクションに確度/出典の注記がありません"))
+        elif "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
     return diagnostics
 
@@ -606,6 +1373,7 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_content_markup(content)
         diagnostics += validate_final_provenance(content)
         diagnostics += validate_artifact_semantics(content)
+        diagnostics += validate_renderer_svg(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

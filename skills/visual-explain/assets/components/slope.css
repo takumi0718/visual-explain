@@ -1,0 +1,15 @@
+[data-ve-component="slope"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="slope"] .ve-slope-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="slope"] .ve-slope-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="slope"] .ve-slope-chart { display: block; width: 100%; max-width: 37.5rem; margin: 0 auto; font-size: var(--fs-figure); }
+[data-ve-component="slope"] .ve-slope-axis { fill: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="slope"] .ve-slope-item { stroke-width: 3; fill: none; stroke: var(--text-dim); }
+[data-ve-component="slope"] .ve-slope-tone-positive { stroke: var(--positive); }
+[data-ve-component="slope"] .ve-slope-tone-warning { stroke: var(--warning); }
+[data-ve-component="slope"] .ve-slope-tone-neutral { stroke: var(--text-faint); }
+[data-ve-component="slope"] .ve-slope-value,
+[data-ve-component="slope"] .ve-slope-label { fill: var(--text); font-size: var(--fs-figure); }
+[data-ve-component="slope"] g.ve-takeaway-target .ve-slope-item { stroke-width: 4; }
+[data-ve-component="slope"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="slope"] .ve-slope-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="slope"] .ve-slope-notes li { margin: 0; }

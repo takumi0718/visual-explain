@@ -7,6 +7,7 @@ semantic records into markup, and manifests record what was consumed.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Callable, Optional
 
 # ---------------------------------------------------------------------------
@@ -119,6 +120,157 @@ class FlowPayload:
     reading_order: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class EnumerationItem:
+    id: str
+    label: Optional[str] = None
+    title: Optional[str] = None
+    description: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class EnumerationPayload:
+    items: tuple[EnumerationItem, ...]
+    presentation: str = "list"
+    block_content: str = "number"
+
+
+@dataclass(frozen=True)
+class ChevronStep:
+    id: str
+    label: Optional[str] = None
+    title: Optional[str] = None
+    description: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ChevronPayload:
+    steps: tuple[ChevronStep, ...]
+    orientation: str = "vertical"
+    block_content: str = "number"
+    loop: bool = False
+
+
+@dataclass(frozen=True)
+class PyramidTier:
+    id: str
+    label: str
+    sub: str = ""
+
+
+@dataclass(frozen=True)
+class PyramidPayload:
+    tiers: tuple[PyramidTier, ...]
+
+
+@dataclass(frozen=True)
+class StairsStage:
+    id: str
+    label: str
+    note: str = ""
+    current: bool = False
+
+
+@dataclass(frozen=True)
+class StairsPayload:
+    stages: tuple[StairsStage, ...]
+
+
+@dataclass(frozen=True)
+class WaterfallEndpoint:
+    id: str
+    label: str
+    value: int | Decimal
+    value_text: str
+
+
+@dataclass(frozen=True)
+class WaterfallStep:
+    id: str
+    label: str
+    delta: int | Decimal
+    value_text: str
+    tone: str
+
+
+@dataclass(frozen=True)
+class WaterfallPayload:
+    display_precision: int | Decimal
+    orientation: str
+    start: WaterfallEndpoint
+    steps: tuple[WaterfallStep, ...]
+    end: WaterfallEndpoint
+
+
+@dataclass(frozen=True)
+class LogicTreeLeaf:
+    id: str
+    text: str
+
+
+@dataclass(frozen=True)
+class LogicTreeBranch:
+    id: str
+    label: str
+    leaves: tuple[LogicTreeLeaf, ...] = ()
+
+
+@dataclass(frozen=True)
+class LogicTreeRoot:
+    id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class LogicTreePayload:
+    root: LogicTreeRoot
+    branches: tuple[LogicTreeBranch, ...]
+
+
+@dataclass(frozen=True)
+class SlopeAxes:
+    from_label: str
+    to_label: str
+
+
+@dataclass(frozen=True)
+class SlopeItem:
+    id: str
+    label: str
+    from_value: int | Decimal
+    to_value: int | Decimal
+    from_value_text: str
+    to_value_text: str
+    tone: str
+
+
+@dataclass(frozen=True)
+class SlopePayload:
+    axes: SlopeAxes
+    unit: str
+    items: tuple[SlopeItem, ...]
+
+
+@dataclass(frozen=True)
+class EvidenceConclusion:
+    id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class EvidenceItem:
+    id: str
+    label: str
+    certainty_ref: str
+    source_ref: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class EvidenceMapPayload:
+    conclusion: EvidenceConclusion
+    evidence: tuple[EvidenceItem, ...]
+
+
 # ---------------------------------------------------------------------------
 # Sections
 # ---------------------------------------------------------------------------
@@ -135,13 +287,41 @@ class CanonicalIR:
     accessibility: AccessibilityInfo
     matrix: Optional[MatrixPayload] = None
     flow: Optional[FlowPayload] = None
+    enumeration: Optional[EnumerationPayload] = None
+    chevron: Optional[ChevronPayload] = None
+    pyramid: Optional[PyramidPayload] = None
+    stairs: Optional[StairsPayload] = None
+    waterfall: Optional[WaterfallPayload] = None
+    logic_tree: Optional[LogicTreePayload] = None
+    slope: Optional[SlopePayload] = None
+    evidence_map: Optional[EvidenceMapPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
 
     @property
     def payload_kind(self) -> str:
-        return "matrix" if self.matrix is not None else "flow"
+        if self.matrix is not None:
+            return "matrix"
+        if self.flow is not None:
+            return "flow"
+        if self.enumeration is not None:
+            return "enumeration"
+        if self.chevron is not None:
+            return "chevron"
+        if self.pyramid is not None:
+            return "pyramid"
+        if self.stairs is not None:
+            return "stairs"
+        if self.waterfall is not None:
+            return "waterfall"
+        if self.logic_tree is not None:
+            return "logic-tree"
+        if self.slope is not None:
+            return "slope"
+        if self.evidence_map is not None:
+            return "evidence-map"
+        raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
         ids: list[str] = [self.id]
@@ -155,6 +335,28 @@ class CanonicalIR:
             ids.extend(n.id for n in self.flow.nodes)
             ids.extend(e.id for e in self.flow.edges)
             ids.extend(g.id for g in self.flow.groups)
+        if self.enumeration is not None:
+            ids.extend(item.id for item in self.enumeration.items)
+        if self.chevron is not None:
+            ids.extend(step.id for step in self.chevron.steps)
+        if self.pyramid is not None:
+            ids.extend(tier.id for tier in self.pyramid.tiers)
+        if self.stairs is not None:
+            ids.extend(stage.id for stage in self.stairs.stages)
+        if self.waterfall is not None:
+            ids.append(self.waterfall.start.id)
+            ids.extend(step.id for step in self.waterfall.steps)
+            ids.append(self.waterfall.end.id)
+        if self.logic_tree is not None:
+            ids.append(self.logic_tree.root.id)
+            for branch in self.logic_tree.branches:
+                ids.append(branch.id)
+                ids.extend(leaf.id for leaf in branch.leaves)
+        if self.slope is not None:
+            ids.extend(item.id for item in self.slope.items)
+        if self.evidence_map is not None:
+            ids.append(self.evidence_map.conclusion.id)
+            ids.extend(item.id for item in self.evidence_map.evidence)
         return tuple(ids)
 
 
@@ -201,6 +403,7 @@ class RenderManifest:
     asset_digests: tuple[str, ...]
     declared_dependencies: tuple[str, ...]
     fallback_mode: str
+    svg_root_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

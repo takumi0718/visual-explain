@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "logic-tree-bad-many",
+    "title": "枝過多",
+    "summary": "枝5件の不正IR。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-lt-many",
+        "relationship": {
+          "kind": "hierarchical-decomposition",
+          "capabilities": ["mece-decomposition"]
+        },
+        "selection": {
+          "component": "logic-tree",
+          "version": 1,
+          "matchedCapabilities": ["mece-decomposition"]
+        },
+        "caption": "枝過多",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "ロジックツリー", "summary": "枝が5件。"},
+        "logic-tree": {
+          "root": {"id": "root-topic", "label": "全体"},
+          "branches": [
+            {"id": "branch-1", "label": "枝1"},
+            {"id": "branch-2", "label": "枝2"},
+            {"id": "branch-3", "label": "枝3"},
+            {"id": "branch-4", "label": "枝4"},
+            {"id": "branch-5", "label": "枝5"}
+          ]
+        }
+      }
+    }
+  ]
+}

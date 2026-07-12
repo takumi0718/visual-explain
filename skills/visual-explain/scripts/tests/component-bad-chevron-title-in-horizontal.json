@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "bad-chevron-title-h",
+    "title": "横型に title 禁止",
+    "summary": "horizontal では title を持てない。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad-title-h",
+        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "caption": "title 禁止",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
+        "chevron": {
+          "steps": [
+            {"id": "s1", "title": "禁止", "description": ["説明1"]},
+            {"id": "s2", "description": ["説明2"]},
+            {"id": "s3", "description": ["説明3"]}
+          ],
+          "orientation": "horizontal",
+          "blockContent": "number",
+          "loop": false
+        }
+      }
+    }
+  ]
+}

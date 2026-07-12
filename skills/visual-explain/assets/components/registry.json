@@ -101,6 +101,384 @@
           "digest": "e9dab25d5c11e0e0293ba0b4d67a9cf7e3b284c7205b424b3ad57c95a07c59cb"
         }
       ]
+    },
+    {
+      "id": "enumeration",
+      "version": 1,
+      "relationshipKind": "parallel-enumeration",
+      "capabilities": [
+        "parallel-itemization"
+      ],
+      "semanticResponsibility": "順序を持たない並列項目の列挙のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的な番号またはラベル付きブロックで並列項目を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と項目ブロックの一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "enumeration-structure"
+      ],
+      "renderer": "enumeration@1",
+      "assets": [
+        {
+          "id": "enumeration.css",
+          "slot": "styles",
+          "path": "enumeration.css",
+          "digest": "81218908d6aaf2840db4d829c6a5da4e4a6bc4f955bbb42ff7e1a00d5c08fd44"
+        }
+      ]
+    },
+    {
+      "id": "chevron",
+      "version": 1,
+      "relationshipKind": "ordered-sequence",
+      "capabilities": [
+        "linear-sequence",
+        "closed-loop"
+      ],
+      "semanticResponsibility": "分岐のない線形順序と閉ループのみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "steps"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なチェブロン形状で順序付きステップを描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と順序付きステップの一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "chevron-structure"
+      ],
+      "renderer": "chevron@1",
+      "assets": [
+        {
+          "id": "chevron.css",
+          "slot": "styles",
+          "path": "chevron.css",
+          "digest": "9cb02dcd5510cc426818b7a0a51cb3c6d6436737e17c7e0df1d09e0762d3a48e"
+        }
+      ]
+    },
+    {
+      "id": "pyramid",
+      "version": 1,
+      "relationshipKind": "layered-priority",
+      "capabilities": [
+        "priority-layering"
+      ],
+      "semanticResponsibility": "上ほど重要な優先階層のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "tiers"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なピラミッド形状で優先度の階層を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と優先層の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "pyramid-structure"
+      ],
+      "renderer": "pyramid@1",
+      "assets": [
+        {
+          "id": "pyramid.css",
+          "slot": "styles",
+          "path": "pyramid.css",
+          "digest": "8a45af59cbe466a0902044aa0e91744186a8ba1766cd28e427f2819774ff227e"
+        }
+      ]
+    },
+    {
+      "id": "stairs",
+      "version": 1,
+      "relationshipKind": "staged-maturity",
+      "capabilities": [
+        "maturity-staging"
+      ],
+      "semanticResponsibility": "到達したら留まる成熟度段階のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "stages"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的な階段形状で成熟度段階と現在地を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と成熟度段階の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "stairs-structure"
+      ],
+      "renderer": "stairs@1",
+      "assets": [
+        {
+          "id": "stairs.css",
+          "slot": "styles",
+          "path": "stairs.css",
+          "digest": "8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe"
+        }
+      ]
+    },
+    {
+      "id": "logic-tree",
+      "version": 1,
+      "relationshipKind": "hierarchical-decomposition",
+      "capabilities": [
+        "mece-decomposition"
+      ],
+      "semanticResponsibility": "構成の階層分解のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "root",
+        "branches"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なロジックツリーで root と branch を接続線付きで描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と root/branch/leaf の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "logic-tree-structure"
+      ],
+      "renderer": "logic-tree@1",
+      "assets": [
+        {
+          "id": "logic-tree.css",
+          "slot": "styles",
+          "path": "logic-tree.css",
+          "digest": "392189a53a978812139170109f88a1846863b141a338e6240719a9bea8309dd2"
+        }
+      ]
+    },
+    {
+      "id": "waterfall",
+      "version": 1,
+      "relationshipKind": "additive-bridge",
+      "capabilities": [
+        "additive-bridging"
+      ],
+      "semanticResponsibility": "加算的な橋渡し（増減の累積）のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "displayPrecision",
+        "start",
+        "steps",
+        "end"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources",
+        "orientation"
+      ],
+      "behavior": "静的なウォーターフォールで開始・増減・終了を百分率クラスで描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と開始/段/終了の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "waterfall-consistency"
+      ],
+      "renderer": "waterfall@1",
+      "assets": [
+        {
+          "id": "waterfall.css",
+          "slot": "styles",
+          "path": "waterfall.css",
+          "digest": "11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f"
+        }
+      ]
+    },
+    {
+      "id": "slope",
+      "version": 1,
+      "relationshipKind": "two-point-change",
+      "capabilities": [
+        "two-point-comparison"
+      ],
+      "semanticResponsibility": "2時点比較のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "axes",
+        "unit",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "決定的 SVG ジオメトリで2時点変化を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と SVG 代替テキスト。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "slope-structure",
+        "renderer-svg"
+      ],
+      "renderer": "slope@1",
+      "assets": [
+        {
+          "id": "slope.css",
+          "slot": "styles",
+          "path": "slope.css",
+          "digest": "f06faba4570dc92fcb34a988445c61814fd5f60b23a6492696e87b193e9f146c"
+        }
+      ]
+    },
+    {
+      "id": "evidence-map",
+      "version": 1,
+      "relationshipKind": "claim-support",
+      "capabilities": [
+        "claim-support-mapping"
+      ],
+      "semanticResponsibility": "結論と根拠の1段マッピングのみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "conclusion",
+        "evidence"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "確度参照付きの静的な論拠地図を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と確度バッジ。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "evidence-map-references"
+      ],
+      "renderer": "evidence-map@1",
+      "assets": [
+        {
+          "id": "evidence-map.css",
+          "slot": "styles",
+          "path": "evidence-map.css",
+          "digest": "f988fe3d3d93658d4ff42790cd26d5b2101c91706d246d3cf463f9d8676b0547"
+        }
+      ]
     }
   ]
 }

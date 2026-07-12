@@ -53,6 +53,24 @@ MISSING_PROVENANCE = "missing_provenance"
 # Round 2 — artifact-only semantic/static integrity of the final DOM.
 ARTIFACT_SEMANTIC_MISMATCH = "artifact_semantic_mismatch"
 
+# S1 — enumeration structure codes.
+ENUMERATION_STRUCTURE_VIOLATION = "enumeration_structure_violation"
+
+# S2 — chevron structure codes.
+CHEVRON_STRUCTURE_VIOLATION = "chevron_structure_violation"
+
+# S3 — pyramid / stairs structure codes.
+PYRAMID_STRUCTURE_VIOLATION = "pyramid_structure_violation"
+STAIRS_STRUCTURE_VIOLATION = "stairs_structure_violation"
+LOGIC_TREE_STRUCTURE_VIOLATION = "logic_tree_structure_violation"
+WATERFALL_STRUCTURE_VIOLATION = "waterfall_structure_violation"
+WATERFALL_ARITHMETIC_MISMATCH = "waterfall_arithmetic_mismatch"
+
+# S6 — slope / evidence-map / renderer-svg codes.
+SLOPE_STRUCTURE_VIOLATION = "slope_structure_violation"
+EVIDENCE_MAP_STRUCTURE_VIOLATION = "evidence_map_structure_violation"
+RENDERER_SVG_VIOLATION = "renderer_svg_violation"
+
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
 
@@ -87,6 +105,16 @@ ALL_CODES = frozenset({
     FLOW_TOPOLOGY_VIOLATION,
     FLOW_TOPOLOGY_TOO_COMPLEX,
     ASK_CONTRACT_VIOLATION,
+    ENUMERATION_STRUCTURE_VIOLATION,
+    CHEVRON_STRUCTURE_VIOLATION,
+    PYRAMID_STRUCTURE_VIOLATION,
+    STAIRS_STRUCTURE_VIOLATION,
+    LOGIC_TREE_STRUCTURE_VIOLATION,
+    WATERFALL_STRUCTURE_VIOLATION,
+    WATERFALL_ARITHMETIC_MISMATCH,
+    SLOPE_STRUCTURE_VIOLATION,
+    EVIDENCE_MAP_STRUCTURE_VIOLATION,
+    RENDERER_SVG_VIOLATION,
 })
 
 

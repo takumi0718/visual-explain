@@ -24,6 +24,14 @@
     "accessibility": {"$ref": "#/$defs/accessibility"},
     "matrix": {"$ref": "#/$defs/matrixPayload"},
     "flow": {"$ref": "#/$defs/flowPayload"},
+    "enumeration": {"$ref": "#/$defs/enumerationPayload"},
+    "chevron": {"$ref": "#/$defs/chevronPayload"},
+    "pyramid": {"$ref": "#/$defs/pyramidPayload"},
+    "stairs": {"$ref": "#/$defs/stairsPayload"},
+    "waterfall": {"$ref": "#/$defs/waterfallPayload"},
+    "logic-tree": {"$ref": "#/$defs/logicTreePayload"},
+    "slope": {"$ref": "#/$defs/slopePayload"},
+    "evidence-map": {"$ref": "#/$defs/evidenceMapPayload"},
     "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     "takeawayScope": {"enum": ["targets", "whole"]},
     "emphasis": {
@@ -35,21 +43,41 @@
     }
   },
   "oneOf": [
-    {"required": ["matrix"], "not": {"required": ["flow"]}},
-    {"required": ["flow"], "not": {"required": ["matrix"]}}
+    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["waterfall"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["logic-tree"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["slope"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["evidence-map"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}]}}
   ],
   "$defs": {
-    "componentId": {"enum": ["matrix", "flow"]},
+    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree", "slope", "evidence-map"]},
     "contractVersion": {"enum": [1]},
-    "relationshipKind": {"enum": ["two-axis", "directed-graph"]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition", "additive-bridge", "two-point-change", "claim-support"]},
     "capability": {
       "enum": [
         "two-axis-classification",
         "intersection-comparison",
         "ordered-transition",
         "directed-transition",
-        "branching"
+        "branching",
+        "parallel-itemization",
+        "linear-sequence",
+        "closed-loop",
+        "priority-layering",
+        "maturity-staging",
+        "mece-decomposition",
+        "additive-bridging",
+        "two-point-comparison",
+        "claim-support-mapping"
       ]
+    },
+    "flowRelation": {
+      "enum": ["ordered-transition", "directed-transition", "branching"]
     },
     "certaintyLevel": {"enum": ["confirmed", "inferred", "unverified"]},
     "relationship": {
@@ -170,7 +198,7 @@
         "id": {"type": "string", "minLength": 1},
         "from": {"type": "string", "minLength": 1},
         "to": {"type": "string", "minLength": 1},
-        "relation": {"$ref": "#/$defs/capability"},
+        "relation": {"$ref": "#/$defs/flowRelation"},
         "label": {"type": "string", "minLength": 1}
       }
     },
@@ -181,6 +209,271 @@
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "label": {"type": "string", "minLength": 1}
+      }
+    },
+    "enumerationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/enumerationItem"}
+        },
+        "presentation": {"enum": ["list", "columns"], "default": "list"},
+        "blockContent": {"enum": ["number", "label"], "default": "number"}
+      }
+    },
+    "enumerationItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 16},
+        "title": {"type": "string", "minLength": 1, "maxLength": 30},
+        "description": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "chevronPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["steps"],
+      "properties": {
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/chevronStep"}
+        },
+        "orientation": {"enum": ["vertical", "horizontal"], "default": "vertical"},
+        "blockContent": {"enum": ["number", "label"], "default": "number"},
+        "loop": {"type": "boolean", "default": false}
+      }
+    },
+    "chevronStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 16},
+        "title": {"type": "string", "minLength": 1, "maxLength": 30},
+        "description": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "pyramidPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tiers"],
+      "properties": {
+        "tiers": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/pyramidTier"}
+        }
+      }
+    },
+    "pyramidTier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 12},
+        "sub": {"type": "string", "minLength": 1, "maxLength": 30}
+      }
+    },
+    "stairsPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stages"],
+      "properties": {
+        "stages": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {"$ref": "#/$defs/stairsStage"}
+        }
+      }
+    },
+    "stairsStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 14},
+        "note": {"type": "string", "minLength": 1, "maxLength": 20},
+        "current": {"type": "boolean"}
+      }
+    },
+    "logicTreePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "branches"],
+      "properties": {
+        "root": {"$ref": "#/$defs/logicTreeRoot"},
+        "branches": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/logicTreeBranch"}
+        }
+      }
+    },
+    "logicTreeRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 20}
+      }
+    },
+    "logicTreeBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 16},
+        "leaves": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/logicTreeLeaf"}
+        }
+      }
+    },
+    "logicTreeLeaf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1, "maxLength": 40}
+      }
+    },
+    "waterfallPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayPrecision", "start", "steps", "end"],
+      "properties": {
+        "displayPrecision": {"type": "number", "exclusiveMinimum": 0},
+        "orientation": {"enum": ["bars", "columns"]},
+        "start": {"$ref": "#/$defs/waterfallEndpoint"},
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/waterfallStep"}
+        },
+        "end": {"$ref": "#/$defs/waterfallEndpoint"}
+      }
+    },
+    "waterfallEndpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "value", "valueText"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 12},
+        "value": {"type": "number"},
+        "valueText": {"type": "string", "minLength": 1, "maxLength": 16}
+      }
+    },
+    "waterfallStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "delta", "valueText", "tone"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 12},
+        "delta": {"type": "number"},
+        "valueText": {"type": "string", "minLength": 1, "maxLength": 16},
+        "tone": {"enum": ["positive", "warning", "neutral"]}
+      }
+    },
+    "slopePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["axes", "unit", "items"],
+      "properties": {
+        "axes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fromLabel", "toLabel"],
+          "properties": {
+            "fromLabel": {"type": "string", "minLength": 1, "maxLength": 8},
+            "toLabel": {"type": "string", "minLength": 1, "maxLength": 8}
+          }
+        },
+        "unit": {"type": "string", "minLength": 1, "maxLength": 8},
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": {"$ref": "#/$defs/slopeItem"}
+        }
+      }
+    },
+    "slopeItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "fromValue", "toValue", "fromValueText", "toValueText", "tone"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 12},
+        "fromValue": {"type": "number"},
+        "toValue": {"type": "number"},
+        "fromValueText": {"type": "string", "minLength": 1, "maxLength": 12},
+        "toValueText": {"type": "string", "minLength": 1, "maxLength": 12},
+        "tone": {"enum": ["positive", "warning", "neutral"]}
+      }
+    },
+    "evidenceMapPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conclusion", "evidence"],
+      "properties": {
+        "conclusion": {"$ref": "#/$defs/evidenceConclusion"},
+        "evidence": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/evidenceItem"}
+        }
+      }
+    },
+    "evidenceConclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 30}
+      }
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "certaintyRef"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 40},
+        "certaintyRef": {"type": "string", "minLength": 1},
+        "sourceRef": {"type": "string", "minLength": 1}
       }
     }
   }

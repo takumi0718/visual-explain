@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "bad-chevron-empty",
+    "title": "最小可視内容違反",
+    "summary": "number モードで title/description 両欠の step がある。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad-empty",
+        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "caption": "空ブロック",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
+        "chevron": {
+          "steps": [
+            {"id": "s1", "title": "A"},
+            {"id": "s2"}
+          ],
+          "orientation": "vertical",
+          "blockContent": "number",
+          "loop": false
+        }
+      }
+    }
+  ]
+}

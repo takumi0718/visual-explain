@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "logic-tree-bad-leaves",
+    "title": "葉過多",
+    "summary": "枝あたり葉3件の不正IR。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-lt-leaves",
+        "relationship": {
+          "kind": "hierarchical-decomposition",
+          "capabilities": ["mece-decomposition"]
+        },
+        "selection": {
+          "component": "logic-tree",
+          "version": 1,
+          "matchedCapabilities": ["mece-decomposition"]
+        },
+        "caption": "葉過多",
+        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
+        "sources": [{"id": "src-1", "label": "出典"}],
+        "accessibility": {"label": "ロジックツリー", "summary": "1枝に葉3件。"},
+        "logic-tree": {
+          "root": {"id": "root-topic", "label": "全体"},
+          "branches": [
+            {"id": "branch-a", "label": "枝A"},
+            {
+              "id": "branch-b",
+              "label": "枝B",
+              "leaves": [
+                {"id": "leaf-1", "text": "詳細1"},
+                {"id": "leaf-2", "text": "詳細2"},
+                {"id": "leaf-3", "text": "詳細3"}
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

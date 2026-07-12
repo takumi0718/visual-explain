@@ -1,0 +1,32 @@
+[data-ve-component="stairs"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="stairs"] .ve-stairs-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="stairs"] .ve-stairs-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="stairs"] .ve-stairs-stages { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-end; gap: var(--space-1); }
+[data-ve-component="stairs"] .ve-stairs-stage {
+  flex: 1 1 0; min-width: 0; padding: var(--space-2);
+  background: var(--text-dim); color: var(--bg); border-radius: var(--radius);
+  font-size: var(--fs-figure); text-align: center;
+}
+[data-ve-component="stairs"] .ve-stairs-tread-accent { background: var(--accent); color: var(--bg); }
+[data-ve-component="stairs"] .ve-stairs-label { display: block; font-weight: 800; }
+[data-ve-component="stairs"] .ve-stairs-note { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="stairs"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
+[data-ve-component="stairs"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="stairs"] .ve-stairs-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="stairs"] .ve-stairs-notes li { margin: 0; }
+[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-1 { min-height: 3rem; }
+[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-2 { min-height: 4.5rem; }
+[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-3 { min-height: 6rem; }
+[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-1 { min-height: 2.5rem; }
+[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-2 { min-height: 4rem; }
+[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-3 { min-height: 5.5rem; }
+[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-4 { min-height: 7rem; }
+[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-1 { min-height: 2rem; }
+[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-2 { min-height: 3.25rem; }
+[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-3 { min-height: 4.5rem; }
+[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-4 { min-height: 5.75rem; }
+[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-5 { min-height: 7rem; }
+@media (max-width: 40rem) {
+  [data-ve-component="stairs"] .ve-stairs-stages { flex-direction: column; align-items: stretch; }
+  [data-ve-component="stairs"] .ve-stairs-stage { min-height: auto !important; }
+}

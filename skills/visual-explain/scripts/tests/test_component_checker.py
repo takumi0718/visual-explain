@@ -40,6 +40,15 @@ class LayerTwoBuildRejectionTest(unittest.TestCase):
         "component-bad-combined-relationship.json",
         "component-bad-flow-edge.json",
         "component-bad-matrix-cell.json",
+        "component-bad-enumeration-gap-description.json",
+        "component-bad-enumeration-label-missing.json",
+        "component-bad-enumeration-too-many.json",
+        "component-bad-enumeration-empty-block.json",
+        "component-bad-chevron-loop-horizontal.json",
+        "component-bad-chevron-loop-capability-mismatch.json",
+        "component-bad-chevron-title-in-horizontal.json",
+        "component-bad-chevron-no-visible-content.json",
+        "component-bad-chevron-too-few-horizontal.json",
     ]
 
     def test_bad_assemblies_raise(self) -> None:
@@ -176,6 +185,208 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_valid_flow_artifact_passes(self) -> None:
         doc = build("component-valid-flow.json")
         self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_enumeration_artifact_passes(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_loop_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron-loop.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_vertical_loop_with_horizontal_literal_in_prose_passes(self) -> None:
+        doc = build("component-valid-chevron-loop.json")
+        self.assertIn("ve-chevron-horizontal", doc)
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_valid_chevron_horizontal_artifact_passes(self) -> None:
+        doc = build("component-valid-chevron-horizontal.json")
+        self.assertNotIn("artifact_semantic_mismatch", self.diags(doc))
+
+    def test_enumeration_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-enumeration-structure.html").read_text("utf-8")))
+
+    def test_chevron_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-chevron-structure.html").read_text("utf-8")))
+
+    def test_pyramid_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-pyramid-structure.html").read_text("utf-8")))
+
+    def test_stairs_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-stairs-structure.html").read_text("utf-8")))
+
+    def test_logic_tree_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-logic-tree-structure.html").read_text("utf-8")))
+
+    def test_waterfall_structure_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")))
+
+    def test_waterfall_duplicate_semantic_id_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("waterfall の意味 ID" in m and "1回だけ" in m for m in messages),
+            messages,
+        )
+
+    def test_waterfall_missing_value_html_fails(self) -> None:
+        self.assertIn("artifact_semantic_mismatch", self.diags(
+            (TESTS / "component-bad-waterfall-missing-value.html").read_text("utf-8")))
+
+    def test_logic_tree_missing_leaf_id_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-missing-leaf-id.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("logic-tree leaf に data-ve-semantic-id がありません" in m for m in messages)
+            or any("logic-tree の意味 ID" in m for m in messages),
+            messages,
+        )
+
+    def test_logic_tree_extra_connector_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-extra-connector.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("logic-tree の connector は枝数と一致する必要があります" in m for m in messages),
+            messages,
+        )
+
+    def test_logic_tree_data_connect_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-data-connect.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("logic-tree connector に data-connect は許可されていません", messages)
+
+    def test_logic_tree_connector_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-connector-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("logic-tree の connector は枝数と一致する必要があります" in m for m in messages),
+            messages,
+        )
+
+    def test_logic_tree_spine_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-spine-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("logic-tree の spine は1本である必要があります", messages)
+
+    def test_logic_tree_root_stem_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-logic-tree-root-stem-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("logic-tree の root-stem は1本である必要があります", messages)
+
+    def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_pyramid_face_order_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-face-order.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
+        self.assertIn("pyramid の下位層は ve-pyramid-face-dim のみである必要があります", messages)
+
+    def test_pyramid_count_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-count-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid のコンテナは ve-pyramid-count-4 である必要があります", messages)
+
+    def test_pyramid_index_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-index-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid の層 2 は ve-pyramid-index-2 を1つだけ持つ必要があります", messages)
+
+    def test_pyramid_face_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-pyramid-face-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
+
+    def test_stairs_count_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-count-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("stairs のコンテナは ve-stairs-count-5 である必要があります", messages)
+
+    def test_stairs_index_mismatch_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-index-mismatch.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("stairs の段 2 は ve-stairs-index-2 を1つだけ持つ必要があります", messages)
+
+    def test_stairs_empty_note_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-empty-note.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "current 段の ve-stairs-note に可視テキストがありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_stairs_accent_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-accent-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertIn("stairs の tread クラスは ve-stairs-tread-accent のみ許可されます", messages)
+
+    def test_stairs_note_near_match_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-stairs-note-near-match.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-enumeration-missing-semantic-id.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
+                      and "enumeration ブロックに data-ve-semantic-id がありません" in d.message]
+        self.assertEqual(len(structural), 1)
+
+    def test_enumeration_with_flow_attrs_fails(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        tampered = doc.replace(
+            '<li class="ve-enum-block"',
+            '<li class="ve-enum-block" data-ve-from="item-a" data-ve-to="item-b" data-ve-relation="ordered-transition"',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_removed_flow_from_attribute_fails(self) -> None:
         doc = build("component-valid-flow.json").replace(' data-ve-from="node-draft"', "", 1)
@@ -367,6 +578,127 @@ class VerificationMatrixTest(unittest.TestCase):
         html_doc = build("assembly-branching-flow.json")
         self.assertIn("ve-flow-rail", html_doc)
         self.assertIn("ve-flow-group-label", html_doc)
+
+
+class EnumerationDocRegressionTest(unittest.TestCase):
+    """Committed enumeration-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_enumeration_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "enumeration-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_enumeration_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "enumeration-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class ChevronDocRegressionTest(unittest.TestCase):
+    """Committed chevron inspection documents must pass the same gate as check.sh."""
+
+    DOCS = ["chevron-doc.html", "chevron-horizontal-doc.html"]
+
+    def test_committed_chevron_docs_pass_check_sh(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(name=name):
+                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
+                                      capture_output=True, text=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_chevron_docs_pass_four_layer_checker(self) -> None:
+        for name in self.DOCS:
+            with self.subTest(name=name):
+                raw = (TESTS / name).read_text("utf-8")
+                self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class PyramidDocRegressionTest(unittest.TestCase):
+    """Committed pyramid-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_pyramid_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "pyramid-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_pyramid_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "pyramid-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class StairsDocRegressionTest(unittest.TestCase):
+    """Committed stairs-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_stairs_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "stairs-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_stairs_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "stairs-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class LogicTreeDocRegressionTest(unittest.TestCase):
+    """Committed logic-tree-doc.html must pass the same gate as check.sh."""
+
+    def test_committed_logic_tree_doc_passes_check_sh(self) -> None:
+        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "logic-tree-doc.html")],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("PASS", proc.stdout + proc.stderr)
+
+    def test_committed_logic_tree_doc_passes_four_layer_checker(self) -> None:
+        raw = (TESTS / "logic-tree-doc.html").read_text("utf-8")
+        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class FreshBuiltArtifactRegressionTest(unittest.TestCase):
+    """Freshly built waterfall/slope HTML must pass check_final_document and check.sh."""
+
+    BUILDS = [
+        ("component-valid-waterfall.json", "waterfall"),
+        ("component-valid-waterfall-columns.json", "waterfall-columns"),
+        ("component-valid-slope.json", "slope"),
+    ]
+
+    def _build_to_temp(self, assembly: str) -> Path:
+        out = Path(tempfile.gettempdir()) / f"ve-fresh-{assembly.replace('.json', '')}.html"
+        out.unlink(missing_ok=True)
+        proc = subprocess.run(
+            ["python3", str(BUILD), "--assembly", str(TESTS / assembly), "--output", str(out)],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertTrue(out.exists())
+        return out
+
+    def test_fresh_builds_pass_four_layer_checker(self) -> None:
+        for assembly, label in self.BUILDS:
+            with self.subTest(build=label):
+                out = self._build_to_temp(assembly)
+                try:
+                    raw = out.read_text("utf-8")
+                    diags = check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)
+                    self.assertEqual(diags, [], [f"{d.code}: {d.message}" for d in diags])
+                finally:
+                    out.unlink(missing_ok=True)
+
+    def test_fresh_builds_pass_check_sh(self) -> None:
+        for assembly, label in self.BUILDS:
+            with self.subTest(build=label):
+                out = self._build_to_temp(assembly)
+                try:
+                    proc = subprocess.run(["bash", str(CHECK), str(out)],
+                                            capture_output=True, text=True)
+                    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                    self.assertIn("PASS", proc.stdout + proc.stderr)
+                finally:
+                    out.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
