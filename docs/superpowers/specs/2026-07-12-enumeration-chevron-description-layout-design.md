@@ -1,7 +1,7 @@
 # Enumeration / Chevron Description Layout Design
 
-**Date:** 2026-07-12  
-**Status:** Implemented on `feat/enumeration-chevron-description-layout`; automated verification complete, browser visual QA pending environment availability  
+**Date:** 2026-07-12
+**Status:** Implemented on `feat/enumeration-chevron-description-layout`; automated verification complete, browser visual QA pending environment availability
 **Scope:** Canonical `enumeration@1` and `chevron@1`
 
 ## Goal
