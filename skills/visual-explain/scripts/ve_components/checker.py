@@ -1229,16 +1229,23 @@ def _check_evidence_map_artifact(body: str, parser: _DomSemanticParser) -> list[
                 EVIDENCE_MAP_STRUCTURE_VIOLATION,
                 f"sourceRef '{source_ref_match.group(1)}' が注記に解決できません",
             ))
-        if "ve-cert" not in inner:
+        cert_spans = re.findall(
+            r'<span\s+([^>]*\bve-cert\b[^>]*)>(.*?)</span>',
+            inner,
+            re.DOTALL,
+        )
+        if len(cert_spans) != 1:
             diagnostics.append(Diagnostic(
                 EVIDENCE_MAP_STRUCTURE_VIOLATION,
-                "evidence カードに確度バッジがありません",
+                "evidence カードに ve-cert 要素がちょうど1つ必要です",
             ))
-        elif not _visible_text(inner):
-            diagnostics.append(Diagnostic(
-                EVIDENCE_MAP_STRUCTURE_VIOLATION,
-                "evidence カードの確度バッジに可視テキストがありません",
-            ))
+        else:
+            _attrs, cert_inner = cert_spans[0]
+            if not _visible_text(cert_inner):
+                diagnostics.append(Diagnostic(
+                    EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                    "evidence カードの ve-cert 要素に可視テキストがありません",
+                ))
     return diagnostics
 
 

@@ -87,6 +87,22 @@ class SchemaVocabularyConsistencyTest(unittest.TestCase):
         versions = {c["contractVersion"] for c in VOCABULARY["components"].values()}
         self.assertEqual(set(IR_SCHEMA["$defs"]["contractVersion"]["enum"]), versions)
 
+    def test_oneof_branches_mutually_exclude_all_payloads(self) -> None:
+        payload_keys = list(VOCABULARY["components"].keys())
+        one_of = IR_SCHEMA["oneOf"]
+        self.assertEqual(len(one_of), len(payload_keys))
+        for branch in one_of:
+            required = branch.get("required", [])
+            self.assertEqual(len(required), 1)
+            primary = required[0]
+            excluded = {
+                item["required"][0]
+                for item in branch.get("not", {}).get("anyOf", [])
+                if item.get("required")
+            }
+            expected = {key for key in payload_keys if key != primary}
+            self.assertEqual(excluded, expected, f"branch {primary!r} missing exclusions")
+
     def test_compatibility_provenance_matches(self) -> None:
         self.assertEqual(
             set(ASSEMBLY_SCHEMA["$defs"]["compatibilitySource"]["enum"]),
@@ -136,6 +152,16 @@ class CanonicalRejectionTest(unittest.TestCase):
     def test_both_payloads_present(self) -> None:
         ir = copy.deepcopy(self.ir)
         ir["flow"] = load("component-valid-flow.json")["sections"][0]["ir"]["flow"]
+        self.assertIn("invalid_component_payload", codes(self.reject(ir)))
+
+    def test_matrix_and_slope_payloads_rejected(self) -> None:
+        ir = copy.deepcopy(self.ir)
+        ir["slope"] = load("component-valid-slope.json")["sections"][0]["ir"]["slope"]
+        self.assertIn("invalid_component_payload", codes(self.reject(ir)))
+
+    def test_waterfall_and_evidence_map_payloads_rejected(self) -> None:
+        ir = load("component-valid-waterfall.json")["sections"][0]["ir"]
+        ir["evidence-map"] = load("component-valid-evidence-map.json")["sections"][0]["ir"]["evidence-map"]
         self.assertIn("invalid_component_payload", codes(self.reject(ir)))
 
     def test_unknown_field(self) -> None:

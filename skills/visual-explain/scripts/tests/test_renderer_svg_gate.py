@@ -94,6 +94,81 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
             render_canonical(section, resolved)
         self.assertIn(RENDERER_FAILURE, {d.code for d in ctx.exception.diagnostics})
 
+    def test_id_less_svg_is_renderer_failure(self) -> None:
+        slope_def = REGISTRY.find("slope", 1)
+        raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        section = CanonicalSection(ir=ir)
+
+        def stub_renderer(section, definition):
+            return RenderResult(
+                markup=(
+                    f'<figure data-ve-component="slope">'
+                    f'<svg viewBox="0 0 600 220"></svg>'
+                    f'</figure>'
+                ),
+                style_asset_ids=("slope.css",),
+                script_asset_ids=(),
+                manifest=RenderManifest(
+                    component_id="slope",
+                    component_version=1,
+                    instance_id=section.ir.id,
+                    consumed_semantic_ids=section.ir.semantic_ids(),
+                    generated_relationship_ids=(),
+                    generated_landmark_ids=(f"{section.ir.id}-caption", f"{section.ir.id}-summary"),
+                    asset_ids=("slope.css",),
+                    asset_digests=(slope_def.assets[0].digest,),
+                    declared_dependencies=(),
+                    fallback_mode="static-content",
+                    svg_root_ids=(),
+                ),
+            )
+
+        resolved = ResolvedComponent(component=slope_def, renderer=stub_renderer)
+        with self.assertRaises(ContractError) as ctx:
+            render_canonical(section, resolved)
+        codes = {d.code for d in ctx.exception.diagnostics}
+        self.assertIn(RENDERER_FAILURE, codes)
+        messages = " ".join(d.message for d in ctx.exception.diagnostics)
+        self.assertIn("id", messages.lower())
+
+    def test_extra_undeclared_svg_with_id_is_renderer_failure(self) -> None:
+        slope_def = REGISTRY.find("slope", 1)
+        raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        section = CanonicalSection(ir=ir)
+        svg_id = f"{section.ir.id}-svg"
+
+        def stub_renderer(section, definition):
+            return RenderResult(
+                markup=(
+                    f'<figure data-ve-component="slope">'
+                    f'<svg id="{svg_id}" viewBox="0 0 600 220"></svg>'
+                    f'<svg id="extra-svg" viewBox="0 0 600 220"></svg>'
+                    f'</figure>'
+                ),
+                style_asset_ids=("slope.css",),
+                script_asset_ids=(),
+                manifest=RenderManifest(
+                    component_id="slope",
+                    component_version=1,
+                    instance_id=section.ir.id,
+                    consumed_semantic_ids=section.ir.semantic_ids(),
+                    generated_relationship_ids=(),
+                    generated_landmark_ids=(f"{section.ir.id}-caption", f"{section.ir.id}-summary", svg_id),
+                    asset_ids=("slope.css",),
+                    asset_digests=(slope_def.assets[0].digest,),
+                    declared_dependencies=(),
+                    fallback_mode="static-content",
+                    svg_root_ids=(svg_id,),
+                ),
+            )
+
+        resolved = ResolvedComponent(component=slope_def, renderer=stub_renderer)
+        with self.assertRaises(ContractError) as ctx:
+            render_canonical(section, resolved)
+        self.assertIn(RENDERER_FAILURE, {d.code for d in ctx.exception.diagnostics})
+
     def test_non_allowlisted_component_cannot_declare_svg_root_ids(self) -> None:
         stairs_def = REGISTRY.find("stairs", 1)
         raw = json.loads((TESTS / "component-valid-stairs.json").read_text("utf-8"))

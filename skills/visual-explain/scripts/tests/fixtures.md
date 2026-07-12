@@ -175,6 +175,7 @@ S6 スライスで追加したスロープ・論拠地図と renderer-svg ゲー
 | `component-bad-evidence-map-too-many-evidence.json` | 根拠5件 → `evidence_map_structure_violation` |
 | `component-bad-evidence-map-nested.json` | 入れ子 evidence → `invalid_component_payload` |
 | `component-bad-evidence-map-references.html` | DOM 参照欠落/宙吊り → `evidence_map_structure_violation` |
+| `component-bad-evidence-map-empty-cert.html` | 空の `ve-cert` 要素 → `evidence_map_structure_violation` |
 | `component-bad-evidence-map-structure.html` | 根拠5件 DOM → `evidence_map_structure_violation` |
 | `component-bad-svg-foreign-section.html` | 互換節内 SVG → `renderer_svg_violation` |
 | `component-bad-svg-rect-element.html` | 許可外要素 `rect` → `renderer_svg_violation` |

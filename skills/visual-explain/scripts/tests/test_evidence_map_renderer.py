@@ -136,6 +136,14 @@ class EvidenceMapReferencesFixtureTest(unittest.TestCase):
         violations = [c for c in codes if c == EVIDENCE_MAP_STRUCTURE_VIOLATION]
         self.assertGreaterEqual(len(violations), 2)
 
+    def test_empty_ve_cert_bad_fixture(self) -> None:
+        raw = (TESTS / "component-bad-evidence-map-empty-cert.html").read_text("utf-8")
+        codes = [d.code for d in check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)]
+        self.assertIn(EVIDENCE_MAP_STRUCTURE_VIOLATION, codes)
+        self.assertIn("ve-cert", " ".join(d.message for d in check_final_document(
+            raw, SKELETON, REGISTRY, components_dir=COMPONENTS
+        ) if d.code == EVIDENCE_MAP_STRUCTURE_VIOLATION))
+
 
 if __name__ == "__main__":
     unittest.main()

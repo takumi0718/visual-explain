@@ -65,14 +65,14 @@ def _attr(value: str) -> str:
 _SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
 
 
-def _svg_root_ids(markup: str) -> tuple[str, ...]:
-    ids: list[str] = []
+def _svg_open_tags(markup: str) -> tuple[str | None, ...]:
+    """Return the id attribute value for every ``<svg>`` open tag (``None`` if absent)."""
+    roots: list[str | None] = []
     for match in _SVG_OPEN_RE.finditer(markup):
         attrs = match.group(1)
         id_match = re.search(r'\bid="([^"]+)"', attrs)
-        if id_match:
-            ids.append(id_match.group(1))
-    return tuple(ids)
+        roots.append(id_match.group(1) if id_match else None)
+    return tuple(roots)
 
 
 def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
@@ -134,9 +134,16 @@ def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
         if dom_edges != {(e.source, e.target, e.relation) for e in section.ir.flow.edges}:
             failures.append(Diagnostic(RENDERER_FAILURE, f"renderer '{component.key}' の flow 端点/関係が IR と不一致です"))
 
-    emitted_svg_ids = _svg_root_ids(result.markup) if isinstance(result.markup, str) else ()
+    svg_opens = _svg_open_tags(result.markup) if isinstance(result.markup, str) else ()
     declared_svg_ids = tuple(manifest.svg_root_ids)
-    if emitted_svg_ids != declared_svg_ids:
+    if any(svg_id is None for svg_id in svg_opens):
+        failures.append(Diagnostic(RENDERER_FAILURE,
+                                   f"renderer '{component.key}' の <svg> には id 属性が必須です"))
+    emitted_svg_ids = tuple(svg_id for svg_id in svg_opens if svg_id is not None)
+    if len(svg_opens) != len(declared_svg_ids):
+        failures.append(Diagnostic(RENDERER_FAILURE,
+                                   f"renderer '{component.key}' の <svg> 数が manifest.svg_root_ids と不一致です"))
+    elif emitted_svg_ids != declared_svg_ids:
         failures.append(Diagnostic(RENDERER_FAILURE,
                                    f"renderer '{component.key}' の SVG ルートが manifest.svg_root_ids と不一致です"))
     if declared_svg_ids and component.key not in RENDERER_SVG_ALLOWLIST:
