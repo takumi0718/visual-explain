@@ -97,6 +97,44 @@ class EnumerationMarkupTest(unittest.TestCase):
         ir, result = render_fixture("component-valid-enumeration-columns.json")
         self.assertIn("ve-enum-columns", result.markup)
 
+    def test_description_is_outside_vertical_concept(self) -> None:
+        _, result = render_fixture("component-valid-enumeration.json")
+        concepts = re.findall(
+            r'<div class="[^"]*ve-enum-concept[^"]*">(.*?)</div>',
+            result.markup,
+            re.DOTALL,
+        )
+        self.assertEqual(len(concepts), 3)
+        self.assertEqual(result.markup.count('class="ve-enum-description"'), 3)
+        self.assertTrue(all("ve-enum-description" not in concept for concept in concepts))
+
+    def test_columns_emit_concept_then_description(self) -> None:
+        _, result = render_fixture("component-valid-enumeration-columns.json")
+        self.assertRegex(
+            result.markup,
+            r've-enum-concept[^>]*>.*?</div><ul class="ve-enum-description">',
+        )
+
+    def test_concept_only_emits_no_description_region(self) -> None:
+        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
+            item.pop("description")
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        result = render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
+        self.assertNotIn("ve-enum-description", result.markup)
+        self.assertNotIn("ve-enum-has-description", result.markup)
+
+    def test_takeaway_class_is_on_concept_not_outer_item(self) -> None:
+        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["takeawayTargetIds"] = ["item-a"]
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        result = render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
+        self.assertRegex(
+            result.markup,
+            r'<li class="ve-enum-block" data-ve-semantic-id="item-a" data-ve-takeaway="true">',
+        )
+        self.assertIn('<div class="ve-enum-concept ve-takeaway-target">', result.markup)
+
     def test_no_flow_or_matrix_relation_attributes(self) -> None:
         self.assertNotIn("data-ve-from", self.markup)
         self.assertNotIn("data-ve-to", self.markup)

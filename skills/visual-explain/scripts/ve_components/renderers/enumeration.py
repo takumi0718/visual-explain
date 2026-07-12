@@ -29,9 +29,9 @@ def render_enumeration(section: CanonicalSection, definition) -> RenderResult:
 
     blocks: list[str] = []
     for index, item in enumerate(enumeration.items, start=1):
-        cls_parts = ["ve-enum-block"]
+        concept_classes = ["ve-enum-concept"]
         if item.id in takeaway:
-            cls_parts.append("ve-takeaway-target")
+            concept_classes.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if item.id in takeaway else ""
         emphasis_html = (
             f'<span class="ve-emphasis">{_esc(emphasis_by_id[item.id])}</span>'
@@ -43,17 +43,22 @@ def render_enumeration(section: CanonicalSection, definition) -> RenderResult:
             heading = f'<span class="ve-enum-number" aria-hidden="true">{index}</span>'
             if item.title:
                 heading += f'<span class="ve-enum-title">{_esc(item.title)}</span>'
-        desc_html = ""
+        concept_html = f'<div class="{" ".join(concept_classes)}">{heading}</div>'
+        description_html = ""
         if item.description:
             lines = "".join(f"<li>{_esc(line)}</li>" for line in item.description)
-            desc_html = f'<ul class="ve-enum-description">{lines}</ul>'
+            description_html = f'<ul class="ve-enum-description">{lines}</ul>'
         blocks.append(
-            f'<li class="{" ".join(cls_parts)}" data-ve-semantic-id="{_esc(item.id)}"{takeaway_attr}>'
-            f'{heading}{desc_html}{emphasis_html}</li>'
+            f'<li class="ve-enum-block" data-ve-semantic-id="{_esc(item.id)}"{takeaway_attr}>'
+            f'{concept_html}{description_html}{emphasis_html}</li>'
         )
 
-    layout_cls = "ve-enum-columns" if enumeration.presentation == "columns" else "ve-enum-list-centered"
-    list_markup = f'<ul class="ve-enum-items {layout_cls}">{"".join(blocks)}</ul>'
+    layout_classes = [
+        "ve-enum-columns" if enumeration.presentation == "columns" else "ve-enum-list-centered"
+    ]
+    if enumeration.items and enumeration.items[0].description:
+        layout_classes.append("ve-enum-has-description")
+    list_markup = f'<ul class="ve-enum-items {" ".join(layout_classes)}">{"".join(blocks)}</ul>'
 
     notes = []
     for cert in ir.certainty:
