@@ -32,10 +32,10 @@
         },
         "chevron": {
           "steps": [
-            {"id": "h1", "description": ["要件を確定する"]},
-            {"id": "h2", "description": ["設計をレビューする"]},
-            {"id": "h3", "description": ["実装を完了する"]},
-            {"id": "h4", "description": ["検証を通過する"]}
+            {"id": "h1", "title": "要件確定", "description": ["要件を確定する"]},
+            {"id": "h2", "title": "設計確認", "description": ["設計をレビューする"]},
+            {"id": "h3", "title": "実装", "description": ["実装を完了する"]},
+            {"id": "h4", "title": "検証", "description": ["検証を通過する"]}
           ],
           "orientation": "horizontal",
           "blockContent": "number",

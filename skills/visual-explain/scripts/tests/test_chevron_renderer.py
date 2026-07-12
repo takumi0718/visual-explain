@@ -57,6 +57,7 @@ def _steps(n: int, *, horizontal: bool = False) -> list[dict]:
     for i in range(1, n + 1):
         step: dict = {"id": f"s{i}"}
         if horizontal:
+            step["title"] = f"段{i}"
             step["description"] = [f"説明{i}（横）"]
         else:
             step["title"] = f"段{i}"
@@ -115,27 +116,42 @@ class ChevronValidationTest(unittest.TestCase):
         ir["selection"]["matchedCapabilities"] = ["linear-sequence", "closed-loop"]
         expect_violation(ir)
 
-    def test_rejects_title_in_horizontal_orientation(self) -> None:
-        ir = _base_ir(
+    def test_horizontal_number_accepts_titles_with_descriptions(self) -> None:
+        result = validate_raw(_base_ir(
             orientation="horizontal",
             steps=[
-                {"id": "s1", "title": "禁止", "description": ["説明1"]},
-                {"id": "s2", "description": ["説明2"]},
-                {"id": "s3", "description": ["説明3"]},
+                {"id": "s1", "title": "計画", "description": ["要件を確定する"]},
+                {"id": "s2", "title": "準備", "description": ["実施条件を整える"]},
+                {"id": "s3", "title": "実施", "description": ["計画を実行する"]},
             ],
-        )
-        expect_violation(ir)
+        ))
+        self.assertEqual([step.title for step in result.chevron.steps], ["計画", "準備", "実施"])
 
-    def test_rejects_horizontal_number_mode_without_descriptions(self) -> None:
-        ir = _base_ir(
+    def test_horizontal_number_accepts_titles_without_descriptions(self) -> None:
+        validate_raw(_base_ir(
+            orientation="horizontal",
+            steps=[
+                {"id": "s1", "title": "計画"},
+                {"id": "s2", "title": "準備"},
+                {"id": "s3", "title": "実施"},
+            ],
+        ))
+
+    def test_horizontal_number_rejects_description_without_title(self) -> None:
+        expect_violation(_base_ir(
             orientation="horizontal",
             steps=[
                 {"id": "s1", "description": ["説明1"]},
-                {"id": "s2"},
+                {"id": "s2", "description": ["説明2"]},
                 {"id": "s3", "description": ["説明3"]},
             ],
-        )
-        expect_violation(ir)
+        ))
+
+    def test_vertical_number_rejects_description_without_title(self) -> None:
+        expect_violation(_base_ir(steps=[
+            {"id": "s1", "description": ["説明1"]},
+            {"id": "s2", "description": ["説明2"]},
+        ]))
 
     def test_vertical_description_accepts_40_char_line(self) -> None:
         line = "あ" * 40
@@ -158,9 +174,9 @@ class ChevronValidationTest(unittest.TestCase):
         ir = _base_ir(
             orientation="horizontal",
             steps=[
-                {"id": "s1", "description": [line]},
-                {"id": "s2", "description": ["短"]},
-                {"id": "s3", "description": ["短"]},
+                {"id": "s1", "title": "A", "description": [line]},
+                {"id": "s2", "title": "B", "description": ["短"]},
+                {"id": "s3", "title": "C", "description": ["短"]},
             ],
         )
         validate_raw(ir)
@@ -170,9 +186,9 @@ class ChevronValidationTest(unittest.TestCase):
         ir = _base_ir(
             orientation="horizontal",
             steps=[
-                {"id": "s1", "description": [line]},
-                {"id": "s2", "description": ["短"]},
-                {"id": "s3", "description": ["短"]},
+                {"id": "s1", "title": "A", "description": [line]},
+                {"id": "s2", "title": "B", "description": ["短"]},
+                {"id": "s3", "title": "C", "description": ["短"]},
             ],
         )
         expect_violation(ir)
@@ -202,9 +218,9 @@ class ChevronValidationTest(unittest.TestCase):
         ir = _base_ir(
             orientation="horizontal",
             steps=[
-                {"id": "s1", "description": ["行1", "行2"]},
-                {"id": "s2", "description": ["行1", "行2"]},
-                {"id": "s3", "description": ["行1", "行2"]},
+                {"id": "s1", "title": "A", "description": ["行1", "行2"]},
+                {"id": "s2", "title": "B", "description": ["行1", "行2"]},
+                {"id": "s3", "title": "C", "description": ["行1", "行2"]},
             ],
         )
         validate_raw(ir)
@@ -213,9 +229,9 @@ class ChevronValidationTest(unittest.TestCase):
         ir = _base_ir(
             orientation="horizontal",
             steps=[
-                {"id": "s1", "description": ["行1", "行2", "行3"]},
-                {"id": "s2", "description": ["短"]},
-                {"id": "s3", "description": ["短"]},
+                {"id": "s1", "title": "A", "description": ["行1", "行2", "行3"]},
+                {"id": "s2", "title": "B", "description": ["短"]},
+                {"id": "s3", "title": "C", "description": ["短"]},
             ],
         )
         expect_violation(ir)
@@ -332,28 +348,6 @@ class ChevronMarkupTest(unittest.TestCase):
         self.assertIn(first_title, sentence)
         self.assertRegex(sentence, rf"最終段〈{re.escape(last_title)}〉から先頭段〈{re.escape(first_title)}〉へ戻る")
         self.assertLess(sentence.index(first_title), sentence.index("へ戻る"))
-
-    def test_number_mode_loop_falls_back_to_ordinal_when_no_label_or_title(self) -> None:
-        from ve_components.renderers.chevron import render_chevron
-        raw = _base_ir(
-            loop=True,
-            blockContent="number",
-            steps=[
-                {"id": "s1", "description": ["行1"]},
-                {"id": "s2", "description": ["行2"]},
-                {"id": "s3", "description": ["行3"]},
-            ],
-        )
-        raw["relationship"]["capabilities"] = ["linear-sequence", "closed-loop"]
-        raw["selection"]["matchedCapabilities"] = ["linear-sequence", "closed-loop"]
-        ir = validate_canonical_section(raw)
-        result = render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
-        hidden = re.search(r'<ul class="ve-chevron-loop-sentence visually-hidden">(.*?)</ul>', result.markup, re.DOTALL)
-        self.assertIsNotNone(hidden)
-        sentence = hidden.group(1)
-        self.assertIn("ステップ 3", sentence)
-        self.assertIn("ステップ 1", sentence)
-        self.assertRegex(sentence, r"最終段〈ステップ 3〉から先頭段〈ステップ 1〉へ戻る")
 
     def test_horizontal_variant_has_no_loop_rail(self) -> None:
         _, result = render_fixture("component-valid-chevron-horizontal.json")

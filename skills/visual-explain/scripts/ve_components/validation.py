@@ -664,14 +664,10 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
         else:
             if label is not None:
                 col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:number では label は禁止です", p)
-            if title is not None:
-                if not _nonblank_str(title):
-                    col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は空にできません", p)
-                elif len(str(title)) > 30:
-                    col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は30字以内です", p)
-            if not (title and str(title).strip()) and not desc_lines:
-                col.add(ENUMERATION_STRUCTURE_VIOLATION,
-                        "number モードでは各 item に title か description が必要です", p)
+            if not _nonblank_str(title):
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:number では title が必須です", p)
+            elif len(str(title)) > 30:
+                col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は30字以内です", p)
 
         items.append(EnumerationItem(
             id=iid, label=label if isinstance(label, str) else None,
@@ -764,9 +760,6 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
                         desc_lines.append(line)
         has_description.append(bool(desc_lines))
 
-        if orientation == "horizontal" and title is not None:
-            col.add(CHEVRON_STRUCTURE_VIOLATION, "orientation:horizontal では title は禁止です", p)
-
         if block_content == "label":
             if not _nonblank_str(label):
                 col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:label では label が必須です", p)
@@ -777,18 +770,10 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
         else:
             if label is not None:
                 col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:number では label は禁止です", p)
-            if title is not None and orientation != "horizontal":
-                if not _nonblank_str(title):
-                    col.add(CHEVRON_STRUCTURE_VIOLATION, "title は空にできません", p)
-                elif len(str(title)) > 30:
-                    col.add(CHEVRON_STRUCTURE_VIOLATION, "title は30字以内です", p)
-            if orientation == "horizontal":
-                if not desc_lines:
-                    col.add(CHEVRON_STRUCTURE_VIOLATION,
-                            "horizontal number モードでは各 step に description が必要です", p)
-            elif not (title and str(title).strip()) and not desc_lines:
-                col.add(CHEVRON_STRUCTURE_VIOLATION,
-                        "number モードでは各 step に title か description が必要です", p)
+            if not _nonblank_str(title):
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:number では title が必須です", p)
+            elif len(str(title)) > 30:
+                col.add(CHEVRON_STRUCTURE_VIOLATION, "title は30字以内です", p)
 
         steps.append(ChevronStep(
             id=sid, label=label if isinstance(label, str) else None,

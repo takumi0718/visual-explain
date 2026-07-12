@@ -6,6 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
+from ve_components.diagnostics import ContractError
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry
 from ve_components.renderers.enumeration import render_enumeration
@@ -65,6 +66,21 @@ class EnumerationMarkupTest(unittest.TestCase):
         raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
         for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
             self.assertNotIn("number", item)
+
+    def test_number_mode_requires_title_even_with_description(self) -> None:
+        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        items = raw["sections"][0]["ir"]["enumeration"]["items"]
+        for item in items:
+            item["description"] = ["全項目に説明がある"]
+        item = items[0]
+        item.pop("title")
+        item["description"] = ["説明だけではコンセプトにならない"]
+        with self.assertRaises(ContractError) as ctx:
+            validate_canonical_section(raw["sections"][0]["ir"])
+        self.assertIn(
+            "enumeration_structure_violation",
+            {diagnostic.code for diagnostic in ctx.exception.diagnostics},
+        )
 
     def test_item_container_is_unordered_not_ordered_list(self) -> None:
         self.assertIn('<ul class="ve-enum-items', self.markup)

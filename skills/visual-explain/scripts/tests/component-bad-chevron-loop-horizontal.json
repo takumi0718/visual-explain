@@ -18,9 +18,9 @@
         "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
         "chevron": {
           "steps": [
-            {"id": "s1", "description": ["説明1"]},
-            {"id": "s2", "description": ["説明2"]},
-            {"id": "s3", "description": ["説明3"]}
+            {"id": "s1", "title": "計画", "description": ["説明1"]},
+            {"id": "s2", "title": "準備", "description": ["説明2"]},
+            {"id": "s3", "title": "実施", "description": ["説明3"]}
           ],
           "orientation": "horizontal",
           "blockContent": "number",

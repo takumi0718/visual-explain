@@ -46,7 +46,7 @@ class LayerTwoBuildRejectionTest(unittest.TestCase):
         "component-bad-enumeration-empty-block.json",
         "component-bad-chevron-loop-horizontal.json",
         "component-bad-chevron-loop-capability-mismatch.json",
-        "component-bad-chevron-title-in-horizontal.json",
+        "component-bad-chevron-missing-title-horizontal.json",
         "component-bad-chevron-no-visible-content.json",
         "component-bad-chevron-too-few-horizontal.json",
     ]

@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "document": {
-    "id": "bad-chevron-title-h",
-    "title": "横型に title 禁止",
-    "summary": "horizontal では title を持てない。"
+    "id": "bad-chevron-missing-title-h",
+    "title": "横型番号チェブロンのタイトル欠落",
+    "summary": "number モードでは horizontal でも全 step に title が必要。"
   },
   "sections": [
     {
       "kind": "canonical",
       "ir": {
-        "id": "sec-bad-title-h",
+        "id": "sec-bad-missing-title-h",
         "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
         "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
-        "caption": "title 禁止",
+        "caption": "title 欠落",
         "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
         "sources": [{"id": "src-1", "label": "出典"}],
         "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
         "chevron": {
           "steps": [
-            {"id": "s1", "title": "禁止", "description": ["説明1"]},
+            {"id": "s1", "title": "計画", "description": ["説明1"]},
             {"id": "s2", "description": ["説明2"]},
-            {"id": "s3", "description": ["説明3"]}
+            {"id": "s3", "title": "実施", "description": ["説明3"]}
           ],
           "orientation": "horizontal",
           "blockContent": "number",
