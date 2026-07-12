@@ -25,7 +25,7 @@
 
 ```text
 $ cd skills/visual-explain/scripts && python3 -m pytest tests -q
-442 passed, 111 subtests passed in ~4.2s
+449 passed, 111 subtests passed in 4.09s
 
 $ python3 build_explainer.py --assembly tests/component-valid-waterfall.json --output tests/waterfall-doc.html
 OK: tests/waterfall-doc.html

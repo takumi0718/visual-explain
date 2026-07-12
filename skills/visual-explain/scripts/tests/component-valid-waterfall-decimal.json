@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "waterfall-decimal-demo",
+    "title": "Decimal displayPrecision 検証",
+    "summary": "build_explainer.main が 0.1 を Decimal として受理する fixture。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-waterfall-decimal",
+        "relationship": {
+          "kind": "additive-bridge",
+          "capabilities": ["additive-bridging"]
+        },
+        "selection": {
+          "component": "waterfall",
+          "version": 1,
+          "matchedCapabilities": ["additive-bridging"]
+        },
+        "caption": "Decimal 精度のブリッジ",
+        "certainty": [
+          {"id": "cert-dec", "level": "confirmed", "statement": "displayPrecision 0.1 を検証。"}
+        ],
+        "sources": [
+          {"id": "src-dec", "label": "算術テスト"}
+        ],
+        "accessibility": {
+          "label": "ウォーターフォール",
+          "summary": "0.1 精度の加算ブリッジ。"
+        },
+        "waterfall": {
+          "displayPrecision": 0.1,
+          "orientation": "bars",
+          "start": {"id": "wf-start", "label": "開始", "value": 10, "valueText": "10件"},
+          "steps": [{"id": "wf-step", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"}],
+          "end": {"id": "wf-end", "label": "終了", "value": 15, "valueText": "15件"}
+        }
+      }
+    }
+  ]
+}

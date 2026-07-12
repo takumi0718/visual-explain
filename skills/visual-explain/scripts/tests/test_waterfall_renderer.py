@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import re
-import tempfile
 import unittest
 from decimal import Decimal
 from pathlib import Path
@@ -186,51 +185,72 @@ class WaterfallValidationTest(unittest.TestCase):
 
 
 class BuildDecimalParsingTest(unittest.TestCase):
-    def test_build_parses_floats_as_decimal(self) -> None:
-        fixture = {
-            "schemaVersion": 1,
-            "document": {"id": "d", "title": "t", "summary": "s"},
-            "sections": [{
-                "kind": "canonical",
-                "ir": _base_ir(displayPrecision=0.1),
-            }],
-        }
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
-            json.dump(fixture, handle)
-            assembly_path = Path(handle.name)
-        out = Path(tempfile.gettempdir()) / "ve-wf-decimal-build.html"
+    FIXTURE = TESTS / "component-valid-waterfall-decimal.json"
+    SKELETON = SKILL / "assets" / "skeleton.html"
+    REGISTRY = SKILL / "assets" / "components" / "registry.json"
+
+    def _main_argv(self, output: Path) -> list[str]:
+        return [
+            "--assembly", str(self.FIXTURE),
+            "--output", str(output),
+            "--skeleton", str(self.SKELETON),
+            "--registry", str(self.REGISTRY),
+        ]
+
+    def test_main_parse_float_decimal_reaches_validation(self) -> None:
+        import build_explainer as be
+
+        captured: list[object] = []
+        original_va = be.validate_assembly
+
+        def tracking_validate(raw):
+            prec = raw["sections"][0]["ir"]["waterfall"]["displayPrecision"]
+            captured.append(("raw", prec, type(prec)))
+            result = original_va(raw)
+            section = result.sections[0]
+            from ve_components.model import CanonicalSection
+            assert isinstance(section, CanonicalSection)
+            captured.append(("validated", section.ir.waterfall.display_precision,
+                             type(section.ir.waterfall.display_precision)))
+            return result
+
+        out = TESTS / "_tmp-decimal-main-build.html"
         out.unlink(missing_ok=True)
         try:
-            import build_explainer as be
-            from build_explainer import BuildPaths, build_to_path
-
-            raw_assembly = json.loads(assembly_path.read_text("utf-8"), parse_float=Decimal)
-            paths = BuildPaths(
-                skeleton=SKILL / "assets" / "skeleton.html",
-                registry=SKILL / "assets" / "components" / "registry.json",
-                components_dir=SKILL / "assets" / "components",
-                output=out,
-            )
-            captured: list[object] = []
-            original_va = be.validate_assembly
-
-            def tracking_validate(raw):
-                result = original_va(raw)
-                section = result.sections[0]
-                from ve_components.model import CanonicalSection
-                assert isinstance(section, CanonicalSection)
-                captured.append(section.ir.waterfall.display_precision)
-                return result
-
             with patch.object(be, "validate_assembly", tracking_validate):
-                build_to_path(raw_assembly, paths)
+                rc = be.main(self._main_argv(out))
+            self.assertEqual(rc, 0, "build_explainer.main should succeed")
             self.assertTrue(out.exists())
-            self.assertEqual(len(captured), 1)
-            self.assertIsInstance(captured[0], Decimal)
-            self.assertEqual(captured[0], Decimal("0.1"))
-            self.assertNotIsInstance(captured[0], float)
+            self.assertEqual(len(captured), 2)
+            _, raw_prec, raw_type = captured[0]
+            _, val_prec, val_type = captured[1]
+            self.assertIsInstance(raw_prec, Decimal)
+            self.assertEqual(raw_prec, Decimal("0.1"))
+            self.assertNotIsInstance(raw_prec, float)
+            self.assertIsInstance(val_prec, Decimal)
+            self.assertEqual(val_prec, Decimal("0.1"))
+            self.assertIs(raw_type, val_type)
         finally:
-            assembly_path.unlink(missing_ok=True)
+            out.unlink(missing_ok=True)
+
+    def test_main_without_parse_float_decimal_rejected_at_validation(self) -> None:
+        """Regression guard: removing parse_float=Decimal must fail before a clean build."""
+        import build_explainer as be
+
+        real_loads = be.json.loads
+
+        def loads_as_binary_float(*args, **kwargs):
+            kwargs.pop("parse_float", None)
+            return real_loads(*args, **kwargs)
+
+        out = TESTS / "_tmp-decimal-main-red.html"
+        out.unlink(missing_ok=True)
+        try:
+            with patch.object(be.json, "loads", loads_as_binary_float):
+                rc = be.main(self._main_argv(out))
+            self.assertEqual(rc, 1)
+            self.assertFalse(out.exists())
+        finally:
             out.unlink(missing_ok=True)
 
 
