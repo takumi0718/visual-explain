@@ -66,6 +66,11 @@ LOGIC_TREE_STRUCTURE_VIOLATION = "logic_tree_structure_violation"
 WATERFALL_STRUCTURE_VIOLATION = "waterfall_structure_violation"
 WATERFALL_ARITHMETIC_MISMATCH = "waterfall_arithmetic_mismatch"
 
+# S6 — slope / evidence-map / renderer-svg codes.
+SLOPE_STRUCTURE_VIOLATION = "slope_structure_violation"
+EVIDENCE_MAP_STRUCTURE_VIOLATION = "evidence_map_structure_violation"
+RENDERER_SVG_VIOLATION = "renderer_svg_violation"
+
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
 
@@ -107,6 +112,9 @@ ALL_CODES = frozenset({
     LOGIC_TREE_STRUCTURE_VIOLATION,
     WATERFALL_STRUCTURE_VIOLATION,
     WATERFALL_ARITHMETIC_MISMATCH,
+    SLOPE_STRUCTURE_VIOLATION,
+    EVIDENCE_MAP_STRUCTURE_VIOLATION,
+    RENDERER_SVG_VIOLATION,
 })
 
 

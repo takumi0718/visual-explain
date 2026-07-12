@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "slope-demo",
+    "title": "2時点比較スロープ",
+    "summary": "増加・減少・横ばいの3系列を示すスロープ図。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-slope",
+        "relationship": {
+          "kind": "two-point-change",
+          "capabilities": ["two-point-comparison"]
+        },
+        "selection": {
+          "component": "slope",
+          "version": 1,
+          "matchedCapabilities": ["two-point-comparison"]
+        },
+        "caption": "主要指標の推移",
+        "certainty": [
+          {"id": "cert-slope", "level": "confirmed", "statement": "台帳値に基づく。"}
+        ],
+        "sources": [
+          {"id": "src-slope", "label": "月次台帳", "detail": "2026Q1。"}
+        ],
+        "accessibility": {
+          "label": "2時点比較スロープ",
+          "summary": "開始時点と終了時点の値変化を比較する。"
+        },
+        "slope": {
+          "axes": {"fromLabel": "開始", "toLabel": "終了"},
+          "unit": "件",
+          "items": [
+            {
+              "id": "sl-up",
+              "label": "売上",
+              "fromValue": 10,
+              "toValue": 40,
+              "fromValueText": "10件",
+              "toValueText": "40件",
+              "tone": "positive"
+            },
+            {
+              "id": "sl-down",
+              "label": "欠損",
+              "fromValue": 30,
+              "toValue": 5,
+              "fromValueText": "30件",
+              "toValueText": "5件",
+              "tone": "warning"
+            },
+            {
+              "id": "sl-flat",
+              "label": "据置",
+              "fromValue": 20,
+              "toValue": 20,
+              "fromValueText": "据置",
+              "toValueText": "据置",
+              "tone": "neutral"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

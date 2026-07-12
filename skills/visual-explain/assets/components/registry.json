@@ -383,6 +383,102 @@
           "digest": "11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f"
         }
       ]
+    },
+    {
+      "id": "slope",
+      "version": 1,
+      "relationshipKind": "two-point-change",
+      "capabilities": [
+        "two-point-comparison"
+      ],
+      "semanticResponsibility": "2時点比較のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "axes",
+        "unit",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "決定的 SVG ジオメトリで2時点変化を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と SVG 代替テキスト。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "slope-structure",
+        "renderer-svg"
+      ],
+      "renderer": "slope@1",
+      "assets": [
+        {
+          "id": "slope.css",
+          "slot": "styles",
+          "path": "slope.css",
+          "digest": "21d450d28ece001f4483e90f75c4fd4a6881737e459a94bcf35f434a7e3c08f2"
+        }
+      ]
+    },
+    {
+      "id": "evidence-map",
+      "version": 1,
+      "relationshipKind": "claim-support",
+      "capabilities": [
+        "claim-support-mapping"
+      ],
+      "semanticResponsibility": "結論と根拠の1段マッピングのみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "conclusion",
+        "evidence"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "確度参照付きの静的な論拠地図を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と確度バッジ。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "evidence-map-references"
+      ],
+      "renderer": "evidence-map@1",
+      "assets": [
+        {
+          "id": "evidence-map.css",
+          "slot": "styles",
+          "path": "evidence-map.css",
+          "digest": "f988fe3d3d93658d4ff42790cd26d5b2101c91706d246d3cf463f9d8676b0547"
+        }
+      ]
     }
   ]
 }

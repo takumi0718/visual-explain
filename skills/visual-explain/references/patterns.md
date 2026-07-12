@@ -241,9 +241,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
@@ -254,6 +254,8 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **優先の階層（上ほど重要・少ない）** → `pyramid`（`layered-priority` / `priority-layering`）。**単なる並列3項目は enumeration、優先構造だけ pyramid** — pyramid は誤用しない。
 - **到達したら留まる状態（成熟度・移行フェーズ）** → `stairs`（`staged-maturity` / `maturity-staging`）。**流れる工程は chevron**。
 - **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。`orientation: "bars"`（行型・既定）は狭い画面向き、`orientation: "columns"`（横並び縦棒）は広い画面向き。**columns は狭い画面では bars を推奨**（レンダラは縮退せず横スクロールで溢れさせる）。
+- **2時点比較（同一単位の before/after）** → `slope`（`two-point-change` / `two-point-comparison`）。**3点以上の時系列は timeline か文章へ** — item は最大5件だが各 item は2値のみ。
+- **結論と根拠の1段マッピング** → `evidence-map`（`claim-support` / `claim-support-mapping`）。**根拠の根拠は図を分割** — 階層は1段のみ。
 
 ### matrix（二軸分類・交差比較）
 
@@ -520,6 +522,66 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
           {"id": "wf-s2", "label": "回復", "delta": 45, "tone": "positive", "valueText": "+45件"}
         ],
         "end": {"id": "wf-end", "label": "終了", "value": 25, "valueText": "25件"}
+      }
+    }
+  }]
+}
+```
+
+### slope（2時点比較）
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-slope", "title": "2時点比較", "summary": "同一単位で開始と終了を比較する。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-slope",
+      "relationship": {"kind": "two-point-change", "capabilities": ["two-point-comparison"]},
+      "selection": {"component": "slope", "version": 1, "matchedCapabilities": ["two-point-comparison"]},
+      "caption": "主要指標の推移",
+      "certainty": [{"id": "sl-cert", "level": "confirmed", "statement": "台帳値。"}],
+      "sources": [{"id": "sl-src", "label": "月次台帳"}],
+      "accessibility": {"label": "スロープ", "summary": "2時点の値変化。"},
+      "slope": {
+        "axes": {"fromLabel": "開始", "toLabel": "終了"},
+        "unit": "件",
+        "items": [{
+          "id": "sl-1", "label": "売上", "fromValue": 10, "toValue": 40,
+          "fromValueText": "10件", "toValueText": "40件", "tone": "positive"
+        }]
+      }
+    }
+  }]
+}
+```
+
+### evidence-map（論拠地図）
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-em", "title": "論拠地図", "summary": "結論と根拠の対応。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-em",
+      "relationship": {"kind": "claim-support", "capabilities": ["claim-support-mapping"]},
+      "selection": {"component": "evidence-map", "version": 1, "matchedCapabilities": ["claim-support-mapping"]},
+      "caption": "移行判断の論拠",
+      "certainty": [
+        {"id": "em-cert", "level": "confirmed", "statement": "監査済み。"},
+        {"id": "em-inf", "level": "inferred", "statement": "推定。"}
+      ],
+      "sources": [{"id": "em-src", "label": "報告書"}],
+      "accessibility": {"label": "論拠地図", "summary": "結論1件と根拠2件。"},
+      "evidence-map": {
+        "conclusion": {"id": "em-conc", "label": "移行を開始すべき"},
+        "evidence": [
+          {"id": "em-e1", "label": "コスト増加", "certaintyRef": "em-cert", "sourceRef": "em-src"},
+          {"id": "em-e2", "label": "期間見積", "certaintyRef": "em-inf"}
+        ]
       }
     }
   }]

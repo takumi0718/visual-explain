@@ -159,12 +159,13 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 昇格済みの `matrix`、`flow`、`enumeration`、`chevron` は骨格とコンポーネントで所有権を分ける。
 
 - **骨格**がグローバルトークン・固定領域・テーマ・固定 JavaScript を所有する。これらのバイトは1つも変更しない。
-- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]` を根に持つ規則だけを書き、骨格トークンを再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
-- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
+- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]`、slope は `[data-ve-component="slope"]`、evidence-map は `[data-ve-component="evidence-map"]` を根に持つ規則だけを書き、骨格トークンを再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
+- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
 - CSS は意味の可読性・既存トークン・名前空間・静的アクセシビリティ・レスポンシブ順序だけに限る。狭い画面では積み重ねてよいが、意味的な読み順を反転しない。美的レビューは本スライスの範囲外。
 - **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。
-- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は行型6行（steps 1〜4）/横並び9列（steps 1〜7）。超過は分割か縮退。
+- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は行型6行（steps 1〜4）/横並び9列（steps 1〜7）、slope は最大5項目、evidence-map は根拠4件。超過は分割か縮退。
 - **waterfall の幾何は補助・valueText が主**: 累積オフセットは事前生成の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）で表現する。読者への数値伝達は必ず `valueText` で行い、幾何の量子化は情報を失わない補助である。
+- **renderer-svg ゲート（slope のみ）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@1"}` の canonical セクション内だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（`viewBox` 完全一致 `0 0 600 220`）。互換節経由の SVG 持込も拒否する。
 - **信頼アセットは単一の fail-closed ゲート**として扱う。レジストリの ID/バージョン/ダイジェスト、レンダラ許可リスト、マニフェスト宣言、名前空間、スロット種別、CSP、外部参照なしをまとめて満たさない資産は拒否する。CSS を変更したら `shasum -a 256` で再計算し、`registry.json` のダイジェストをワイルドカードや初回信頼ではなく厳密な値で更新する。
 
 ## 新コンポーネントの拡張ゲート（10 手順）

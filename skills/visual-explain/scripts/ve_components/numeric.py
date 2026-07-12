@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
 
-from .model import WaterfallPayload
+from .model import SlopePayload, WaterfallPayload
 
 
 def is_numeric(value: object) -> bool:
@@ -39,3 +39,20 @@ def waterfall_scale_values(payload: WaterfallPayload) -> tuple[list[Decimal], De
     lo = min(values)
     hi = max(values)
     return values, lo, hi
+
+
+def slope_scale_values(payload: SlopePayload) -> tuple[Decimal, Decimal]:
+    """Return min and max across all item from/to values (no baseline 0)."""
+    values = [to_decimal(item.from_value) for item in payload.items]
+    values.extend(to_decimal(item.to_value) for item in payload.items)
+    return min(values), max(values)
+
+
+def slope_y(value: int | Decimal, lo: int | Decimal, hi: int | Decimal) -> int:
+    """Map a value into the slope SVG band Y=20..200 (inverted, ROUND_HALF_UP)."""
+    lo_d, hi_d, val = to_decimal(lo), to_decimal(hi), to_decimal(value)
+    if lo_d == hi_d:
+        return 110
+    pct = (val - lo_d) / (hi_d - lo_d) * Decimal(180)
+    offset = int(pct.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return 200 - offset
