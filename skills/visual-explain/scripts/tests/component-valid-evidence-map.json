@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "evidence-map-demo",
+    "title": "論拠地図",
+    "summary": "結論と根拠の対応を示す資料。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-em",
+        "relationship": {
+          "kind": "claim-support",
+          "capabilities": ["claim-support-mapping"]
+        },
+        "selection": {
+          "component": "evidence-map",
+          "version": 1,
+          "matchedCapabilities": ["claim-support-mapping"]
+        },
+        "caption": "移行判断の論拠",
+        "certainty": [
+          {"id": "cert-conf", "level": "confirmed", "statement": "監査済みの実績値。"},
+          {"id": "cert-inf", "level": "inferred", "statement": "類似案件からの推定。"}
+        ],
+        "sources": [
+          {"id": "src-a", "label": "監査報告", "detail": "2025年度。"},
+          {"id": "src-b", "label": "ベンチマーク", "detail": "業界平均。"}
+        ],
+        "accessibility": {
+          "label": "論拠地図",
+          "summary": "結論1件に対し根拠2件を対応づける。"
+        },
+        "evidence-map": {
+          "conclusion": {"id": "conc-main", "label": "クラウド移行を今四半期で開始すべき"},
+          "evidence": [
+            {
+              "id": "ev-a",
+              "label": "運用コストが前年比18%増",
+              "certaintyRef": "cert-conf",
+              "sourceRef": "src-a"
+            },
+            {
+              "id": "ev-b",
+              "label": "同規模案件の移行期間は3〜4ヶ月",
+              "certaintyRef": "cert-inf",
+              "sourceRef": "src-b"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
