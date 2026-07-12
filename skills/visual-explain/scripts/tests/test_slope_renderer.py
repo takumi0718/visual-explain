@@ -163,11 +163,15 @@ class SlopeMarkupTest(unittest.TestCase):
         self.assertIn(f'id="{self.ir.id}-svg"', self.markup)
         self.assertIn('viewBox="0 0 600 220"', self.markup)
 
-    def test_slope_items_with_semantic_ids(self) -> None:
+    def test_slope_items_with_semantic_ids_on_g_not_line(self) -> None:
         for item in self.ir.slope.items:
             self.assertRegex(
                 self.markup,
-                rf'<line[^>]*class="[^"]*\bve-slope-item\b[^"]*"[^>]*data-ve-semantic-id="{re.escape(item.id)}"',
+                rf'<g[^>]*class="[^"]*\bve-slope-row\b[^"]*"[^>]*data-ve-semantic-id="{re.escape(item.id)}"',
+            )
+            self.assertNotRegex(
+                self.markup,
+                rf'<line[^>]*data-ve-semantic-id="{re.escape(item.id)}"',
             )
 
     def test_unit_visible_in_summary(self) -> None:

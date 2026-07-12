@@ -231,6 +231,16 @@ class ArtifactSemanticTest(unittest.TestCase):
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")))
 
+    def test_waterfall_duplicate_semantic_id_html_fails(self) -> None:
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-waterfall-structure.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("waterfall の意味 ID" in m and "1回だけ" in m for m in messages),
+            messages,
+        )
+
     def test_waterfall_missing_value_html_fails(self) -> None:
         self.assertIn("artifact_semantic_mismatch", self.diags(
             (TESTS / "component-bad-waterfall-missing-value.html").read_text("utf-8")))
@@ -644,6 +654,51 @@ class LogicTreeDocRegressionTest(unittest.TestCase):
     def test_committed_logic_tree_doc_passes_four_layer_checker(self) -> None:
         raw = (TESTS / "logic-tree-doc.html").read_text("utf-8")
         self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+
+class FreshBuiltArtifactRegressionTest(unittest.TestCase):
+    """Freshly built waterfall/slope HTML must pass check_final_document and check.sh."""
+
+    BUILDS = [
+        ("component-valid-waterfall.json", "waterfall"),
+        ("component-valid-waterfall-columns.json", "waterfall-columns"),
+        ("component-valid-slope.json", "slope"),
+    ]
+
+    def _build_to_temp(self, assembly: str) -> Path:
+        out = Path(tempfile.gettempdir()) / f"ve-fresh-{assembly.replace('.json', '')}.html"
+        out.unlink(missing_ok=True)
+        proc = subprocess.run(
+            ["python3", str(BUILD), "--assembly", str(TESTS / assembly), "--output", str(out)],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertTrue(out.exists())
+        return out
+
+    def test_fresh_builds_pass_four_layer_checker(self) -> None:
+        for assembly, label in self.BUILDS:
+            with self.subTest(build=label):
+                out = self._build_to_temp(assembly)
+                try:
+                    raw = out.read_text("utf-8")
+                    diags = check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)
+                    self.assertEqual(diags, [], [f"{d.code}: {d.message}" for d in diags])
+                finally:
+                    out.unlink(missing_ok=True)
+
+    def test_fresh_builds_pass_check_sh(self) -> None:
+        for assembly, label in self.BUILDS:
+            with self.subTest(build=label):
+                out = self._build_to_temp(assembly)
+                try:
+                    proc = subprocess.run(["bash", str(CHECK), str(out)],
+                                            capture_output=True, text=True)
+                    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                    self.assertIn("PASS", proc.stdout + proc.stderr)
+                finally:
+                    out.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
