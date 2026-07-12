@@ -147,6 +147,8 @@ git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外
 
 二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree`、加算的ブリッジ（開始→増減→終了）は `waterfall`、同一単位の2時点比較は `slope`、結論と根拠の1段マッピングは `evidence-map` を、次の1つの意思決定列で使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止、waterfall bars/columns、slope の3点以上禁止、evidence-map の階層1段など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。
 
+enumeration / chevron ではコンセプト（`label` または番号＋必須`title`）だけを図形内に置き、任意の`description`は縦型で右、横型で下の説明欄へ分離する。description は全有/全無で、全省略時はコンセプトだけを表示する。
+
 1. **関係を宣言する** — canonical IR に `relationship.kind`（`two-axis`、`directed-graph`、`parallel-enumeration`、`ordered-sequence`、`layered-priority`、`staged-maturity`、`hierarchical-decomposition`、`additive-bridge` など）と `capabilities` を書く。散文から方向やコンポーネントを推測させない。
 2. **レジストリで発見する** — 宣言した関係とケイパビリティで候補を絞る（集合包含のみ、ランキングなし）。
 3. **決定的な候補から明示選択する** — `selection.component` と `version` を候補集合から明示的に選ぶ。

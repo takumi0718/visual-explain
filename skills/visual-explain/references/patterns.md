@@ -327,7 +327,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ### enumeration（並列列挙）
 
-2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、各 item は `title` か `description` の少なくとも一方が必要。`description` は全 item で省略するか全 item で指定する（歯抜け不可）。
+2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、全 item に `title` が必要。`description` は任意補足で、全 item で省略するか全 item で指定する（歯抜け不可）。list（縦）は説明をコンセプトの右、columns（横）は下に置く。
 
 ```json
 {
@@ -346,9 +346,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
         "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
         "enumeration": {
           "items": [
-            {"id": "e-a", "title": "権限モデルの見直し"},
-            {"id": "e-b", "title": "監査ログの保持期間"},
-            {"id": "e-c", "title": "通知チャネルの統合"}
+            {"id": "e-a", "title": "権限モデル", "description": ["役割ごとの操作範囲を見直す"]},
+            {"id": "e-b", "title": "監査ログ", "description": ["必要な保持期間を決める"]},
+            {"id": "e-c", "title": "通知チャネル", "description": ["通知経路を統合する"]}
           ],
           "presentation": "list",
           "blockContent": "number"
@@ -361,7 +361,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ### chevron（線形順序）
 
-2〜6段（`orientation: "horizontal"` は3〜6段）。`blockContent: "number"` では番号はレンダラが採番し、各 step は `title` か `description` の少なくとも一方が必要（横型 number モードでは `title` 禁止のため `description` が全 step 必須）。`loop: true` は縦型のみで `closed-loop` capability と併用。縦型 `description` は1〜3行・各40字以内、横型は1〜2行・各30字以内。
+2〜6段（`orientation: "horizontal"` は3〜6段）。`blockContent: "number"` では番号をレンダラが採番し、全 step に `title` が必要。`description` は任意補足で全有/全無。縦型は説明をコンセプトの右、横型は下に置く。`loop: true` は縦型のみで `closed-loop` capability と併用し、レールはコンセプト列だけに沿わせる。縦型 `description` は1〜3行・各40字以内、横型は1〜2行・各30字以内。
 
 ```json
 {
@@ -394,6 +394,8 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
   ]
 }
 ```
+
+横型 number モードも番号＋`title`を図形内に置き、説明は下へ分離する。全 step から`description`を省略した場合は、空の説明欄を生成せずコンセプトだけを表示する。
 
 ### pyramid（優先階層）
 

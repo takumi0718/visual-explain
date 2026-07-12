@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "document": {
     "id": "bad-chevron-empty",
-    "title": "最小可視内容違反",
-    "summary": "number モードで title/description 両欠の step がある。"
+    "title": "コンセプトタイトル欠落",
+    "summary": "number モードで title 欠落の step がある。"
   },
   "sections": [
     {
