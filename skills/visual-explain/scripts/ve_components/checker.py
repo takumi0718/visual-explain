@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -567,6 +568,104 @@ def _parse_dom(fragment: str) -> _DomSemanticParser:
     return parser
 
 
+@dataclass
+class _ItemLayoutRecord:
+    has_semantic_id: bool = False
+    concept_count: int = 0
+    concept_not_direct: bool = False
+    description_count: int = 0
+    description_nested_in_concept: bool = False
+
+
+class _ItemLayoutParser(HTMLParser):
+    """Collect direct concept/description ownership for one component item type."""
+
+    def __init__(self, outer_class: str, concept_class: str, description_class: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.outer_class = outer_class
+        self.concept_class = concept_class
+        self.description_class = description_class
+        self.records: list[_ItemLayoutRecord] = []
+        self._stack: list[tuple[str, frozenset[str]]] = []
+        self._active: list[tuple[int, _ItemLayoutRecord]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        classes = _class_tokens(attrs)
+        values = {key.lower(): (value or "") for key, value in attrs}
+        if tag == "li" and self.outer_class in classes:
+            record = _ItemLayoutRecord(
+                has_semantic_id=bool(values.get("data-ve-semantic-id")),
+            )
+            self.records.append(record)
+            self._active.append((len(self._stack), record))
+        elif self._active:
+            outer_depth, record = self._active[-1]
+            direct_child = len(self._stack) == outer_depth + 1
+            if self.concept_class in classes:
+                record.concept_count += 1
+                record.concept_not_direct = record.concept_not_direct or not direct_child
+            if self.description_class in classes:
+                record.description_count += 1
+                inside_concept = any(
+                    self.concept_class in ancestor_classes
+                    for _ancestor_tag, ancestor_classes in self._stack[outer_depth + 1:]
+                )
+                record.description_nested_in_concept = inside_concept or not direct_child
+        if tag not in _VOID_TAGS:
+            self._stack.append((tag, classes))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        for index in range(len(self._stack) - 1, -1, -1):
+            if self._stack[index][0] == tag:
+                del self._stack[index:]
+                break
+        while self._active and len(self._stack) <= self._active[-1][0]:
+            self._active.pop()
+
+
+def _check_item_layout(
+    body: str,
+    *,
+    component: str,
+    outer: str,
+    concept: str,
+    description: str,
+) -> list[Diagnostic]:
+    parser = _ItemLayoutParser(outer, concept, description)
+    parser.feed(body)
+    parser.close()
+    diagnostics: list[Diagnostic] = []
+    description_counts = [record.description_count for record in parser.records]
+    for index, record in enumerate(parser.records, start=1):
+        if not record.has_semantic_id:
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"{component} 項目 {index} の外側に意味 ID がありません",
+            ))
+        if record.concept_count != 1 or record.concept_not_direct:
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"{component} 項目 {index} の concept は直接の子として1個必要です",
+            ))
+        if record.description_count > 1 or record.description_nested_in_concept:
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"{component} 項目 {index} の description は concept の兄弟である必要があります",
+            ))
+    if any(description_counts) and not all(count == 1 for count in description_counts):
+        diagnostics.append(Diagnostic(
+            ARTIFACT_SEMANTIC_MISMATCH,
+            f"{component} の description は全有または全無である必要があります",
+        ))
+    return diagnostics
+
+
 def extract_flow_dom(markup: str) -> tuple[set[str], set[tuple[str, str, str]], bool]:
     """Return (node ids, edge (from,to,relation) triples, any-incomplete-edge)."""
     parser = _parse_dom(markup)
@@ -654,6 +753,13 @@ def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[D
         if bid not in parser.semantic_ids:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           f"enumeration 項目 '{bid}' に意味 ID がありません"))
+    diagnostics.extend(_check_item_layout(
+        body,
+        component="enumeration",
+        outer="ve-enum-block",
+        concept="ve-enum-concept",
+        description="ve-enum-description",
+    ))
     return diagnostics
 
 
@@ -683,6 +789,13 @@ def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagn
     if not is_horizontal and len(loop_rails) > 1:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "vertical chevron の loop レールは最大1本です"))
+    diagnostics.extend(_check_item_layout(
+        body,
+        component="chevron",
+        outer="ve-chevron-step",
+        concept="ve-chevron-concept",
+        description="ve-chevron-description",
+    ))
     return diagnostics
 
 

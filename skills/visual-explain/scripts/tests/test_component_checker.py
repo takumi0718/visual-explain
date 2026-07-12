@@ -379,6 +379,56 @@ class ArtifactSemanticTest(unittest.TestCase):
                       and "enumeration ブロックに data-ve-semantic-id がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
+    def test_enumeration_description_nested_in_concept_fails(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        tampered = doc.replace(
+            '</div><ul class="ve-enum-description">',
+            '<ul class="ve-enum-description">',
+            1,
+        ).replace('</ul></li>', '</ul></div></li>', 1)
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_chevron_missing_concept_child_fails(self) -> None:
+        doc = build("component-valid-chevron.json")
+        tampered = doc.replace(
+            'class="ve-chevron-concept"',
+            'class="ve-chevron-concept-missing"',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_enumeration_duplicate_concept_child_fails(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        marker = '<div class="ve-enum-concept">'
+        tampered = doc.replace(
+            marker,
+            marker + '<div class="ve-enum-concept">duplicate</div>',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_chevron_partial_descriptions_fail(self) -> None:
+        doc = build("component-valid-chevron.json")
+        tampered = doc.replace(
+            '<ul class="ve-chevron-description">',
+            '<ul class="ve-chevron-description-missing">',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
+    def test_enumeration_semantic_id_on_concept_instead_of_outer_fails(self) -> None:
+        doc = build("component-valid-enumeration.json")
+        tampered = doc.replace(
+            ' data-ve-semantic-id="item-a"',
+            '',
+            1,
+        ).replace(
+            '<div class="ve-enum-concept">',
+            '<div class="ve-enum-concept" data-ve-semantic-id="item-a">',
+            1,
+        )
+        self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
+
     def test_enumeration_with_flow_attrs_fails(self) -> None:
         doc = build("component-valid-enumeration.json")
         tampered = doc.replace(
