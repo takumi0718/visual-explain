@@ -40,6 +40,16 @@
       "contractVersion": 1,
       "relationshipKind": "additive-bridge",
       "capabilities": ["additive-bridging"]
+    },
+    "slope": {
+      "contractVersion": 1,
+      "relationshipKind": "two-point-change",
+      "capabilities": ["two-point-comparison"]
+    },
+    "evidence-map": {
+      "contractVersion": 1,
+      "relationshipKind": "claim-support",
+      "capabilities": ["claim-support-mapping"]
     }
   },
   "compatibility": {

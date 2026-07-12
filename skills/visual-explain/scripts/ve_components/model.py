@@ -227,6 +227,50 @@ class LogicTreePayload:
     branches: tuple[LogicTreeBranch, ...]
 
 
+@dataclass(frozen=True)
+class SlopeAxes:
+    from_label: str
+    to_label: str
+
+
+@dataclass(frozen=True)
+class SlopeItem:
+    id: str
+    label: str
+    from_value: int | Decimal
+    to_value: int | Decimal
+    from_value_text: str
+    to_value_text: str
+    tone: str
+
+
+@dataclass(frozen=True)
+class SlopePayload:
+    axes: SlopeAxes
+    unit: str
+    items: tuple[SlopeItem, ...]
+
+
+@dataclass(frozen=True)
+class EvidenceConclusion:
+    id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class EvidenceItem:
+    id: str
+    label: str
+    certainty_ref: str
+    source_ref: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class EvidenceMapPayload:
+    conclusion: EvidenceConclusion
+    evidence: tuple[EvidenceItem, ...]
+
+
 # ---------------------------------------------------------------------------
 # Sections
 # ---------------------------------------------------------------------------
@@ -249,6 +293,8 @@ class CanonicalIR:
     stairs: Optional[StairsPayload] = None
     waterfall: Optional[WaterfallPayload] = None
     logic_tree: Optional[LogicTreePayload] = None
+    slope: Optional[SlopePayload] = None
+    evidence_map: Optional[EvidenceMapPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
@@ -271,6 +317,10 @@ class CanonicalIR:
             return "waterfall"
         if self.logic_tree is not None:
             return "logic-tree"
+        if self.slope is not None:
+            return "slope"
+        if self.evidence_map is not None:
+            return "evidence-map"
         raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
@@ -302,6 +352,11 @@ class CanonicalIR:
             for branch in self.logic_tree.branches:
                 ids.append(branch.id)
                 ids.extend(leaf.id for leaf in branch.leaves)
+        if self.slope is not None:
+            ids.extend(item.id for item in self.slope.items)
+        if self.evidence_map is not None:
+            ids.append(self.evidence_map.conclusion.id)
+            ids.extend(item.id for item in self.evidence_map.evidence)
         return tuple(ids)
 
 
@@ -348,6 +403,7 @@ class RenderManifest:
     asset_digests: tuple[str, ...]
     declared_dependencies: tuple[str, ...]
     fallback_mode: str
+    svg_root_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
