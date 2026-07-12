@@ -38,9 +38,9 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
 
     blocks: list[str] = []
     for index, step in enumerate(chevron.steps, start=1):
-        cls_parts = ["ve-chevron-step"]
+        concept_classes = ["ve-chevron-concept"]
         if step.id in takeaway:
-            cls_parts.append("ve-takeaway-target")
+            concept_classes.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if step.id in takeaway else ""
         emphasis_html = (
             f'<span class="ve-emphasis">{_esc(emphasis_by_id[step.id])}</span>'
@@ -52,20 +52,24 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
             heading = f'<span class="ve-chevron-number" aria-hidden="true">{index}</span>'
             if step.title:
                 heading += f'<span class="ve-chevron-title">{_esc(step.title)}</span>'
-        desc_html = ""
+        concept_html = f'<div class="{" ".join(concept_classes)}">{heading}</div>'
+        description_html = ""
         if step.description:
             lines = "".join(f"<li>{_esc(line)}</li>" for line in step.description)
-            desc_html = f'<ul class="ve-chevron-description">{lines}</ul>'
+            description_html = f'<ul class="ve-chevron-description">{lines}</ul>'
         blocks.append(
-            f'<li class="{" ".join(cls_parts)}" data-ve-semantic-id="{_esc(step.id)}"{takeaway_attr}>'
-            f'{heading}{desc_html}{emphasis_html}</li>'
+            f'<li class="ve-chevron-step" data-ve-semantic-id="{_esc(step.id)}"{takeaway_attr}>'
+            f'{concept_html}{description_html}{emphasis_html}</li>'
         )
 
+    layout_classes = ["ve-chevron-steps"]
     if chevron.orientation == "horizontal":
-        layout_cls = "ve-chevron-horizontal"
+        layout_classes.append("ve-chevron-horizontal")
     else:
-        layout_cls = "ve-chevron-centered"
-    list_markup = f'<ol class="ve-chevron-steps {layout_cls}">{"".join(blocks)}</ol>'
+        layout_classes.append("ve-chevron-centered")
+    if chevron.steps and chevron.steps[0].description:
+        layout_classes.append("ve-chevron-has-description")
+    list_markup = f'<ol class="{" ".join(layout_classes)}">{"".join(blocks)}</ol>'
 
     loop_rail = ""
     loop_sentence = ""

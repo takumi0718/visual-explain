@@ -32,9 +32,9 @@
         },
         "chevron": {
           "steps": [
-            {"id": "step-measure", "label": "計測"},
-            {"id": "step-evaluate", "label": "評価"},
-            {"id": "step-improve", "label": "改善"}
+            {"id": "step-measure", "label": "計測", "description": ["現状の指標を記録する"]},
+            {"id": "step-evaluate", "label": "評価", "description": ["結果を基準と照合する"]},
+            {"id": "step-improve", "label": "改善", "description": ["次の改善策を適用する"]}
           ],
           "orientation": "vertical",
           "blockContent": "label",

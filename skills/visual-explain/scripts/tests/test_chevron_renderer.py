@@ -282,6 +282,52 @@ class ChevronMarkupTest(unittest.TestCase):
     def test_vertical_variant_uses_centered_wrapper(self) -> None:
         self.assertIn("ve-chevron-centered", self.markup)
 
+    def test_horizontal_title_is_in_concept_and_description_is_outside(self) -> None:
+        ir, result = render_fixture("component-valid-chevron-horizontal.json")
+        concepts = re.findall(
+            r'<div class="[^"]*ve-chevron-concept[^"]*">(.*?)</div>',
+            result.markup,
+            re.DOTALL,
+        )
+        self.assertEqual(len(concepts), len(ir.chevron.steps))
+        self.assertEqual(
+            result.markup.count('class="ve-chevron-description"'),
+            len(ir.chevron.steps),
+        )
+        for step, concept in zip(ir.chevron.steps, concepts):
+            self.assertIn(step.title, concept)
+            self.assertNotIn("ve-chevron-description", concept)
+
+    def test_vertical_description_is_sibling_of_concept(self) -> None:
+        _, result = render_fixture("component-valid-chevron.json")
+        self.assertRegex(
+            result.markup,
+            r've-chevron-concept[^>]*>.*?</div><ul class="ve-chevron-description">',
+        )
+
+    def test_concept_only_emits_no_description_region(self) -> None:
+        raw = _base_ir(steps=[
+            {"id": "s1", "title": "受付"},
+            {"id": "s2", "title": "検証"},
+        ])
+        ir = validate_raw(raw)
+        from ve_components.renderers.chevron import render_chevron
+        result = render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
+        self.assertNotIn("ve-chevron-description", result.markup)
+        self.assertNotIn("ve-chevron-has-description", result.markup)
+
+    def test_takeaway_class_is_on_concept_not_outer_step(self) -> None:
+        raw = _base_ir(steps=_steps(2))
+        raw["takeawayTargetIds"] = ["s1"]
+        ir = validate_raw(raw)
+        from ve_components.renderers.chevron import render_chevron
+        result = render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
+        self.assertIn(
+            '<li class="ve-chevron-step" data-ve-semantic-id="s1" data-ve-takeaway="true">',
+            result.markup,
+        )
+        self.assertIn('<div class="ve-chevron-concept ve-takeaway-target">', result.markup)
+
     def test_loop_renders_exactly_one_return_rail_without_from_to(self) -> None:
         _, result = render_fixture("component-valid-chevron-loop.json")
         markup = result.markup
@@ -299,6 +345,14 @@ class ChevronMarkupTest(unittest.TestCase):
             re.DOTALL,
         )
 
+    def test_loop_rail_is_outside_description_markup(self) -> None:
+        _, result = render_fixture("component-valid-chevron-loop.json")
+        rail_index = result.markup.index('class="ve-chevron-loop-rail"')
+        steps_index = result.markup.index('class="ve-chevron-steps')
+        description_index = result.markup.index('class="ve-chevron-description"')
+        self.assertLess(rail_index, steps_index)
+        self.assertLess(steps_index, description_index)
+
     def test_loop_rail_css_points_arrowhead_upward(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
         self.assertIn(".ve-chevron-loop-rail::after", css)
@@ -309,7 +363,7 @@ class ChevronMarkupTest(unittest.TestCase):
 
     def test_horizontal_clip_path_has_right_tip_and_left_notch(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
-        horiz_block = css.split(".ve-chevron-horizontal .ve-chevron-step {")[1].split("}")[0]
+        horiz_block = css.split(".ve-chevron-horizontal .ve-chevron-concept {")[1].split("}")[0]
         self.assertIn("clip-path: polygon(", horiz_block)
         self.assertIn("100% 50%", horiz_block)
         self.assertIn("0 50%", horiz_block)
