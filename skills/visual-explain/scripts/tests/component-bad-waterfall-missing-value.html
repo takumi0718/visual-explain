@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ja" data-theme-storage-key="visual-explain-theme">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <!-- TITLE:BEGIN -->
+  <title>ウォーターフォール（行型）</title>
+  <!-- TITLE:END -->
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --surface: #f4f5f7;
+      --border: #e2e5e9;
+      --border-strong: #1a1d21;
+      --text: #1a1d21;
+      --text-dim: #555e6a;
+      --text-faint: #676f7a;
+      --accent: #2456b3;
+      --accent-strong: #1a4290;
+      --positive: #1e6b46;
+      --positive-strong: #14532f;
+      --warning: #9a4e0e;
+      --warning-strong: #7c3d08;
+      --accent-warm: #9a4e0e;
+      --focus: #005fcc;
+      --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
+      --lh-body: 1.75; --lh-heading: 1.45;
+      --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
+      --space-5: 3rem; --space-6: 4rem; --space-7: 5.5rem;
+      --w-narrative: 45rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        color-scheme: dark;
+        --bg: #15181c;
+        --surface: #1e2226;
+        --border: #33383f;
+        --border-strong: #e9ebee;
+        --text: #e9ebee;
+        --text-dim: #aab1bb;
+        --text-faint: #838b96;
+        --accent: #85aef2;
+        --accent-strong: #a8c4f6;
+        --positive: #6cc496;
+        --positive-strong: #92d6b2;
+        --warning: #e0a05e;
+        --warning-strong: #eab884;
+        --accent-warm: #e0a05e;
+        --focus: #8cc8ff;
+      }
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #15181c;
+      --surface: #1e2226;
+      --border: #33383f;
+      --border-strong: #e9ebee;
+      --text: #e9ebee;
+      --text-dim: #aab1bb;
+      --text-faint: #838b96;
+      --accent: #85aef2;
+      --accent-strong: #a8c4f6;
+      --positive: #6cc496;
+      --positive-strong: #92d6b2;
+      --warning: #e0a05e;
+      --warning-strong: #eab884;
+      --accent-warm: #e0a05e;
+      --focus: #8cc8ff;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--text); }
+    body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
+    main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-4) 0 var(--space-6); }
+    section { min-width: 0; margin-block: var(--space-7); }
+    h1, h2, h3, p { min-width: 0; }
+    p, ul, ol, .claim, .evidence { max-width: var(--w-narrative); }
+    h1 { font-size: var(--fs-hero); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    a { color: var(--accent-strong); }
+    button, summary, a { outline-offset: 3px; }
+    button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); }
+    button { font: inherit; color: inherit; background: var(--surface); border: 0; border-radius: .4rem; padding: var(--space-1) var(--space-2); cursor: pointer; }
+    button:hover:not(:disabled) { background: var(--border); }
+    button:disabled { color: var(--text-dim); cursor: not-allowed; }
+
+    .first-screen { display: grid; gap: var(--space-4); padding: var(--space-6) 0; background: transparent; border-left: 0; min-height: 60vh; align-content: center; }
+    .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
+    .decision strong { color: var(--accent-strong); }
+    .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
+    .conditions { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); color: var(--text-dim); }
+
+    .claim { margin-bottom: var(--space-2); font-size: var(--fs-h2); font-weight: 700; }
+    .figure { position: relative; min-width: 0; margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border: 0; border-radius: .5rem; overflow: auto; }
+    .figure figcaption { margin-top: var(--space-2); color: var(--text-dim); font-size: var(--fs-body); }
+    .evidence { margin-top: var(--space-2); padding-left: var(--space-2); border-left: .2rem solid var(--border); color: var(--text-dim); font-size: var(--fs-body); }
+    details.deep-dive { margin-top: var(--space-2); padding: var(--space-1) var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; }
+    details.deep-dive summary { cursor: pointer; font-weight: 700; }
+    pre { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); }
+
+    .flow-node { position: relative; z-index: 1; min-width: 0; padding: var(--space-1) var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font-size: var(--fs-figure); }
+    .flow { display: flex; align-items: stretch; gap: var(--space-4); }
+    .flow .flow-node { flex: 1 1 10rem; }
+    .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + var(--space-1)); color: var(--text-dim); font-weight: 700; transform: translateY(-50%); }
+    .flow[data-connect] > .flow-node:not(:last-of-type)::after { content: none; }
+    .layers { display: grid; gap: var(--space-2); }
+    .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+    .lane-label { color: var(--text-dim); font-weight: 700; font-size: var(--fs-figure); }
+    .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); min-width: 0; font-size: var(--fs-figure); }
+    .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .compare-frame h3 { margin-top: 0; }
+    .matrix { max-width: 100%; overflow: auto; }
+    .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
+    .matrix-label, .matrix-cell { padding: var(--space-1) var(--space-2) var(--space-1) 0; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: transparent; font-size: var(--fs-figure); }
+    .matrix-label { color: var(--text); font-weight: 800; }
+    .matrix thead .matrix-label { border-bottom: 1px solid var(--border-strong); }
+    .option-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .matrix .option-card { padding: 0; background: transparent; border: 0; border-radius: 0; }
+    [data-tone="accent"] { --tone-border: var(--accent); --tone-background: color-mix(in srgb, var(--accent) 12%, var(--surface)); --tone-text: var(--accent-strong); }
+    [data-tone="positive"] { --tone-border: var(--positive); --tone-background: color-mix(in srgb, var(--positive) 12%, var(--surface)); --tone-text: var(--positive-strong); }
+    [data-tone="warning"] { --tone-border: var(--warning); --tone-background: color-mix(in srgb, var(--warning) 12%, var(--surface)); --tone-text: var(--warning); }
+    [data-tone="muted"] { --tone-border: var(--border); --tone-background: var(--bg); --tone-text: var(--text-dim); }
+    .flow-node[data-tone], .option-card[data-tone], .matrix-label[data-tone], .matrix-cell[data-tone] { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
+    .matrix .option-card[data-tone] { background: transparent; color: inherit; }
+    .matrix .option-card[data-tone] > .matrix-label, .matrix .option-card[data-tone] > .matrix-cell, .matrix .matrix-label[data-tone], .matrix .matrix-cell[data-tone] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .matrix .option-card[data-tone="accent"] > .matrix-label, .matrix .option-card[data-tone="accent"] > .matrix-cell, .matrix .matrix-label[data-tone="accent"], .matrix .matrix-cell[data-tone="accent"] { background: var(--tone-background); }
+    .timeline { display: grid; gap: var(--space-2); border-left: .2rem solid var(--border-strong); padding-left: var(--space-3); font-size: var(--fs-figure); }
+    .timeline-item { position: relative; min-width: 0; }
+    .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.5rem - .45rem); top: .45rem; background: var(--border-strong); border-radius: 50%; }
+    .timeline time { color: var(--text-dim); font-weight: 700; }
+    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-2); }
+    .kpi-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .kpi-value { display: block; color: var(--text); font-size: var(--fs-hero); font-weight: 800; line-height: 1.2; }
+    .bars { display: grid; gap: var(--space-2); }
+    .bar-row { display: grid; grid-template-columns: minmax(7rem, .35fr) minmax(8rem, 1fr) auto; gap: var(--space-2); align-items: center; min-width: 0; font-size: var(--fs-figure); }
+    .bar-track { min-width: 0; height: 1rem; overflow: hidden; background: var(--bg); border-radius: 999px; }
+    .bar-fill { display: block; width: var(--value, 0%); min-width: .25rem; height: 100%; background: var(--text-dim); }
+    .bar-fill[data-tone] { background: var(--tone-border); }
+    .terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-2); }
+    .term { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .term dt { color: var(--text); font-weight: 800; }
+    .term dd { margin: var(--space-1) 0 0; color: var(--text-dim); }
+
+    .certainty { display: inline-flex; align-items: center; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty.confirmed { border-style: solid; }
+    .certainty.inferred { border-style: dashed; }
+    .certainty.unverified { border-style: dotted; }
+    details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
+    details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
+    details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
+
+    .stepper { display: grid; gap: var(--space-2); padding: var(--space-2); background: var(--surface); border: 0; border-radius: .5rem; }
+    .stepper-status { margin: 0; color: var(--text-dim); }
+    .step-panel[hidden] { display: none; }
+    .step-panel.is-current { border-left: .25rem solid var(--accent); padding-left: var(--space-2); }
+    .stepper-controls { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+    .closing-section { padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-top: 1px solid var(--border-strong); }
+    .closing-section h2 { margin-top: 0; }
+    .closing-section h3 { margin-bottom: var(--space-1); }
+    .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .connector-warning { margin: var(--space-2) 0 0; color: var(--warning); font-weight: 700; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
+
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
+    .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: var(--bg); }
+    .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: var(--bg); }
+    /* request は警告ではないためモノクロ。意味色は decision のチップ（選択=青）と既定案（推奨=緑）のみ */
+    .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
+    .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: minmax(8rem, .35fr) 1fr; gap: var(--space-2); padding: var(--space-1); border-radius: .3rem; }
+    .ask-options [data-ask-default] { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); }
+    .ask-options [data-ask-default] > :first-child::after { content: "既定案"; margin-left: var(--space-1); color: var(--positive); font-size: var(--fs-small); font-weight: 700; }
+    .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); }
+    .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+    .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
+    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+
+    footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
+
+    @media (max-width: 42rem) {
+      main { width: min(100% - var(--space-2), var(--w-narrative)); padding-top: var(--space-2); }
+      .theme-control { width: min(100% - var(--space-2), var(--w-narrative)); }
+      .theme-control button { max-width: 100%; white-space: normal; }
+      .flow { flex-direction: column; gap: var(--space-3); }
+      .flow .flow-node { flex: 0 1 auto; }
+      .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
+      .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
+      .compare { grid-template-columns: 1fr; }
+    }
+  </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <style data-ve-component="waterfall" data-ve-contract-version="1" data-ve-asset="waterfall.css" data-ve-digest="11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f">[data-ve-component="waterfall"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="waterfall"] .ve-waterfall-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="waterfall"] .ve-waterfall-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="waterfall"] .ve-waterfall-scroll { max-width: 100%; overflow-x: auto; }
+[data-ve-component="waterfall"] .ve-waterfall-bridge { display: flex; gap: var(--space-1); }
+[data-ve-component="waterfall"] .ve-wf-bars { flex-direction: column; }
+[data-ve-component="waterfall"] .ve-wf-columns { flex-direction: row; flex-wrap: nowrap; min-width: max-content; }
+[data-ve-component="waterfall"] .ve-waterfall-row { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+[data-ve-component="waterfall"] .ve-wf-columns .ve-waterfall-row { flex: 0 0 auto; min-width: 4.5rem; }
+[data-ve-component="waterfall"] .ve-waterfall-label { font-size: var(--fs-small); color: var(--text-dim); }
+[data-ve-component="waterfall"] .ve-waterfall-track { position: relative; background: var(--surface); border-radius: var(--radius); }
+[data-ve-component="waterfall"] .ve-wf-bars .ve-waterfall-track { height: 1.5rem; }
+[data-ve-component="waterfall"] .ve-wf-columns .ve-waterfall-track { width: 2.5rem; height: 8rem; margin-inline: auto; }
+[data-ve-component="waterfall"] .ve-waterfall-connector-track { position: relative; flex-shrink: 0; }
+[data-ve-component="waterfall"] .ve-wf-bars .ve-waterfall-connector-track { height: 0.5rem; width: 100%; }
+[data-ve-component="waterfall"] .ve-wf-columns .ve-waterfall-connector-track { width: 0.5rem; min-height: 8rem; align-self: stretch; }
+[data-ve-component="waterfall"] .ve-waterfall-bar { position: absolute; box-sizing: border-box; background: var(--text-dim); color: var(--bg); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: var(--fs-figure); min-height: 1.25rem; }
+[data-ve-component="waterfall"] .ve-waterfall-connector { position: absolute; box-sizing: border-box; border: 1px dashed var(--text-faint); opacity: 0.7; }
+[data-ve-component="waterfall"] .ve-wf-bars .ve-waterfall-bar,
+[data-ve-component="waterfall"] .ve-wf-bars .ve-waterfall-connector { left: calc(var(--wf-start-pct) * 1%); width: calc(var(--wf-len-pct) * 1%); }
+[data-ve-component="waterfall"] .ve-wf-bars .ve-waterfall-bar { top: 0; height: 100%; }
+[data-ve-component="waterfall"] .ve-wf-bars .ve-waterfall-connector { top: 0; height: 100%; }
+[data-ve-component="waterfall"] .ve-wf-columns .ve-waterfall-bar,
+[data-ve-component="waterfall"] .ve-wf-columns .ve-waterfall-connector { left: 0; width: 100%; bottom: calc(var(--wf-start-pct) * 1%); height: calc(var(--wf-len-pct) * 1%); }
+[data-ve-component="waterfall"] .ve-wf-tone-positive { background: var(--positive); }
+[data-ve-component="waterfall"] .ve-wf-tone-warning { background: var(--warning); }
+[data-ve-component="waterfall"] .ve-wf-tone-neutral { background: var(--text-faint); }
+[data-ve-component="waterfall"] .ve-waterfall-value { font-weight: 700; padding: 0 var(--space-1); }
+[data-ve-component="waterfall"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
+[data-ve-component="waterfall"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="waterfall"] .ve-waterfall-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="waterfall"] .ve-waterfall-notes li { margin: 0; }
+[data-ve-component="waterfall"] .ve-wf-start-0 { --wf-start-pct: 0; }
+[data-ve-component="waterfall"] .ve-wf-len-0 { --wf-len-pct: 0; }
+[data-ve-component="waterfall"] .ve-wf-start-1 { --wf-start-pct: 1; }
+[data-ve-component="waterfall"] .ve-wf-len-1 { --wf-len-pct: 1; }
+[data-ve-component="waterfall"] .ve-wf-start-2 { --wf-start-pct: 2; }
+[data-ve-component="waterfall"] .ve-wf-len-2 { --wf-len-pct: 2; }
+[data-ve-component="waterfall"] .ve-wf-start-3 { --wf-start-pct: 3; }
+[data-ve-component="waterfall"] .ve-wf-len-3 { --wf-len-pct: 3; }
+[data-ve-component="waterfall"] .ve-wf-start-4 { --wf-start-pct: 4; }
+[data-ve-component="waterfall"] .ve-wf-len-4 { --wf-len-pct: 4; }
+[data-ve-component="waterfall"] .ve-wf-start-5 { --wf-start-pct: 5; }
+[data-ve-component="waterfall"] .ve-wf-len-5 { --wf-len-pct: 5; }
+[data-ve-component="waterfall"] .ve-wf-start-6 { --wf-start-pct: 6; }
+[data-ve-component="waterfall"] .ve-wf-len-6 { --wf-len-pct: 6; }
+[data-ve-component="waterfall"] .ve-wf-start-7 { --wf-start-pct: 7; }
+[data-ve-component="waterfall"] .ve-wf-len-7 { --wf-len-pct: 7; }
+[data-ve-component="waterfall"] .ve-wf-start-8 { --wf-start-pct: 8; }
+[data-ve-component="waterfall"] .ve-wf-len-8 { --wf-len-pct: 8; }
+[data-ve-component="waterfall"] .ve-wf-start-9 { --wf-start-pct: 9; }
+[data-ve-component="waterfall"] .ve-wf-len-9 { --wf-len-pct: 9; }
+[data-ve-component="waterfall"] .ve-wf-start-10 { --wf-start-pct: 10; }
+[data-ve-component="waterfall"] .ve-wf-len-10 { --wf-len-pct: 10; }
+[data-ve-component="waterfall"] .ve-wf-start-11 { --wf-start-pct: 11; }
+[data-ve-component="waterfall"] .ve-wf-len-11 { --wf-len-pct: 11; }
+[data-ve-component="waterfall"] .ve-wf-start-12 { --wf-start-pct: 12; }
+[data-ve-component="waterfall"] .ve-wf-len-12 { --wf-len-pct: 12; }
+[data-ve-component="waterfall"] .ve-wf-start-13 { --wf-start-pct: 13; }
+[data-ve-component="waterfall"] .ve-wf-len-13 { --wf-len-pct: 13; }
+[data-ve-component="waterfall"] .ve-wf-start-14 { --wf-start-pct: 14; }
+[data-ve-component="waterfall"] .ve-wf-len-14 { --wf-len-pct: 14; }
+[data-ve-component="waterfall"] .ve-wf-start-15 { --wf-start-pct: 15; }
+[data-ve-component="waterfall"] .ve-wf-len-15 { --wf-len-pct: 15; }
+[data-ve-component="waterfall"] .ve-wf-start-16 { --wf-start-pct: 16; }
+[data-ve-component="waterfall"] .ve-wf-len-16 { --wf-len-pct: 16; }
+[data-ve-component="waterfall"] .ve-wf-start-17 { --wf-start-pct: 17; }
+[data-ve-component="waterfall"] .ve-wf-len-17 { --wf-len-pct: 17; }
+[data-ve-component="waterfall"] .ve-wf-start-18 { --wf-start-pct: 18; }
+[data-ve-component="waterfall"] .ve-wf-len-18 { --wf-len-pct: 18; }
+[data-ve-component="waterfall"] .ve-wf-start-19 { --wf-start-pct: 19; }
+[data-ve-component="waterfall"] .ve-wf-len-19 { --wf-len-pct: 19; }
+[data-ve-component="waterfall"] .ve-wf-start-20 { --wf-start-pct: 20; }
+[data-ve-component="waterfall"] .ve-wf-len-20 { --wf-len-pct: 20; }
+[data-ve-component="waterfall"] .ve-wf-start-21 { --wf-start-pct: 21; }
+[data-ve-component="waterfall"] .ve-wf-len-21 { --wf-len-pct: 21; }
+[data-ve-component="waterfall"] .ve-wf-start-22 { --wf-start-pct: 22; }
+[data-ve-component="waterfall"] .ve-wf-len-22 { --wf-len-pct: 22; }
+[data-ve-component="waterfall"] .ve-wf-start-23 { --wf-start-pct: 23; }
+[data-ve-component="waterfall"] .ve-wf-len-23 { --wf-len-pct: 23; }
+[data-ve-component="waterfall"] .ve-wf-start-24 { --wf-start-pct: 24; }
+[data-ve-component="waterfall"] .ve-wf-len-24 { --wf-len-pct: 24; }
+[data-ve-component="waterfall"] .ve-wf-start-25 { --wf-start-pct: 25; }
+[data-ve-component="waterfall"] .ve-wf-len-25 { --wf-len-pct: 25; }
+[data-ve-component="waterfall"] .ve-wf-start-26 { --wf-start-pct: 26; }
+[data-ve-component="waterfall"] .ve-wf-len-26 { --wf-len-pct: 26; }
+[data-ve-component="waterfall"] .ve-wf-start-27 { --wf-start-pct: 27; }
+[data-ve-component="waterfall"] .ve-wf-len-27 { --wf-len-pct: 27; }
+[data-ve-component="waterfall"] .ve-wf-start-28 { --wf-start-pct: 28; }
+[data-ve-component="waterfall"] .ve-wf-len-28 { --wf-len-pct: 28; }
+[data-ve-component="waterfall"] .ve-wf-start-29 { --wf-start-pct: 29; }
+[data-ve-component="waterfall"] .ve-wf-len-29 { --wf-len-pct: 29; }
+[data-ve-component="waterfall"] .ve-wf-start-30 { --wf-start-pct: 30; }
+[data-ve-component="waterfall"] .ve-wf-len-30 { --wf-len-pct: 30; }
+[data-ve-component="waterfall"] .ve-wf-start-31 { --wf-start-pct: 31; }
+[data-ve-component="waterfall"] .ve-wf-len-31 { --wf-len-pct: 31; }
+[data-ve-component="waterfall"] .ve-wf-start-32 { --wf-start-pct: 32; }
+[data-ve-component="waterfall"] .ve-wf-len-32 { --wf-len-pct: 32; }
+[data-ve-component="waterfall"] .ve-wf-start-33 { --wf-start-pct: 33; }
+[data-ve-component="waterfall"] .ve-wf-len-33 { --wf-len-pct: 33; }
+[data-ve-component="waterfall"] .ve-wf-start-34 { --wf-start-pct: 34; }
+[data-ve-component="waterfall"] .ve-wf-len-34 { --wf-len-pct: 34; }
+[data-ve-component="waterfall"] .ve-wf-start-35 { --wf-start-pct: 35; }
+[data-ve-component="waterfall"] .ve-wf-len-35 { --wf-len-pct: 35; }
+[data-ve-component="waterfall"] .ve-wf-start-36 { --wf-start-pct: 36; }
+[data-ve-component="waterfall"] .ve-wf-len-36 { --wf-len-pct: 36; }
+[data-ve-component="waterfall"] .ve-wf-start-37 { --wf-start-pct: 37; }
+[data-ve-component="waterfall"] .ve-wf-len-37 { --wf-len-pct: 37; }
+[data-ve-component="waterfall"] .ve-wf-start-38 { --wf-start-pct: 38; }
+[data-ve-component="waterfall"] .ve-wf-len-38 { --wf-len-pct: 38; }
+[data-ve-component="waterfall"] .ve-wf-start-39 { --wf-start-pct: 39; }
+[data-ve-component="waterfall"] .ve-wf-len-39 { --wf-len-pct: 39; }
+[data-ve-component="waterfall"] .ve-wf-start-40 { --wf-start-pct: 40; }
+[data-ve-component="waterfall"] .ve-wf-len-40 { --wf-len-pct: 40; }
+[data-ve-component="waterfall"] .ve-wf-start-41 { --wf-start-pct: 41; }
+[data-ve-component="waterfall"] .ve-wf-len-41 { --wf-len-pct: 41; }
+[data-ve-component="waterfall"] .ve-wf-start-42 { --wf-start-pct: 42; }
+[data-ve-component="waterfall"] .ve-wf-len-42 { --wf-len-pct: 42; }
+[data-ve-component="waterfall"] .ve-wf-start-43 { --wf-start-pct: 43; }
+[data-ve-component="waterfall"] .ve-wf-len-43 { --wf-len-pct: 43; }
+[data-ve-component="waterfall"] .ve-wf-start-44 { --wf-start-pct: 44; }
+[data-ve-component="waterfall"] .ve-wf-len-44 { --wf-len-pct: 44; }
+[data-ve-component="waterfall"] .ve-wf-start-45 { --wf-start-pct: 45; }
+[data-ve-component="waterfall"] .ve-wf-len-45 { --wf-len-pct: 45; }
+[data-ve-component="waterfall"] .ve-wf-start-46 { --wf-start-pct: 46; }
+[data-ve-component="waterfall"] .ve-wf-len-46 { --wf-len-pct: 46; }
+[data-ve-component="waterfall"] .ve-wf-start-47 { --wf-start-pct: 47; }
+[data-ve-component="waterfall"] .ve-wf-len-47 { --wf-len-pct: 47; }
+[data-ve-component="waterfall"] .ve-wf-start-48 { --wf-start-pct: 48; }
+[data-ve-component="waterfall"] .ve-wf-len-48 { --wf-len-pct: 48; }
+[data-ve-component="waterfall"] .ve-wf-start-49 { --wf-start-pct: 49; }
+[data-ve-component="waterfall"] .ve-wf-len-49 { --wf-len-pct: 49; }
+[data-ve-component="waterfall"] .ve-wf-start-50 { --wf-start-pct: 50; }
+[data-ve-component="waterfall"] .ve-wf-len-50 { --wf-len-pct: 50; }
+[data-ve-component="waterfall"] .ve-wf-start-51 { --wf-start-pct: 51; }
+[data-ve-component="waterfall"] .ve-wf-len-51 { --wf-len-pct: 51; }
+[data-ve-component="waterfall"] .ve-wf-start-52 { --wf-start-pct: 52; }
+[data-ve-component="waterfall"] .ve-wf-len-52 { --wf-len-pct: 52; }
+[data-ve-component="waterfall"] .ve-wf-start-53 { --wf-start-pct: 53; }
+[data-ve-component="waterfall"] .ve-wf-len-53 { --wf-len-pct: 53; }
+[data-ve-component="waterfall"] .ve-wf-start-54 { --wf-start-pct: 54; }
+[data-ve-component="waterfall"] .ve-wf-len-54 { --wf-len-pct: 54; }
+[data-ve-component="waterfall"] .ve-wf-start-55 { --wf-start-pct: 55; }
+[data-ve-component="waterfall"] .ve-wf-len-55 { --wf-len-pct: 55; }
+[data-ve-component="waterfall"] .ve-wf-start-56 { --wf-start-pct: 56; }
+[data-ve-component="waterfall"] .ve-wf-len-56 { --wf-len-pct: 56; }
+[data-ve-component="waterfall"] .ve-wf-start-57 { --wf-start-pct: 57; }
+[data-ve-component="waterfall"] .ve-wf-len-57 { --wf-len-pct: 57; }
+[data-ve-component="waterfall"] .ve-wf-start-58 { --wf-start-pct: 58; }
+[data-ve-component="waterfall"] .ve-wf-len-58 { --wf-len-pct: 58; }
+[data-ve-component="waterfall"] .ve-wf-start-59 { --wf-start-pct: 59; }
+[data-ve-component="waterfall"] .ve-wf-len-59 { --wf-len-pct: 59; }
+[data-ve-component="waterfall"] .ve-wf-start-60 { --wf-start-pct: 60; }
+[data-ve-component="waterfall"] .ve-wf-len-60 { --wf-len-pct: 60; }
+[data-ve-component="waterfall"] .ve-wf-start-61 { --wf-start-pct: 61; }
+[data-ve-component="waterfall"] .ve-wf-len-61 { --wf-len-pct: 61; }
+[data-ve-component="waterfall"] .ve-wf-start-62 { --wf-start-pct: 62; }
+[data-ve-component="waterfall"] .ve-wf-len-62 { --wf-len-pct: 62; }
+[data-ve-component="waterfall"] .ve-wf-start-63 { --wf-start-pct: 63; }
+[data-ve-component="waterfall"] .ve-wf-len-63 { --wf-len-pct: 63; }
+[data-ve-component="waterfall"] .ve-wf-start-64 { --wf-start-pct: 64; }
+[data-ve-component="waterfall"] .ve-wf-len-64 { --wf-len-pct: 64; }
+[data-ve-component="waterfall"] .ve-wf-start-65 { --wf-start-pct: 65; }
+[data-ve-component="waterfall"] .ve-wf-len-65 { --wf-len-pct: 65; }
+[data-ve-component="waterfall"] .ve-wf-start-66 { --wf-start-pct: 66; }
+[data-ve-component="waterfall"] .ve-wf-len-66 { --wf-len-pct: 66; }
+[data-ve-component="waterfall"] .ve-wf-start-67 { --wf-start-pct: 67; }
+[data-ve-component="waterfall"] .ve-wf-len-67 { --wf-len-pct: 67; }
+[data-ve-component="waterfall"] .ve-wf-start-68 { --wf-start-pct: 68; }
+[data-ve-component="waterfall"] .ve-wf-len-68 { --wf-len-pct: 68; }
+[data-ve-component="waterfall"] .ve-wf-start-69 { --wf-start-pct: 69; }
+[data-ve-component="waterfall"] .ve-wf-len-69 { --wf-len-pct: 69; }
+[data-ve-component="waterfall"] .ve-wf-start-70 { --wf-start-pct: 70; }
+[data-ve-component="waterfall"] .ve-wf-len-70 { --wf-len-pct: 70; }
+[data-ve-component="waterfall"] .ve-wf-start-71 { --wf-start-pct: 71; }
+[data-ve-component="waterfall"] .ve-wf-len-71 { --wf-len-pct: 71; }
+[data-ve-component="waterfall"] .ve-wf-start-72 { --wf-start-pct: 72; }
+[data-ve-component="waterfall"] .ve-wf-len-72 { --wf-len-pct: 72; }
+[data-ve-component="waterfall"] .ve-wf-start-73 { --wf-start-pct: 73; }
+[data-ve-component="waterfall"] .ve-wf-len-73 { --wf-len-pct: 73; }
+[data-ve-component="waterfall"] .ve-wf-start-74 { --wf-start-pct: 74; }
+[data-ve-component="waterfall"] .ve-wf-len-74 { --wf-len-pct: 74; }
+[data-ve-component="waterfall"] .ve-wf-start-75 { --wf-start-pct: 75; }
+[data-ve-component="waterfall"] .ve-wf-len-75 { --wf-len-pct: 75; }
+[data-ve-component="waterfall"] .ve-wf-start-76 { --wf-start-pct: 76; }
+[data-ve-component="waterfall"] .ve-wf-len-76 { --wf-len-pct: 76; }
+[data-ve-component="waterfall"] .ve-wf-start-77 { --wf-start-pct: 77; }
+[data-ve-component="waterfall"] .ve-wf-len-77 { --wf-len-pct: 77; }
+[data-ve-component="waterfall"] .ve-wf-start-78 { --wf-start-pct: 78; }
+[data-ve-component="waterfall"] .ve-wf-len-78 { --wf-len-pct: 78; }
+[data-ve-component="waterfall"] .ve-wf-start-79 { --wf-start-pct: 79; }
+[data-ve-component="waterfall"] .ve-wf-len-79 { --wf-len-pct: 79; }
+[data-ve-component="waterfall"] .ve-wf-start-80 { --wf-start-pct: 80; }
+[data-ve-component="waterfall"] .ve-wf-len-80 { --wf-len-pct: 80; }
+[data-ve-component="waterfall"] .ve-wf-start-81 { --wf-start-pct: 81; }
+[data-ve-component="waterfall"] .ve-wf-len-81 { --wf-len-pct: 81; }
+[data-ve-component="waterfall"] .ve-wf-start-82 { --wf-start-pct: 82; }
+[data-ve-component="waterfall"] .ve-wf-len-82 { --wf-len-pct: 82; }
+[data-ve-component="waterfall"] .ve-wf-start-83 { --wf-start-pct: 83; }
+[data-ve-component="waterfall"] .ve-wf-len-83 { --wf-len-pct: 83; }
+[data-ve-component="waterfall"] .ve-wf-start-84 { --wf-start-pct: 84; }
+[data-ve-component="waterfall"] .ve-wf-len-84 { --wf-len-pct: 84; }
+[data-ve-component="waterfall"] .ve-wf-start-85 { --wf-start-pct: 85; }
+[data-ve-component="waterfall"] .ve-wf-len-85 { --wf-len-pct: 85; }
+[data-ve-component="waterfall"] .ve-wf-start-86 { --wf-start-pct: 86; }
+[data-ve-component="waterfall"] .ve-wf-len-86 { --wf-len-pct: 86; }
+[data-ve-component="waterfall"] .ve-wf-start-87 { --wf-start-pct: 87; }
+[data-ve-component="waterfall"] .ve-wf-len-87 { --wf-len-pct: 87; }
+[data-ve-component="waterfall"] .ve-wf-start-88 { --wf-start-pct: 88; }
+[data-ve-component="waterfall"] .ve-wf-len-88 { --wf-len-pct: 88; }
+[data-ve-component="waterfall"] .ve-wf-start-89 { --wf-start-pct: 89; }
+[data-ve-component="waterfall"] .ve-wf-len-89 { --wf-len-pct: 89; }
+[data-ve-component="waterfall"] .ve-wf-start-90 { --wf-start-pct: 90; }
+[data-ve-component="waterfall"] .ve-wf-len-90 { --wf-len-pct: 90; }
+[data-ve-component="waterfall"] .ve-wf-start-91 { --wf-start-pct: 91; }
+[data-ve-component="waterfall"] .ve-wf-len-91 { --wf-len-pct: 91; }
+[data-ve-component="waterfall"] .ve-wf-start-92 { --wf-start-pct: 92; }
+[data-ve-component="waterfall"] .ve-wf-len-92 { --wf-len-pct: 92; }
+[data-ve-component="waterfall"] .ve-wf-start-93 { --wf-start-pct: 93; }
+[data-ve-component="waterfall"] .ve-wf-len-93 { --wf-len-pct: 93; }
+[data-ve-component="waterfall"] .ve-wf-start-94 { --wf-start-pct: 94; }
+[data-ve-component="waterfall"] .ve-wf-len-94 { --wf-len-pct: 94; }
+[data-ve-component="waterfall"] .ve-wf-start-95 { --wf-start-pct: 95; }
+[data-ve-component="waterfall"] .ve-wf-len-95 { --wf-len-pct: 95; }
+[data-ve-component="waterfall"] .ve-wf-start-96 { --wf-start-pct: 96; }
+[data-ve-component="waterfall"] .ve-wf-len-96 { --wf-len-pct: 96; }
+[data-ve-component="waterfall"] .ve-wf-start-97 { --wf-start-pct: 97; }
+[data-ve-component="waterfall"] .ve-wf-len-97 { --wf-len-pct: 97; }
+[data-ve-component="waterfall"] .ve-wf-start-98 { --wf-start-pct: 98; }
+[data-ve-component="waterfall"] .ve-wf-len-98 { --wf-len-pct: 98; }
+[data-ve-component="waterfall"] .ve-wf-start-99 { --wf-start-pct: 99; }
+[data-ve-component="waterfall"] .ve-wf-len-99 { --wf-len-pct: 99; }
+[data-ve-component="waterfall"] .ve-wf-start-100 { --wf-start-pct: 100; }
+[data-ve-component="waterfall"] .ve-wf-len-100 { --wf-len-pct: 100; }
+</style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
+  <script>
+  /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    try {
+      const theme = window.localStorage.getItem(root.dataset.themeStorageKey);
+      if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+    } catch {
+      // Storage is optional; CSS keeps the OS preference when it is unavailable.
+    }
+  })();
+  </script>
+</head>
+<body>
+  <div class="theme-control">
+    <button type="button" data-theme-toggle aria-pressed="false">現在のテーマを確認中です。</button>
+  </div>
+  <script>
+  /* FIXED THEME CONTROL JS: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    const button = document.querySelector('[data-theme-toggle]');
+    if (!button) return;
+
+    let mediaQuery;
+    try {
+      mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    } catch {
+      mediaQuery = null;
+    }
+    let explicitTheme = root.dataset.theme === 'light' || root.dataset.theme === 'dark';
+    const systemTheme = () => mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+    const currentTheme = () => explicitTheme ? root.dataset.theme : systemTheme();
+    const label = (theme) => theme === 'dark' ? 'ダーク' : 'ライト';
+    const render = () => {
+      const current = currentTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+      button.textContent = `現在のテーマ: ${label(current)}。${label(next)}に切り替える`;
+      button.setAttribute('aria-pressed', String(current === 'dark'));
+    };
+    const persist = (theme) => {
+      try {
+        window.localStorage.setItem(root.dataset.themeStorageKey, theme);
+      } catch {
+        // A manual choice still works for this document if storage is unavailable.
+      }
+    };
+
+    render();
+    button.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      explicitTheme = true;
+      persist(next);
+      render();
+    });
+    if (mediaQuery) {
+      const updateFromSystem = () => { if (!explicitTheme) render(); };
+      if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', updateFromSystem);
+      else if (mediaQuery.addListener) mediaQuery.addListener(updateFromSystem);
+    }
+  })();
+  </script>
+  <main>
+    <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <section data-ve-section-kind="canonical" data-ve-component="waterfall" data-ve-contract-version="1" data-ve-instance="sec-waterfall" data-ve-fallback="static-content">
+<figure data-ve-component="waterfall" role="group" aria-label="ウォーターフォール" aria-describedby="sec-waterfall-summary"><figcaption id="sec-waterfall-caption" class="ve-waterfall-caption">件数の増減ブリッジ</figcaption><p id="sec-waterfall-summary" class="ve-waterfall-summary">開始値から増減を経て終了値へつなぐ。</p><div class="ve-waterfall-bridge ve-wf-bars"><div class="ve-waterfall-row" data-ve-semantic-id="wf-start"><span class="ve-waterfall-label">開始</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-40 ve-wf-len-60" data-ve-semantic-id="wf-start"><span class="ve-waterfall-value"></span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-100 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row" data-ve-semantic-id="wf-step-1"><span class="ve-waterfall-label">減少</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-0 ve-wf-len-100 ve-wf-tone-warning" data-ve-semantic-id="wf-step-1"><span class="ve-waterfall-value">−50件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-0 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row" data-ve-semantic-id="wf-step-2"><span class="ve-waterfall-label">回復</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-0 ve-wf-len-90 ve-wf-tone-positive" data-ve-semantic-id="wf-step-2"><span class="ve-waterfall-value">+45件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-90 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row" data-ve-semantic-id="wf-end"><span class="ve-waterfall-label">終了</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-40 ve-wf-len-50" data-ve-semantic-id="wf-end"><span class="ve-waterfall-value">25件</span></div></div></div></div><ul class="ve-waterfall-notes"><li data-ve-semantic-id="cert-wf"><strong>確定:</strong> 算術は台帳と一致。</li><li data-ve-semantic-id="src-wf"><strong>出典 件数台帳</strong>（四半期集計。）</li></ul></figure>
+</section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
+    <!-- CONTENT:END -->
+  </main>
+  <footer>AI が生成した資料</footer>
+
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN --><!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
+  <script>
+  /* FIXED CONNECTOR JS: DO NOT MODIFY. */
+  (() => {
+    let resizeObserver;
+    const SVG_NS = 'http:' + '//www.w3.org/2000/svg';
+    const directChild = (parent, className) => Array.from(parent.children).find((node) => node.classList && node.classList.contains(className));
+    const scopes = () => Array.from(new Set([
+      ...document.querySelectorAll('[data-connect-scope]'),
+      ...Array.from(document.querySelectorAll('.figure')).filter((figure) => figure.querySelector('[data-connect]'))
+    ]));
+    const nodeMap = (scope) => new Map(Array.from(scope.querySelectorAll('[id]')).map((node) => [node.id, node]));
+    const laneIndex = (node, scope) => Array.from(scope.querySelectorAll('[data-lane]')).findIndex((lane) => lane.contains(node));
+    const siblingIndex = (node) => Array.from(node.parentElement.querySelectorAll(':scope > [id]')).indexOf(node);
+    const adjacent = (from, to, scope) => {
+      const fromLane = laneIndex(from, scope);
+      const toLane = laneIndex(to, scope);
+      if (fromLane >= 0 && toLane >= 0) return fromLane === toLane ? Math.abs(siblingIndex(from) - siblingIndex(to)) === 1 : Math.abs(fromLane - toLane) === 1;
+      return from.parentElement === to.parentElement && Math.abs(siblingIndex(from) - siblingIndex(to)) === 1;
+    };
+    const pointPair = (from, to, scope) => {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), box = scope.getBoundingClientRect();
+      const ax = a.left + a.width / 2, ay = a.top + a.height / 2, bx = b.left + b.width / 2, by = b.top + b.height / 2;
+      if (Math.abs(bx - ax) >= Math.abs(by - ay)) return [bx >= ax ? a.right : a.left, ay, bx >= ax ? b.left : b.right, by, box];
+      return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
+    };
+    const pathFor = (from, to, scope) => {
+      const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
+      const x1 = sx - box.left, y1 = sy - box.top, x2 = ex - box.left, y2 = ey - box.top;
+      const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+      const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1, c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
+      const c2x = horizontal ? x2 - (x2 - x1) * .45 : x2, c2y = horizontal ? y2 : y2 - (y2 - y1) * .45;
+      return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+    };
+    const warning = (scope, message) => {
+      const badge = document.createElement('p');
+      badge.className = 'connector-warning';
+      badge.textContent = `接続を描画できません: ${message}`;
+      scope.append(badge);
+    };
+    const render = (scope) => {
+      scope.querySelectorAll('.connector-layer, .connector-warning').forEach((node) => node.remove());
+      const list = directChild(scope, 'connection-text') || document.createElement('ul');
+      list.className = 'connection-text visually-hidden';
+      list.setAttribute('aria-label', '接続関係');
+      list.replaceChildren();
+      if (!list.parentElement) scope.append(list);
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'connector-layer');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><marker id="connector-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"/></marker></defs>';
+      const nodes = nodeMap(scope);
+      let hasLine = false;
+      scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+        declaration.dataset.connect.split(',').map((item) => item.trim()).filter(Boolean).forEach((item) => {
+          const [fromId, toId] = item.split('->').map((id) => id && id.trim());
+          const from = nodes.get(fromId), to = nodes.get(toId);
+          if (!from || !to) {
+            console.error('visual-explain: unknown connector reference', item);
+            warning(scope, `「${item}」の ID が見つかりません。`);
+            return;
+          }
+          if (!adjacent(from, to, scope)) {
+            console.error('visual-explain: non-adjacent connector rejected', item);
+            warning(scope, `「${item}」は隣接ノードだけを接続できます。`);
+            return;
+          }
+          const path = document.createElementNS(SVG_NS, 'path');
+          path.setAttribute('d', pathFor(from, to, scope));
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', 'currentColor');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('marker-end', 'url(#connector-arrow)');
+          svg.append(path);
+          const text = document.createElement('li');
+          text.textContent = `${from.textContent.trim()} から ${to.textContent.trim()} へ接続`;
+          list.append(text);
+          hasLine = true;
+        });
+      });
+      if (hasLine) scope.append(svg);
+    };
+    const renderAll = () => scopes().forEach(render);
+    window.addEventListener('load', () => {
+      renderAll();
+      resizeObserver = new ResizeObserver(renderAll);
+      scopes().forEach((scope) => resizeObserver.observe(scope));
+    });
+    document.addEventListener('toggle', (event) => { if (event.target.matches('details')) renderAll(); }, true);
+    document.addEventListener('visual-explain:stepchange', renderAll);
+  })();
+
+  /* FIXED STEPPER AND DETAILS JS: DO NOT MODIFY. */
+  (() => {
+    const update = (stepper, current, all = false) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      panels.forEach((panel) => {
+        const active = Number(panel.dataset.step) === current;
+        panel.hidden = !all && !active;
+        panel.classList.toggle('is-current', active && !all);
+        panel.setAttribute('aria-current', active && !all ? 'step' : 'false');
+      });
+      let status = stepper.querySelector('.stepper-status');
+      if (!status) {
+        status = document.createElement('p');
+        status.className = 'stepper-status';
+        status.setAttribute('aria-live', 'polite');
+        stepper.prepend(status);
+      }
+      status.textContent = all ? `全体表示: ${total} 段階を同時に表示中。` : `現在の状態: ステップ ${current}/${total}。開始状態はステップ 1、終了状態はステップ ${total}。`;
+      const previous = stepper.querySelector('[data-step-action="previous"]');
+      const next = stepper.querySelector('[data-step-action="next"]');
+      if (previous) previous.disabled = all || current <= 1;
+      if (next) next.disabled = all || current >= total;
+      if (next) next.textContent = next.dataset.nextLabel || `次へ: ステップ ${Math.min(total, current + 1)} を表示`;
+      stepper.dataset.currentStep = String(current);
+      document.dispatchEvent(new CustomEvent('visual-explain:stepchange'));
+    };
+    document.querySelectorAll('details').forEach((details) => details.setAttribute('aria-expanded', String(details.open)));
+    document.querySelectorAll('[data-stepper]').forEach((stepper) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      if (!total) return;
+      update(stepper, 1);
+      stepper.addEventListener('click', (event) => {
+        const action = event.target.closest('button[data-step-action]');
+        if (!action) return;
+        const current = Number(stepper.dataset.currentStep) || 1;
+        if (action.dataset.stepAction === 'previous') update(stepper, Math.max(1, current - 1));
+        if (action.dataset.stepAction === 'next') update(stepper, Math.min(total, current + 1));
+        if (action.dataset.stepAction === 'all') update(stepper, current, true);
+      });
+    });
+    document.addEventListener('toggle', (event) => {
+      if (event.target.matches('details')) event.target.setAttribute('aria-expanded', String(event.target.open));
+    }, true);
+  })();
+  </script>
+</body>
+</html>

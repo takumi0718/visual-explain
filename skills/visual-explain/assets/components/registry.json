@@ -333,6 +333,56 @@
           "digest": "392189a53a978812139170109f88a1846863b141a338e6240719a9bea8309dd2"
         }
       ]
+    },
+    {
+      "id": "waterfall",
+      "version": 1,
+      "relationshipKind": "additive-bridge",
+      "capabilities": [
+        "additive-bridging"
+      ],
+      "semanticResponsibility": "加算的な橋渡し（増減の累積）のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "displayPrecision",
+        "start",
+        "steps",
+        "end"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources",
+        "orientation"
+      ],
+      "behavior": "静的なウォーターフォールで開始・増減・終了を百分率クラスで描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と開始/段/終了の一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "waterfall-consistency"
+      ],
+      "renderer": "waterfall@1",
+      "assets": [
+        {
+          "id": "waterfall.css",
+          "slot": "styles",
+          "path": "waterfall.css",
+          "digest": "11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f"
+        }
+      ]
     }
   ]
 }

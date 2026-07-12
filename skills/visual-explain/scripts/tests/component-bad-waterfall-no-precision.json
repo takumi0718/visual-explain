@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "bad-wf-noprec", "title": "bad", "summary": "bad"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-bad-wf-noprec",
+      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
+      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "bad",
+      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
+      "sources": [{"id": "s1", "label": "x"}],
+      "accessibility": {"label": "x", "summary": "x"},
+      "waterfall": {
+        "orientation": "bars",
+        "start": {"id": "st", "label": "開始", "value": 10, "valueText": "10件"},
+        "steps": [{"id": "sp", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"}],
+        "end": {"id": "en", "label": "終了", "value": 15, "valueText": "15件"}
+      }
+    }
+  }]
+}
