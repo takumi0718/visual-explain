@@ -1,5 +1,6 @@
 {
   "vocabularyVersion": 1,
+  "contractVersions": [1, 2],
   "components": {
     "matrix": {
       "contractVersion": 1,

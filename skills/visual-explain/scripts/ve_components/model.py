@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Callable, Optional
 
+CERTAINTY_LABEL = {"confirmed": "確認済み", "inferred": "推論", "unverified": "未確認"}
+
 # ---------------------------------------------------------------------------
 # Document + assembly envelope
 # ---------------------------------------------------------------------------
@@ -81,6 +83,7 @@ class MatrixPayload:
     rows: tuple[AxisEntry, ...]
     columns: tuple[AxisEntry, ...]
     cells: tuple[MatrixCell, ...]
+    highlight_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -126,6 +129,7 @@ class EnumerationItem:
     label: Optional[str] = None
     title: Optional[str] = None
     description: tuple[str, ...] = ()
+    description_emphasis: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -141,6 +145,7 @@ class ChevronStep:
     label: Optional[str] = None
     title: Optional[str] = None
     description: tuple[str, ...] = ()
+    description_emphasis: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -174,6 +179,7 @@ class StairsStage:
 @dataclass(frozen=True)
 class StairsPayload:
     stages: tuple[StairsStage, ...]
+    highlight_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -200,6 +206,8 @@ class WaterfallPayload:
     start: WaterfallEndpoint
     steps: tuple[WaterfallStep, ...]
     end: WaterfallEndpoint
+    title: Optional[str] = None
+    unit_label: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -249,6 +257,9 @@ class SlopePayload:
     axes: SlopeAxes
     unit: str
     items: tuple[SlopeItem, ...]
+    title: Optional[str] = None
+    unit_label: Optional[str] = None
+    highlight_id: Optional[str] = None
 
 
 @dataclass(frozen=True)

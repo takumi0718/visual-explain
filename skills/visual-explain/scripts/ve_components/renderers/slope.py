@@ -9,7 +9,7 @@ import html
 from ..model import CanonicalSection, RenderManifest, RenderResult
 from ..numeric import slope_scale_values, slope_y, to_decimal
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
 _FROM_X = 120
 _TO_X = 480
 

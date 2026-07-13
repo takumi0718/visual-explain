@@ -125,7 +125,7 @@ class FlowMarkupTest(unittest.TestCase):
 
     def test_visible_certainty_and_source(self) -> None:
         self.assertIn("レビュー運用手順", self.markup)
-        self.assertIn("確定", self.markup)
+        self.assertIn("確認済み", self.markup)
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         self.assertEqual(set(self.result.manifest.consumed_semantic_ids), set(self.ir.semantic_ids()))

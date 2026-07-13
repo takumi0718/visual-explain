@@ -14,7 +14,7 @@ from ..diagnostics import RENDERER_FAILURE, Diagnostic
 from ..model import CanonicalSection, RenderManifest, RenderResult, WaterfallPayload
 from ..numeric import quantize_percent, to_decimal, waterfall_scale_values
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
 _WF_CLASS_RE = re.compile(r"^ve-wf-(start|len)-(\d+)$")
 
 

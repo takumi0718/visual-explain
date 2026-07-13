@@ -84,8 +84,13 @@ class SchemaVocabularyConsistencyTest(unittest.TestCase):
         self.assertEqual(set(IR_SCHEMA["$defs"]["capability"]["enum"]), caps)
 
     def test_contract_versions_match(self) -> None:
-        versions = {c["contractVersion"] for c in VOCABULARY["components"].values()}
-        self.assertEqual(set(IR_SCHEMA["$defs"]["contractVersion"]["enum"]), versions)
+        allowed = set(IR_SCHEMA["$defs"]["contractVersion"]["enum"])
+        declared = set(VOCABULARY.get("contractVersions", []))
+        if declared:
+            self.assertEqual(allowed, declared)
+        else:
+            versions = {c["contractVersion"] for c in VOCABULARY["components"].values()}
+            self.assertEqual(allowed, versions)
 
     def test_oneof_branches_mutually_exclude_all_payloads(self) -> None:
         payload_keys = list(VOCABULARY["components"].keys())

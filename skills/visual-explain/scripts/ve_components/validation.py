@@ -121,20 +121,20 @@ _SOURCE_KEYS = {"id", "label", "detail"}
 _ACCESSIBILITY_KEYS = {"label", "summary"}
 _AXIS_KEYS = {"id", "label"}
 _CELL_KEYS = {"id", "rowId", "columnId", "content", "certaintyRef", "sourceRef"}
-_MATRIX_KEYS = {"rows", "columns", "cells"}
+_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId"}
 _FLOW_KEYS = {"nodes", "edges", "groups", "startId", "readingOrder"}
 _NODE_KEYS = {"id", "label", "group"}
 _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
 _GROUP_KEYS = {"id", "label"}
 _ENUMERATION_KEYS = {"items", "presentation", "blockContent"}
-_ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description"}
+_ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description", "descriptionEmphasis"}
 _CHEVRON_KEYS = {"steps", "orientation", "blockContent", "loop"}
-_CHEVRON_STEP_KEYS = {"id", "label", "title", "description"}
+_CHEVRON_STEP_KEYS = {"id", "label", "title", "description", "descriptionEmphasis"}
 _PYRAMID_KEYS = {"tiers"}
 _PYRAMID_TIER_KEYS = {"id", "label", "sub"}
-_STAIRS_KEYS = {"stages"}
+_STAIRS_KEYS = {"stages", "highlightId"}
 _STAIRS_STAGE_KEYS = {"id", "label", "note", "current"}
-_WATERFALL_KEYS = {"displayPrecision", "orientation", "start", "steps", "end"}
+_WATERFALL_KEYS = {"displayPrecision", "orientation", "start", "steps", "end", "title", "unitLabel"}
 _WATERFALL_ENDPOINT_KEYS = {"id", "label", "value", "valueText"}
 _WATERFALL_STEP_KEYS = {"id", "label", "delta", "valueText", "tone"}
 _WATERFALL_TONES = frozenset({"positive", "warning", "neutral"})
@@ -142,7 +142,7 @@ _LOGIC_TREE_KEYS = {"root", "branches"}
 _LOGIC_TREE_ROOT_KEYS = {"id", "label"}
 _LOGIC_TREE_BRANCH_KEYS = {"id", "label", "leaves"}
 _LOGIC_TREE_LEAF_KEYS = {"id", "text"}
-_SLOPE_KEYS = {"axes", "unit", "items"}
+_SLOPE_KEYS = {"axes", "unit", "items", "title", "unitLabel", "highlightId"}
 _SLOPE_AXES_KEYS = {"fromLabel", "toLabel"}
 _SLOPE_ITEM_KEYS = {"id", "label", "fromValue", "toValue", "fromValueText", "toValueText", "tone"}
 _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
@@ -573,7 +573,16 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
             id=cid, row_id=rid, column_id=colid, content=item.get("content"),
             certainty_ref=item.get("certaintyRef"), source_ref=item.get("sourceRef"),
         ))
-    return MatrixPayload(rows=rows, columns=columns, cells=tuple(cells))
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(INVALID_COMPONENT_PAYLOAD, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {c.id for c in cells}:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"highlightId '{highlight_id}' が cells に存在しません", path)
+    return MatrixPayload(
+        rows=rows, columns=columns, cells=tuple(cells),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+    )
 
 
 def _validate_axis(raw: object, path: str, col: DiagnosticCollector) -> tuple[AxisEntry, ...]:
@@ -636,6 +645,7 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
         label = item.get("label")
         title = item.get("title")
         desc_raw = item.get("description")
+        desc_emphasis = item.get("descriptionEmphasis")
         desc_lines: list[str] = []
         if desc_raw is not None:
             if not isinstance(desc_raw, list) or not desc_raw:
@@ -668,11 +678,14 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
                 col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:number では title が必須です", p)
             elif len(str(title)) > 30:
                 col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は30字以内です", p)
+        if desc_emphasis is not None and not _nonblank_str(desc_emphasis):
+            col.add(ENUMERATION_STRUCTURE_VIOLATION, "descriptionEmphasis は空にできません", p)
 
         items.append(EnumerationItem(
             id=iid, label=label if isinstance(label, str) else None,
             title=title if isinstance(title, str) else None,
             description=tuple(desc_lines),
+            description_emphasis=desc_emphasis if isinstance(desc_emphasis, str) else None,
         ))
 
     if has_description and not all(has_description) and any(has_description):
@@ -742,6 +755,7 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
         label = item.get("label")
         title = item.get("title")
         desc_raw = item.get("description")
+        desc_emphasis = item.get("descriptionEmphasis")
         desc_lines: list[str] = []
         if desc_raw is not None:
             if not isinstance(desc_raw, list) or not desc_raw:
@@ -774,11 +788,14 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
                 col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:number では title が必須です", p)
             elif len(str(title)) > 30:
                 col.add(CHEVRON_STRUCTURE_VIOLATION, "title は30字以内です", p)
+        if desc_emphasis is not None and not _nonblank_str(desc_emphasis):
+            col.add(CHEVRON_STRUCTURE_VIOLATION, "descriptionEmphasis は空にできません", p)
 
         steps.append(ChevronStep(
             id=sid, label=label if isinstance(label, str) else None,
             title=title if isinstance(title, str) else None,
             description=tuple(desc_lines),
+            description_emphasis=desc_emphasis if isinstance(desc_emphasis, str) else None,
         ))
 
     if has_description and not all(has_description) and any(has_description):
@@ -889,9 +906,19 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
     if current_count > 1:
         col.add(STAIRS_STRUCTURE_VIOLATION, "current:true は最大1件です", path)
 
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(STAIRS_STRUCTURE_VIOLATION, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {s.id for s in stages}:
+        col.add(STAIRS_STRUCTURE_VIOLATION, f"highlightId '{highlight_id}' が stages に存在しません", path)
+
     if col:
         return None
-    return StairsPayload(stages=tuple(stages))
+    return StairsPayload(
+        stages=tuple(stages),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+    )
 
 
 def _parse_numeric_field(raw: object, path: str, col: DiagnosticCollector) -> int | Decimal | None:
@@ -1014,6 +1041,8 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         start=start,
         steps=tuple(steps),
         end=end,
+        title=raw.get("title") if _nonblank_str(raw.get("title")) else None,
+        unit_label=raw.get("unitLabel") if _nonblank_str(raw.get("unitLabel")) else None,
     )
     _, lo, hi = waterfall_scale_values(payload)
     if lo == hi:
@@ -1218,6 +1247,14 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
 
     if col or not _nonblank_str(from_label) or not _nonblank_str(to_label) or not _nonblank_str(unit):
         return None
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(SLOPE_STRUCTURE_VIOLATION, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {item.id for item in items}:
+        col.add(SLOPE_STRUCTURE_VIOLATION, f"highlightId '{highlight_id}' が items に存在しません", path)
+    if col:
+        return None
     return SlopePayload(
         axes=SlopeAxes(
             from_label=str(from_label),
@@ -1225,6 +1262,9 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
         ),
         unit=str(unit),
         items=tuple(items),
+        title=raw.get("title") if _nonblank_str(raw.get("title")) else None,
+        unit_label=raw.get("unitLabel") if _nonblank_str(raw.get("unitLabel")) else None,
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
     )
 
 
