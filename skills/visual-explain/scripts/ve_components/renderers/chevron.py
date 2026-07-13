@@ -17,6 +17,29 @@ def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
+def _desc_html(text: str, emphasis: str | None) -> str:
+    escaped = _esc(text)
+    if emphasis:
+        needle = _esc(emphasis)
+        escaped = escaped.replace(needle, f'<strong class="dg-em">{needle}</strong>', 1)
+    return escaped
+
+
+def _description_html(lines: tuple[str, ...], emphasis: str | None) -> str:
+    emphasis_used = False
+    parts: list[str] = []
+    for line in lines:
+        line_emphasis: str | None = None
+        if emphasis and not emphasis_used and emphasis in line:
+            line_emphasis = emphasis
+            emphasis_used = True
+        parts.append(
+            f'<p class="ve-chevron-description">'
+            f'{_desc_html(line, line_emphasis)}</p>'
+        )
+    return "".join(parts)
+
+
 def _step_endpoint_name(step, index: int) -> str:
     """Accessible loop endpoint: label, then title, then renderer ordinal."""
     if step.label and str(step.label).strip():
@@ -38,7 +61,7 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
 
     blocks: list[str] = []
     for index, step in enumerate(chevron.steps, start=1):
-        concept_classes = ["ve-chevron-concept"]
+        concept_classes = ["ve-chevron-concept", "ve-chv-box"]
         if step.id in takeaway:
             concept_classes.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if step.id in takeaway else ""
@@ -55,8 +78,10 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
         concept_html = f'<div class="{" ".join(concept_classes)}">{heading}</div>'
         description_html = ""
         if step.description:
-            lines = "".join(f"<li>{_esc(line)}</li>" for line in step.description)
-            description_html = f'<ul class="ve-chevron-description">{lines}</ul>'
+            description_html = _description_html(
+                step.description,
+                step.description_emphasis,
+            )
         blocks.append(
             f'<li class="ve-chevron-step" data-ve-semantic-id="{_esc(step.id)}"{takeaway_attr}>'
             f'{concept_html}{description_html}{emphasis_html}</li>'
@@ -72,10 +97,12 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
     list_markup = f'<ol class="{" ".join(layout_classes)}">{"".join(blocks)}</ol>'
 
     loop_rail = ""
+    loop_tail = ""
     loop_sentence = ""
     body_inner = list_markup
     if chevron.loop and chevron.orientation == "vertical":
         loop_rail = '<div class="ve-chevron-loop-rail" aria-hidden="true"></div>'
+        loop_tail = '<div class="ve-chevron-loop-tail" aria-hidden="true"></div>'
         last_name = _step_endpoint_name(chevron.steps[-1], len(chevron.steps))
         first_name = _step_endpoint_name(chevron.steps[0], 1)
         loop_sentence = (
@@ -84,7 +111,7 @@ def render_chevron(section: CanonicalSection, definition) -> RenderResult:
             f'</ul>'
         )
         body_inner = (
-            f'<div class="ve-chevron-centered-column">{loop_rail}{list_markup}{loop_sentence}</div>'
+            f'<div data-ve-loop="true">{loop_rail}{loop_tail}{list_markup}{loop_sentence}</div>'
         )
 
     notes = []

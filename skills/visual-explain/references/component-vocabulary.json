@@ -18,7 +18,7 @@
       "capabilities": ["parallel-itemization"]
     },
     "chevron": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "ordered-sequence",
       "capabilities": ["linear-sequence", "closed-loop"]
     },

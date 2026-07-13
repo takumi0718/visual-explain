@@ -377,7 +377,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-chevron",
         "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
-        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence"]},
         "caption": "受付から報告までの4段",
         "certainty": [{"id": "c-cert", "level": "confirmed", "statement": "4段は運用手順書に準拠。"}],
         "sources": [{"id": "c-src", "label": "運用手順書 v3"}],

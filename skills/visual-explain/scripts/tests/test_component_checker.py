@@ -427,8 +427,8 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_chevron_missing_concept_child_fails(self) -> None:
         doc = build("component-valid-chevron.json")
         tampered = doc.replace(
-            'class="ve-chevron-concept"',
-            'class="ve-chevron-concept-missing"',
+            'class="ve-chevron-concept ve-chv-box"',
+            'class="ve-chevron-concept-missing ve-chv-box"',
             1,
         )
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
@@ -446,8 +446,9 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_chevron_partial_descriptions_fail(self) -> None:
         doc = build("component-valid-chevron.json")
         tampered = doc.replace(
-            '<ul class="ve-chevron-description">',
-            '<ul class="ve-chevron-description-missing">',
+            '<p class="ve-chevron-description">依頼を記録する</p>'
+            '<p class="ve-chevron-description">担当を割り当てる</p>',
+            '',
             1,
         )
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))

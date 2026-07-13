@@ -228,67 +228,69 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="chevron" data-ve-contract-version="1" data-ve-asset="chevron.css" data-ve-digest="e4a84069b495b7730030557fb6939c9694a17771d299c8ac6bd77a9a3111e623">[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="chevron"] .ve-chevron-body { position: relative; }
-[data-ve-component="chevron"] .ve-chevron-centered-column {
-  position: relative; width: fit-content; margin-inline: auto;
-}
-[data-ve-component="chevron"] .ve-chevron-steps { list-style: none; margin: 0; padding: 0; }
-[data-ve-component="chevron"] .ve-chevron-centered { width: fit-content; margin-inline: auto; }
-[data-ve-component="chevron"] .ve-chevron-centered.ve-chevron-has-description { width: 100%; }
-[data-ve-component="chevron"] .ve-chevron-step { min-width: 0; margin: 0 0 var(--space-2); font-size: var(--fs-figure); }
-[data-ve-component="chevron"] .ve-chevron-concept {
-  background: var(--text-dim); color: var(--bg); padding: var(--space-2);
-  text-align: center;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1rem), 50% 100%, 0 calc(100% - 1rem));
-}
-[data-ve-component="chevron"] .ve-chevron-centered.ve-chevron-has-description .ve-chevron-step {
-  display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr);
-  align-items: center; gap: var(--space-2);
-}
-[data-ve-component="chevron"] .ve-chevron-horizontal {
-  display: flex; flex-wrap: wrap; gap: 0; justify-content: center;
-}
-[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
+  <style data-ve-component="chevron" data-ve-contract-version="2" data-ve-asset="chevron.css" data-ve-digest="7cb72de8ebf78a1d2bff814530b5ad1e8ccf26618ceeac46e310d07d4ebe03e0">figure[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="chevron"] .ve-chevron-body { position: relative; }
+figure[data-ve-component="chevron"] .ve-chevron-steps { list-style: none; margin: 0; padding: 0; }
+figure[data-ve-component="chevron"] .ve-chevron-centered { width: fit-content; margin-inline: auto; }
+figure[data-ve-component="chevron"] [data-ve-loop="true"] {
+  position: relative; --chv-cx: 9rem;
+  padding-left: 2.5rem; padding-top: 2.3rem; padding-bottom: 1.2rem; }
+figure[data-ve-component="chevron"] .ve-chevron-loop-rail {
+  position: absolute; left: .5rem; top: .5rem; bottom: .2rem;
+  width: calc(var(--chv-cx) - .5rem);
+  border: 2.5px solid var(--dg-line); border-right: 0; }
+figure[data-ve-component="chevron"] .ve-chevron-loop-rail::before {
+  content: ""; position: absolute; top: -2.5px; right: -2.5px;
+  height: .95rem; border-right: 2.5px solid var(--dg-line); }
+figure[data-ve-component="chevron"] .ve-chevron-loop-rail::after {
+  content: ""; position: absolute; top: calc(.95rem - 2.5px); right: -.6rem;
+  border: .6rem solid transparent; border-top: .85rem solid var(--dg-line); border-bottom: 0; }
+figure[data-ve-component="chevron"] .ve-chevron-loop-tail {
+  position: absolute; left: calc(var(--chv-cx) - 1.25px); bottom: .2rem;
+  height: 1rem; border-left: 2.5px solid var(--dg-line); }
+figure[data-ve-component="chevron"] .ve-chevron-step {
+  display: grid; grid-template-columns: 13rem minmax(0, 1fr);
+  gap: var(--space-3); align-items: center; min-width: 0; margin: 0 0 var(--space-2); font-size: var(--fs-figure); }
+figure[data-ve-component="chevron"] .ve-chv-box {
+  display: grid; place-items: center; min-height: 6.5rem;
+  padding: var(--space-2) var(--space-2) 2.2rem;
+  background: var(--dg-primary); color: var(--dg-on-primary);
+  font-size: 1.0625rem; font-weight: 700; text-align: center; line-height: 1.5;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.9rem), 50% 100%, 0 calc(100% - 1.9rem)); }
+figure[data-ve-component="chevron"] .ve-chevron-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
+figure[data-ve-component="chevron"] .ve-chevron-label,
+figure[data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
+figure[data-ve-component="chevron"] .ve-chevron-description {
+  margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
+figure[data-ve-component="chevron"] .ve-chevron-description::before { content: "・"; }
+figure[data-ve-component="chevron"] .ve-chevron-description + .ve-chevron-description { margin-top: var(--space-1); }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal {
+  display: flex; flex-wrap: wrap; gap: 0; justify-content: center; }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
   display: flex; flex: 1 1 8rem; min-width: 6rem; max-width: 12rem;
-  flex-direction: column; margin: 0;
-}
-[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-concept {
-  clip-path: polygon(0.75rem 0, calc(100% - 0.75rem) 0, 100% 50%, calc(100% - 0.75rem) 100%, 0.75rem 100%, 0 50%);
-}
-[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
-  margin-left: -0.75rem;
-}
-[data-ve-component="chevron"] .ve-chevron-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
-[data-ve-component="chevron"] .ve-chevron-label,
-[data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
-[data-ve-component="chevron"] .ve-chevron-description { margin: var(--space-1) 0 0; padding: 0 var(--space-2) 0 var(--space-3); color: var(--text); font-size: var(--fs-small); text-align: left; }
-[data-ve-component="chevron"] .ve-chevron-loop-rail {
-  position: absolute; left: calc(-1 * var(--space-2)); top: 0; bottom: 0; width: 0.5rem;
-  border-left: 2px solid var(--text-dim);
-}
-[data-ve-component="chevron"] .ve-chevron-loop-rail::after {
-  content: ""; position: absolute; left: -0.35rem; top: 0;
-  border: 0.35rem solid transparent; border-bottom-color: var(--text-dim);
-}
-[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--border-strong); outline-offset: 2px; }
-[data-ve-component="chevron"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="chevron"] .ve-chevron-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="chevron"] .ve-chevron-notes li { margin: 0; }
-@media (max-width: 40rem) {
-  [data-ve-component="chevron"] .ve-chevron-centered.ve-chevron-has-description .ve-chevron-step { grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr); }
-  [data-ve-component="chevron"] .ve-chevron-horizontal { flex-direction: column; align-items: stretch; }
-  [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
-    max-width: none;
-  }
-  [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-concept {
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1rem), 50% 100%, 0 calc(100% - 1rem));
-  }
-  [data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
-    margin-left: 0;
-  }
+  flex-direction: column; margin: 0; grid-template-columns: unset; }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
+  min-height: auto;
+  padding: var(--space-2) 2.2rem var(--space-2) var(--space-2);
+  clip-path: polygon(1.9rem 0, 100% 0, 100% 100%, 1.9rem 100%, 0 50%); }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
+  margin-left: -1.9rem; }
+figure[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="chevron"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="chevron"] .ve-chevron-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); list-style: disc; }
+figure[data-ve-component="chevron"] .ve-chevron-notes li { margin: 0; }
+@media (max-width: 42rem) {
+  figure[data-ve-component="chevron"] .ve-chevron-step { grid-template-columns: 1fr; }
+  figure[data-ve-component="chevron"] [data-ve-loop="true"] { padding-left: 1.8rem; --chv-cx: 50%; }
+  figure[data-ve-component="chevron"] .ve-chevron-loop-rail { left: .3rem; width: calc(var(--chv-cx) - .3rem); }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal { flex-direction: column; align-items: stretch; }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step { max-width: none; }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.9rem), 50% 100%, 0 calc(100% - 1.9rem));
+    padding: var(--space-2) var(--space-2) 2.2rem; }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step { margin-left: 0; }
 }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
@@ -358,8 +360,8 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section data-ve-section-kind="canonical" data-ve-component="chevron" data-ve-contract-version="1" data-ve-instance="sec-chevron-vertical" data-ve-fallback="static-content">
-<figure data-ve-component="chevron" role="group" aria-label="処理フローのチェブロン" aria-describedby="sec-chevron-vertical-summary"><figcaption id="sec-chevron-vertical-caption" class="ve-chevron-caption">処理フローの4段階</figcaption><p id="sec-chevron-vertical-summary" class="ve-chevron-summary">縦型の番号付き4段で線形順序を示す。</p><div class="ve-chevron-body"><ol class="ve-chevron-steps ve-chevron-centered ve-chevron-has-description"><li class="ve-chevron-step" data-ve-semantic-id="step-intake"><div class="ve-chevron-concept"><span class="ve-chevron-number" aria-hidden="true">1</span><span class="ve-chevron-title">受付</span></div><ul class="ve-chevron-description"><li>依頼を記録する</li><li>担当を割り当てる</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-verify"><div class="ve-chevron-concept"><span class="ve-chevron-number" aria-hidden="true">2</span><span class="ve-chevron-title">検証</span></div><ul class="ve-chevron-description"><li>入力を確認する</li><li>不足を差し戻す</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-execute"><div class="ve-chevron-concept"><span class="ve-chevron-number" aria-hidden="true">3</span><span class="ve-chevron-title">実行</span></div><ul class="ve-chevron-description"><li>手順に従い処理する</li><li>結果を保存する</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-report"><div class="ve-chevron-concept"><span class="ve-chevron-number" aria-hidden="true">4</span><span class="ve-chevron-title">報告</span></div><ul class="ve-chevron-description"><li>完了を記録する</li><li>関係者へ通知する</li></ul></li></ol></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-chevron"><strong>確認済み:</strong> 4段は運用手順書に準拠。</li><li data-ve-semantic-id="src-runbook"><strong>出典 運用手順書 v3</strong>（受付から報告まで。）</li></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="chevron" data-ve-contract-version="2" data-ve-instance="sec-chevron-vertical" data-ve-fallback="static-content">
+<figure data-ve-component="chevron" role="group" aria-label="処理フローのチェブロン" aria-describedby="sec-chevron-vertical-summary"><figcaption id="sec-chevron-vertical-caption" class="ve-chevron-caption">処理フローの4段階</figcaption><p id="sec-chevron-vertical-summary" class="ve-chevron-summary">縦型の番号付き4段で線形順序を示す。</p><div class="ve-chevron-body"><ol class="ve-chevron-steps ve-chevron-centered ve-chevron-has-description"><li class="ve-chevron-step" data-ve-semantic-id="step-intake"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">1</span><span class="ve-chevron-title">受付</span></div><p class="ve-chevron-description">依頼を記録する</p><p class="ve-chevron-description">担当を割り当てる</p></li><li class="ve-chevron-step" data-ve-semantic-id="step-verify"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">2</span><span class="ve-chevron-title">検証</span></div><p class="ve-chevron-description">入力を確認する</p><p class="ve-chevron-description">不足を差し戻す</p></li><li class="ve-chevron-step" data-ve-semantic-id="step-execute"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">3</span><span class="ve-chevron-title">実行</span></div><p class="ve-chevron-description">手順に従い処理する</p><p class="ve-chevron-description">結果を保存する</p></li><li class="ve-chevron-step" data-ve-semantic-id="step-report"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">4</span><span class="ve-chevron-title">報告</span></div><p class="ve-chevron-description">完了を記録する</p><p class="ve-chevron-description">関係者へ通知する</p></li></ol></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-chevron"><strong>確認済み:</strong> 4段は運用手順書に準拠。</li><li data-ve-semantic-id="src-runbook"><strong>出典 運用手順書 v3</strong>（受付から報告まで。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

@@ -150,7 +150,7 @@
     },
     {
       "id": "chevron",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "ordered-sequence",
       "capabilities": [
         "linear-sequence",
@@ -185,13 +185,13 @@
         "responsive-order",
         "chevron-structure"
       ],
-      "renderer": "chevron@1",
+      "renderer": "chevron@2",
       "assets": [
         {
           "id": "chevron.css",
           "slot": "styles",
           "path": "chevron.css",
-          "digest": "e4a84069b495b7730030557fb6939c9694a17771d299c8ac6bd77a9a3111e623"
+          "digest": "7cb72de8ebf78a1d2bff814530b5ad1e8ccf26618ceeac46e310d07d4ebe03e0"
         }
       ]
     },

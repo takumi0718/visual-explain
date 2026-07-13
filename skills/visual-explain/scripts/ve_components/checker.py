@@ -786,20 +786,31 @@ def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagn
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           f"chevron ステップ '{sid}' に意味 ID がありません"))
     loop_rails = re.findall(r'class="[^"]*\bve-chevron-loop-rail\b[^"]*"', body)
+    loop_tails = re.findall(r'class="[^"]*\bve-chevron-loop-tail\b[^"]*"', body)
+    has_loop = 'data-ve-loop="true"' in body
     orientation = _chevron_steps_orientation(body)
     is_horizontal = orientation == "horizontal"
-    if is_horizontal and loop_rails:
+    if is_horizontal and (loop_rails or loop_tails or has_loop):
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "horizontal chevron に loop レールは許可されていません"))
-    if not is_horizontal and len(loop_rails) > 1:
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "vertical chevron の loop レールは最大1本です"))
+    if not is_horizontal:
+        if has_loop:
+            if len(loop_rails) != 1:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "vertical chevron の loop レールは loop 時に1本必要です"))
+            if len(loop_tails) != 1:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                              "vertical chevron の loop テールは loop 時に1本必要です"))
+        elif loop_rails or loop_tails:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "vertical chevron の loop 要素は loop 時のみ許可されます"))
     diagnostics.extend(_check_item_layout(
         body,
         component="chevron",
         outer="ve-chevron-step",
         concept="ve-chevron-concept",
         description="ve-chevron-description",
+        max_description_blocks=3,
     ))
     return diagnostics
 

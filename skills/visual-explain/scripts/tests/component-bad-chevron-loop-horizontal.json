@@ -11,7 +11,7 @@
       "ir": {
         "id": "sec-bad-loop-h",
         "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence", "closed-loop"]},
-        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence", "closed-loop"]},
+        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence", "closed-loop"]},
         "caption": "不正な組み合わせ",
         "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
         "sources": [{"id": "src-1", "label": "出典"}],
