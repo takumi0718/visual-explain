@@ -228,7 +228,7 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="evidence-map" data-ve-contract-version="2" data-ve-asset="evidence-map.css" data-ve-digest="be823c82a99e43f49c5c07e8b5db17a736e4c9f69b356ba9cbf85cd8cf008822">figure[data-ve-component="evidence-map"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+  <style data-ve-component="evidence-map" data-ve-contract-version="2" data-ve-asset="evidence-map.css" data-ve-digest="b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b">figure[data-ve-component="evidence-map"] { display: block; min-width: 0; margin: var(--space-3) 0; }
 figure[data-ve-component="evidence-map"] .ve-evidence-map-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
 figure[data-ve-component="evidence-map"] .ve-evidence-map-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
 figure[data-ve-component="evidence-map"] .ve-em-layout { display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--w-narrative); }
@@ -244,10 +244,10 @@ figure[data-ve-component="evidence-map"] .ve-em-item::before {
   content: ""; position: absolute; left: 0; top: 50%; width: 1.5rem;
   border-top: 2px solid var(--dg-line); }
 figure[data-ve-component="evidence-map"] .ve-em-item::after {
-  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  content: ""; position: absolute; left: 0; top: calc(-1 * var(--space-2)); bottom: 0;
   border-left: 2px solid var(--dg-line); }
 figure[data-ve-component="evidence-map"] .ve-em-item:first-child::after { top: 50%; }
-figure[data-ve-component="evidence-map"] .ve-em-item:last-child::after { top: 0; bottom: 50%; }
+figure[data-ve-component="evidence-map"] .ve-em-item:last-child::after { bottom: 50%; }
 figure[data-ve-component="evidence-map"] .ve-em-item:only-child::after { content: none; }
 figure[data-ve-component="evidence-map"] .ve-em-solid::before { border-top-style: solid; }
 figure[data-ve-component="evidence-map"] .ve-em-dashed::before { border-top-style: dashed; }
