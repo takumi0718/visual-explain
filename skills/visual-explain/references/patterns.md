@@ -222,6 +222,10 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 | bars | `bars` | `bar-row` ごとのラベル、`bar-track` 内の `bar-fill`、数値 |
 | terms | `terms` | `term` ごとの `dt` と `dd` |
 
+## 広い画面での二層幅
+
+`figure` に包んだ legacy の `flow` / `matrix` は、広い画面で本文カラムの中心軸から左右対称に張り出す（コンポーネント `matrix` も同様。詳細は `design-system.md` の幅の節）。裸の `flow` / `matrix` は本文幅のまま。張り出しを意図するなら `figure` に包め。張り出しコンテナ内では matrix の table は本文カラム幅を上限に伸び、疎な表は張り出し幅までは広がらない。
+
 ## コネクタ宣言
 
 分岐または合流が必要な `flow` / `layers` では、図全体を `figure` に入れるか、親要素に `data-connect-scope` を付けて接続スコープを作れ。その**子孫**の `flow` または `layers` に `data-connect` を置き、`始点ID->終点ID` をカンマ区切りで宣言せよ。`data-connect` をスコープ要素自身に置くな。`data-connect-scope` と `data-connect` を同じ要素に置くな。ID はその図の中で解決される。複数の図で同じ ID を再利用してはならない。

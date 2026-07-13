@@ -80,7 +80,7 @@
     }
 
     * { box-sizing: border-box; }
-    html { background: var(--bg); color: var(--text); }
+    html { background: var(--bg); color: var(--text); font-size: clamp(1rem, 0.7rem + 0.5vw, 1.25rem); }
     body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
     main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-4) 0 var(--space-6); }
     section { min-width: 0; margin-block: var(--space-7); }
@@ -193,6 +193,13 @@
 
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
+    /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
+    @media (min-width: 60rem) {
+      .figure:has(.flow, .matrix) { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); }
+      figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }
+      .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
+    }
+
     @media (max-width: 42rem) {
       main { width: min(100% - var(--space-2), var(--w-narrative)); padding-top: var(--space-2); }
       .theme-control { width: min(100% - var(--space-2), var(--w-narrative)); }
@@ -202,6 +209,7 @@
       .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
       .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
       .compare { grid-template-columns: 1fr; }
+      .ask-options [data-ask-option] { grid-template-columns: 1fr; gap: var(--space-1); }
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->

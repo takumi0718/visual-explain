@@ -4,7 +4,10 @@
 Extracts each fixture's TITLE, CONTENT, and controlled-slot bodies, then
 re-inserts them between the same markers of the new skeleton. Fixtures whose
 markers are intentionally broken (bad-closing 等、マーカー自体を検査する fixture)
-are listed in KEEP_AS_IS and skipped.
+are listed in KEEP_AS_IS and skipped. 骨格の固定 CSS を変更したときは、
+KEEP_AS_IS のうち骨格 CSS を埋め込む6件（compatibility-valid-fragment.html 以外）にも
+同じ編集をテキスト置換で適用すること（マーカー破壊や固定領域の故意相違は保存し、
+固定 CSS だけを骨格と一致させる）。
 """
 import sys
 from pathlib import Path
@@ -16,7 +19,12 @@ MARKERS = [
     ("<!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->", "<!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->"),
     ("<!-- CONTENT:BEGIN -->", "<!-- CONTENT:END -->"),
 ]
-KEEP_AS_IS = {"bad-closing.html", "bad-system-closing.html", "bad-fixed-region.html", "bad-nesting.html"}
+KEEP_AS_IS = {
+    "bad-closing.html", "bad-system-closing.html", "bad-fixed-region.html", "bad-nesting.html",
+    # マーカー欠落を検査する fixture と骨格を持たない断片。resplice すると内容が壊れる。
+    # component-bad-fixed-region.html は固定領域3（footer）に故意相違を持ち、resplice すると消える。
+    "bad-title-missing.html", "compatibility-valid-fragment.html", "component-bad-fixed-region.html",
+}
 
 
 def between(text, begin, end):
