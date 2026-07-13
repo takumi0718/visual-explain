@@ -23,7 +23,7 @@
       "capabilities": ["linear-sequence", "closed-loop"]
     },
     "pyramid": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "layered-priority",
       "capabilities": ["priority-layering"]
     },

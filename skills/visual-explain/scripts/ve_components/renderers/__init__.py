@@ -24,7 +24,7 @@ TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "flow@2": render_flow,
     "enumeration@2": render_enumeration,
     "chevron@2": render_chevron,
-    "pyramid@1": render_pyramid,
+    "pyramid@2": render_pyramid,
     "stairs@1": render_stairs,
     "logic-tree@1": render_logic_tree,
     "waterfall@1": render_waterfall,

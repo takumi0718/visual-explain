@@ -850,15 +850,11 @@ def _check_pyramid_artifact(body: str, parser: _DomSemanticParser) -> list[Diagn
         if tid not in parser.semantic_ids:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           f"pyramid 層 '{tid}' に意味 ID がありません"))
-        face_tokens = {c for c in classes if c.startswith("ve-pyramid-face-")}
-        if index == 0:
-            if face_tokens != {"ve-pyramid-face-strong"}:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              "pyramid の先頭層は ve-pyramid-face-strong のみである必要があります"))
-        else:
-            if face_tokens != {"ve-pyramid-face-dim"}:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              "pyramid の下位層は ve-pyramid-face-dim のみである必要があります"))
+        level_tokens = {c for c in classes if c.startswith("ve-pyramid-level-")}
+        expected_level = f"ve-pyramid-level-{position}"
+        if level_tokens != {expected_level}:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"pyramid の層 {position} は {expected_level} を1つだけ持つ必要があります"))
     return diagnostics
 
 

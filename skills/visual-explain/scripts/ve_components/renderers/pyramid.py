@@ -29,11 +29,7 @@ def render_pyramid(section: CanonicalSection, definition) -> RenderResult:
 
     blocks: list[str] = []
     for index, tier in enumerate(pyramid.tiers, start=1):
-        cls_parts = ["ve-pyramid-tier", f"ve-pyramid-index-{index}"]
-        if index == 1:
-            cls_parts.append("ve-pyramid-face-strong")
-        else:
-            cls_parts.append("ve-pyramid-face-dim")
+        cls_parts = ["ve-pyramid-tier", f"ve-pyramid-index-{index}", f"ve-pyramid-level-{index}"]
         if tier.id in takeaway:
             cls_parts.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if tier.id in takeaway else ""

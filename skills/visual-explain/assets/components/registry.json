@@ -200,7 +200,7 @@
     },
     {
       "id": "pyramid",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "layered-priority",
       "capabilities": [
         "priority-layering"
@@ -234,13 +234,13 @@
         "responsive-order",
         "pyramid-structure"
       ],
-      "renderer": "pyramid@1",
+      "renderer": "pyramid@2",
       "assets": [
         {
           "id": "pyramid.css",
           "slot": "styles",
           "path": "pyramid.css",
-          "digest": "8a45af59cbe466a0902044aa0e91744186a8ba1766cd28e427f2819774ff227e"
+          "digest": "5ae27d2763f9f6d1871a99b662a91804a892798707a444dc14d3138fd33ecf7c"
         }
       ]
     },

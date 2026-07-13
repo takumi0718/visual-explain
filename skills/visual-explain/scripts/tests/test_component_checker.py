@@ -346,8 +346,8 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = (TESTS / "component-bad-pyramid-face-order.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
-        self.assertIn("pyramid の下位層は ve-pyramid-face-dim のみである必要があります", messages)
+        self.assertIn("pyramid の層 1 は ve-pyramid-level-1 を1つだけ持つ必要があります", messages)
+        self.assertIn("pyramid の層 2 は ve-pyramid-level-2 を1つだけ持つ必要があります", messages)
 
     def test_pyramid_count_mismatch_html_fails(self) -> None:
         from ve_components.checker import check_final_document
@@ -368,7 +368,7 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = (TESTS / "component-bad-pyramid-face-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
+        self.assertIn("pyramid の層 1 は ve-pyramid-level-1 を1つだけ持つ必要があります", messages)
 
     def test_stairs_count_mismatch_html_fails(self) -> None:
         from ve_components.checker import check_final_document

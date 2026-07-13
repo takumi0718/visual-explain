@@ -415,7 +415,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-pyramid",
         "relationship": {"kind": "layered-priority", "capabilities": ["priority-layering"]},
-        "selection": {"component": "pyramid", "version": 1, "matchedCapabilities": ["priority-layering"]},
+        "selection": {"component": "pyramid", "version": 2, "matchedCapabilities": ["priority-layering"]},
         "caption": "優先度の4層ピラミッド",
         "certainty": [{"id": "p-cert", "level": "confirmed", "statement": "4層は経営会議で合意。"}],
         "sources": [{"id": "p-src", "label": "戦略方針 v2"}],

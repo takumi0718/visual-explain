@@ -228,29 +228,17 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="pyramid" data-ve-contract-version="1" data-ve-asset="pyramid.css" data-ve-digest="8a45af59cbe466a0902044aa0e91744186a8ba1766cd28e427f2819774ff227e">[data-ve-component="pyramid"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="pyramid"] .ve-pyramid-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="pyramid"] .ve-pyramid-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="pyramid"] .ve-pyramid-tiers { list-style: none; margin: 0; padding: 0; width: fit-content; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-tier {
-  padding: var(--space-2); margin: 0 0 var(--space-1); border-radius: var(--radius);
-  font-size: var(--fs-figure); text-align: center;
-}
-[data-ve-component="pyramid"] .ve-pyramid-face-strong { background: var(--border-strong); color: var(--bg); }
-[data-ve-component="pyramid"] .ve-pyramid-face-dim { background: var(--text-dim); color: var(--bg); }
-[data-ve-component="pyramid"] .ve-pyramid-label { display: block; font-weight: 800; }
-[data-ve-component="pyramid"] .ve-pyramid-sub { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 400; }
-[data-ve-component="pyramid"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
-[data-ve-component="pyramid"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="pyramid"] .ve-pyramid-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="pyramid"] .ve-pyramid-notes li { margin: 0; }
-[data-ve-component="pyramid"] .ve-pyramid-count-3 .ve-pyramid-index-1 { width: 40%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-3 .ve-pyramid-index-2 { width: 65%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-3 .ve-pyramid-index-3 { width: 90%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-1 { width: 30%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-2 { width: 50%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-3 { width: 70%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-4 { width: 90%; margin-inline: auto; }
+  <style data-ve-component="pyramid" data-ve-contract-version="2" data-ve-asset="pyramid.css" data-ve-digest="5ae27d2763f9f6d1871a99b662a91804a892798707a444dc14d3138fd33ecf7c">figure[data-ve-component="pyramid"] .ve-pyramid-tiers {
+  display: grid; gap: 3px; width: min(100%, 24rem);
+  margin-inline: auto; justify-items: center; list-style: none; padding: 0; }
+figure[data-ve-component="pyramid"] .ve-pyramid-tier {
+  display: grid; place-items: center; padding: var(--space-1) var(--space-2);
+  font-weight: 700; white-space: nowrap; min-width: max-content; }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-1 { width: 40%; background: var(--dg-primary); color: var(--dg-on-primary); }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-2 { width: 70%; background: var(--dg-primary-mid); color: var(--dg-on-primary); }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-3 { width: 100%; background: var(--dg-primary-light); color: var(--text); }
+figure[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-level-3 { width: 85%; }
+figure[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-level-4 { width: 100%; background: var(--dg-neutral); color: var(--text); }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
@@ -319,8 +307,8 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section data-ve-section-kind="canonical" data-ve-component="pyramid" data-ve-contract-version="1" data-ve-instance="sec-pyramid" data-ve-fallback="static-content">
-<figure data-ve-component="pyramid" role="group" aria-label="優先度ピラミッド" aria-describedby="sec-pyramid-summary"><figcaption id="sec-pyramid-caption" class="ve-pyramid-caption">優先度の4層ピラミッド</figcaption><p id="sec-pyramid-summary" class="ve-pyramid-summary">上から下へ4層の優先度を示す。</p><ul class="ve-pyramid-tiers ve-pyramid-count-4"><li class="ve-pyramid-tier ve-pyramid-index-1 ve-pyramid-face-strong" data-ve-semantic-id="tier-apex"><span class="ve-pyramid-label">最優先事項</span></li><li class="ve-pyramid-tier ve-pyramid-index-2 ve-pyramid-face-dim" data-ve-semantic-id="tier-high"><span class="ve-pyramid-label">重要施策</span><span class="ve-pyramid-sub">四半期で追う重点領域</span></li><li class="ve-pyramid-tier ve-pyramid-index-3 ve-pyramid-face-dim" data-ve-semantic-id="tier-mid"><span class="ve-pyramid-label">維持管理</span></li><li class="ve-pyramid-tier ve-pyramid-index-4 ve-pyramid-face-dim" data-ve-semantic-id="tier-base"><span class="ve-pyramid-label">基盤整備</span></li></ul><ul class="ve-pyramid-notes"><li data-ve-semantic-id="cert-pyramid"><strong>確認済み:</strong> 4層は経営会議で合意。</li><li data-ve-semantic-id="src-strategy"><strong>出典 戦略方針 v2</strong>（優先順位の定義。）</li></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="pyramid" data-ve-contract-version="2" data-ve-instance="sec-pyramid" data-ve-fallback="static-content">
+<figure data-ve-component="pyramid" role="group" aria-label="優先度ピラミッド" aria-describedby="sec-pyramid-summary"><figcaption id="sec-pyramid-caption" class="ve-pyramid-caption">優先度の4層ピラミッド</figcaption><p id="sec-pyramid-summary" class="ve-pyramid-summary">上から下へ4層の優先度を示す。</p><ul class="ve-pyramid-tiers ve-pyramid-count-4"><li class="ve-pyramid-tier ve-pyramid-index-1 ve-pyramid-level-1" data-ve-semantic-id="tier-apex"><span class="ve-pyramid-label">最優先事項</span></li><li class="ve-pyramid-tier ve-pyramid-index-2 ve-pyramid-level-2" data-ve-semantic-id="tier-high"><span class="ve-pyramid-label">重要施策</span><span class="ve-pyramid-sub">四半期で追う重点領域</span></li><li class="ve-pyramid-tier ve-pyramid-index-3 ve-pyramid-level-3" data-ve-semantic-id="tier-mid"><span class="ve-pyramid-label">維持管理</span></li><li class="ve-pyramid-tier ve-pyramid-index-4 ve-pyramid-level-4" data-ve-semantic-id="tier-base"><span class="ve-pyramid-label">基盤整備</span></li></ul><ul class="ve-pyramid-notes"><li data-ve-semantic-id="cert-pyramid"><strong>確認済み:</strong> 4層は経営会議で合意。</li><li data-ve-semantic-id="src-strategy"><strong>出典 戦略方針 v2</strong>（優先順位の定義。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
