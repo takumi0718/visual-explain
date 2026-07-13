@@ -24,6 +24,9 @@ from .diagnostics import (
     INVALID_CONTROLLED_ASSET,
     MISSING_CONTROLLED_MARKER,
     MISSING_PROVENANCE,
+    NOTATION_CERTAINTY_VOCABULARY,
+    NOTATION_EMPHASIS_LIMIT,
+    NOTATION_HIGHLIGHT_LIMIT,
     RENDERER_SVG_VIOLATION,
     SLOPE_STRUCTURE_VIOLATION,
     Diagnostic,
@@ -1465,6 +1468,28 @@ def validate_artifact_semantics(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
+def validate_notation_rules(content: str) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    for block in re.findall(r"<(?:p|li)\b[^>]*>.*?</(?:p|li)>", content, re.S):
+        if block.count('class="dg-em"') > 1:
+            diagnostics.append(Diagnostic(
+                code="notation-emphasis-limit",
+                message="文中強調 dg-em は1説明文に1つまでです。",
+                path="content"))
+    for figure in re.findall(r"<figure\b.*?</figure>", content, re.S):
+        if figure.count("ve-dg-highlight") > 1:
+            diagnostics.append(Diagnostic(
+                code="notation-highlight-limit",
+                message="teal ハイライトは1図1箇所までです。",
+                path="content"))
+    if re.search(r"<strong>(確定|推定)[:：]", content):
+        diagnostics.append(Diagnostic(
+            code="notation-certainty-vocabulary",
+            message="確度語彙は 確認済み/推論/未確認 の3語に統一してください。",
+            path="content"))
+    return diagnostics
+
+
 def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expected=None,
                          components_dir: Path | None = None) -> list[Diagnostic]:
     """Run the four-layer checker. Legacy documents pass unchanged.
@@ -1487,6 +1512,7 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_final_provenance(content)
         diagnostics += validate_artifact_semantics(content)
         diagnostics += validate_renderer_svg(content)
+        diagnostics += validate_notation_rules(content)
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

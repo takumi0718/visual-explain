@@ -74,6 +74,11 @@ RENDERER_SVG_VIOLATION = "renderer_svg_violation"
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
 
+# Task 3 — document-wide notation rules.
+NOTATION_EMPHASIS_LIMIT = "notation-emphasis-limit"
+NOTATION_HIGHLIGHT_LIMIT = "notation-highlight-limit"
+NOTATION_CERTAINTY_VOCABULARY = "notation-certainty-vocabulary"
+
 ALL_CODES = frozenset({
     INVALID_RELATIONSHIP_DECLARATION,
     INVALID_COMPONENT_PAYLOAD,
@@ -115,6 +120,9 @@ ALL_CODES = frozenset({
     SLOPE_STRUCTURE_VIOLATION,
     EVIDENCE_MAP_STRUCTURE_VIOLATION,
     RENDERER_SVG_VIOLATION,
+    NOTATION_EMPHASIS_LIMIT,
+    NOTATION_HIGHLIGHT_LIMIT,
+    NOTATION_CERTAINTY_VOCABULARY,
 })
 
 

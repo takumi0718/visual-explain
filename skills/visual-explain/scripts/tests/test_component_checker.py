@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from ve_components import checker
 from ve_components.checker import check_final_document, validate_final_provenance
 from ve_components.diagnostics import ContractError
 from ve_components.final_checks import check_manifest_to_dom
@@ -111,6 +112,41 @@ class LayerOneAndFourSafetyTest(unittest.TestCase):
                    '<section data-ve-section-kind="compatibility" data-ve-compat-source="legacy-html-insertion"'
                    ' data-ve-compat-reason="unmigrated-format" data-ve-instance="b"></section>')
         self.assertEqual(validate_final_provenance(content), [])
+
+
+class NotationRulesTest(unittest.TestCase):
+    """Task 3: document-wide notation limits (emphasis, highlight, certainty vocabulary)."""
+
+    def test_emphasis_limit_rejects_two_dg_em_in_one_description(self) -> None:
+        html = ('<p class="ve-enum-desc">Aを<strong class="dg-em">強調1</strong>し'
+                '<strong class="dg-em">強調2</strong>する</p>')
+        codes = [d.code for d in checker.validate_notation_rules(html)]
+        self.assertIn("notation-emphasis-limit", codes)
+
+    def test_highlight_limit_rejects_two_highlights_in_one_figure(self) -> None:
+        html = ('<figure data-ve-component="bars">'
+                '<div class="ve-bars-fill ve-dg-highlight"></div>'
+                '<div class="ve-bars-fill ve-dg-highlight"></div></figure>')
+        codes = [d.code for d in checker.validate_notation_rules(html)]
+        self.assertIn("notation-highlight-limit", codes)
+
+    def test_certainty_vocabulary_rejects_old_labels(self) -> None:
+        codes = [d.code for d in checker.validate_notation_rules(
+            '<li><strong>確定:</strong> 何か</li>')]
+        self.assertIn("notation-certainty-vocabulary", codes)
+
+    def _doc_codes(self, name: str) -> set[str]:
+        raw = (TESTS / name).read_text("utf-8")
+        return {d.code for d in check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)}
+
+    def test_emphasis_overuse_html_fails(self) -> None:
+        self.assertIn("notation-emphasis-limit", self._doc_codes("component-bad-emphasis-overuse.html"))
+
+    def test_highlight_overuse_html_fails(self) -> None:
+        self.assertIn("notation-highlight-limit", self._doc_codes("component-bad-highlight-overuse.html"))
+
+    def test_certainty_vocabulary_html_fails(self) -> None:
+        self.assertIn("notation-certainty-vocabulary", self._doc_codes("component-bad-certainty-vocabulary.html"))
 
 
 DIGEST_A = "a" * 64
