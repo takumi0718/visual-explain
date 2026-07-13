@@ -44,11 +44,14 @@
 
 - `--space-1`（.5rem）〜 `--space-7`（5.5rem）を、近接するものほど小さく、節の切れ目ほど大きく使う。`section` の縦マージンは `--space-7`。
 
-**幅（1）— 単一幅。左右のエッジを共有せよ。**
+**幅（2階層）— 本文は単一幅。適格の密な図だけ対称に張り出す。**
 
-- `--w-narrative`（45rem）: コンテンツの唯一の最大幅カラム。見出し・本文・図・表・キャプションを含む全要素がこの幅に収まり、左右のエッジを共有する
+- `--w-narrative`（45rem）: 見出し・本文・キャプション・非適格の図を収める唯一の本文カラム。左右のエッジを共有する
+- 二層幅の適格は閉じた列挙とする: `figure` に包んだ legacy の `flow` / `matrix` と、コンポーネント `matrix` のスクロールコンテナだけが、広い画面（初期換算 960px 以上）で本文カラムの中心軸から左右対称に張り出せる（連続ランプ、片側最大 10rem、合計 65rem 以下）。裸の legacy `flow` / `matrix`、コンポーネント `flow`、その他の図は張り出さない
+- ルート文字サイズは流体スケールする（`clamp(1rem, 0.7rem + 0.5vw, 1.25rem)`。960px 以下で 16px、1760px で 20px 到達）。トークン値と1行の字数は不変
+- caption の位置は経路で決まる: コンポーネント経路の caption / summary / notes は `--w-narrative` を保ち本文エッジに揃える。張り出した legacy カードの figcaption はカードに追従し、カード境界を整列コンテキストとする
 
-密な表・flow は各自の横スクロールコンテナ内で溢れさせ、ページ全体を広げるな。中央寄せは使わない。
+密な表・flow は各自の横スクロールコンテナ内で溢れさせ、ページ全体を広げるな。カラム内で内容を中央寄せしない。二層幅の張り出しは本文カラムの中心軸に対する対称拡張であり、この規則の例外ではない。
 
 ## Matrix / flow の色契約
 
@@ -81,7 +84,8 @@
 
 - **5段タイプスケール**: 見出し・本文・図解コンテンツ・補足は上記のタイプトークンだけで作れ。任意のフォントサイズを書くな。
 - **8px グリッド**: 間隔は `--space-*` だけで作れ。
-- **単一幅**: 全要素は `--w-narrative` 一本のカラムに収め、左右のエッジを共有する。密な表・flow は各自の横スクロールコンテナ内で溢れさせる。
+- **二層幅**: 本文と非適格の図は `--w-narrative` 一本のカラムに収め、左右のエッジを共有する。適格の図（幅の節の閉じた列挙）だけが広い画面で中心軸から対称に張り出す。密な表・flow は各自の横スクロールコンテナ内で溢れさせる。
+- **流体ルートスケール**: ルート文字サイズは 960→1760px で 16→20px に流体スケールする。タイプ・余白・幅のトークン値と1行の字数は不変。
 - **枠線は面で代替**: カード・図・折りたたみは枠線ではなく `--surface` の面で区切れ。罫線は表の横罫と節の境目に限定する。
 
 ## 密度上限
@@ -153,6 +157,7 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 - 定量比較は `bar-track` と `bar-fill` を使い、棒の長さを百分率で宣言せよ。棒だけで値を伝えず、数値を併記せよ。
 - 詳細は `deep-dive` にだけ格納し、判断の核心、制約、反証は初期表示に残せ。
 - 1セクション1問いを守り、主張を1行、根拠を2〜3行の目安に抑えよ。概ね1画面に収まるかを目視確認せよ。
+- 二層幅の張り出しは幅の節の閉じた列挙にだけ適用する。新しい図種を張り出させるには、幅の節・骨格 CSS・`test_skeleton_audit.py` の監査例外を同時に改訂せよ。
 
 ## コンポーネント資産の所有権（matrix / flow / enumeration / chevron）
 
@@ -160,9 +165,10 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 
 - **骨格**がグローバルトークン・固定領域・テーマ・固定 JavaScript を所有する。これらのバイトは1つも変更しない。
 - **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]`、slope は `[data-ve-component="slope"]`、evidence-map は `[data-ve-component="evidence-map"]` を根に持つ規則だけを書き、骨格トークンを再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
+- **二層幅のための閉じた例外**: 骨格は二層幅レイアウトに限り、コンポーネント名前空間セレクタ（`figure[data-ve-component="matrix"] .ve-matrix-scroll`）を対象にでき、その `max-width` を上書きできる。それ以外の名前空間規則は引き続きコンポーネントが所有する。
 - 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
 - CSS は意味の可読性・既存トークン・名前空間・静的アクセシビリティ・レスポンシブ順序だけに限る。狭い画面では積み重ねてよいが、意味的な読み順を反転しない。美的レビューは本スライスの範囲外。
-- **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。
+- **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。二層幅の対称張り出しは中央軸に対する拡張であり、この規則とは独立である。
 - **コンセプトと説明を分離する**: enumeration / chevron は `label` または番号＋`title` だけを図形内に置く。description は縦型で右、横型で下の兄弟領域へ置き、全省略時は空領域を作らない。意味 ID はコンセプト＋説明の外側項目に置き、takeaway の可視枠はコンセプト図形だけに付ける。
 - **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は行型6行（steps 1〜4）/横並び9列（steps 1〜7）、slope は最大5項目、evidence-map は根拠4件。超過は分割か縮退。
 - **waterfall の幾何は補助・valueText が主**: 累積オフセットは事前生成の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）で表現する。読者への数値伝達は必ず `valueText` で行い、幾何の量子化は情報を失わない補助である。
