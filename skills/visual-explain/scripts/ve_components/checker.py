@@ -29,7 +29,7 @@ from .diagnostics import (
     NOTATION_HIGHLIGHT_LIMIT,
     RENDERER_SVG_VIOLATION,
     SLOPE_STRUCTURE_VIOLATION,
-    BARS_STRUCTURE_VIOLATION,
+    BARS_WIDTH_CLASSES,
     Diagnostic,
 )
 from .validation import VOCABULARY
@@ -1308,7 +1308,7 @@ def _check_bars_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnost
     item_count = len(row_blocks)
     if item_count < 1 or item_count > 10:
         diagnostics.append(Diagnostic(
-            BARS_STRUCTURE_VIOLATION,
+            BARS_WIDTH_CLASSES,
             f"bars は1〜10項目である必要があります (found {item_count})",
         ))
 
@@ -1318,14 +1318,14 @@ def _check_bars_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnost
     ))
     if highlight_count > 1:
         diagnostics.append(Diagnostic(
-            BARS_STRUCTURE_VIOLATION,
+            BARS_WIDTH_CLASSES,
             "bars の highlight は最大1つです",
         ))
 
     for attrs, inner in row_blocks:
         if 'data-ve-semantic-id="' not in attrs:
             diagnostics.append(Diagnostic(
-                BARS_STRUCTURE_VIOLATION,
+                BARS_WIDTH_CLASSES,
                 "bars 行に data-ve-semantic-id がありません",
             ))
         fill_match = re.search(r'\bve-bars-fill\b[^>]*\b(ve-bars-w-\d+)\b', inner)
@@ -1333,7 +1333,7 @@ def _check_bars_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnost
             fill_match = re.search(r'\b(ve-bars-w-\d+)\b[^>]*\bve-bars-fill\b', inner)
         if fill_match is None:
             diagnostics.append(Diagnostic(
-                BARS_STRUCTURE_VIOLATION,
+                BARS_WIDTH_CLASSES,
                 "bars 行に ve-bars-fill と幅クラスがありません",
             ))
             continue
@@ -1341,11 +1341,11 @@ def _check_bars_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnost
         try:
             width_pct = int(width_token.removeprefix("ve-bars-w-"))
         except ValueError:
-            diagnostics.append(Diagnostic(BARS_STRUCTURE_VIOLATION, f"不正な幅クラス '{width_token}'"))
+            diagnostics.append(Diagnostic(BARS_WIDTH_CLASSES, f"不正な幅クラス '{width_token}'"))
             continue
         if width_pct < 0 or width_pct > 100:
             diagnostics.append(Diagnostic(
-                BARS_STRUCTURE_VIOLATION,
+                BARS_WIDTH_CLASSES,
                 f"bars 幅クラスは 0..100 である必要があります (found {width_pct})",
             ))
     return diagnostics

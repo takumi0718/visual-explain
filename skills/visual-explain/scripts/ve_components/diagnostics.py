@@ -74,7 +74,7 @@ RENDERER_SVG_VIOLATION = "renderer_svg_violation"
 
 # S7 — bars structure codes.
 BARS_ITEM_LIMIT = "bars-item-limit"
-BARS_STRUCTURE_VIOLATION = "bars_structure_violation"
+BARS_WIDTH_CLASSES = "bars-width-classes"
 
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
@@ -131,7 +131,7 @@ ALL_CODES = frozenset({
     EVIDENCE_MAP_STRUCTURE_VIOLATION,
     RENDERER_SVG_VIOLATION,
     BARS_ITEM_LIMIT,
-    BARS_STRUCTURE_VIOLATION,
+    BARS_WIDTH_CLASSES,
     NOTATION_EMPHASIS_LIMIT,
     NOTATION_HIGHLIGHT_LIMIT,
     NOTATION_CERTAINTY_VOCABULARY,

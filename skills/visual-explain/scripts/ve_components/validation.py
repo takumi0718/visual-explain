@@ -33,7 +33,6 @@ from .diagnostics import (
     WATERFALL_ARITHMETIC_MISMATCH,
     WATERFALL_STRUCTURE_VIOLATION,
     BARS_ITEM_LIMIT,
-    BARS_STRUCTURE_VIOLATION,
     ContractError,
     DiagnosticCollector,
 )
@@ -1324,10 +1323,10 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
 
 def _parse_bars_numeric(raw: object, path: str, col: DiagnosticCollector) -> int | Decimal | None:
     if isinstance(raw, bool):
-        col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドに bool は許可されません", path)
+        col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドに bool は許可されません", path)
         return None
     if isinstance(raw, float):
-        col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドに float は許可されません", path)
+        col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドに float は許可されません", path)
         return None
     if is_numeric(raw):
         return raw
@@ -1335,9 +1334,9 @@ def _parse_bars_numeric(raw: object, path: str, col: DiagnosticCollector) -> int
         try:
             return Decimal(raw.strip())
         except Exception:
-            col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
+            col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
             return None
-    col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
+    col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
     return None
 
 
@@ -1345,17 +1344,17 @@ def _validate_bars(raw: object, path: str, col: DiagnosticCollector) -> BarsPayl
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "bars はオブジェクトである必要があります", path)
         return None
-    _check_keys(raw, _BARS_KEYS, path, col, payload_code=BARS_STRUCTURE_VIOLATION)
+    _check_keys(raw, _BARS_KEYS, path, col, payload_code=INVALID_COMPONENT_PAYLOAD)
 
     title = raw.get("title")
     if not _nonblank_str(title):
-        col.add(BARS_STRUCTURE_VIOLATION, "title は必須です", path)
+        col.add(INVALID_COMPONENT_PAYLOAD, "title は必須です", path)
 
     unit_label = raw.get("unitLabel")
     if not _nonblank_str(unit_label):
         col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
     elif len(str(unit_label)) > 8:
-        col.add(BARS_STRUCTURE_VIOLATION, "unitLabel は8字以内です", path)
+        col.add(INVALID_COMPONENT_PAYLOAD, "unitLabel は8字以内です", path)
 
     items_raw = raw.get("items")
     if not isinstance(items_raw, list):
@@ -1371,17 +1370,17 @@ def _validate_bars(raw: object, path: str, col: DiagnosticCollector) -> BarsPayl
         if not isinstance(item, dict):
             col.add(INVALID_COMPONENT_PAYLOAD, "item はオブジェクトである必要があります", p)
             continue
-        _check_keys(item, _BARS_ITEM_KEYS, p, col, payload_code=BARS_STRUCTURE_VIOLATION)
+        _check_keys(item, _BARS_ITEM_KEYS, p, col, payload_code=INVALID_COMPONENT_PAYLOAD)
         iid = item.get("id")
         if not _nonblank_str(iid):
             col.add(INVALID_COMPONENT_PAYLOAD, "item.id は空にできません", p)
         label = item.get("label")
         if not _nonblank_str(label):
-            col.add(BARS_STRUCTURE_VIOLATION, "item.label は空にできません", p)
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.label は空にできません", p)
         value = _parse_bars_numeric(item.get("value"), f"{p}.value", col)
         value_text = item.get("valueText")
         if not _nonblank_str(value_text):
-            col.add(BARS_STRUCTURE_VIOLATION, "valueText は空にできません", p)
+            col.add(INVALID_COMPONENT_PAYLOAD, "valueText は空にできません", p)
         if value is None or not _nonblank_str(iid):
             continue
         items.append(BarsItem(
@@ -1398,10 +1397,10 @@ def _validate_bars(raw: object, path: str, col: DiagnosticCollector) -> BarsPayl
 
     highlight_id = raw.get("highlightId")
     if highlight_id is not None and not _nonblank_str(highlight_id):
-        col.add(BARS_STRUCTURE_VIOLATION, "highlightId は空にできません", path)
+        col.add(INVALID_COMPONENT_PAYLOAD, "highlightId は空にできません", path)
         highlight_id = None
     elif highlight_id is not None and highlight_id not in {item.id for item in items}:
-        col.add(BARS_STRUCTURE_VIOLATION, f"highlightId '{highlight_id}' が items に存在しません", path)
+        col.add(INVALID_COMPONENT_PAYLOAD, f"highlightId '{highlight_id}' が items に存在しません", path)
     if col:
         return None
     return BarsPayload(

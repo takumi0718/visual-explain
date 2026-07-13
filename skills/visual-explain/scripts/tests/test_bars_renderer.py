@@ -5,7 +5,7 @@ import json
 import unittest
 from pathlib import Path
 
-from ve_components.diagnostics import ContractError
+from ve_components.diagnostics import BARS_WIDTH_CLASSES, ContractError
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry
 from ve_components.validation import validate_canonical_section
@@ -46,6 +46,29 @@ class BarsMarkupTest(unittest.TestCase):
 
     def test_bars_rejects_more_than_ten_items(self) -> None:
         expect_violation(self, "component-bad-bars-eleven-items", "bars-item-limit")
+
+
+class BarsCheckerTest(unittest.TestCase):
+    SKELETON = SKILL / "assets" / "skeleton.html"
+    COMPONENTS = SKILL / "assets" / "components"
+
+    def test_bars_width_classes_diagnostic_is_registered(self) -> None:
+        from ve_components.diagnostics import ALL_CODES
+
+        self.assertEqual(BARS_WIDTH_CLASSES, "bars-width-classes")
+        self.assertIn(BARS_WIDTH_CLASSES, ALL_CODES)
+
+    def test_bars_structure_bad_fixture_emits_width_classes_code(self) -> None:
+        from ve_components.checker import check_final_document
+
+        codes = [d.code for d in check_final_document(
+            (TESTS / "component-bad-bars-structure.html").read_text("utf-8"),
+            self.SKELETON.read_text("utf-8"),
+            REGISTRY,
+            components_dir=self.COMPONENTS,
+        )]
+        self.assertIn(BARS_WIDTH_CLASSES, codes)
+        self.assertNotIn("bars_structure_violation", codes)
 
 
 if __name__ == "__main__":
