@@ -19,7 +19,7 @@
         },
         "selection": {
           "component": "flow",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": [
             "two-axis-classification",
             "intersection-comparison"

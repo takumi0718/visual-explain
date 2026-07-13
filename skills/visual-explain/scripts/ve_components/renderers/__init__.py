@@ -21,7 +21,7 @@ from .evidence_map import render_evidence_map
 
 TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "matrix@2": render_matrix,
-    "flow@1": render_flow,
+    "flow@2": render_flow,
     "enumeration@2": render_enumeration,
     "chevron@2": render_chevron,
     "pyramid@1": render_pyramid,

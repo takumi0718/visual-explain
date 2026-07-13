@@ -8,7 +8,7 @@
       "capabilities": ["two-axis-classification", "intersection-comparison"]
     },
     "flow": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "directed-graph",
       "capabilities": ["ordered-transition", "directed-transition", "branching"]
     },

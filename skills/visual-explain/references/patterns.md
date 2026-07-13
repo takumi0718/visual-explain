@@ -309,7 +309,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-flow",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition"]},
-        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
+        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
         "caption": "一次レビューの合意なしに承認へ進めない",
         "takeawayTargetIds": ["f-e2"],
         "certainty": [{"id": "f-cert", "level": "confirmed", "statement": "起案から一次レビューへの遷移は確定。"}],
@@ -632,7 +632,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
       "ir": {
         "id": "sec-fl",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition"]},
-        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition"]},
+        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition"]},
         "caption": "起案は承認へ進む",
         "takeawayScope": "whole",
         "certainty": [{"id": "fl-c", "level": "confirmed", "statement": "確定。"}],

@@ -34,7 +34,7 @@ def esc(value: str) -> str:
 # The mixed-assembly tests use the real production renderers against an isolated
 # temp registry/asset dir. This exercises the full trust boundary (renderer
 # markup verified against the source IR), which a generic double cannot.
-REAL_RENDERERS = {"matrix@2": render_matrix, "flow@1": render_flow}
+REAL_RENDERERS = {"matrix@2": render_matrix, "flow@2": render_flow}
 
 
 class MixedAssemblyTest(unittest.TestCase):
@@ -51,7 +51,7 @@ class MixedAssemblyTest(unittest.TestCase):
             "registryVersion": 1,
             "components": [
                 cls._entry("matrix", "two-axis", ["two-axis-classification", "intersection-comparison"], "matrix.css", cls.matrix_digest, version=2),
-                cls._entry("flow", "directed-graph", ["ordered-transition", "directed-transition", "branching"], "flow.css", cls.flow_digest),
+                cls._entry("flow", "directed-graph", ["ordered-transition", "directed-transition", "branching"], "flow.css", cls.flow_digest, version=2),
             ],
         }
         cls.registry = load_registry(registry_dict)
@@ -214,7 +214,7 @@ class RendererTrustBoundaryTest(unittest.TestCase):
 
     def _build_flow(self, renderer) -> str:
         raw = json.loads((TESTS / "component-valid-flow.json").read_text("utf-8"))
-        return build_document(raw, self.registry, {"flow@1": renderer}, SKELETON, self.tmp)
+        return build_document(raw, self.registry, {"flow@2": renderer}, SKELETON, self.tmp)
 
     @staticmethod
     def _mutate_matrix(**changes):

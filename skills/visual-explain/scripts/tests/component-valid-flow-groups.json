@@ -12,19 +12,33 @@
         "id": "sec-grouped-flow",
         "relationship": {
           "kind": "directed-graph",
-          "capabilities": ["ordered-transition", "directed-transition", "branching"]
+          "capabilities": [
+            "ordered-transition",
+            "directed-transition",
+            "branching"
+          ]
         },
         "selection": {
           "component": "flow",
-          "version": 1,
-          "matchedCapabilities": ["ordered-transition", "directed-transition"]
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition",
+            "directed-transition"
+          ]
         },
         "caption": "受付・審査のグループ別遷移",
         "certainty": [
-          {"id": "cert-grp", "level": "confirmed", "statement": "受付から審査への遷移は運用で確定。"}
+          {
+            "id": "cert-grp",
+            "level": "confirmed",
+            "statement": "受付から審査への遷移は運用で確定。"
+          }
         ],
         "sources": [
-          {"id": "src-grp", "label": "レビュー運用手順"}
+          {
+            "id": "src-grp",
+            "label": "レビュー運用手順"
+          }
         ],
         "accessibility": {
           "label": "グループ付き承認フロー",
@@ -32,17 +46,47 @@
         },
         "flow": {
           "groups": [
-            {"id": "grp-intake", "label": "受付"},
-            {"id": "grp-review", "label": "審査"}
+            {
+              "id": "grp-intake",
+              "label": "受付"
+            },
+            {
+              "id": "grp-review",
+              "label": "審査"
+            }
           ],
           "nodes": [
-            {"id": "gn-draft", "label": "起案", "group": "grp-intake"},
-            {"id": "gn-review", "label": "一次レビュー", "group": "grp-review"},
-            {"id": "gn-approve", "label": "承認", "group": "grp-review"}
+            {
+              "id": "gn-draft",
+              "label": "起案",
+              "group": "grp-intake"
+            },
+            {
+              "id": "gn-review",
+              "label": "一次レビュー",
+              "group": "grp-review"
+            },
+            {
+              "id": "gn-approve",
+              "label": "承認",
+              "group": "grp-review"
+            }
           ],
           "edges": [
-            {"id": "ge-1", "from": "gn-draft", "to": "gn-review", "relation": "ordered-transition", "label": "提出"},
-            {"id": "ge-2", "from": "gn-review", "to": "gn-approve", "relation": "directed-transition", "label": "合意"}
+            {
+              "id": "ge-1",
+              "from": "gn-draft",
+              "to": "gn-review",
+              "relation": "ordered-transition",
+              "label": "提出"
+            },
+            {
+              "id": "ge-2",
+              "from": "gn-review",
+              "to": "gn-approve",
+              "relation": "directed-transition",
+              "label": "合意"
+            }
           ],
           "startId": "gn-draft"
         }

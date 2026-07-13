@@ -55,7 +55,7 @@
     },
     {
       "id": "flow",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "directed-graph",
       "capabilities": [
         "ordered-transition",
@@ -95,13 +95,13 @@
         "no-external-reference",
         "responsive-order"
       ],
-      "renderer": "flow@1",
+      "renderer": "flow@2",
       "assets": [
         {
           "id": "flow.css",
           "slot": "styles",
           "path": "flow.css",
-          "digest": "e9dab25d5c11e0e0293ba0b4d67a9cf7e3b284c7205b424b3ad57c95a07c59cb"
+          "digest": "e29fb885ae93f082cc0699b49a57600f62c83e140ad6aa2a3a72b436aedb5849"
         }
       ]
     },

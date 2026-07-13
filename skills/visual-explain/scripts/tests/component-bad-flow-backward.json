@@ -12,20 +12,38 @@
         "id": "sec-review-flow",
         "relationship": {
           "kind": "directed-graph",
-          "capabilities": ["ordered-transition", "directed-transition"]
+          "capabilities": [
+            "ordered-transition",
+            "directed-transition"
+          ]
         },
         "selection": {
           "component": "flow",
-          "version": 1,
-          "matchedCapabilities": ["ordered-transition", "directed-transition"]
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition",
+            "directed-transition"
+          ]
         },
         "caption": "提案から承認までの遷移",
         "certainty": [
-          {"id": "cert-flow-confirmed", "level": "confirmed", "statement": "起案から一次レビューへの遷移は運用で確定。"},
-          {"id": "cert-flow-inferred", "level": "inferred", "statement": "承認後の公開は既定運用からの推定。"}
+          {
+            "id": "cert-flow-confirmed",
+            "level": "confirmed",
+            "statement": "起案から一次レビューへの遷移は運用で確定。"
+          },
+          {
+            "id": "cert-flow-inferred",
+            "level": "inferred",
+            "statement": "承認後の公開は既定運用からの推定。"
+          }
         ],
         "sources": [
-          {"id": "src-runbook", "label": "レビュー運用手順", "detail": "2026-05 版の承認フロー。"}
+          {
+            "id": "src-runbook",
+            "label": "レビュー運用手順",
+            "detail": "2026-05 版の承認フロー。"
+          }
         ],
         "accessibility": {
           "label": "レビュー承認フロー",
@@ -33,13 +51,34 @@
         },
         "flow": {
           "nodes": [
-            {"id": "node-draft", "label": "起案"},
-            {"id": "node-review", "label": "一次レビュー"},
-            {"id": "node-approve", "label": "承認"}
+            {
+              "id": "node-draft",
+              "label": "起案"
+            },
+            {
+              "id": "node-review",
+              "label": "一次レビュー"
+            },
+            {
+              "id": "node-approve",
+              "label": "承認"
+            }
           ],
           "edges": [
-            {"id": "edge-draft-review", "from": "node-draft", "to": "node-review", "relation": "ordered-transition", "label": "提出"},
-            {"id": "edge-back", "from": "node-approve", "to": "node-draft", "relation": "directed-transition", "label": "差戻し"}
+            {
+              "id": "edge-draft-review",
+              "from": "node-draft",
+              "to": "node-review",
+              "relation": "ordered-transition",
+              "label": "提出"
+            },
+            {
+              "id": "edge-back",
+              "from": "node-approve",
+              "to": "node-draft",
+              "relation": "directed-transition",
+              "label": "差戻し"
+            }
           ],
           "startId": "node-draft"
         }

@@ -51,7 +51,7 @@ class VocabularyFixtureTest(unittest.TestCase):
         request = validate_assembly(self.flow)
         section = request.sections[0]
         self.assertEqual(section.ir.selection.component, "flow")
-        self.assertEqual(section.ir.selection.version, 1)
+        self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "directed-graph")
         allowed = set(VOCABULARY["components"]["flow"]["capabilities"])
         self.assertTrue(set(section.ir.selection.matched_capabilities) <= allowed)

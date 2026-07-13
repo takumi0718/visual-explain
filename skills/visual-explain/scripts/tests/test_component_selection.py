@@ -128,7 +128,7 @@ class SelectionTest(unittest.TestCase):
     def setUp(self) -> None:
         self.matrix = make_component("matrix", ["two-axis-classification", "intersection-comparison"], version=2)
         self.matrix_alt = make_component("matrix-alt", ["two-axis-classification", "intersection-comparison"], renderer="matrix-alt@1")
-        self.flow = make_component("flow", ["ordered-transition", "directed-transition", "branching"], kind="directed-graph", renderer="flow@1")
+        self.flow = make_component("flow", ["ordered-transition", "directed-transition", "branching"], kind="directed-graph", version=2, renderer="flow@2")
 
     def registry(self, *components) -> Registry:
         return Registry(registry_version=1, components=tuple(components))
@@ -181,7 +181,7 @@ class SelectionTest(unittest.TestCase):
         reg = self.registry(self.matrix, self.flow)
         decl = self.declaration("two-axis", ["two-axis-classification"])
         candidates = narrow_candidates(decl, reg)
-        selection = ExplicitSelection(component="flow", version=1, matched_capabilities=("two-axis-classification",))
+        selection = ExplicitSelection(component="flow", version=2, matched_capabilities=("two-axis-classification",))
         with self.assertRaises(ContractError) as ctx:
             validate_explicit_selection(decl, selection, candidates)
         self.assertIn("selection_outside_candidate_set", ctx.exception.codes)

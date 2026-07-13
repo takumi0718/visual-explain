@@ -20,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-FLOW_DEF = REGISTRY.find("flow", 1)
+FLOW_DEF = REGISTRY.find("flow", 2)
 
 
 def flow_ir(mutate=None) -> dict:
@@ -56,7 +56,7 @@ def codes(err: ContractError) -> set[str]:
 class SharedRouteTest(unittest.TestCase):
     def test_flow_uses_same_loader_and_resolver_as_matrix(self) -> None:
         self.assertIsNotNone(FLOW_DEF)
-        self.assertIn("flow@1", TRUSTED_RENDERERS)
+        self.assertIn("flow@2", TRUSTED_RENDERERS)
         self.assertIn("matrix@2", TRUSTED_RENDERERS)
         ir = validate_canonical_section(flow_ir())
         resolved = resolve_component(ir.selection, REGISTRY)
@@ -148,6 +148,12 @@ class FlowMarkupTest(unittest.TestCase):
     def test_accessibility_label_preserved_in_dom(self) -> None:
         self.assertIn(f'aria-label="{self.ir.accessibility.label}"', self.markup)
 
+    def test_flow_v2_css_keeps_edge_label_adjacent(self) -> None:
+        css = Path("../assets/components/flow.css").read_text(encoding="utf-8")
+        self.assertIn("auto auto 1fr", css)          # ラベルを矢印隣へ
+        self.assertIn("var(--dg-primary)", css)      # 紺ノード
+        self.assertNotIn("auto 1fr auto", css)       # 旧・右端分離の廃止
+
     def test_css_namespaced_and_responsive(self) -> None:
         css = (SKILL / "assets" / "components" / "flow.css").read_text("utf-8")
         for line in css.splitlines():
@@ -204,7 +210,7 @@ def _grouped_ir(reading_order):
     return {
         "id": "sec-grp-order",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition", "branching"]},
-        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
+        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
         "caption": "順序保持のグループ",
         "certainty": [{"id": "oc", "level": "confirmed", "statement": "s"}],
         "sources": [{"id": "os", "label": "L"}],
