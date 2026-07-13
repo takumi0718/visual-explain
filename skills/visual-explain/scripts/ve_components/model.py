@@ -84,6 +84,7 @@ class MatrixPayload:
     columns: tuple[AxisEntry, ...]
     cells: tuple[MatrixCell, ...]
     highlight_id: Optional[str] = None
+    presentation: str = "dense"
 
 
 @dataclass(frozen=True)

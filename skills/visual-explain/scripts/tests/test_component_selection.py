@@ -25,11 +25,12 @@ FAKE_DIGEST = "a" * 64
 
 
 def make_component(component_id: str, capabilities: list[str], *, kind: str = "two-axis",
-                   renderer: str | None = None, checker_rules=("static-content", "semantic-ids"),
+                   version: int = 1, renderer: str | None = None,
+                   checker_rules=("static-content", "semantic-ids"),
                    dependencies=(), assets=None) -> ComponentDefinition:
     return ComponentDefinition(
         id=component_id,
-        version=1,
+        version=version,
         relationship_kind=kind,
         capabilities=tuple(capabilities),
         semantic_responsibility=f"{component_id} responsibility",
@@ -42,7 +43,7 @@ def make_component(component_id: str, capabilities: list[str], *, kind: str = "t
         dependencies=tuple(dependencies),
         fallback="static-content",
         checker_rules=tuple(checker_rules),
-        renderer=renderer or f"{component_id}@1",
+        renderer=renderer or f"{component_id}@{version}",
         assets=tuple(assets or (AssetDefinition(id=f"{component_id}.css", slot="styles", path=f"{component_id}.css", digest=FAKE_DIGEST),)),
     )
 
@@ -50,7 +51,7 @@ def make_component(component_id: str, capabilities: list[str], *, kind: str = "t
 def registry_dict(**overrides) -> dict:
     entry = {
         "id": "matrix",
-        "version": 1,
+        "version": 2,
         "relationshipKind": "two-axis",
         "capabilities": ["two-axis-classification", "intersection-comparison"],
         "semanticResponsibility": "two-axis classification and intersection comparison",
@@ -63,7 +64,7 @@ def registry_dict(**overrides) -> dict:
         "dependencies": [],
         "fallback": "static-content",
         "checkerRules": ["static-content", "semantic-ids"],
-        "renderer": "matrix@1",
+        "renderer": "matrix@2",
         "assets": [{"id": "matrix.css", "slot": "styles", "path": "matrix.css", "digest": FAKE_DIGEST}],
     }
     entry.update(overrides)
@@ -125,7 +126,7 @@ class RegistryValidationTest(unittest.TestCase):
 
 class SelectionTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.matrix = make_component("matrix", ["two-axis-classification", "intersection-comparison"])
+        self.matrix = make_component("matrix", ["two-axis-classification", "intersection-comparison"], version=2)
         self.matrix_alt = make_component("matrix-alt", ["two-axis-classification", "intersection-comparison"], renderer="matrix-alt@1")
         self.flow = make_component("flow", ["ordered-transition", "directed-transition", "branching"], kind="directed-graph", renderer="flow@1")
 
@@ -154,7 +155,8 @@ class SelectionTest(unittest.TestCase):
         decl = self.declaration("two-axis", ["two-axis-classification"])
         candidates = narrow_candidates(decl, reg)
         for cid in ("matrix", "matrix-alt"):
-            selection = ExplicitSelection(component=cid, version=1, matched_capabilities=("two-axis-classification",))
+            version = 2 if cid == "matrix" else 1
+            selection = ExplicitSelection(component=cid, version=version, matched_capabilities=("two-axis-classification",))
             match = validate_explicit_selection(decl, selection, candidates)
             self.assertEqual(match.component.id, cid)
 
@@ -163,7 +165,7 @@ class SelectionTest(unittest.TestCase):
         decl = self.declaration("two-axis", ["two-axis-classification", "ordered-transition"])
         candidates = narrow_candidates(decl, reg)
         self.assertEqual(candidates, [])
-        selection = ExplicitSelection(component="matrix", version=1, matched_capabilities=("two-axis-classification",))
+        selection = ExplicitSelection(component="matrix", version=2, matched_capabilities=("two-axis-classification",))
         with self.assertRaises(ContractError) as ctx:
             validate_explicit_selection(decl, selection, candidates)
         self.assertIn("no_matching_component", ctx.exception.codes)
@@ -189,7 +191,7 @@ class SelectionTest(unittest.TestCase):
         decl = self.declaration("two-axis", ["two-axis-classification"])
         candidates = narrow_candidates(decl, reg)
         # matched capability not present in the declaration
-        selection = ExplicitSelection(component="matrix", version=1, matched_capabilities=("intersection-comparison",))
+        selection = ExplicitSelection(component="matrix", version=2, matched_capabilities=("intersection-comparison",))
         with self.assertRaises(ContractError) as ctx:
             validate_explicit_selection(decl, selection, candidates)
         self.assertIn("selection_reason_mismatch", ctx.exception.codes)
@@ -197,31 +199,31 @@ class SelectionTest(unittest.TestCase):
 
 class ResolveTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.matrix = make_component("matrix", ["two-axis-classification", "intersection-comparison"])
+        self.matrix = make_component("matrix", ["two-axis-classification", "intersection-comparison"], version=2)
         self.registry = Registry(registry_version=1, components=(self.matrix,))
 
     def test_resolve_unknown_component_fails_closed(self) -> None:
         selection = ExplicitSelection(component="flow", version=1, matched_capabilities=("ordered-transition",))
         with self.assertRaises(ContractError) as ctx:
-            resolve_component(selection, self.registry, renderers={"matrix@1": lambda *a: None})
+            resolve_component(selection, self.registry, renderers={"matrix@2": lambda *a: None})
         self.assertIn("unknown_component", ctx.exception.codes)
 
     def test_resolve_unknown_version_fails_closed(self) -> None:
-        selection = ExplicitSelection(component="matrix", version=2, matched_capabilities=("two-axis-classification",))
+        selection = ExplicitSelection(component="matrix", version=99, matched_capabilities=("two-axis-classification",))
         with self.assertRaises(ContractError) as ctx:
-            resolve_component(selection, self.registry, renderers={"matrix@1": lambda *a: None})
+            resolve_component(selection, self.registry, renderers={"matrix@2": lambda *a: None})
         self.assertIn("unknown_component", ctx.exception.codes)
 
     def test_resolve_unknown_renderer_fails_closed(self) -> None:
-        selection = ExplicitSelection(component="matrix", version=1, matched_capabilities=("two-axis-classification",))
+        selection = ExplicitSelection(component="matrix", version=2, matched_capabilities=("two-axis-classification",))
         with self.assertRaises(ContractError) as ctx:
             resolve_component(selection, self.registry, renderers={})
         self.assertIn("unknown_renderer", ctx.exception.codes)
 
     def test_resolve_succeeds_with_registered_renderer(self) -> None:
-        selection = ExplicitSelection(component="matrix", version=1, matched_capabilities=("two-axis-classification",))
+        selection = ExplicitSelection(component="matrix", version=2, matched_capabilities=("two-axis-classification",))
         sentinel = lambda *a: None
-        resolved = resolve_component(selection, self.registry, renderers={"matrix@1": sentinel})
+        resolved = resolve_component(selection, self.registry, renderers={"matrix@2": sentinel})
         self.assertIs(resolved.renderer, sentinel)
         self.assertEqual(resolved.component.id, "matrix")
 

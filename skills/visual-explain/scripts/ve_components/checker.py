@@ -1410,6 +1410,33 @@ def _check_evidence_map_artifact(body: str, parser: _DomSemanticParser) -> list[
     return diagnostics
 
 
+def _check_matrix_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    if "ve-mx-grid" in body:
+        grid_match = re.search(r'class="[^"]*\bve-mx-grid\b[^"]*\bve-mx-cols-(\d+)\b', body)
+        if grid_match is None:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "concept matrix に ve-mx-cols-N クラスが必要です"))
+        else:
+            ncol = int(grid_match.group(1))
+            if ncol < 2 or ncol > 4:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"concept matrix の列数は2〜4である必要があります (found {ncol})"))
+            colheads = re.findall(r'class="[^"]*\bve-mx-colhead\b', body)
+            rowheads = re.findall(r'class="[^"]*\bve-mx-rowhead\b', body)
+            cells = re.findall(r'class="[^"]*\bve-mx-cell\b', body)
+            if len(colheads) != ncol:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "concept matrix の列見出し数が列数と一致しません"))
+            if not rowheads:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "concept matrix に行見出しがありません"))
+            if not cells:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "concept matrix にセルがありません"))
+        if "ve-matrix-relations visually-hidden" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "concept matrix に visually-hidden 関係リストが必要です"))
+    elif "ve-matrix-scroll" in body:
+        if "<table>" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "dense matrix に table がありません"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
     "chevron": _check_chevron_artifact,
@@ -1457,6 +1484,7 @@ def validate_artifact_semantics(content: str) -> list[Diagnostic]:
             for ref in parser.col_refs:
                 if ref not in parser.semantic_ids:
                     diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+            diagnostics.extend(_check_matrix_artifact(body, parser))
         elif component in component_ids:
             if parser.incomplete_edge or parser.edges:
                 diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,

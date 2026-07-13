@@ -23,6 +23,7 @@ from .diagnostics import (
     INVALID_MATRIX_REFERENCE,
     INVALID_RELATIONSHIP_DECLARATION,
     LOGIC_TREE_STRUCTURE_VIOLATION,
+    MATRIX_CONCEPT_LENGTH,
     MISSING_REQUIRED_SLOT,
     PYRAMID_STRUCTURE_VIOLATION,
     SLOPE_STRUCTURE_VIOLATION,
@@ -122,7 +123,7 @@ _SOURCE_KEYS = {"id", "label", "detail"}
 _ACCESSIBILITY_KEYS = {"label", "summary"}
 _AXIS_KEYS = {"id", "label"}
 _CELL_KEYS = {"id", "rowId", "columnId", "content", "certaintyRef", "sourceRef"}
-_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId"}
+_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId", "presentation"}
 _FLOW_KEYS = {"nodes", "edges", "groups", "startId", "readingOrder"}
 _NODE_KEYS = {"id", "label", "group"}
 _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
@@ -580,9 +581,25 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
         highlight_id = None
     elif highlight_id is not None and highlight_id not in {c.id for c in cells}:
         col.add(INVALID_COMPONENT_PAYLOAD, f"highlightId '{highlight_id}' が cells に存在しません", path)
+    presentation = raw.get("presentation", "dense")
+    if presentation not in ("concept", "dense"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"presentation '{presentation}' は concept か dense のみ有効です", path)
+        presentation = "dense"
+    if presentation == "concept":
+        ncol = len(columns)
+        if ncol < 2 or ncol > 4:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"concept では columns は2〜4件である必要があります (found {ncol})", path)
+        for i, cell in enumerate(cells):
+            if len(cell.content) >= 7:
+                col.add(
+                    MATRIX_CONCEPT_LENGTH,
+                    f"concept セルの content は6文字以下である必要があります (found {len(cell.content)})",
+                    f"{path}.cells[{i}].content",
+                )
     return MatrixPayload(
         rows=rows, columns=columns, cells=tuple(cells),
         highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+        presentation=presentation,
     )
 
 

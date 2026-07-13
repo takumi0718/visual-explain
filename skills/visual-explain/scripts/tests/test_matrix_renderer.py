@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from ve_components.diagnostics import ContractError
 from ve_components.registry import load_registry
 from ve_components.renderers.matrix import render_matrix
 from ve_components.validation import validate_canonical_section
@@ -18,13 +19,30 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-MATRIX_DEF = REGISTRY.find("matrix", 1)
+MATRIX_DEF = REGISTRY.find("matrix", 2)
 
 
-def render_fixture(name: str = "component-valid-matrix.json"):
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+def _fixture_path(name: str) -> Path:
+    return TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+
+
+def expect_violation_fixture(name: str, code: str) -> None:
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
+    with unittest.TestCase().assertRaises(ContractError) as ctx:
+        validate_canonical_section(raw["sections"][0]["ir"])
+    codes = {d.code for d in ctx.exception.diagnostics}
+    unittest.TestCase().assertIn(code, codes)
+
+
+def render_fixture(name: str = "component-valid-matrix"):
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
-    return ir, render_matrix(CanonicalSection(ir=ir), MATRIX_DEF)
+    return render_matrix(CanonicalSection(ir=ir), MATRIX_DEF)
+
+
+def load_fixture_ir(name: str = "component-valid-matrix"):
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
+    return validate_canonical_section(raw["sections"][0]["ir"])
 
 
 class MatrixManifestTest(unittest.TestCase):
@@ -32,16 +50,17 @@ class MatrixManifestTest(unittest.TestCase):
         self.assertIsNotNone(MATRIX_DEF)
         self.assertEqual(MATRIX_DEF.relationship_kind, "two-axis")
         self.assertEqual(MATRIX_DEF.capabilities, ("two-axis-classification", "intersection-comparison"))
-        self.assertEqual(MATRIX_DEF.renderer, "matrix@1")
+        self.assertEqual(MATRIX_DEF.renderer, "matrix@2")
         self.assertEqual([a.id for a in MATRIX_DEF.assets], ["matrix.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
-        ir, result = render_fixture()
+        ir = load_fixture_ir()
+        result = render_fixture()
         expected = set(ir.semantic_ids())
         self.assertEqual(set(result.manifest.consumed_semantic_ids), expected)
 
     def test_declares_css_and_no_script(self) -> None:
-        _, result = render_fixture()
+        result = render_fixture()
         self.assertEqual(result.style_asset_ids, ("matrix.css",))
         self.assertEqual(result.script_asset_ids, ())
         self.assertEqual(result.manifest.generated_relationship_ids, ())
@@ -49,7 +68,8 @@ class MatrixManifestTest(unittest.TestCase):
 
 class MatrixMarkupTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.ir, self.result = render_fixture()
+        self.ir = load_fixture_ir()
+        self.result = render_fixture()
         self.markup = self.result.markup
 
     def test_semantic_figure_with_visible_caption_and_summary(self) -> None:
@@ -100,10 +120,29 @@ class MatrixMarkupTest(unittest.TestCase):
         css = (SKILL / "assets" / "components" / "matrix.css").read_text("utf-8")
         for line in css.splitlines():
             stripped = line.strip()
-            if stripped and not stripped.startswith("/*"):
-                self.assertTrue(stripped.startswith('[data-ve-component="matrix"]'),
-                                f"non-namespaced CSS rule: {stripped}")
+            if not stripped or stripped.startswith("/*") or stripped.startswith("@media"):
+                continue
+            if stripped == "}" or (":" in stripped and "{" not in stripped and not stripped.startswith("figure")):
+                continue
+            self.assertTrue(
+                stripped.startswith('figure[data-ve-component="matrix"]'),
+                f"non-namespaced CSS rule: {stripped}",
+            )
         self.assertIn("overflow-x: auto", css)
+
+
+class MatrixV2Test(unittest.TestCase):
+    def test_matrix_v2_concept_presentation_renders_boxes(self) -> None:
+        markup = render_fixture("component-valid-matrix-concept").markup
+        self.assertIn('class="ve-mx-colhead"', markup)
+        self.assertIn('class="ve-mx-cell"', markup)
+
+    def test_matrix_v2_concept_rejects_long_cell_text(self) -> None:
+        expect_violation_fixture("component-bad-matrix-concept-long-cell", "matrix-concept-length")
+
+    def test_matrix_v2_highlight_marks_single_cell(self) -> None:
+        markup = render_fixture("component-valid-matrix-concept").markup
+        self.assertEqual(markup.count("ve-dg-highlight"), 1)
 
 
 class MatrixBuildTest(unittest.TestCase):

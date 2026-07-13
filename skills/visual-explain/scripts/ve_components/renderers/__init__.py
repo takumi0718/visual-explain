@@ -20,7 +20,7 @@ from .slope import render_slope
 from .evidence_map import render_evidence_map
 
 TRUSTED_RENDERERS: dict[str, RendererFn] = {
-    "matrix@1": render_matrix,
+    "matrix@2": render_matrix,
     "flow@1": render_flow,
     "enumeration@2": render_enumeration,
     "chevron@2": render_chevron,

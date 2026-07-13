@@ -3,7 +3,7 @@
   "components": [
     {
       "id": "matrix",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "two-axis",
       "capabilities": [
         "two-axis-classification",
@@ -19,9 +19,11 @@
       ],
       "optionalInputs": [
         "certainty",
-        "sources"
+        "sources",
+        "presentation",
+        "highlightId"
       ],
-      "behavior": "静的な意味づけされた表を描画する。",
+      "behavior": "静的な意味づけされた表または概念グリッドを描画する。",
       "slots": [
         "caption",
         "certainty",
@@ -36,17 +38,18 @@
         "static-content",
         "semantic-ids",
         "matrix-references",
+        "matrix-concept-length",
         "escaping",
         "no-external-reference",
         "responsive-order"
       ],
-      "renderer": "matrix@1",
+      "renderer": "matrix@2",
       "assets": [
         {
           "id": "matrix.css",
           "slot": "styles",
           "path": "matrix.css",
-          "digest": "8df780dc1ba4d99e17d78344fb6723d377ec162ad5110fac972984dc13c01805"
+          "digest": "af3e0f7d9f958c78864a88be04e54470c8720c6cb2b6f015e4b14cf282bdb8c3"
         }
       ]
     },

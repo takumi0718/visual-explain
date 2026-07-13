@@ -11,7 +11,7 @@
       "ir": {
         "id": "sec-mixed-matrix",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison"]},
-        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
+        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
         "caption": "役割 × 操作の許可範囲",
         "certainty": [{"id": "mx-cert", "level": "confirmed", "statement": "管理者の全操作は確定済み。"}],
         "sources": [{"id": "mx-src", "label": "権限仕様 v3"}],

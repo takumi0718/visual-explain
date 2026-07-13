@@ -18,8 +18,8 @@
           ]
         },
         "selection": {
-          "component": "matrix",
-          "version": 2,
+          "component": "flow",
+          "version": 1,
           "matchedCapabilities": [
             "two-axis-classification",
             "intersection-comparison"

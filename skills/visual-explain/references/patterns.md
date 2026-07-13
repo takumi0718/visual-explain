@@ -273,7 +273,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-matrix",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison"]},
-        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
+        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
         "caption": "閲覧者は書き込みだけ不可、それ以外は全許可",
         "takeawayTargetIds": ["d-c4"],
         "certainty": [{"id": "d-cert", "level": "confirmed", "statement": "管理者の全操作は仕様で確定。"}],
@@ -608,7 +608,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
       "ir": {
         "id": "sec-mx",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification"]},
-        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification"]},
+        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification"]},
         "caption": "管理者は読み取りを許可される",
         "takeawayScope": "whole",
         "certainty": [{"id": "mx-c", "level": "confirmed", "statement": "確定。"}],

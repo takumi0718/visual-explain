@@ -80,6 +80,9 @@ NOTATION_EMPHASIS_LIMIT = "notation-emphasis-limit"
 NOTATION_HIGHLIGHT_LIMIT = "notation-highlight-limit"
 NOTATION_CERTAINTY_VOCABULARY = "notation-certainty-vocabulary"
 
+# S4 — matrix concept presentation codes.
+MATRIX_CONCEPT_LENGTH = "matrix-concept-length"
+
 ALL_CODES = frozenset({
     INVALID_RELATIONSHIP_DECLARATION,
     INVALID_COMPONENT_PAYLOAD,
@@ -125,6 +128,7 @@ ALL_CODES = frozenset({
     NOTATION_EMPHASIS_LIMIT,
     NOTATION_HIGHLIGHT_LIMIT,
     NOTATION_CERTAINTY_VOCABULARY,
+    MATRIX_CONCEPT_LENGTH,
 })
 
 

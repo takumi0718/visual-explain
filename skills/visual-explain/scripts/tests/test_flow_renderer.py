@@ -57,7 +57,7 @@ class SharedRouteTest(unittest.TestCase):
     def test_flow_uses_same_loader_and_resolver_as_matrix(self) -> None:
         self.assertIsNotNone(FLOW_DEF)
         self.assertIn("flow@1", TRUSTED_RENDERERS)
-        self.assertIn("matrix@1", TRUSTED_RENDERERS)
+        self.assertIn("matrix@2", TRUSTED_RENDERERS)
         ir = validate_canonical_section(flow_ir())
         resolved = resolve_component(ir.selection, REGISTRY)
         self.assertIsInstance(resolved, ResolvedComponent)

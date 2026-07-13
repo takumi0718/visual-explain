@@ -144,7 +144,8 @@
         "rows": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/axisEntry"}},
         "columns": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/axisEntry"}},
         "cells": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/matrixCell"}},
-        "highlightId": {"type": "string", "minLength": 1}
+        "highlightId": {"type": "string", "minLength": 1},
+        "presentation": {"enum": ["concept", "dense"], "default": "dense"}
       }
     },
     "axisEntry": {

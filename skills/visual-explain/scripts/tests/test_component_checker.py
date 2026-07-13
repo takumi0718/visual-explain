@@ -154,7 +154,7 @@ DIGEST_A = "a" * 64
 
 def _manifest(**overrides) -> RenderManifest:
     base = dict(
-        component_id="matrix", component_version=1, instance_id="sec-1",
+        component_id="matrix", component_version=2, instance_id="sec-1",
         consumed_semantic_ids=("sec-1", "row-x"), generated_relationship_ids=(),
         generated_landmark_ids=("sec-1-caption",), asset_ids=("matrix.css",),
         asset_digests=(DIGEST_A,), declared_dependencies=(), fallback_mode="static-content")
@@ -171,7 +171,7 @@ def _expected(manifest):
 
 def _good_dom() -> str:
     return ('<section data-ve-section-kind="canonical" data-ve-component="matrix"'
-            ' data-ve-contract-version="1" data-ve-instance="sec-1" data-ve-fallback="static-content">'
+            ' data-ve-contract-version="2" data-ve-instance="sec-1" data-ve-fallback="static-content">'
             '<figcaption id="sec-1-caption">c</figcaption>'
             '<span data-ve-semantic-id="row-x"></span></section>')
 
@@ -199,7 +199,7 @@ class ManifestToDomTest(unittest.TestCase):
         self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_id="flow")))
 
     def test_version_mismatch_is_caught(self) -> None:
-        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_version=2)))
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_version=1)))
 
     def test_fallback_mismatch_is_caught(self) -> None:
         self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(fallback_mode="degrade")))

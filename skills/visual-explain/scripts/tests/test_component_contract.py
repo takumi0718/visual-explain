@@ -40,7 +40,7 @@ class VocabularyFixtureTest(unittest.TestCase):
         request = validate_assembly(self.matrix)
         section = request.sections[0]
         self.assertEqual(section.ir.selection.component, "matrix")
-        self.assertEqual(section.ir.selection.version, 1)
+        self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "two-axis")
         allowed = set(VOCABULARY["components"]["matrix"]["capabilities"])
         self.assertTrue(set(section.ir.selection.matched_capabilities) <= allowed)
