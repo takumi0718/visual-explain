@@ -12,7 +12,7 @@
 [data-ve-component="flow"] .ve-flow-arrow { color: var(--dg-line); font-weight: 700; }
 [data-ve-component="flow"] .ve-flow-rel { font-size: var(--fs-small); color: var(--text-faint); }
 [data-ve-component="flow"] .ve-flow-group-label { color: var(--text-faint); font-size: var(--fs-small); font-weight: 700; letter-spacing: .06em; padding: var(--space-1) 0 0; }
-[data-ve-component="flow"] .ve-flow-rail { position: relative; border-right: 2.5px solid var(--dg-line); border-top: 2.5px solid var(--dg-line); border-bottom: 2.5px solid var(--dg-line); border-top-right-radius: .4rem; border-bottom-right-radius: .4rem; writing-mode: vertical-rl; font-size: var(--fs-small); color: var(--text-dim); padding: var(--space-1) 0; }
+[data-ve-component="flow"] .ve-flow-rail { position: relative; border-right: 2.5px solid var(--dg-line); border-top: 2.5px solid var(--dg-line); border-bottom: 2.5px solid var(--dg-line); writing-mode: vertical-rl; font-size: var(--fs-small); color: var(--text-dim); padding: var(--space-1) 0; }
 [data-ve-component="flow"] .ve-flow-rail::after { content: "\25C0"; position: absolute; inset-block-end: -0.15rem; inset-inline-start: -0.5rem; color: var(--dg-line); font-size: .7rem; writing-mode: horizontal-tb; }
 [data-ve-component="flow"] .ve-rail-lane-0 { grid-column: 2; }
 [data-ve-component="flow"] .ve-rail-lane-1 { grid-column: 3; }
