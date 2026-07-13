@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "evidence-map",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["claim-support-mapping"]
         },
         "caption": "移行判断の論拠",

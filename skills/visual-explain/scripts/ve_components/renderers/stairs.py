@@ -1,7 +1,7 @@
 """Static, accessible renderer for the semantic ``stairs`` component.
 
 Staged maturity from low to high. Produces a semantic <figure> with caption,
-summary, height-enumerated treads, current-stage accent, and notes.
+summary, height-enumerated treads, highlight marker, and notes.
 """
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
 
 def _esc(value: str) -> str:
@@ -26,12 +26,25 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
     caption_id = f"{ir.id}-caption"
     summary_id = f"{ir.id}-summary"
     count = len(stairs.stages)
+    highlight_id = stairs.highlight_id
+    highlight_index: int | None = None
+    if highlight_id is not None:
+        for index, stage in enumerate(stairs.stages):
+            if stage.id == highlight_id:
+                highlight_index = index
+                break
 
     blocks: list[str] = []
     for index, stage in enumerate(stairs.stages, start=1):
         cls_parts = ["ve-stairs-stage", f"ve-stairs-index-{index}"]
-        if stage.current:
-            cls_parts.append("ve-stairs-tread-accent")
+        if highlight_index is None:
+            cls_parts.append("ve-stairs-todo")
+        elif index - 1 < highlight_index:
+            cls_parts.append("ve-stairs-done")
+        elif index - 1 == highlight_index:
+            cls_parts.append("ve-dg-highlight")
+        else:
+            cls_parts.append("ve-stairs-todo")
         if stage.id in takeaway:
             cls_parts.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if stage.id in takeaway else ""
@@ -39,10 +52,13 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
             f'<span class="ve-emphasis">{_esc(emphasis_by_id[stage.id])}</span>'
             if stage.id in emphasis_by_id else ""
         )
-        note_html = f'<span class="ve-stairs-note">{_esc(stage.note)}</span>' if stage.note else ""
+        here_html = (
+            '<span class="ve-stairs-here">← 現在地</span>'
+            if stage.id == highlight_id else ""
+        )
         blocks.append(
             f'<li class="{" ".join(cls_parts)}" data-ve-semantic-id="{_esc(stage.id)}"{takeaway_attr}>'
-            f'<span class="ve-stairs-label">{_esc(stage.label)}</span>{note_html}{emphasis_html}</li>'
+            f'<span class="ve-stairs-label">{_esc(stage.label)}</span>{here_html}{emphasis_html}</li>'
         )
 
     list_markup = (

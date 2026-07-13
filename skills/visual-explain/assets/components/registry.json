@@ -3,7 +3,7 @@
   "components": [
     {
       "id": "matrix",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "two-axis",
       "capabilities": [
         "two-axis-classification",
@@ -19,9 +19,11 @@
       ],
       "optionalInputs": [
         "certainty",
-        "sources"
+        "sources",
+        "presentation",
+        "highlightId"
       ],
-      "behavior": "静的な意味づけされた表を描画する。",
+      "behavior": "静的な意味づけされた表または概念グリッドを描画する。",
       "slots": [
         "caption",
         "certainty",
@@ -36,23 +38,24 @@
         "static-content",
         "semantic-ids",
         "matrix-references",
+        "matrix-concept-length",
         "escaping",
         "no-external-reference",
         "responsive-order"
       ],
-      "renderer": "matrix@1",
+      "renderer": "matrix@2",
       "assets": [
         {
           "id": "matrix.css",
           "slot": "styles",
           "path": "matrix.css",
-          "digest": "8df780dc1ba4d99e17d78344fb6723d377ec162ad5110fac972984dc13c01805"
+          "digest": "af3e0f7d9f958c78864a88be04e54470c8720c6cb2b6f015e4b14cf282bdb8c3"
         }
       ]
     },
     {
       "id": "flow",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "directed-graph",
       "capabilities": [
         "ordered-transition",
@@ -92,19 +95,19 @@
         "no-external-reference",
         "responsive-order"
       ],
-      "renderer": "flow@1",
+      "renderer": "flow@2",
       "assets": [
         {
           "id": "flow.css",
           "slot": "styles",
           "path": "flow.css",
-          "digest": "e9dab25d5c11e0e0293ba0b4d67a9cf7e3b284c7205b424b3ad57c95a07c59cb"
+          "digest": "778c861a2bf3acd4f197f92fac9385a0b4acec7accc4c97a1d25a871b701770e"
         }
       ]
     },
     {
       "id": "enumeration",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "parallel-enumeration",
       "capabilities": [
         "parallel-itemization"
@@ -138,19 +141,19 @@
         "responsive-order",
         "enumeration-structure"
       ],
-      "renderer": "enumeration@1",
+      "renderer": "enumeration@2",
       "assets": [
         {
           "id": "enumeration.css",
           "slot": "styles",
           "path": "enumeration.css",
-          "digest": "b7a284d3364d12e068b684885039889d40f1bd063f55ceed1c869035d4e8f781"
+          "digest": "70c182dfb356bb58117fac1cce740dde5e5b1201a5eeb309d0555a9e84ab7e34"
         }
       ]
     },
     {
       "id": "chevron",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "ordered-sequence",
       "capabilities": [
         "linear-sequence",
@@ -185,19 +188,19 @@
         "responsive-order",
         "chevron-structure"
       ],
-      "renderer": "chevron@1",
+      "renderer": "chevron@2",
       "assets": [
         {
           "id": "chevron.css",
           "slot": "styles",
           "path": "chevron.css",
-          "digest": "e4a84069b495b7730030557fb6939c9694a17771d299c8ac6bd77a9a3111e623"
+          "digest": "afdb6d3b748a45e67714851bdb8033993fadd7bc27a9a5295f46fef77c6720f8"
         }
       ]
     },
     {
       "id": "pyramid",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "layered-priority",
       "capabilities": [
         "priority-layering"
@@ -231,19 +234,19 @@
         "responsive-order",
         "pyramid-structure"
       ],
-      "renderer": "pyramid@1",
+      "renderer": "pyramid@2",
       "assets": [
         {
           "id": "pyramid.css",
           "slot": "styles",
           "path": "pyramid.css",
-          "digest": "8a45af59cbe466a0902044aa0e91744186a8ba1766cd28e427f2819774ff227e"
+          "digest": "5ae27d2763f9f6d1871a99b662a91804a892798707a444dc14d3138fd33ecf7c"
         }
       ]
     },
     {
       "id": "stairs",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "staged-maturity",
       "capabilities": [
         "maturity-staging"
@@ -256,7 +259,8 @@
       ],
       "optionalInputs": [
         "certainty",
-        "sources"
+        "sources",
+        "highlightId"
       ],
       "behavior": "静的な階段形状で成熟度段階と現在地を描画する。",
       "slots": [
@@ -277,19 +281,19 @@
         "responsive-order",
         "stairs-structure"
       ],
-      "renderer": "stairs@1",
+      "renderer": "stairs@2",
       "assets": [
         {
           "id": "stairs.css",
           "slot": "styles",
           "path": "stairs.css",
-          "digest": "8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe"
+          "digest": "c490a27d4fda79c63cfbb0a1595ece6589715d65947a788737482c464adfacc6"
         }
       ]
     },
     {
       "id": "logic-tree",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "hierarchical-decomposition",
       "capabilities": [
         "mece-decomposition"
@@ -324,19 +328,19 @@
         "responsive-order",
         "logic-tree-structure"
       ],
-      "renderer": "logic-tree@1",
+      "renderer": "logic-tree@2",
       "assets": [
         {
           "id": "logic-tree.css",
           "slot": "styles",
           "path": "logic-tree.css",
-          "digest": "392189a53a978812139170109f88a1846863b141a338e6240719a9bea8309dd2"
+          "digest": "2a701472b525d268eb2946c5f3f5bec2d79f9335b66286c06cd67f00e8292e30"
         }
       ]
     },
     {
       "id": "waterfall",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "additive-bridge",
       "capabilities": [
         "additive-bridging"
@@ -346,23 +350,25 @@
         "caption",
         "accessibility",
         "displayPrecision",
+        "title",
+        "unitLabel",
+        "axisTicks",
         "start",
         "steps",
         "end"
       ],
       "optionalInputs": [
         "certainty",
-        "sources",
-        "orientation"
+        "sources"
       ],
-      "behavior": "静的なウォーターフォールで開始・増減・終了を百分率クラスで描画する。",
+      "behavior": "決定的 SVG ジオメトリで開始・増減・終了のウォーターフォールを描画する。",
       "slots": [
         "caption",
         "certainty",
         "source",
         "accessibility"
       ],
-      "accessibility": "caption/summary を持つラベル付き figure と開始/段/終了の一覧。",
+      "accessibility": "caption/summary を持つラベル付き figure と SVG 代替テキスト。",
       "responsive": true,
       "dependencies": [],
       "fallback": "static-content",
@@ -372,21 +378,22 @@
         "escaping",
         "no-external-reference",
         "responsive-order",
-        "waterfall-consistency"
+        "waterfall-consistency",
+        "renderer-svg"
       ],
-      "renderer": "waterfall@1",
+      "renderer": "waterfall@2",
       "assets": [
         {
           "id": "waterfall.css",
           "slot": "styles",
           "path": "waterfall.css",
-          "digest": "11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f"
+          "digest": "b6662c0fa0d983c0c6ae5bdb742aaf4818dc341122c381380e2779e8847504a8"
         }
       ]
     },
     {
       "id": "slope",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "two-point-change",
       "capabilities": [
         "two-point-comparison"
@@ -396,12 +403,14 @@
         "caption",
         "accessibility",
         "axes",
-        "unit",
+        "title",
+        "unitLabel",
         "items"
       ],
       "optionalInputs": [
         "certainty",
-        "sources"
+        "sources",
+        "highlightId"
       ],
       "behavior": "決定的 SVG ジオメトリで2時点変化を描画する。",
       "slots": [
@@ -423,19 +432,19 @@
         "slope-structure",
         "renderer-svg"
       ],
-      "renderer": "slope@1",
+      "renderer": "slope@2",
       "assets": [
         {
           "id": "slope.css",
           "slot": "styles",
           "path": "slope.css",
-          "digest": "f06faba4570dc92fcb34a988445c61814fd5f60b23a6492696e87b193e9f146c"
+          "digest": "a0059b8aa25254449fabe0aa3ba4899974b524b6d0b9d08c08524af0ca61dae6"
         }
       ]
     },
     {
       "id": "evidence-map",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "claim-support",
       "capabilities": [
         "claim-support-mapping"
@@ -470,13 +479,110 @@
         "responsive-order",
         "evidence-map-references"
       ],
-      "renderer": "evidence-map@1",
+      "renderer": "evidence-map@2",
       "assets": [
         {
           "id": "evidence-map.css",
           "slot": "styles",
           "path": "evidence-map.css",
-          "digest": "f988fe3d3d93658d4ff42790cd26d5b2101c91706d246d3cf463f9d8676b0547"
+          "digest": "b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b"
+        }
+      ]
+    },
+    {
+      "id": "bars",
+      "version": 2,
+      "relationshipKind": "quantitative-comparison",
+      "capabilities": [
+        "single-axis-quantity",
+        "ranked-comparison"
+      ],
+      "semanticResponsibility": "単一軸の定量比較と順位付き比較のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "title",
+        "unitLabel",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources",
+        "highlightId"
+      ],
+      "behavior": "静的な横棒で定量値を最大値基準の幅%で描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と行ごとのラベル/値。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "bars-width-classes"
+      ],
+      "renderer": "bars@2",
+      "assets": [
+        {
+          "id": "bars.css",
+          "slot": "styles",
+          "path": "bars.css",
+          "digest": "dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9"
+        }
+      ]
+    },
+    {
+      "id": "kpi",
+      "version": 2,
+      "relationshipKind": "headline-metrics",
+      "capabilities": [
+        "metric-highlight"
+      ],
+      "semanticResponsibility": "主要指標のリング型ハイライト表示のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なリング円で数値・単位・キャプションを描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と項目ごとのキャプション。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "kpi-item-limit",
+        "kpi-structure"
+      ],
+      "renderer": "kpi@2",
+      "assets": [
+        {
+          "id": "kpi.css",
+          "slot": "styles",
+          "path": "kpi.css",
+          "digest": "5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78"
         }
       ]
     }

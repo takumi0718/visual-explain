@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from ve_components import checker
 from ve_components.checker import check_final_document, validate_final_provenance
 from ve_components.diagnostics import ContractError
 from ve_components.final_checks import check_manifest_to_dom
@@ -113,12 +114,47 @@ class LayerOneAndFourSafetyTest(unittest.TestCase):
         self.assertEqual(validate_final_provenance(content), [])
 
 
+class NotationRulesTest(unittest.TestCase):
+    """Task 3: document-wide notation limits (emphasis, highlight, certainty vocabulary)."""
+
+    def test_emphasis_limit_rejects_two_dg_em_in_one_description(self) -> None:
+        html = ('<p class="ve-enum-desc">Aを<strong class="dg-em">強調1</strong>し'
+                '<strong class="dg-em">強調2</strong>する</p>')
+        codes = [d.code for d in checker.validate_notation_rules(html)]
+        self.assertIn("notation-emphasis-limit", codes)
+
+    def test_highlight_limit_rejects_two_highlights_in_one_figure(self) -> None:
+        html = ('<figure data-ve-component="bars">'
+                '<div class="ve-bars-fill ve-dg-highlight"></div>'
+                '<div class="ve-bars-fill ve-dg-highlight"></div></figure>')
+        codes = [d.code for d in checker.validate_notation_rules(html)]
+        self.assertIn("notation-highlight-limit", codes)
+
+    def test_certainty_vocabulary_rejects_old_labels(self) -> None:
+        codes = [d.code for d in checker.validate_notation_rules(
+            '<li><strong>確定:</strong> 何か</li>')]
+        self.assertIn("notation-certainty-vocabulary", codes)
+
+    def _doc_codes(self, name: str) -> set[str]:
+        raw = (TESTS / name).read_text("utf-8")
+        return {d.code for d in check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)}
+
+    def test_emphasis_overuse_html_fails(self) -> None:
+        self.assertIn("notation-emphasis-limit", self._doc_codes("component-bad-emphasis-overuse.html"))
+
+    def test_highlight_overuse_html_fails(self) -> None:
+        self.assertIn("notation-highlight-limit", self._doc_codes("component-bad-highlight-overuse.html"))
+
+    def test_certainty_vocabulary_html_fails(self) -> None:
+        self.assertIn("notation-certainty-vocabulary", self._doc_codes("component-bad-certainty-vocabulary.html"))
+
+
 DIGEST_A = "a" * 64
 
 
 def _manifest(**overrides) -> RenderManifest:
     base = dict(
-        component_id="matrix", component_version=1, instance_id="sec-1",
+        component_id="matrix", component_version=2, instance_id="sec-1",
         consumed_semantic_ids=("sec-1", "row-x"), generated_relationship_ids=(),
         generated_landmark_ids=("sec-1-caption",), asset_ids=("matrix.css",),
         asset_digests=(DIGEST_A,), declared_dependencies=(), fallback_mode="static-content")
@@ -135,7 +171,7 @@ def _expected(manifest):
 
 def _good_dom() -> str:
     return ('<section data-ve-section-kind="canonical" data-ve-component="matrix"'
-            ' data-ve-contract-version="1" data-ve-instance="sec-1" data-ve-fallback="static-content">'
+            ' data-ve-contract-version="2" data-ve-instance="sec-1" data-ve-fallback="static-content">'
             '<figcaption id="sec-1-caption">c</figcaption>'
             '<span data-ve-semantic-id="row-x"></span></section>')
 
@@ -163,7 +199,7 @@ class ManifestToDomTest(unittest.TestCase):
         self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_id="flow")))
 
     def test_version_mismatch_is_caught(self) -> None:
-        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_version=2)))
+        self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(component_version=1)))
 
     def test_fallback_mismatch_is_caught(self) -> None:
         self.assertIn("manifest_dom_mismatch", self.check(_good_dom(), _manifest(fallback_mode="degrade")))
@@ -242,8 +278,16 @@ class ArtifactSemanticTest(unittest.TestCase):
         )
 
     def test_waterfall_missing_value_html_fails(self) -> None:
-        self.assertIn("artifact_semantic_mismatch", self.diags(
-            (TESTS / "component-bad-waterfall-missing-value.html").read_text("utf-8")))
+        from ve_components.checker import check_final_document
+        doc = (TESTS / "component-bad-waterfall-missing-value.html").read_text("utf-8")
+        diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
+        codes = {d.code for d in diags}
+        self.assertIn("artifact_semantic_mismatch", codes)
+        messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
+        self.assertTrue(
+            any("値テキスト" in m for m in messages),
+            messages,
+        )
 
     def test_logic_tree_missing_leaf_id_html_fails(self) -> None:
         from ve_components.checker import check_final_document
@@ -262,7 +306,7 @@ class ArtifactSemanticTest(unittest.TestCase):
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
         self.assertTrue(
-            any("logic-tree の connector は枝数と一致する必要があります" in m for m in messages),
+            any("logic-tree の ve-lt-stub は子を持つノード数と一致する必要があります" in m for m in messages),
             messages,
         )
 
@@ -271,7 +315,7 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = (TESTS / "component-bad-logic-tree-data-connect.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("logic-tree connector に data-connect は許可されていません", messages)
+        self.assertIn("logic-tree stub に data-connect は許可されていません", messages)
 
     def test_logic_tree_connector_near_match_html_fails(self) -> None:
         from ve_components.checker import check_final_document
@@ -279,7 +323,7 @@ class ArtifactSemanticTest(unittest.TestCase):
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
         self.assertTrue(
-            any("logic-tree の connector は枝数と一致する必要があります" in m for m in messages),
+            any("logic-tree の ve-lt-stub は子を持つノード数と一致する必要があります" in m for m in messages),
             messages,
         )
 
@@ -288,21 +332,27 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = (TESTS / "component-bad-logic-tree-spine-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("logic-tree の spine は1本である必要があります", messages)
+        self.assertTrue(
+            any("logic-tree の ve-lt-stub は子を持つノード数と一致する必要があります" in m for m in messages),
+            messages,
+        )
 
     def test_logic_tree_root_stem_near_match_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-logic-tree-root-stem-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("logic-tree の root-stem は1本である必要があります", messages)
+        self.assertTrue(
+            any("logic-tree の ve-lt-stub は子を持つノード数と一致する必要があります" in m for m in messages),
+            messages,
+        )
 
-    def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
+    def test_stairs_here_on_sibling_fails_block_local_check(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
-                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+                      and "highlight 段のブロック内に ve-stairs-here がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
     def test_pyramid_face_order_html_fails(self) -> None:
@@ -310,8 +360,8 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = (TESTS / "component-bad-pyramid-face-order.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
-        self.assertIn("pyramid の下位層は ve-pyramid-face-dim のみである必要があります", messages)
+        self.assertIn("pyramid の層 1 は ve-pyramid-level-1 を1つだけ持つ必要があります", messages)
+        self.assertIn("pyramid の層 2 は ve-pyramid-level-2 を1つだけ持つ必要があります", messages)
 
     def test_pyramid_count_mismatch_html_fails(self) -> None:
         from ve_components.checker import check_final_document
@@ -332,7 +382,7 @@ class ArtifactSemanticTest(unittest.TestCase):
         doc = (TESTS / "component-bad-pyramid-face-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("pyramid の先頭層は ve-pyramid-face-strong のみである必要があります", messages)
+        self.assertIn("pyramid の層 1 は ve-pyramid-level-1 を1つだけ持つ必要があります", messages)
 
     def test_stairs_count_mismatch_html_fails(self) -> None:
         from ve_components.checker import check_final_document
@@ -348,27 +398,27 @@ class ArtifactSemanticTest(unittest.TestCase):
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
         self.assertIn("stairs の段 2 は ve-stairs-index-2 を1つだけ持つ必要があります", messages)
 
-    def test_stairs_empty_note_html_fails(self) -> None:
+    def test_stairs_empty_here_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-empty-note.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
-                      and "current 段の ve-stairs-note に可視テキストがありません" in d.message]
+                      and "highlight 段の ve-stairs-here に ← 現在地 がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
-    def test_stairs_accent_near_match_html_fails(self) -> None:
+    def test_stairs_legacy_tread_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-accent-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("stairs の tread クラスは ve-stairs-tread-accent のみ許可されます", messages)
+        self.assertIn("stairs の tread クラスは廃止されました", messages)
 
-    def test_stairs_note_near_match_html_fails(self) -> None:
+    def test_stairs_here_near_match_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
-                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+                      and "highlight 段のブロック内に ve-stairs-here がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:
@@ -382,24 +432,24 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_enumeration_description_nested_in_concept_fails(self) -> None:
         doc = build("component-valid-enumeration.json")
         tampered = doc.replace(
-            '</div><ul class="ve-enum-description">',
-            '<ul class="ve-enum-description">',
+            '</div><p class="ve-enum-description ve-enum-desc">',
+            '<p class="ve-enum-description ve-enum-desc">',
             1,
-        ).replace('</ul></li>', '</ul></div></li>', 1)
+        ).replace('</p></li>', '</p></div></li>', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_chevron_missing_concept_child_fails(self) -> None:
         doc = build("component-valid-chevron.json")
         tampered = doc.replace(
-            'class="ve-chevron-concept"',
-            'class="ve-chevron-concept-missing"',
+            'class="ve-chevron-concept ve-chv-box"',
+            'class="ve-chevron-concept-missing ve-chv-box"',
             1,
         )
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_enumeration_duplicate_concept_child_fails(self) -> None:
         doc = build("component-valid-enumeration.json")
-        marker = '<div class="ve-enum-concept">'
+        marker = '<div class="ve-enum-concept ve-enum-box">'
         tampered = doc.replace(
             marker,
             marker + '<div class="ve-enum-concept">duplicate</div>',
@@ -423,8 +473,8 @@ class ArtifactSemanticTest(unittest.TestCase):
             '',
             1,
         ).replace(
-            '<div class="ve-enum-concept">',
-            '<div class="ve-enum-concept" data-ve-semantic-id="item-a">',
+            '<div class="ve-enum-concept ve-enum-box">',
+            '<div class="ve-enum-concept ve-enum-box" data-ve-semantic-id="item-a">',
             1,
         )
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))

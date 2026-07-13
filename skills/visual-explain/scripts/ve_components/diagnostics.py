@@ -55,6 +55,7 @@ ARTIFACT_SEMANTIC_MISMATCH = "artifact_semantic_mismatch"
 
 # S1 — enumeration structure codes.
 ENUMERATION_STRUCTURE_VIOLATION = "enumeration_structure_violation"
+ENUMERATION_EMPHASIS_NOT_FOUND = "enumeration-emphasis-not-found"
 
 # S2 — chevron structure codes.
 CHEVRON_STRUCTURE_VIOLATION = "chevron_structure_violation"
@@ -71,8 +72,25 @@ SLOPE_STRUCTURE_VIOLATION = "slope_structure_violation"
 EVIDENCE_MAP_STRUCTURE_VIOLATION = "evidence_map_structure_violation"
 RENDERER_SVG_VIOLATION = "renderer_svg_violation"
 
+# S7 — bars structure codes.
+BARS_ITEM_LIMIT = "bars-item-limit"
+BARS_WIDTH_CLASSES = "bars-width-classes"
+
+# S7 — kpi structure codes.
+KPI_ITEM_LIMIT = "kpi-item-limit"
+KPI_STRUCTURE_VIOLATION = "kpi_structure_violation"
+
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
+
+# Task 3 — document-wide notation rules.
+NOTATION_EMPHASIS_LIMIT = "notation-emphasis-limit"
+NOTATION_HIGHLIGHT_LIMIT = "notation-highlight-limit"
+NOTATION_CERTAINTY_VOCABULARY = "notation-certainty-vocabulary"
+QUANTITATIVE_UNIT_REQUIRED = "quantitative-unit-required"
+
+# S4 — matrix concept presentation codes.
+MATRIX_CONCEPT_LENGTH = "matrix-concept-length"
 
 ALL_CODES = frozenset({
     INVALID_RELATIONSHIP_DECLARATION,
@@ -106,6 +124,7 @@ ALL_CODES = frozenset({
     FLOW_TOPOLOGY_TOO_COMPLEX,
     ASK_CONTRACT_VIOLATION,
     ENUMERATION_STRUCTURE_VIOLATION,
+    ENUMERATION_EMPHASIS_NOT_FOUND,
     CHEVRON_STRUCTURE_VIOLATION,
     PYRAMID_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,
@@ -115,6 +134,15 @@ ALL_CODES = frozenset({
     SLOPE_STRUCTURE_VIOLATION,
     EVIDENCE_MAP_STRUCTURE_VIOLATION,
     RENDERER_SVG_VIOLATION,
+    BARS_ITEM_LIMIT,
+    BARS_WIDTH_CLASSES,
+    KPI_ITEM_LIMIT,
+    KPI_STRUCTURE_VIOLATION,
+    NOTATION_EMPHASIS_LIMIT,
+    NOTATION_HIGHLIGHT_LIMIT,
+    NOTATION_CERTAINTY_VOCABULARY,
+    QUANTITATIVE_UNIT_REQUIRED,
+    MATRIX_CONCEPT_LENGTH,
 })
 
 

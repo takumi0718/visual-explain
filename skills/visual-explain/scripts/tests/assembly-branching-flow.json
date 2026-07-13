@@ -12,22 +12,49 @@
         "id": "sec-branching-flow",
         "relationship": {
           "kind": "directed-graph",
-          "capabilities": ["ordered-transition", "directed-transition", "branching"]
+          "capabilities": [
+            "ordered-transition",
+            "directed-transition",
+            "branching"
+          ]
         },
         "selection": {
           "component": "flow",
-          "version": 1,
-          "matchedCapabilities": ["ordered-transition", "directed-transition", "branching"]
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition",
+            "directed-transition",
+            "branching"
+          ]
         },
         "caption": "リスク判定で経路が分かれ、低リスクは審査を飛ばして自動反映される",
-        "takeawayTargetIds": ["be-lowrisk"],
-        "emphasis": [{"targetId": "bn-risk", "label": "ここで経路が分かれる"}],
+        "takeawayTargetIds": [
+          "be-lowrisk"
+        ],
+        "emphasis": [
+          {
+            "targetId": "bn-risk",
+            "label": "ここで経路が分かれる"
+          }
+        ],
         "certainty": [
-          {"id": "bc-confirmed", "level": "confirmed", "statement": "起案から一次レビュー可決までの遷移は運用手順で確定。"},
-          {"id": "bc-inferred", "level": "inferred", "statement": "低リスク変更を審査なしで自動反映する条件は既定運用からの推定。"}
+          {
+            "id": "bc-confirmed",
+            "level": "confirmed",
+            "statement": "起案から一次レビュー可決までの遷移は運用手順で確定。"
+          },
+          {
+            "id": "bc-inferred",
+            "level": "inferred",
+            "statement": "低リスク変更を審査なしで自動反映する条件は既定運用からの推定。"
+          }
         ],
         "sources": [
-          {"id": "bs-runbook", "label": "リリース運用手順", "detail": "2026-06 版の承認・反映フロー。"}
+          {
+            "id": "bs-runbook",
+            "label": "リリース運用手順",
+            "detail": "2026-06 版の承認・反映フロー。"
+          }
         ],
         "accessibility": {
           "label": "リスク分岐つきリリース承認フロー",
@@ -35,23 +62,83 @@
         },
         "flow": {
           "groups": [
-            {"id": "bg-review", "label": "レビュー"},
-            {"id": "bg-release", "label": "審査と反映"}
+            {
+              "id": "bg-review",
+              "label": "レビュー"
+            },
+            {
+              "id": "bg-release",
+              "label": "審査と反映"
+            }
           ],
           "nodes": [
-            {"id": "bn-draft", "label": "起案", "group": "bg-review"},
-            {"id": "bn-firstreview", "label": "一次レビュー", "group": "bg-review"},
-            {"id": "bn-risk", "label": "変更リスクの判定", "group": "bg-review"},
-            {"id": "bn-security", "label": "セキュリティ審査", "group": "bg-release"},
-            {"id": "bn-approve", "label": "承認", "group": "bg-release"},
-            {"id": "bn-autodeploy", "label": "自動反映", "group": "bg-release"}
+            {
+              "id": "bn-draft",
+              "label": "起案",
+              "group": "bg-review"
+            },
+            {
+              "id": "bn-firstreview",
+              "label": "一次レビュー",
+              "group": "bg-review"
+            },
+            {
+              "id": "bn-risk",
+              "label": "変更リスクの判定",
+              "group": "bg-review"
+            },
+            {
+              "id": "bn-security",
+              "label": "セキュリティ審査",
+              "group": "bg-release"
+            },
+            {
+              "id": "bn-approve",
+              "label": "承認",
+              "group": "bg-release"
+            },
+            {
+              "id": "bn-autodeploy",
+              "label": "自動反映",
+              "group": "bg-release"
+            }
           ],
           "edges": [
-            {"id": "be-submit", "from": "bn-draft", "to": "bn-firstreview", "relation": "ordered-transition", "label": "提出"},
-            {"id": "be-pass", "from": "bn-firstreview", "to": "bn-risk", "relation": "ordered-transition", "label": "レビュー可決"},
-            {"id": "be-highrisk", "from": "bn-risk", "to": "bn-security", "relation": "directed-transition", "label": "高リスク: 審査へ"},
-            {"id": "be-approve", "from": "bn-security", "to": "bn-approve", "relation": "directed-transition", "label": "審査通過"},
-            {"id": "be-lowrisk", "from": "bn-risk", "to": "bn-autodeploy", "relation": "directed-transition", "label": "低リスク: 自動反映"}
+            {
+              "id": "be-submit",
+              "from": "bn-draft",
+              "to": "bn-firstreview",
+              "relation": "ordered-transition",
+              "label": "提出"
+            },
+            {
+              "id": "be-pass",
+              "from": "bn-firstreview",
+              "to": "bn-risk",
+              "relation": "ordered-transition",
+              "label": "レビュー可決"
+            },
+            {
+              "id": "be-highrisk",
+              "from": "bn-risk",
+              "to": "bn-security",
+              "relation": "directed-transition",
+              "label": "高リスク: 審査へ"
+            },
+            {
+              "id": "be-approve",
+              "from": "bn-security",
+              "to": "bn-approve",
+              "relation": "directed-transition",
+              "label": "審査通過"
+            },
+            {
+              "id": "be-lowrisk",
+              "from": "bn-risk",
+              "to": "bn-autodeploy",
+              "relation": "directed-transition",
+              "label": "低リスク: 自動反映"
+            }
           ],
           "startId": "bn-draft"
         }

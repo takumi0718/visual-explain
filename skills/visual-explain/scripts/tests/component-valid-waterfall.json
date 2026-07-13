@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "document": {
-    "id": "waterfall-bars-demo",
-    "title": "ウォーターフォール（行型）",
-    "summary": "負の累積とゼロ交差を含む行型ブリッジ。"
+    "id": "waterfall-v2-demo",
+    "title": "ウォーターフォール（SVG）",
+    "summary": "期首から増減を経て期末へつなぐ SVG ブリッジ。"
   },
   "sections": [
     {
@@ -16,29 +16,33 @@
         },
         "selection": {
           "component": "waterfall",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["additive-bridging"]
         },
-        "caption": "件数の増減ブリッジ",
+        "caption": "営業利益ブリッジ",
         "certainty": [
           {"id": "cert-wf", "level": "confirmed", "statement": "算術は台帳と一致。"}
         ],
         "sources": [
-          {"id": "src-wf", "label": "件数台帳", "detail": "四半期集計。"}
+          {"id": "src-wf", "label": "利益台帳", "detail": "四半期集計。"}
         ],
         "accessibility": {
           "label": "ウォーターフォール",
-          "summary": "開始値から増減を経て終了値へつなぐ。"
+          "summary": "期首利益から増減を経て期末利益へつなぐ。"
         },
         "waterfall": {
           "displayPrecision": 1,
-          "orientation": "bars",
-          "start": {"id": "wf-start", "label": "開始", "value": 30, "valueText": "30件"},
+          "title": "営業利益",
+          "unitLabel": "億円",
+          "axisTicks": ["0", "50", "100", "150"],
+          "start": {"id": "wf-start", "label": "期首", "value": 90, "valueText": "90"},
           "steps": [
-            {"id": "wf-step-1", "label": "減少", "delta": -50, "tone": "warning", "valueText": "−50件"},
-            {"id": "wf-step-2", "label": "回復", "delta": 45, "tone": "positive", "valueText": "+45件"}
+            {"id": "wf-step-1", "label": "価格改定", "delta": 40, "tone": "positive", "valueText": "+40"},
+            {"id": "wf-step-2", "label": "販促費削減", "delta": 20, "tone": "positive", "valueText": "+20"},
+            {"id": "wf-step-3", "label": "値引き", "delta": -50, "tone": "warning", "valueText": "−50"},
+            {"id": "wf-step-4", "label": "原価上昇", "delta": -20, "tone": "warning", "valueText": "−20"}
           ],
-          "end": {"id": "wf-end", "label": "終了", "value": 25, "valueText": "25件"}
+          "end": {"id": "wf-end", "label": "期末", "value": 80, "valueText": "80"}
         }
       }
     }

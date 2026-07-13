@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "stairs",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["maturity-staging"]
         },
         "caption": "成熟度の5段階",
@@ -31,10 +31,11 @@
           "summary": "低い段から高い段へ5段の成熟度を示す。"
         },
         "stairs": {
+          "highlightId": "stage-3",
           "stages": [
             {"id": "stage-1", "label": "未整備"},
             {"id": "stage-2", "label": "部分導入"},
-            {"id": "stage-3", "label": "標準化", "current": true, "note": "ここにいる"},
+            {"id": "stage-3", "label": "標準化"},
             {"id": "stage-4", "label": "最適化"},
             {"id": "stage-5", "label": "自律運用"}
           ]

@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "slope",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["two-point-comparison"]
         },
         "caption": "主要指標の推移",
@@ -31,8 +31,10 @@
           "summary": "開始時点と終了時点の値変化を比較する。"
         },
         "slope": {
+          "title": "主要指標",
           "axes": {"fromLabel": "開始", "toLabel": "終了"},
-          "unit": "件",
+          "unitLabel": "件",
+          "highlightId": "sl-up",
           "items": [
             {
               "id": "sl-up",

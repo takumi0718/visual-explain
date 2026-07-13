@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -190,6 +202,9 @@
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
 
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
@@ -441,7 +456,7 @@
           </table>
         </div>
         <ul class="ve-matrix-notes">
-          <li><span class="ve-cert ve-cert-confirmed">確定</span> 実装済みトークンに基づく対照である。</li>
+          <li><span class="ve-cert ve-cert-confirmed">確認済み</span> 実装済みトークンに基づく対照である。</li>
         </ul>
       </figure>
     </section>

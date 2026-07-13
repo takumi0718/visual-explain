@@ -9,7 +9,7 @@ import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
 
 def _esc(value: str) -> str:
@@ -29,11 +29,7 @@ def render_pyramid(section: CanonicalSection, definition) -> RenderResult:
 
     blocks: list[str] = []
     for index, tier in enumerate(pyramid.tiers, start=1):
-        cls_parts = ["ve-pyramid-tier", f"ve-pyramid-index-{index}"]
-        if index == 1:
-            cls_parts.append("ve-pyramid-face-strong")
-        else:
-            cls_parts.append("ve-pyramid-face-dim")
+        cls_parts = ["ve-pyramid-tier", f"ve-pyramid-index-{index}", f"ve-pyramid-level-{index}"]
         if tier.id in takeaway:
             cls_parts.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if tier.id in takeaway else ""

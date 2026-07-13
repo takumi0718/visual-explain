@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="ja" data-theme-storage-key="visual-explain-theme">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <!-- TITLE:BEGIN -->
+  <title>McKinsey-style visual standard v3 — canonical 12 @2</title>
+  <!-- TITLE:END -->
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --surface: #f4f5f7;
+      --border: #e2e5e9;
+      --border-strong: #1a1d21;
+      --text: #1a1d21;
+      --text-dim: #555e6a;
+      --text-faint: #676f7a;
+      --accent: #2456b3;
+      --accent-strong: #1a4290;
+      --positive: #1e6b46;
+      --positive-strong: #14532f;
+      --warning: #9a4e0e;
+      --warning-strong: #7c3d08;
+      --accent-warm: #9a4e0e;
+      --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
+      --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
+      --lh-body: 1.75; --lh-heading: 1.45;
+      --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
+      --space-5: 3rem; --space-6: 4rem; --space-7: 5.5rem;
+      --w-narrative: 45rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        color-scheme: dark;
+        --bg: #15181c;
+        --surface: #1e2226;
+        --border: #33383f;
+        --border-strong: #e9ebee;
+        --text: #e9ebee;
+        --text-dim: #aab1bb;
+        --text-faint: #838b96;
+        --accent: #85aef2;
+        --accent-strong: #a8c4f6;
+        --positive: #6cc496;
+        --positive-strong: #92d6b2;
+        --warning: #e0a05e;
+        --warning-strong: #eab884;
+        --accent-warm: #e0a05e;
+        --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
+      }
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #15181c;
+      --surface: #1e2226;
+      --border: #33383f;
+      --border-strong: #e9ebee;
+      --text: #e9ebee;
+      --text-dim: #aab1bb;
+      --text-faint: #838b96;
+      --accent: #85aef2;
+      --accent-strong: #a8c4f6;
+      --positive: #6cc496;
+      --positive-strong: #92d6b2;
+      --warning: #e0a05e;
+      --warning-strong: #eab884;
+      --accent-warm: #e0a05e;
+      --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--text); font-size: clamp(1rem, 0.7rem + 0.5vw, 1.25rem); }
+    body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
+    main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-4) 0 var(--space-6); }
+    section { min-width: 0; margin-block: var(--space-7); }
+    h1, h2, h3, p { min-width: 0; }
+    p, ul, ol, .claim, .evidence { max-width: var(--w-narrative); }
+    h1 { font-size: var(--fs-hero); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    a { color: var(--accent-strong); }
+    button, summary, a { outline-offset: 3px; }
+    button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); }
+    button { font: inherit; color: inherit; background: var(--surface); border: 0; border-radius: .4rem; padding: var(--space-1) var(--space-2); cursor: pointer; }
+    button:hover:not(:disabled) { background: var(--border); }
+    button:disabled { color: var(--text-dim); cursor: not-allowed; }
+
+    .first-screen { display: grid; gap: var(--space-4); padding: var(--space-6) 0; background: transparent; border-left: 0; min-height: 60vh; align-content: center; }
+    .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
+    .decision strong { color: var(--accent-strong); }
+    .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
+    .conditions { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); color: var(--text-dim); }
+
+    .claim { margin-bottom: var(--space-2); font-size: var(--fs-h2); font-weight: 700; }
+    .figure { position: relative; min-width: 0; margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border: 0; border-radius: .5rem; overflow: auto; }
+    .figure figcaption { margin-top: var(--space-2); color: var(--text-dim); font-size: var(--fs-body); }
+    .evidence { margin-top: var(--space-2); padding-left: var(--space-2); border-left: .2rem solid var(--border); color: var(--text-dim); font-size: var(--fs-body); }
+    details.deep-dive { margin-top: var(--space-2); padding: var(--space-1) var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; }
+    details.deep-dive summary { cursor: pointer; font-weight: 700; }
+    pre { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); }
+
+    .flow-node { position: relative; z-index: 1; min-width: 0; padding: var(--space-1) var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font-size: var(--fs-figure); }
+    .flow { display: flex; align-items: stretch; gap: var(--space-4); }
+    .flow .flow-node { flex: 1 1 10rem; }
+    .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + var(--space-1)); color: var(--text-dim); font-weight: 700; transform: translateY(-50%); }
+    .flow[data-connect] > .flow-node:not(:last-of-type)::after { content: none; }
+    .layers { display: grid; gap: var(--space-2); }
+    .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+    .lane-label { color: var(--text-dim); font-weight: 700; font-size: var(--fs-figure); }
+    .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); min-width: 0; font-size: var(--fs-figure); }
+    .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .compare-frame h3 { margin-top: 0; }
+    .matrix { max-width: 100%; overflow: auto; }
+    .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
+    .matrix-label, .matrix-cell { padding: var(--space-1) var(--space-2) var(--space-1) 0; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: transparent; font-size: var(--fs-figure); }
+    .matrix-label { color: var(--text); font-weight: 800; }
+    .matrix thead .matrix-label { border-bottom: 1px solid var(--border-strong); }
+    .option-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .matrix .option-card { padding: 0; background: transparent; border: 0; border-radius: 0; }
+    [data-tone="accent"] { --tone-border: var(--accent); --tone-background: color-mix(in srgb, var(--accent) 12%, var(--surface)); --tone-text: var(--accent-strong); }
+    [data-tone="positive"] { --tone-border: var(--positive); --tone-background: color-mix(in srgb, var(--positive) 12%, var(--surface)); --tone-text: var(--positive-strong); }
+    [data-tone="warning"] { --tone-border: var(--warning); --tone-background: color-mix(in srgb, var(--warning) 12%, var(--surface)); --tone-text: var(--warning); }
+    [data-tone="muted"] { --tone-border: var(--border); --tone-background: var(--bg); --tone-text: var(--text-dim); }
+    .flow-node[data-tone], .option-card[data-tone], .matrix-label[data-tone], .matrix-cell[data-tone] { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
+    .matrix .option-card[data-tone] { background: transparent; color: inherit; }
+    .matrix .option-card[data-tone] > .matrix-label, .matrix .option-card[data-tone] > .matrix-cell, .matrix .matrix-label[data-tone], .matrix .matrix-cell[data-tone] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .matrix .option-card[data-tone="accent"] > .matrix-label, .matrix .option-card[data-tone="accent"] > .matrix-cell, .matrix .matrix-label[data-tone="accent"], .matrix .matrix-cell[data-tone="accent"] { background: var(--tone-background); }
+    .timeline { display: grid; gap: var(--space-2); border-left: .2rem solid var(--border-strong); padding-left: var(--space-3); font-size: var(--fs-figure); }
+    .timeline-item { position: relative; min-width: 0; }
+    .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.5rem - .45rem); top: .45rem; background: var(--border-strong); border-radius: 50%; }
+    .timeline time { color: var(--text-dim); font-weight: 700; }
+    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-2); }
+    .kpi-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .kpi-value { display: block; color: var(--text); font-size: var(--fs-hero); font-weight: 800; line-height: 1.2; }
+    .bars { display: grid; gap: var(--space-2); }
+    .bar-row { display: grid; grid-template-columns: minmax(7rem, .35fr) minmax(8rem, 1fr) auto; gap: var(--space-2); align-items: center; min-width: 0; font-size: var(--fs-figure); }
+    .bar-track { min-width: 0; height: 1rem; overflow: hidden; background: var(--bg); border-radius: 999px; }
+    .bar-fill { display: block; width: var(--value, 0%); min-width: .25rem; height: 100%; background: var(--text-dim); }
+    .bar-fill[data-tone] { background: var(--tone-border); }
+    .terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-2); }
+    .term { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .term dt { color: var(--text); font-weight: 800; }
+    .term dd { margin: var(--space-1) 0 0; color: var(--text-dim); }
+
+    .certainty { display: inline-flex; align-items: center; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty.confirmed { border-style: solid; }
+    .certainty.inferred { border-style: dashed; }
+    .certainty.unverified { border-style: dotted; }
+    details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
+    details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
+    details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
+
+    .stepper { display: grid; gap: var(--space-2); padding: var(--space-2); background: var(--surface); border: 0; border-radius: .5rem; }
+    .stepper-status { margin: 0; color: var(--text-dim); }
+    .step-panel[hidden] { display: none; }
+    .step-panel.is-current { border-left: .25rem solid var(--accent); padding-left: var(--space-2); }
+    .stepper-controls { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+    .closing-section { padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-top: 1px solid var(--border-strong); }
+    .closing-section h2 { margin-top: 0; }
+    .closing-section h3 { margin-bottom: var(--space-1); }
+    .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .connector-warning { margin: var(--space-2) 0 0; color: var(--warning); font-weight: 700; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
+
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
+    .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: var(--bg); }
+    .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: var(--bg); }
+    /* request は警告ではないためモノクロ。意味色は decision のチップ（選択=青）と既定案（推奨=緑）のみ */
+    .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
+    .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: minmax(8rem, .35fr) 1fr; gap: var(--space-2); padding: var(--space-1); border-radius: .3rem; }
+    .ask-options [data-ask-default] { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); }
+    .ask-options [data-ask-default] > :first-child::after { content: "既定案"; margin-left: var(--space-1); color: var(--positive); font-size: var(--fs-small); font-weight: 700; }
+    .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); }
+    .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+    .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
+    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
+    footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
+
+    /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
+    @media (min-width: 60rem) {
+      .figure:has(.flow, .matrix) { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); }
+      figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }
+      .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
+    }
+
+    @media (max-width: 42rem) {
+      main { width: min(100% - var(--space-2), var(--w-narrative)); padding-top: var(--space-2); }
+      .theme-control { width: min(100% - var(--space-2), var(--w-narrative)); }
+      .theme-control button { max-width: 100%; white-space: normal; }
+      .flow { flex-direction: column; gap: var(--space-3); }
+      .flow .flow-node { flex: 0 1 auto; }
+      .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
+      .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
+      .compare { grid-template-columns: 1fr; }
+      .ask-options [data-ask-option] { grid-template-columns: 1fr; gap: var(--space-1); }
+    }
+  </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <style data-ve-component="matrix" data-ve-contract-version="2" data-ve-asset="matrix.css" data-ve-digest="af3e0f7d9f958c78864a88be04e54470c8720c6cb2b6f015e4b14cf282bdb8c3">figure[data-ve-component="matrix"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="matrix"] .ve-matrix-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll { max-width: 100%; overflow-x: auto; }
+figure[data-ve-component="matrix"] table { width: 100%; min-width: 32rem; border-collapse: collapse; }
+figure[data-ve-component="matrix"] .ve-mx-grid { display: grid; gap: var(--space-1); max-width: 34rem; }
+figure[data-ve-component="matrix"] .ve-mx-cols-2 { grid-template-columns: 8rem repeat(2, minmax(0, 1fr)); }
+figure[data-ve-component="matrix"] .ve-mx-cols-3 { grid-template-columns: 8rem repeat(3, minmax(0, 1fr)); }
+figure[data-ve-component="matrix"] .ve-mx-cols-4 { grid-template-columns: 8rem repeat(4, minmax(0, 1fr)); }
+figure[data-ve-component="matrix"] .ve-mx-colhead {
+  display: grid; place-items: center; padding: var(--space-1);
+  background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; }
+figure[data-ve-component="matrix"] .ve-mx-rowhead {
+  display: grid; place-items: center; padding: var(--space-1);
+  background: var(--dg-neutral); color: var(--text); font-weight: 700; }
+figure[data-ve-component="matrix"] .ve-mx-cell {
+  display: grid; place-items: center; padding: var(--space-1);
+  border: 1.5px solid var(--dg-primary); font-weight: 700; font-size: 1.0625rem; }
+figure[data-ve-component="matrix"] .ve-mx-cell.ve-dg-highlight { background: var(--dg-primary-light); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th {
+  color: var(--dg-primary); font-weight: 800; text-align: left;
+  border-bottom: 1.5px solid var(--dg-primary); padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-scroll td {
+  border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
+figure[data-ve-component="matrix"] .ve-matrix-corner { background: transparent; border: 0; }
+figure[data-ve-component="matrix"] .ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+figure[data-ve-component="matrix"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="matrix"] .ve-matrix-refs { display: block; margin-top: var(--space-1); }
+figure[data-ve-component="matrix"] .ve-cert { display: inline-block; margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; border-bottom: 1px solid var(--text-dim); }
+figure[data-ve-component="matrix"] .ve-cert-confirmed { color: var(--text-dim); }
+figure[data-ve-component="matrix"] .ve-cert-inferred { color: var(--text-dim); border-bottom-style: dashed; }
+figure[data-ve-component="matrix"] .ve-cert-unverified { color: var(--text-dim); border-bottom-style: dotted; }
+figure[data-ve-component="matrix"] .ve-src { display: inline-block; font-size: var(--fs-small); color: var(--text-dim); }
+figure[data-ve-component="matrix"] .ve-matrix-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
+</style>
+  <style data-ve-component="flow" data-ve-contract-version="2" data-ve-asset="flow.css" data-ve-digest="778c861a2bf3acd4f197f92fac9385a0b4acec7accc4c97a1d25a871b701770e">[data-ve-component="flow"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+[data-ve-component="flow"] .ve-flow-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="flow"] .ve-flow-summary { margin: 0 0 var(--space-2); color: var(--text-dim); max-width: var(--w-narrative); font-size: var(--fs-small); }
+[data-ve-component="flow"] .ve-flow-scroll { max-width: 100%; overflow-x: auto; }
+[data-ve-component="flow"] .ve-flow-canvas { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, var(--space-3)); grid-auto-rows: min-content; min-width: 24rem; margin: 0; padding: 0; list-style: none; }
+[data-ve-component="flow"] .ve-flow-canvas > li { min-width: 0; }
+[data-ve-component="flow"] .ve-flow-station, [data-ve-component="flow"] .ve-flow-link, [data-ve-component="flow"] .ve-flow-group-label { grid-column: 1; }
+[data-ve-component="flow"] .ve-flow-node { display: block; padding: var(--space-1) var(--space-2); background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; font-size: var(--fs-figure); }
+[data-ve-component="flow"] .ve-flow-node[data-tone="muted"] { background: var(--bg); color: var(--text); border: 1.5px solid var(--dg-primary); }
+[data-ve-component="flow"] .ve-flow-station.in-group .ve-flow-node { border-left: 2.5px solid var(--dg-line); }
+[data-ve-component="flow"] .ve-flow-link { display: grid; grid-template-columns: auto auto 1fr; gap: var(--space-1); align-items: center; padding: var(--space-1) var(--space-2); color: var(--text-dim); font-size: var(--fs-figure); }
+[data-ve-component="flow"] .ve-flow-arrow { color: var(--dg-line); font-weight: 700; }
+[data-ve-component="flow"] .ve-flow-rel { font-size: var(--fs-small); color: var(--text-faint); }
+[data-ve-component="flow"] .ve-flow-group-label { color: var(--text-faint); font-size: var(--fs-small); font-weight: 700; letter-spacing: .06em; padding: var(--space-1) 0 0; }
+[data-ve-component="flow"] .ve-flow-rail { position: relative; border-right: 2.5px solid var(--dg-line); border-top: 2.5px solid var(--dg-line); border-bottom: 2.5px solid var(--dg-line); writing-mode: vertical-rl; font-size: var(--fs-small); color: var(--text-dim); padding: var(--space-1) 0; }
+[data-ve-component="flow"] .ve-flow-rail::after { content: "\25C0"; position: absolute; inset-block-end: -0.15rem; inset-inline-start: -0.5rem; color: var(--dg-line); font-size: .7rem; writing-mode: horizontal-tb; }
+[data-ve-component="flow"] .ve-rail-lane-0 { grid-column: 2; }
+[data-ve-component="flow"] .ve-rail-lane-1 { grid-column: 3; }
+[data-ve-component="flow"] .ve-rail-lane-2 { grid-column: 4; }
+[data-ve-component="flow"] .ve-flow-node.ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+[data-ve-component="flow"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="flow"] .ve-flow-notes { margin: var(--space-2) 0 0; padding-left: var(--space-3); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="flow"] .ve-flow-notes li { margin: 0; }
+[data-ve-component="flow"] .ve-rail-1-2 { grid-row: 1 / 2; }
+[data-ve-component="flow"] .ve-rail-1-3 { grid-row: 1 / 3; }
+[data-ve-component="flow"] .ve-rail-1-4 { grid-row: 1 / 4; }
+[data-ve-component="flow"] .ve-rail-1-5 { grid-row: 1 / 5; }
+[data-ve-component="flow"] .ve-rail-1-6 { grid-row: 1 / 6; }
+[data-ve-component="flow"] .ve-rail-1-7 { grid-row: 1 / 7; }
+[data-ve-component="flow"] .ve-rail-1-8 { grid-row: 1 / 8; }
+[data-ve-component="flow"] .ve-rail-1-9 { grid-row: 1 / 9; }
+[data-ve-component="flow"] .ve-rail-1-10 { grid-row: 1 / 10; }
+[data-ve-component="flow"] .ve-rail-1-11 { grid-row: 1 / 11; }
+[data-ve-component="flow"] .ve-rail-1-12 { grid-row: 1 / 12; }
+[data-ve-component="flow"] .ve-rail-1-13 { grid-row: 1 / 13; }
+[data-ve-component="flow"] .ve-rail-1-14 { grid-row: 1 / 14; }
+[data-ve-component="flow"] .ve-rail-1-15 { grid-row: 1 / 15; }
+[data-ve-component="flow"] .ve-rail-1-16 { grid-row: 1 / 16; }
+[data-ve-component="flow"] .ve-rail-1-17 { grid-row: 1 / 17; }
+[data-ve-component="flow"] .ve-rail-1-18 { grid-row: 1 / 18; }
+[data-ve-component="flow"] .ve-rail-1-19 { grid-row: 1 / 19; }
+[data-ve-component="flow"] .ve-rail-1-20 { grid-row: 1 / 20; }
+[data-ve-component="flow"] .ve-rail-1-21 { grid-row: 1 / 21; }
+[data-ve-component="flow"] .ve-rail-1-22 { grid-row: 1 / 22; }
+[data-ve-component="flow"] .ve-rail-1-23 { grid-row: 1 / 23; }
+[data-ve-component="flow"] .ve-rail-1-24 { grid-row: 1 / 24; }
+[data-ve-component="flow"] .ve-rail-1-25 { grid-row: 1 / 25; }
+[data-ve-component="flow"] .ve-rail-1-26 { grid-row: 1 / 26; }
+[data-ve-component="flow"] .ve-rail-1-27 { grid-row: 1 / 27; }
+[data-ve-component="flow"] .ve-rail-1-28 { grid-row: 1 / 28; }
+[data-ve-component="flow"] .ve-rail-2-3 { grid-row: 2 / 3; }
+[data-ve-component="flow"] .ve-rail-2-4 { grid-row: 2 / 4; }
+[data-ve-component="flow"] .ve-rail-2-5 { grid-row: 2 / 5; }
+[data-ve-component="flow"] .ve-rail-2-6 { grid-row: 2 / 6; }
+[data-ve-component="flow"] .ve-rail-2-7 { grid-row: 2 / 7; }
+[data-ve-component="flow"] .ve-rail-2-8 { grid-row: 2 / 8; }
+[data-ve-component="flow"] .ve-rail-2-9 { grid-row: 2 / 9; }
+[data-ve-component="flow"] .ve-rail-2-10 { grid-row: 2 / 10; }
+[data-ve-component="flow"] .ve-rail-2-11 { grid-row: 2 / 11; }
+[data-ve-component="flow"] .ve-rail-2-12 { grid-row: 2 / 12; }
+[data-ve-component="flow"] .ve-rail-2-13 { grid-row: 2 / 13; }
+[data-ve-component="flow"] .ve-rail-2-14 { grid-row: 2 / 14; }
+[data-ve-component="flow"] .ve-rail-2-15 { grid-row: 2 / 15; }
+[data-ve-component="flow"] .ve-rail-2-16 { grid-row: 2 / 16; }
+[data-ve-component="flow"] .ve-rail-2-17 { grid-row: 2 / 17; }
+[data-ve-component="flow"] .ve-rail-2-18 { grid-row: 2 / 18; }
+[data-ve-component="flow"] .ve-rail-2-19 { grid-row: 2 / 19; }
+[data-ve-component="flow"] .ve-rail-2-20 { grid-row: 2 / 20; }
+[data-ve-component="flow"] .ve-rail-2-21 { grid-row: 2 / 21; }
+[data-ve-component="flow"] .ve-rail-2-22 { grid-row: 2 / 22; }
+[data-ve-component="flow"] .ve-rail-2-23 { grid-row: 2 / 23; }
+[data-ve-component="flow"] .ve-rail-2-24 { grid-row: 2 / 24; }
+[data-ve-component="flow"] .ve-rail-2-25 { grid-row: 2 / 25; }
+[data-ve-component="flow"] .ve-rail-2-26 { grid-row: 2 / 26; }
+[data-ve-component="flow"] .ve-rail-2-27 { grid-row: 2 / 27; }
+[data-ve-component="flow"] .ve-rail-2-28 { grid-row: 2 / 28; }
+[data-ve-component="flow"] .ve-rail-3-4 { grid-row: 3 / 4; }
+[data-ve-component="flow"] .ve-rail-3-5 { grid-row: 3 / 5; }
+[data-ve-component="flow"] .ve-rail-3-6 { grid-row: 3 / 6; }
+[data-ve-component="flow"] .ve-rail-3-7 { grid-row: 3 / 7; }
+[data-ve-component="flow"] .ve-rail-3-8 { grid-row: 3 / 8; }
+[data-ve-component="flow"] .ve-rail-3-9 { grid-row: 3 / 9; }
+[data-ve-component="flow"] .ve-rail-3-10 { grid-row: 3 / 10; }
+[data-ve-component="flow"] .ve-rail-3-11 { grid-row: 3 / 11; }
+[data-ve-component="flow"] .ve-rail-3-12 { grid-row: 3 / 12; }
+[data-ve-component="flow"] .ve-rail-3-13 { grid-row: 3 / 13; }
+[data-ve-component="flow"] .ve-rail-3-14 { grid-row: 3 / 14; }
+[data-ve-component="flow"] .ve-rail-3-15 { grid-row: 3 / 15; }
+[data-ve-component="flow"] .ve-rail-3-16 { grid-row: 3 / 16; }
+[data-ve-component="flow"] .ve-rail-3-17 { grid-row: 3 / 17; }
+[data-ve-component="flow"] .ve-rail-3-18 { grid-row: 3 / 18; }
+[data-ve-component="flow"] .ve-rail-3-19 { grid-row: 3 / 19; }
+[data-ve-component="flow"] .ve-rail-3-20 { grid-row: 3 / 20; }
+[data-ve-component="flow"] .ve-rail-3-21 { grid-row: 3 / 21; }
+[data-ve-component="flow"] .ve-rail-3-22 { grid-row: 3 / 22; }
+[data-ve-component="flow"] .ve-rail-3-23 { grid-row: 3 / 23; }
+[data-ve-component="flow"] .ve-rail-3-24 { grid-row: 3 / 24; }
+[data-ve-component="flow"] .ve-rail-3-25 { grid-row: 3 / 25; }
+[data-ve-component="flow"] .ve-rail-3-26 { grid-row: 3 / 26; }
+[data-ve-component="flow"] .ve-rail-3-27 { grid-row: 3 / 27; }
+[data-ve-component="flow"] .ve-rail-3-28 { grid-row: 3 / 28; }
+[data-ve-component="flow"] .ve-rail-4-5 { grid-row: 4 / 5; }
+[data-ve-component="flow"] .ve-rail-4-6 { grid-row: 4 / 6; }
+[data-ve-component="flow"] .ve-rail-4-7 { grid-row: 4 / 7; }
+[data-ve-component="flow"] .ve-rail-4-8 { grid-row: 4 / 8; }
+[data-ve-component="flow"] .ve-rail-4-9 { grid-row: 4 / 9; }
+[data-ve-component="flow"] .ve-rail-4-10 { grid-row: 4 / 10; }
+[data-ve-component="flow"] .ve-rail-4-11 { grid-row: 4 / 11; }
+[data-ve-component="flow"] .ve-rail-4-12 { grid-row: 4 / 12; }
+[data-ve-component="flow"] .ve-rail-4-13 { grid-row: 4 / 13; }
+[data-ve-component="flow"] .ve-rail-4-14 { grid-row: 4 / 14; }
+[data-ve-component="flow"] .ve-rail-4-15 { grid-row: 4 / 15; }
+[data-ve-component="flow"] .ve-rail-4-16 { grid-row: 4 / 16; }
+[data-ve-component="flow"] .ve-rail-4-17 { grid-row: 4 / 17; }
+[data-ve-component="flow"] .ve-rail-4-18 { grid-row: 4 / 18; }
+[data-ve-component="flow"] .ve-rail-4-19 { grid-row: 4 / 19; }
+[data-ve-component="flow"] .ve-rail-4-20 { grid-row: 4 / 20; }
+[data-ve-component="flow"] .ve-rail-4-21 { grid-row: 4 / 21; }
+[data-ve-component="flow"] .ve-rail-4-22 { grid-row: 4 / 22; }
+[data-ve-component="flow"] .ve-rail-4-23 { grid-row: 4 / 23; }
+[data-ve-component="flow"] .ve-rail-4-24 { grid-row: 4 / 24; }
+[data-ve-component="flow"] .ve-rail-4-25 { grid-row: 4 / 25; }
+[data-ve-component="flow"] .ve-rail-4-26 { grid-row: 4 / 26; }
+[data-ve-component="flow"] .ve-rail-4-27 { grid-row: 4 / 27; }
+[data-ve-component="flow"] .ve-rail-4-28 { grid-row: 4 / 28; }
+[data-ve-component="flow"] .ve-rail-5-6 { grid-row: 5 / 6; }
+[data-ve-component="flow"] .ve-rail-5-7 { grid-row: 5 / 7; }
+[data-ve-component="flow"] .ve-rail-5-8 { grid-row: 5 / 8; }
+[data-ve-component="flow"] .ve-rail-5-9 { grid-row: 5 / 9; }
+[data-ve-component="flow"] .ve-rail-5-10 { grid-row: 5 / 10; }
+[data-ve-component="flow"] .ve-rail-5-11 { grid-row: 5 / 11; }
+[data-ve-component="flow"] .ve-rail-5-12 { grid-row: 5 / 12; }
+[data-ve-component="flow"] .ve-rail-5-13 { grid-row: 5 / 13; }
+[data-ve-component="flow"] .ve-rail-5-14 { grid-row: 5 / 14; }
+[data-ve-component="flow"] .ve-rail-5-15 { grid-row: 5 / 15; }
+[data-ve-component="flow"] .ve-rail-5-16 { grid-row: 5 / 16; }
+[data-ve-component="flow"] .ve-rail-5-17 { grid-row: 5 / 17; }
+[data-ve-component="flow"] .ve-rail-5-18 { grid-row: 5 / 18; }
+[data-ve-component="flow"] .ve-rail-5-19 { grid-row: 5 / 19; }
+[data-ve-component="flow"] .ve-rail-5-20 { grid-row: 5 / 20; }
+[data-ve-component="flow"] .ve-rail-5-21 { grid-row: 5 / 21; }
+[data-ve-component="flow"] .ve-rail-5-22 { grid-row: 5 / 22; }
+[data-ve-component="flow"] .ve-rail-5-23 { grid-row: 5 / 23; }
+[data-ve-component="flow"] .ve-rail-5-24 { grid-row: 5 / 24; }
+[data-ve-component="flow"] .ve-rail-5-25 { grid-row: 5 / 25; }
+[data-ve-component="flow"] .ve-rail-5-26 { grid-row: 5 / 26; }
+[data-ve-component="flow"] .ve-rail-5-27 { grid-row: 5 / 27; }
+[data-ve-component="flow"] .ve-rail-5-28 { grid-row: 5 / 28; }
+[data-ve-component="flow"] .ve-rail-6-7 { grid-row: 6 / 7; }
+[data-ve-component="flow"] .ve-rail-6-8 { grid-row: 6 / 8; }
+[data-ve-component="flow"] .ve-rail-6-9 { grid-row: 6 / 9; }
+[data-ve-component="flow"] .ve-rail-6-10 { grid-row: 6 / 10; }
+[data-ve-component="flow"] .ve-rail-6-11 { grid-row: 6 / 11; }
+[data-ve-component="flow"] .ve-rail-6-12 { grid-row: 6 / 12; }
+[data-ve-component="flow"] .ve-rail-6-13 { grid-row: 6 / 13; }
+[data-ve-component="flow"] .ve-rail-6-14 { grid-row: 6 / 14; }
+[data-ve-component="flow"] .ve-rail-6-15 { grid-row: 6 / 15; }
+[data-ve-component="flow"] .ve-rail-6-16 { grid-row: 6 / 16; }
+[data-ve-component="flow"] .ve-rail-6-17 { grid-row: 6 / 17; }
+[data-ve-component="flow"] .ve-rail-6-18 { grid-row: 6 / 18; }
+[data-ve-component="flow"] .ve-rail-6-19 { grid-row: 6 / 19; }
+[data-ve-component="flow"] .ve-rail-6-20 { grid-row: 6 / 20; }
+[data-ve-component="flow"] .ve-rail-6-21 { grid-row: 6 / 21; }
+[data-ve-component="flow"] .ve-rail-6-22 { grid-row: 6 / 22; }
+[data-ve-component="flow"] .ve-rail-6-23 { grid-row: 6 / 23; }
+[data-ve-component="flow"] .ve-rail-6-24 { grid-row: 6 / 24; }
+[data-ve-component="flow"] .ve-rail-6-25 { grid-row: 6 / 25; }
+[data-ve-component="flow"] .ve-rail-6-26 { grid-row: 6 / 26; }
+[data-ve-component="flow"] .ve-rail-6-27 { grid-row: 6 / 27; }
+[data-ve-component="flow"] .ve-rail-6-28 { grid-row: 6 / 28; }
+[data-ve-component="flow"] .ve-rail-7-8 { grid-row: 7 / 8; }
+[data-ve-component="flow"] .ve-rail-7-9 { grid-row: 7 / 9; }
+[data-ve-component="flow"] .ve-rail-7-10 { grid-row: 7 / 10; }
+[data-ve-component="flow"] .ve-rail-7-11 { grid-row: 7 / 11; }
+[data-ve-component="flow"] .ve-rail-7-12 { grid-row: 7 / 12; }
+[data-ve-component="flow"] .ve-rail-7-13 { grid-row: 7 / 13; }
+[data-ve-component="flow"] .ve-rail-7-14 { grid-row: 7 / 14; }
+[data-ve-component="flow"] .ve-rail-7-15 { grid-row: 7 / 15; }
+[data-ve-component="flow"] .ve-rail-7-16 { grid-row: 7 / 16; }
+[data-ve-component="flow"] .ve-rail-7-17 { grid-row: 7 / 17; }
+[data-ve-component="flow"] .ve-rail-7-18 { grid-row: 7 / 18; }
+[data-ve-component="flow"] .ve-rail-7-19 { grid-row: 7 / 19; }
+[data-ve-component="flow"] .ve-rail-7-20 { grid-row: 7 / 20; }
+[data-ve-component="flow"] .ve-rail-7-21 { grid-row: 7 / 21; }
+[data-ve-component="flow"] .ve-rail-7-22 { grid-row: 7 / 22; }
+[data-ve-component="flow"] .ve-rail-7-23 { grid-row: 7 / 23; }
+[data-ve-component="flow"] .ve-rail-7-24 { grid-row: 7 / 24; }
+[data-ve-component="flow"] .ve-rail-7-25 { grid-row: 7 / 25; }
+[data-ve-component="flow"] .ve-rail-7-26 { grid-row: 7 / 26; }
+[data-ve-component="flow"] .ve-rail-7-27 { grid-row: 7 / 27; }
+[data-ve-component="flow"] .ve-rail-7-28 { grid-row: 7 / 28; }
+[data-ve-component="flow"] .ve-rail-8-9 { grid-row: 8 / 9; }
+[data-ve-component="flow"] .ve-rail-8-10 { grid-row: 8 / 10; }
+[data-ve-component="flow"] .ve-rail-8-11 { grid-row: 8 / 11; }
+[data-ve-component="flow"] .ve-rail-8-12 { grid-row: 8 / 12; }
+[data-ve-component="flow"] .ve-rail-8-13 { grid-row: 8 / 13; }
+[data-ve-component="flow"] .ve-rail-8-14 { grid-row: 8 / 14; }
+[data-ve-component="flow"] .ve-rail-8-15 { grid-row: 8 / 15; }
+[data-ve-component="flow"] .ve-rail-8-16 { grid-row: 8 / 16; }
+[data-ve-component="flow"] .ve-rail-8-17 { grid-row: 8 / 17; }
+[data-ve-component="flow"] .ve-rail-8-18 { grid-row: 8 / 18; }
+[data-ve-component="flow"] .ve-rail-8-19 { grid-row: 8 / 19; }
+[data-ve-component="flow"] .ve-rail-8-20 { grid-row: 8 / 20; }
+[data-ve-component="flow"] .ve-rail-8-21 { grid-row: 8 / 21; }
+[data-ve-component="flow"] .ve-rail-8-22 { grid-row: 8 / 22; }
+[data-ve-component="flow"] .ve-rail-8-23 { grid-row: 8 / 23; }
+[data-ve-component="flow"] .ve-rail-8-24 { grid-row: 8 / 24; }
+[data-ve-component="flow"] .ve-rail-8-25 { grid-row: 8 / 25; }
+[data-ve-component="flow"] .ve-rail-8-26 { grid-row: 8 / 26; }
+[data-ve-component="flow"] .ve-rail-8-27 { grid-row: 8 / 27; }
+[data-ve-component="flow"] .ve-rail-8-28 { grid-row: 8 / 28; }
+[data-ve-component="flow"] .ve-rail-9-10 { grid-row: 9 / 10; }
+[data-ve-component="flow"] .ve-rail-9-11 { grid-row: 9 / 11; }
+[data-ve-component="flow"] .ve-rail-9-12 { grid-row: 9 / 12; }
+[data-ve-component="flow"] .ve-rail-9-13 { grid-row: 9 / 13; }
+[data-ve-component="flow"] .ve-rail-9-14 { grid-row: 9 / 14; }
+[data-ve-component="flow"] .ve-rail-9-15 { grid-row: 9 / 15; }
+[data-ve-component="flow"] .ve-rail-9-16 { grid-row: 9 / 16; }
+[data-ve-component="flow"] .ve-rail-9-17 { grid-row: 9 / 17; }
+[data-ve-component="flow"] .ve-rail-9-18 { grid-row: 9 / 18; }
+[data-ve-component="flow"] .ve-rail-9-19 { grid-row: 9 / 19; }
+[data-ve-component="flow"] .ve-rail-9-20 { grid-row: 9 / 20; }
+[data-ve-component="flow"] .ve-rail-9-21 { grid-row: 9 / 21; }
+[data-ve-component="flow"] .ve-rail-9-22 { grid-row: 9 / 22; }
+[data-ve-component="flow"] .ve-rail-9-23 { grid-row: 9 / 23; }
+[data-ve-component="flow"] .ve-rail-9-24 { grid-row: 9 / 24; }
+[data-ve-component="flow"] .ve-rail-9-25 { grid-row: 9 / 25; }
+[data-ve-component="flow"] .ve-rail-9-26 { grid-row: 9 / 26; }
+[data-ve-component="flow"] .ve-rail-9-27 { grid-row: 9 / 27; }
+[data-ve-component="flow"] .ve-rail-9-28 { grid-row: 9 / 28; }
+[data-ve-component="flow"] .ve-rail-10-11 { grid-row: 10 / 11; }
+[data-ve-component="flow"] .ve-rail-10-12 { grid-row: 10 / 12; }
+[data-ve-component="flow"] .ve-rail-10-13 { grid-row: 10 / 13; }
+[data-ve-component="flow"] .ve-rail-10-14 { grid-row: 10 / 14; }
+[data-ve-component="flow"] .ve-rail-10-15 { grid-row: 10 / 15; }
+[data-ve-component="flow"] .ve-rail-10-16 { grid-row: 10 / 16; }
+[data-ve-component="flow"] .ve-rail-10-17 { grid-row: 10 / 17; }
+[data-ve-component="flow"] .ve-rail-10-18 { grid-row: 10 / 18; }
+[data-ve-component="flow"] .ve-rail-10-19 { grid-row: 10 / 19; }
+[data-ve-component="flow"] .ve-rail-10-20 { grid-row: 10 / 20; }
+[data-ve-component="flow"] .ve-rail-10-21 { grid-row: 10 / 21; }
+[data-ve-component="flow"] .ve-rail-10-22 { grid-row: 10 / 22; }
+[data-ve-component="flow"] .ve-rail-10-23 { grid-row: 10 / 23; }
+[data-ve-component="flow"] .ve-rail-10-24 { grid-row: 10 / 24; }
+[data-ve-component="flow"] .ve-rail-10-25 { grid-row: 10 / 25; }
+[data-ve-component="flow"] .ve-rail-10-26 { grid-row: 10 / 26; }
+[data-ve-component="flow"] .ve-rail-10-27 { grid-row: 10 / 27; }
+[data-ve-component="flow"] .ve-rail-10-28 { grid-row: 10 / 28; }
+[data-ve-component="flow"] .ve-rail-11-12 { grid-row: 11 / 12; }
+[data-ve-component="flow"] .ve-rail-11-13 { grid-row: 11 / 13; }
+[data-ve-component="flow"] .ve-rail-11-14 { grid-row: 11 / 14; }
+[data-ve-component="flow"] .ve-rail-11-15 { grid-row: 11 / 15; }
+[data-ve-component="flow"] .ve-rail-11-16 { grid-row: 11 / 16; }
+[data-ve-component="flow"] .ve-rail-11-17 { grid-row: 11 / 17; }
+[data-ve-component="flow"] .ve-rail-11-18 { grid-row: 11 / 18; }
+[data-ve-component="flow"] .ve-rail-11-19 { grid-row: 11 / 19; }
+[data-ve-component="flow"] .ve-rail-11-20 { grid-row: 11 / 20; }
+[data-ve-component="flow"] .ve-rail-11-21 { grid-row: 11 / 21; }
+[data-ve-component="flow"] .ve-rail-11-22 { grid-row: 11 / 22; }
+[data-ve-component="flow"] .ve-rail-11-23 { grid-row: 11 / 23; }
+[data-ve-component="flow"] .ve-rail-11-24 { grid-row: 11 / 24; }
+[data-ve-component="flow"] .ve-rail-11-25 { grid-row: 11 / 25; }
+[data-ve-component="flow"] .ve-rail-11-26 { grid-row: 11 / 26; }
+[data-ve-component="flow"] .ve-rail-11-27 { grid-row: 11 / 27; }
+[data-ve-component="flow"] .ve-rail-11-28 { grid-row: 11 / 28; }
+[data-ve-component="flow"] .ve-rail-12-13 { grid-row: 12 / 13; }
+[data-ve-component="flow"] .ve-rail-12-14 { grid-row: 12 / 14; }
+[data-ve-component="flow"] .ve-rail-12-15 { grid-row: 12 / 15; }
+[data-ve-component="flow"] .ve-rail-12-16 { grid-row: 12 / 16; }
+[data-ve-component="flow"] .ve-rail-12-17 { grid-row: 12 / 17; }
+[data-ve-component="flow"] .ve-rail-12-18 { grid-row: 12 / 18; }
+[data-ve-component="flow"] .ve-rail-12-19 { grid-row: 12 / 19; }
+[data-ve-component="flow"] .ve-rail-12-20 { grid-row: 12 / 20; }
+[data-ve-component="flow"] .ve-rail-12-21 { grid-row: 12 / 21; }
+[data-ve-component="flow"] .ve-rail-12-22 { grid-row: 12 / 22; }
+[data-ve-component="flow"] .ve-rail-12-23 { grid-row: 12 / 23; }
+[data-ve-component="flow"] .ve-rail-12-24 { grid-row: 12 / 24; }
+[data-ve-component="flow"] .ve-rail-12-25 { grid-row: 12 / 25; }
+[data-ve-component="flow"] .ve-rail-12-26 { grid-row: 12 / 26; }
+[data-ve-component="flow"] .ve-rail-12-27 { grid-row: 12 / 27; }
+[data-ve-component="flow"] .ve-rail-12-28 { grid-row: 12 / 28; }
+[data-ve-component="flow"] .ve-rail-13-14 { grid-row: 13 / 14; }
+[data-ve-component="flow"] .ve-rail-13-15 { grid-row: 13 / 15; }
+[data-ve-component="flow"] .ve-rail-13-16 { grid-row: 13 / 16; }
+[data-ve-component="flow"] .ve-rail-13-17 { grid-row: 13 / 17; }
+[data-ve-component="flow"] .ve-rail-13-18 { grid-row: 13 / 18; }
+[data-ve-component="flow"] .ve-rail-13-19 { grid-row: 13 / 19; }
+[data-ve-component="flow"] .ve-rail-13-20 { grid-row: 13 / 20; }
+[data-ve-component="flow"] .ve-rail-13-21 { grid-row: 13 / 21; }
+[data-ve-component="flow"] .ve-rail-13-22 { grid-row: 13 / 22; }
+[data-ve-component="flow"] .ve-rail-13-23 { grid-row: 13 / 23; }
+[data-ve-component="flow"] .ve-rail-13-24 { grid-row: 13 / 24; }
+[data-ve-component="flow"] .ve-rail-13-25 { grid-row: 13 / 25; }
+[data-ve-component="flow"] .ve-rail-13-26 { grid-row: 13 / 26; }
+[data-ve-component="flow"] .ve-rail-13-27 { grid-row: 13 / 27; }
+[data-ve-component="flow"] .ve-rail-13-28 { grid-row: 13 / 28; }
+[data-ve-component="flow"] .ve-rail-14-15 { grid-row: 14 / 15; }
+[data-ve-component="flow"] .ve-rail-14-16 { grid-row: 14 / 16; }
+[data-ve-component="flow"] .ve-rail-14-17 { grid-row: 14 / 17; }
+[data-ve-component="flow"] .ve-rail-14-18 { grid-row: 14 / 18; }
+[data-ve-component="flow"] .ve-rail-14-19 { grid-row: 14 / 19; }
+[data-ve-component="flow"] .ve-rail-14-20 { grid-row: 14 / 20; }
+[data-ve-component="flow"] .ve-rail-14-21 { grid-row: 14 / 21; }
+[data-ve-component="flow"] .ve-rail-14-22 { grid-row: 14 / 22; }
+[data-ve-component="flow"] .ve-rail-14-23 { grid-row: 14 / 23; }
+[data-ve-component="flow"] .ve-rail-14-24 { grid-row: 14 / 24; }
+[data-ve-component="flow"] .ve-rail-14-25 { grid-row: 14 / 25; }
+[data-ve-component="flow"] .ve-rail-14-26 { grid-row: 14 / 26; }
+[data-ve-component="flow"] .ve-rail-14-27 { grid-row: 14 / 27; }
+[data-ve-component="flow"] .ve-rail-14-28 { grid-row: 14 / 28; }
+[data-ve-component="flow"] .ve-rail-15-16 { grid-row: 15 / 16; }
+[data-ve-component="flow"] .ve-rail-15-17 { grid-row: 15 / 17; }
+[data-ve-component="flow"] .ve-rail-15-18 { grid-row: 15 / 18; }
+[data-ve-component="flow"] .ve-rail-15-19 { grid-row: 15 / 19; }
+[data-ve-component="flow"] .ve-rail-15-20 { grid-row: 15 / 20; }
+[data-ve-component="flow"] .ve-rail-15-21 { grid-row: 15 / 21; }
+[data-ve-component="flow"] .ve-rail-15-22 { grid-row: 15 / 22; }
+[data-ve-component="flow"] .ve-rail-15-23 { grid-row: 15 / 23; }
+[data-ve-component="flow"] .ve-rail-15-24 { grid-row: 15 / 24; }
+[data-ve-component="flow"] .ve-rail-15-25 { grid-row: 15 / 25; }
+[data-ve-component="flow"] .ve-rail-15-26 { grid-row: 15 / 26; }
+[data-ve-component="flow"] .ve-rail-15-27 { grid-row: 15 / 27; }
+[data-ve-component="flow"] .ve-rail-15-28 { grid-row: 15 / 28; }
+[data-ve-component="flow"] .ve-rail-16-17 { grid-row: 16 / 17; }
+[data-ve-component="flow"] .ve-rail-16-18 { grid-row: 16 / 18; }
+[data-ve-component="flow"] .ve-rail-16-19 { grid-row: 16 / 19; }
+[data-ve-component="flow"] .ve-rail-16-20 { grid-row: 16 / 20; }
+[data-ve-component="flow"] .ve-rail-16-21 { grid-row: 16 / 21; }
+[data-ve-component="flow"] .ve-rail-16-22 { grid-row: 16 / 22; }
+[data-ve-component="flow"] .ve-rail-16-23 { grid-row: 16 / 23; }
+[data-ve-component="flow"] .ve-rail-16-24 { grid-row: 16 / 24; }
+[data-ve-component="flow"] .ve-rail-16-25 { grid-row: 16 / 25; }
+[data-ve-component="flow"] .ve-rail-16-26 { grid-row: 16 / 26; }
+[data-ve-component="flow"] .ve-rail-16-27 { grid-row: 16 / 27; }
+[data-ve-component="flow"] .ve-rail-16-28 { grid-row: 16 / 28; }
+[data-ve-component="flow"] .ve-rail-17-18 { grid-row: 17 / 18; }
+[data-ve-component="flow"] .ve-rail-17-19 { grid-row: 17 / 19; }
+[data-ve-component="flow"] .ve-rail-17-20 { grid-row: 17 / 20; }
+[data-ve-component="flow"] .ve-rail-17-21 { grid-row: 17 / 21; }
+[data-ve-component="flow"] .ve-rail-17-22 { grid-row: 17 / 22; }
+[data-ve-component="flow"] .ve-rail-17-23 { grid-row: 17 / 23; }
+[data-ve-component="flow"] .ve-rail-17-24 { grid-row: 17 / 24; }
+[data-ve-component="flow"] .ve-rail-17-25 { grid-row: 17 / 25; }
+[data-ve-component="flow"] .ve-rail-17-26 { grid-row: 17 / 26; }
+[data-ve-component="flow"] .ve-rail-17-27 { grid-row: 17 / 27; }
+[data-ve-component="flow"] .ve-rail-17-28 { grid-row: 17 / 28; }
+[data-ve-component="flow"] .ve-rail-18-19 { grid-row: 18 / 19; }
+[data-ve-component="flow"] .ve-rail-18-20 { grid-row: 18 / 20; }
+[data-ve-component="flow"] .ve-rail-18-21 { grid-row: 18 / 21; }
+[data-ve-component="flow"] .ve-rail-18-22 { grid-row: 18 / 22; }
+[data-ve-component="flow"] .ve-rail-18-23 { grid-row: 18 / 23; }
+[data-ve-component="flow"] .ve-rail-18-24 { grid-row: 18 / 24; }
+[data-ve-component="flow"] .ve-rail-18-25 { grid-row: 18 / 25; }
+[data-ve-component="flow"] .ve-rail-18-26 { grid-row: 18 / 26; }
+[data-ve-component="flow"] .ve-rail-18-27 { grid-row: 18 / 27; }
+[data-ve-component="flow"] .ve-rail-18-28 { grid-row: 18 / 28; }
+[data-ve-component="flow"] .ve-rail-19-20 { grid-row: 19 / 20; }
+[data-ve-component="flow"] .ve-rail-19-21 { grid-row: 19 / 21; }
+[data-ve-component="flow"] .ve-rail-19-22 { grid-row: 19 / 22; }
+[data-ve-component="flow"] .ve-rail-19-23 { grid-row: 19 / 23; }
+[data-ve-component="flow"] .ve-rail-19-24 { grid-row: 19 / 24; }
+[data-ve-component="flow"] .ve-rail-19-25 { grid-row: 19 / 25; }
+[data-ve-component="flow"] .ve-rail-19-26 { grid-row: 19 / 26; }
+[data-ve-component="flow"] .ve-rail-19-27 { grid-row: 19 / 27; }
+[data-ve-component="flow"] .ve-rail-19-28 { grid-row: 19 / 28; }
+[data-ve-component="flow"] .ve-rail-20-21 { grid-row: 20 / 21; }
+[data-ve-component="flow"] .ve-rail-20-22 { grid-row: 20 / 22; }
+[data-ve-component="flow"] .ve-rail-20-23 { grid-row: 20 / 23; }
+[data-ve-component="flow"] .ve-rail-20-24 { grid-row: 20 / 24; }
+[data-ve-component="flow"] .ve-rail-20-25 { grid-row: 20 / 25; }
+[data-ve-component="flow"] .ve-rail-20-26 { grid-row: 20 / 26; }
+[data-ve-component="flow"] .ve-rail-20-27 { grid-row: 20 / 27; }
+[data-ve-component="flow"] .ve-rail-20-28 { grid-row: 20 / 28; }
+[data-ve-component="flow"] .ve-rail-21-22 { grid-row: 21 / 22; }
+[data-ve-component="flow"] .ve-rail-21-23 { grid-row: 21 / 23; }
+[data-ve-component="flow"] .ve-rail-21-24 { grid-row: 21 / 24; }
+[data-ve-component="flow"] .ve-rail-21-25 { grid-row: 21 / 25; }
+[data-ve-component="flow"] .ve-rail-21-26 { grid-row: 21 / 26; }
+[data-ve-component="flow"] .ve-rail-21-27 { grid-row: 21 / 27; }
+[data-ve-component="flow"] .ve-rail-21-28 { grid-row: 21 / 28; }
+[data-ve-component="flow"] .ve-rail-22-23 { grid-row: 22 / 23; }
+[data-ve-component="flow"] .ve-rail-22-24 { grid-row: 22 / 24; }
+[data-ve-component="flow"] .ve-rail-22-25 { grid-row: 22 / 25; }
+[data-ve-component="flow"] .ve-rail-22-26 { grid-row: 22 / 26; }
+[data-ve-component="flow"] .ve-rail-22-27 { grid-row: 22 / 27; }
+[data-ve-component="flow"] .ve-rail-22-28 { grid-row: 22 / 28; }
+[data-ve-component="flow"] .ve-rail-23-24 { grid-row: 23 / 24; }
+[data-ve-component="flow"] .ve-rail-23-25 { grid-row: 23 / 25; }
+[data-ve-component="flow"] .ve-rail-23-26 { grid-row: 23 / 26; }
+[data-ve-component="flow"] .ve-rail-23-27 { grid-row: 23 / 27; }
+[data-ve-component="flow"] .ve-rail-23-28 { grid-row: 23 / 28; }
+[data-ve-component="flow"] .ve-rail-24-25 { grid-row: 24 / 25; }
+[data-ve-component="flow"] .ve-rail-24-26 { grid-row: 24 / 26; }
+[data-ve-component="flow"] .ve-rail-24-27 { grid-row: 24 / 27; }
+[data-ve-component="flow"] .ve-rail-24-28 { grid-row: 24 / 28; }
+[data-ve-component="flow"] .ve-rail-25-26 { grid-row: 25 / 26; }
+[data-ve-component="flow"] .ve-rail-25-27 { grid-row: 25 / 27; }
+[data-ve-component="flow"] .ve-rail-25-28 { grid-row: 25 / 28; }
+[data-ve-component="flow"] .ve-rail-26-27 { grid-row: 26 / 27; }
+[data-ve-component="flow"] .ve-rail-26-28 { grid-row: 26 / 28; }
+[data-ve-component="flow"] .ve-rail-27-28 { grid-row: 27 / 28; }
+</style>
+  <style data-ve-component="enumeration" data-ve-contract-version="2" data-ve-asset="enumeration.css" data-ve-digest="70c182dfb356bb58117fac1cce740dde5e5b1201a5eeb309d0555a9e84ab7e34">figure[data-ve-component="enumeration"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="enumeration"] .ve-enumeration-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="enumeration"] .ve-enumeration-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="enumeration"] ul.ve-enum-items { display: grid; gap: var(--space-4); list-style: none; margin: 0; padding: 0; }
+figure[data-ve-component="enumeration"] .ve-enum-columns { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-3); }
+figure[data-ve-component="enumeration"] .ve-enum-block {
+  display: grid; grid-template-columns: 13rem minmax(0, 1fr);
+  gap: var(--space-3); align-items: center; min-width: 0; }
+figure[data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { grid-template-columns: 1fr; }
+figure[data-ve-component="enumeration"] .ve-enum-box {
+  display: grid; place-items: center; min-height: 5.5rem; padding: var(--space-2);
+  background: var(--dg-primary); color: var(--dg-on-primary);
+  font-size: 1.0625rem; font-weight: 700; text-align: center; line-height: 1.5; }
+figure[data-ve-component="enumeration"] .ve-enum-number { display: block; font-weight: 800; margin-bottom: var(--space-1); }
+figure[data-ve-component="enumeration"] .ve-enum-label,
+figure[data-ve-component="enumeration"] .ve-enum-title { display: block; font-weight: 800; }
+figure[data-ve-component="enumeration"] .ve-enum-desc {
+  margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
+figure[data-ve-component="enumeration"] .ve-enum-desc::before { content: "・"; }
+figure[data-ve-component="enumeration"] .ve-enum-description + .ve-enum-description { margin-top: var(--space-1); }
+figure[data-ve-component="enumeration"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="enumeration"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="enumeration"] .ve-enumeration-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); list-style: disc; }
+figure[data-ve-component="enumeration"] .ve-enumeration-notes li { margin: 0; }
+@media (max-width: 42rem) {
+  figure[data-ve-component="enumeration"] .ve-enum-block { grid-template-columns: 1fr; }
+}
+</style>
+  <style data-ve-component="chevron" data-ve-contract-version="2" data-ve-asset="chevron.css" data-ve-digest="afdb6d3b748a45e67714851bdb8033993fadd7bc27a9a5295f46fef77c6720f8">figure[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="chevron"] .ve-chevron-body { position: relative; }
+figure[data-ve-component="chevron"] .ve-chevron-steps { list-style: none; margin: 0; padding: 0; }
+figure[data-ve-component="chevron"] .ve-chevron-centered { width: fit-content; margin-inline: auto; }
+figure[data-ve-component="chevron"] [data-ve-loop="true"] {
+  position: relative; --chv-cx: 9rem;
+  padding-left: 2.5rem; padding-top: 2.3rem; padding-bottom: 1.2rem; }
+figure[data-ve-component="chevron"] .ve-chevron-loop-rail {
+  position: absolute; left: .5rem; top: .5rem; bottom: .2rem;
+  width: calc(var(--chv-cx) - .5rem);
+  border: 2.5px solid var(--dg-line); border-right: 0; }
+figure[data-ve-component="chevron"] .ve-chevron-loop-rail::before {
+  content: ""; position: absolute; top: -2.5px; right: -2.5px;
+  height: .95rem; border-right: 2.5px solid var(--dg-line); }
+figure[data-ve-component="chevron"] .ve-chevron-loop-rail::after {
+  content: ""; position: absolute; top: calc(.95rem - 2.5px); right: -.6rem;
+  border: .6rem solid transparent; border-top: .85rem solid var(--dg-line); border-bottom: 0; }
+figure[data-ve-component="chevron"] .ve-chevron-loop-tail {
+  position: absolute; left: calc(var(--chv-cx) - 1.25px); bottom: .2rem;
+  height: 1rem; border-left: 2.5px solid var(--dg-line); }
+figure[data-ve-component="chevron"] .ve-chevron-step {
+  display: grid; grid-template-columns: 13rem minmax(0, 1fr);
+  gap: var(--space-3); align-items: center; min-width: 0; margin: 0 0 var(--space-2); font-size: var(--fs-figure); }
+figure[data-ve-component="chevron"] .ve-chv-box {
+  display: grid; place-items: center; min-height: 6.5rem;
+  padding: var(--space-2) var(--space-2) 2.2rem;
+  background: var(--dg-primary); color: var(--dg-on-primary);
+  font-size: 1.0625rem; font-weight: 700; text-align: center; line-height: 1.5;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.9rem), 50% 100%, 0 calc(100% - 1.9rem)); }
+figure[data-ve-component="chevron"] .ve-chevron-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
+figure[data-ve-component="chevron"] .ve-chevron-label,
+figure[data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
+figure[data-ve-component="chevron"] .ve-chevron-description {
+  margin: 0; padding: 0; list-style: none; }
+figure[data-ve-component="chevron"] .ve-chevron-description li {
+  margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
+figure[data-ve-component="chevron"] .ve-chevron-description li::before { content: "・"; }
+figure[data-ve-component="chevron"] .ve-chevron-description li + li { margin-top: var(--space-1); }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal {
+  display: flex; flex-wrap: wrap; gap: 0; justify-content: center; }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
+  display: flex; flex: 1 1 8rem; min-width: 6rem; max-width: 12rem;
+  flex-direction: column; margin: 0; grid-template-columns: unset; }
+figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
+  min-height: auto;
+  padding: var(--space-2) 2.2rem var(--space-2) var(--space-2);
+  clip-path: polygon(0 0, calc(100% - 1.9rem) 0, 100% 50%, calc(100% - 1.9rem) 100%, 0 100%); }
+figure[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="chevron"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="chevron"] .ve-chevron-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); list-style: disc; }
+figure[data-ve-component="chevron"] .ve-chevron-notes li { margin: 0; }
+@media (max-width: 42rem) {
+  figure[data-ve-component="chevron"] .ve-chevron-step { grid-template-columns: 1fr; }
+  figure[data-ve-component="chevron"] [data-ve-loop="true"] { padding-left: 1.8rem; --chv-cx: 50%; }
+  figure[data-ve-component="chevron"] .ve-chevron-loop-rail { left: .3rem; width: calc(var(--chv-cx) - .3rem); }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal { flex-direction: column; align-items: stretch; }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step { max-width: none; }
+  figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.9rem), 50% 100%, 0 calc(100% - 1.9rem));
+    padding: var(--space-2) var(--space-2) 2.2rem; }
+}
+</style>
+  <style data-ve-component="pyramid" data-ve-contract-version="2" data-ve-asset="pyramid.css" data-ve-digest="5ae27d2763f9f6d1871a99b662a91804a892798707a444dc14d3138fd33ecf7c">figure[data-ve-component="pyramid"] .ve-pyramid-tiers {
+  display: grid; gap: 3px; width: min(100%, 24rem);
+  margin-inline: auto; justify-items: center; list-style: none; padding: 0; }
+figure[data-ve-component="pyramid"] .ve-pyramid-tier {
+  display: grid; place-items: center; padding: var(--space-1) var(--space-2);
+  font-weight: 700; white-space: nowrap; min-width: max-content; }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-1 { width: 40%; background: var(--dg-primary); color: var(--dg-on-primary); }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-2 { width: 70%; background: var(--dg-primary-mid); color: var(--dg-on-primary); }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-3 { width: 100%; background: var(--dg-primary-light); color: var(--text); }
+figure[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-level-3 { width: 85%; }
+figure[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-level-4 { width: 100%; background: var(--dg-neutral); color: var(--text); }
+</style>
+  <style data-ve-component="stairs" data-ve-contract-version="2" data-ve-asset="stairs.css" data-ve-digest="c490a27d4fda79c63cfbb0a1595ece6589715d65947a788737482c464adfacc6">figure[data-ve-component="stairs"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="stairs"] .ve-stairs-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="stairs"] .ve-stairs-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="stairs"] .ve-stairs-stages {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; align-items: flex-end; gap: 3px; }
+figure[data-ve-component="stairs"] .ve-stairs-stage {
+  flex: 1 1 0; min-width: 0; padding: var(--space-2);
+  display: grid; place-items: center;
+  font-size: var(--fs-figure); text-align: center; }
+figure[data-ve-component="stairs"] .ve-stairs-done { background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-stage.ve-dg-highlight { background: var(--dg-highlight); color: var(--dg-on-primary); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-todo { background: var(--dg-neutral); color: var(--text); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-label { display: block; font-weight: 800; }
+figure[data-ve-component="stairs"] .ve-stairs-here { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="stairs"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="stairs"] .ve-stairs-notes li { margin: 0; }
+figure[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-1 { min-height: 3rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-2 { min-height: 5.8rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-3 { min-height: 8.6rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-1 { min-height: 3rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-2 { min-height: 4.87rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-3 { min-height: 6.73rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-4 { min-height: 8.6rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-1 { min-height: 3rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-2 { min-height: 4.4rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-3 { min-height: 5.8rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-4 { min-height: 7.2rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-5 { min-height: 8.6rem; }
+@media (max-width: 40rem) {
+  figure[data-ve-component="stairs"] .ve-stairs-stages { flex-direction: column; align-items: stretch; }
+  figure[data-ve-component="stairs"] .ve-stairs-stage { min-height: auto !important; }
+}
+</style>
+  <style data-ve-component="logic-tree" data-ve-contract-version="2" data-ve-asset="logic-tree.css" data-ve-digest="2a701472b525d268eb2946c5f3f5bec2d79f9335b66286c06cd67f00e8292e30">figure[data-ve-component="logic-tree"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="logic-tree"] .ve-lt { display: flex; align-items: center; overflow-x: auto; }
+figure[data-ve-component="logic-tree"] .ve-lt-node { padding: var(--space-1) var(--space-2); font-weight: 700; white-space: nowrap; }
+figure[data-ve-component="logic-tree"] .ve-lt-root { background: var(--dg-primary); color: var(--dg-on-primary); text-align: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-branch { background: var(--dg-primary-mid); color: var(--dg-on-primary); }
+figure[data-ve-component="logic-tree"] .ve-lt-leaf {
+  border: 1.5px solid var(--dg-line); color: var(--text);
+  font-size: var(--fs-figure); font-weight: 400; padding: var(--space-1) var(--space-2); }
+figure[data-ve-component="logic-tree"] .ve-lt-stub {
+  flex: 0 0 1.5rem; border-top: 2px solid var(--dg-line); align-self: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-children { display: flex; flex-direction: column; gap: var(--space-1); }
+figure[data-ve-component="logic-tree"] .ve-lt-child {
+  position: relative; padding-left: 1.5rem; display: flex; align-items: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-child::before {
+  content: ""; position: absolute; left: 0; top: 50%; width: 1.5rem;
+  border-top: 2px solid var(--dg-line); }
+figure[data-ve-component="logic-tree"] .ve-lt-child::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  border-left: 2px solid var(--dg-line); }
+figure[data-ve-component="logic-tree"] .ve-lt-child:first-child::after { top: 50%; }
+figure[data-ve-component="logic-tree"] .ve-lt-child:last-child::after { top: 0; bottom: 50%; }
+figure[data-ve-component="logic-tree"] .ve-lt-child:only-child::after { content: none; }
+figure[data-ve-component="logic-tree"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="logic-tree"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-notes li { margin: 0; }
+</style>
+  <style data-ve-component="waterfall" data-ve-contract-version="2" data-ve-asset="waterfall.css" data-ve-digest="b6662c0fa0d983c0c6ae5bdb742aaf4818dc341122c381380e2779e8847504a8">[data-ve-component="waterfall"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="waterfall"] .ve-fig-title { margin: 0; font-weight: 700; font-size: var(--fs-h2); }
+figure[data-ve-component="waterfall"] .ve-fig-unit {
+  margin: 0 0 var(--space-1); color: var(--text-faint); font-size: var(--fs-figure); font-weight: 700;
+  border-bottom: 1.5px solid var(--border); padding-bottom: var(--space-1); }
+figure[data-ve-component="waterfall"] .ve-waterfall-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="waterfall"] .ve-waterfall-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="waterfall"] .ve-wf-chart { display: block; width: 100%; max-width: 40rem; margin: 0 auto; font-size: var(--fs-figure); }
+figure[data-ve-component="waterfall"] .ve-wf-axis { stroke: var(--text); stroke-width: 1.5; fill: none; }
+figure[data-ve-component="waterfall"] .ve-wf-connector { stroke: var(--dg-line); stroke-width: 1.5; stroke-dasharray: 3 4; fill: none; }
+figure[data-ve-component="waterfall"] .ve-wf-total { fill: var(--dg-primary); }
+figure[data-ve-component="waterfall"] .ve-wf-plus { fill: var(--bg); stroke: var(--dg-primary); stroke-width: 1.5; }
+figure[data-ve-component="waterfall"] .ve-wf-minus { fill: var(--dg-negative); }
+figure[data-ve-component="waterfall"] .ve-wf-minus-soft { fill: var(--bg); stroke: var(--dg-negative); stroke-width: 1.5; }
+figure[data-ve-component="waterfall"] .ve-wf-value-on-fill { fill: var(--dg-on-primary); font-weight: 700; font-size: 17px; }
+figure[data-ve-component="waterfall"] .ve-wf-value-plus { fill: var(--dg-primary); font-weight: 700; font-size: 17px; }
+figure[data-ve-component="waterfall"] .ve-wf-value-minus-soft { fill: var(--dg-negative); font-weight: 700; font-size: 17px; }
+figure[data-ve-component="waterfall"] .ve-wf-factor { fill: var(--text); font-weight: 700; font-size: 14px; }
+figure[data-ve-component="waterfall"] .ve-wf-tick,
+figure[data-ve-component="waterfall"] .ve-wf-unit-label { fill: var(--text); font-size: 14px; }
+figure[data-ve-component="waterfall"] .ve-waterfall-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="waterfall"] .ve-waterfall-notes li { margin: 0; }
+</style>
+  <style data-ve-component="slope" data-ve-contract-version="2" data-ve-asset="slope.css" data-ve-digest="a0059b8aa25254449fabe0aa3ba4899974b524b6d0b9d08c08524af0ca61dae6">[data-ve-component="slope"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="slope"] .ve-fig-title { margin: 0; font-weight: 700; font-size: var(--fs-h2); }
+figure[data-ve-component="slope"] .ve-fig-unit {
+  margin: 0 0 var(--space-1); color: var(--text-faint); font-size: var(--fs-figure); font-weight: 700;
+  border-bottom: 1.5px solid var(--border); padding-bottom: var(--space-1); }
+[data-ve-component="slope"] .ve-slope-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+[data-ve-component="slope"] .ve-slope-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="slope"] .ve-slope-chart { display: block; width: 100%; max-width: 37.5rem; margin: 0 auto; font-size: var(--fs-figure); }
+[data-ve-component="slope"] .ve-slope-axis { fill: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="slope"] .ve-slope-item { stroke-width: 3; fill: none; }
+[data-ve-component="slope"] .ve-slope-item.ve-slope-tone-default { stroke: var(--dg-primary); }
+[data-ve-component="slope"] .ve-slope-item.ve-slope-tone-highlight { stroke: var(--dg-highlight); }
+[data-ve-component="slope"] circle.ve-slope-endpoint.ve-slope-tone-default { fill: var(--dg-primary); stroke: none; }
+[data-ve-component="slope"] circle.ve-slope-endpoint.ve-slope-tone-highlight { fill: var(--dg-highlight); stroke: none; }
+[data-ve-component="slope"] .ve-slope-value { fill: var(--text); font-size: var(--fs-figure); font-weight: 700; }
+[data-ve-component="slope"] g.ve-takeaway-target .ve-slope-item { stroke-width: 4; }
+[data-ve-component="slope"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+[data-ve-component="slope"] .ve-slope-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="slope"] .ve-slope-notes li { margin: 0; }
+</style>
+  <style data-ve-component="evidence-map" data-ve-contract-version="2" data-ve-asset="evidence-map.css" data-ve-digest="b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b">figure[data-ve-component="evidence-map"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="evidence-map"] .ve-em-layout { display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--w-narrative); }
+figure[data-ve-component="evidence-map"] .ve-em-conclusion {
+  padding: var(--space-2); background: var(--dg-primary); color: var(--dg-on-primary);
+  font-weight: 700; font-size: var(--fs-figure); }
+figure[data-ve-component="evidence-map"] .ve-em-body { display: flex; flex-direction: column; gap: var(--space-2); }
+figure[data-ve-component="evidence-map"] .ve-em-item {
+  position: relative; padding: var(--space-2) var(--space-2) var(--space-2) 1.5rem;
+  display: flex; align-items: flex-start; gap: var(--space-1);
+  border: 1.5px solid var(--dg-line); font-size: var(--fs-figure); }
+figure[data-ve-component="evidence-map"] .ve-em-item::before {
+  content: ""; position: absolute; left: 0; top: 50%; width: 1.5rem;
+  border-top: 2px solid var(--dg-line); }
+figure[data-ve-component="evidence-map"] .ve-em-item::after {
+  content: ""; position: absolute; left: 0; top: calc(-1 * var(--space-2)); bottom: 0;
+  border-left: 2px solid var(--dg-line); }
+figure[data-ve-component="evidence-map"] .ve-em-item:first-child::after { top: 50%; }
+figure[data-ve-component="evidence-map"] .ve-em-item:last-child::after { bottom: 50%; }
+figure[data-ve-component="evidence-map"] .ve-em-item:only-child::after { content: none; }
+figure[data-ve-component="evidence-map"] .ve-em-solid::before { border-top-style: solid; }
+figure[data-ve-component="evidence-map"] .ve-em-dashed::before { border-top-style: dashed; }
+figure[data-ve-component="evidence-map"] .ve-em-dotted::before { border-top-style: dotted; }
+figure[data-ve-component="evidence-map"] .ve-cert { display: inline-block; font-size: var(--fs-small); font-weight: 700; color: var(--text-dim); flex-shrink: 0; }
+figure[data-ve-component="evidence-map"] .ve-cert-confirmed,
+figure[data-ve-component="evidence-map"] .ve-cert-inferred,
+figure[data-ve-component="evidence-map"] .ve-cert-unverified { color: var(--text-dim); }
+figure[data-ve-component="evidence-map"] .ve-em-evidence-label { flex: 1 1 auto; min-width: 0; }
+figure[data-ve-component="evidence-map"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="evidence-map"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-notes li { margin: 0; }
+</style>
+  <style data-ve-component="bars" data-ve-contract-version="2" data-ve-asset="bars.css" data-ve-digest="dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9">[data-ve-component="bars"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="bars"] .ve-fig-title { margin: 0; font-weight: 700; font-size: var(--fs-h2); }
+figure[data-ve-component="bars"] .ve-fig-unit {
+  margin: 0 0 var(--space-1); color: var(--text-faint); font-size: var(--fs-figure); font-weight: 700;
+  border-bottom: 1.5px solid var(--border); padding-bottom: var(--space-1); }
+figure[data-ve-component="bars"] .ve-bars-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="bars"] .ve-bars-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="bars"] .ve-bars-list { display: grid; gap: var(--space-1); max-width: 34rem; }
+figure[data-ve-component="bars"] .ve-bars-row {
+  display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+figure[data-ve-component="bars"] .ve-bars-label { font-weight: 700; }
+figure[data-ve-component="bars"] .ve-bars-track { display: flex; align-items: center; gap: var(--space-1); }
+figure[data-ve-component="bars"] .ve-bars-fill { height: 1.6rem; background: var(--dg-primary); }
+figure[data-ve-component="bars"] .ve-bars-fill.ve-dg-highlight { background: var(--dg-highlight); }
+figure[data-ve-component="bars"] .ve-bars-value { font-weight: 700; white-space: nowrap; }
+figure[data-ve-component="bars"] .ve-bars-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="bars"] .ve-bars-notes li { margin: 0; }
+figure[data-ve-component="bars"] .ve-bars-w-0 { width: 0%; }
+figure[data-ve-component="bars"] .ve-bars-w-1 { width: 1%; }
+figure[data-ve-component="bars"] .ve-bars-w-2 { width: 2%; }
+figure[data-ve-component="bars"] .ve-bars-w-3 { width: 3%; }
+figure[data-ve-component="bars"] .ve-bars-w-4 { width: 4%; }
+figure[data-ve-component="bars"] .ve-bars-w-5 { width: 5%; }
+figure[data-ve-component="bars"] .ve-bars-w-6 { width: 6%; }
+figure[data-ve-component="bars"] .ve-bars-w-7 { width: 7%; }
+figure[data-ve-component="bars"] .ve-bars-w-8 { width: 8%; }
+figure[data-ve-component="bars"] .ve-bars-w-9 { width: 9%; }
+figure[data-ve-component="bars"] .ve-bars-w-10 { width: 10%; }
+figure[data-ve-component="bars"] .ve-bars-w-11 { width: 11%; }
+figure[data-ve-component="bars"] .ve-bars-w-12 { width: 12%; }
+figure[data-ve-component="bars"] .ve-bars-w-13 { width: 13%; }
+figure[data-ve-component="bars"] .ve-bars-w-14 { width: 14%; }
+figure[data-ve-component="bars"] .ve-bars-w-15 { width: 15%; }
+figure[data-ve-component="bars"] .ve-bars-w-16 { width: 16%; }
+figure[data-ve-component="bars"] .ve-bars-w-17 { width: 17%; }
+figure[data-ve-component="bars"] .ve-bars-w-18 { width: 18%; }
+figure[data-ve-component="bars"] .ve-bars-w-19 { width: 19%; }
+figure[data-ve-component="bars"] .ve-bars-w-20 { width: 20%; }
+figure[data-ve-component="bars"] .ve-bars-w-21 { width: 21%; }
+figure[data-ve-component="bars"] .ve-bars-w-22 { width: 22%; }
+figure[data-ve-component="bars"] .ve-bars-w-23 { width: 23%; }
+figure[data-ve-component="bars"] .ve-bars-w-24 { width: 24%; }
+figure[data-ve-component="bars"] .ve-bars-w-25 { width: 25%; }
+figure[data-ve-component="bars"] .ve-bars-w-26 { width: 26%; }
+figure[data-ve-component="bars"] .ve-bars-w-27 { width: 27%; }
+figure[data-ve-component="bars"] .ve-bars-w-28 { width: 28%; }
+figure[data-ve-component="bars"] .ve-bars-w-29 { width: 29%; }
+figure[data-ve-component="bars"] .ve-bars-w-30 { width: 30%; }
+figure[data-ve-component="bars"] .ve-bars-w-31 { width: 31%; }
+figure[data-ve-component="bars"] .ve-bars-w-32 { width: 32%; }
+figure[data-ve-component="bars"] .ve-bars-w-33 { width: 33%; }
+figure[data-ve-component="bars"] .ve-bars-w-34 { width: 34%; }
+figure[data-ve-component="bars"] .ve-bars-w-35 { width: 35%; }
+figure[data-ve-component="bars"] .ve-bars-w-36 { width: 36%; }
+figure[data-ve-component="bars"] .ve-bars-w-37 { width: 37%; }
+figure[data-ve-component="bars"] .ve-bars-w-38 { width: 38%; }
+figure[data-ve-component="bars"] .ve-bars-w-39 { width: 39%; }
+figure[data-ve-component="bars"] .ve-bars-w-40 { width: 40%; }
+figure[data-ve-component="bars"] .ve-bars-w-41 { width: 41%; }
+figure[data-ve-component="bars"] .ve-bars-w-42 { width: 42%; }
+figure[data-ve-component="bars"] .ve-bars-w-43 { width: 43%; }
+figure[data-ve-component="bars"] .ve-bars-w-44 { width: 44%; }
+figure[data-ve-component="bars"] .ve-bars-w-45 { width: 45%; }
+figure[data-ve-component="bars"] .ve-bars-w-46 { width: 46%; }
+figure[data-ve-component="bars"] .ve-bars-w-47 { width: 47%; }
+figure[data-ve-component="bars"] .ve-bars-w-48 { width: 48%; }
+figure[data-ve-component="bars"] .ve-bars-w-49 { width: 49%; }
+figure[data-ve-component="bars"] .ve-bars-w-50 { width: 50%; }
+figure[data-ve-component="bars"] .ve-bars-w-51 { width: 51%; }
+figure[data-ve-component="bars"] .ve-bars-w-52 { width: 52%; }
+figure[data-ve-component="bars"] .ve-bars-w-53 { width: 53%; }
+figure[data-ve-component="bars"] .ve-bars-w-54 { width: 54%; }
+figure[data-ve-component="bars"] .ve-bars-w-55 { width: 55%; }
+figure[data-ve-component="bars"] .ve-bars-w-56 { width: 56%; }
+figure[data-ve-component="bars"] .ve-bars-w-57 { width: 57%; }
+figure[data-ve-component="bars"] .ve-bars-w-58 { width: 58%; }
+figure[data-ve-component="bars"] .ve-bars-w-59 { width: 59%; }
+figure[data-ve-component="bars"] .ve-bars-w-60 { width: 60%; }
+figure[data-ve-component="bars"] .ve-bars-w-61 { width: 61%; }
+figure[data-ve-component="bars"] .ve-bars-w-62 { width: 62%; }
+figure[data-ve-component="bars"] .ve-bars-w-63 { width: 63%; }
+figure[data-ve-component="bars"] .ve-bars-w-64 { width: 64%; }
+figure[data-ve-component="bars"] .ve-bars-w-65 { width: 65%; }
+figure[data-ve-component="bars"] .ve-bars-w-66 { width: 66%; }
+figure[data-ve-component="bars"] .ve-bars-w-67 { width: 67%; }
+figure[data-ve-component="bars"] .ve-bars-w-68 { width: 68%; }
+figure[data-ve-component="bars"] .ve-bars-w-69 { width: 69%; }
+figure[data-ve-component="bars"] .ve-bars-w-70 { width: 70%; }
+figure[data-ve-component="bars"] .ve-bars-w-71 { width: 71%; }
+figure[data-ve-component="bars"] .ve-bars-w-72 { width: 72%; }
+figure[data-ve-component="bars"] .ve-bars-w-73 { width: 73%; }
+figure[data-ve-component="bars"] .ve-bars-w-74 { width: 74%; }
+figure[data-ve-component="bars"] .ve-bars-w-75 { width: 75%; }
+figure[data-ve-component="bars"] .ve-bars-w-76 { width: 76%; }
+figure[data-ve-component="bars"] .ve-bars-w-77 { width: 77%; }
+figure[data-ve-component="bars"] .ve-bars-w-78 { width: 78%; }
+figure[data-ve-component="bars"] .ve-bars-w-79 { width: 79%; }
+figure[data-ve-component="bars"] .ve-bars-w-80 { width: 80%; }
+figure[data-ve-component="bars"] .ve-bars-w-81 { width: 81%; }
+figure[data-ve-component="bars"] .ve-bars-w-82 { width: 82%; }
+figure[data-ve-component="bars"] .ve-bars-w-83 { width: 83%; }
+figure[data-ve-component="bars"] .ve-bars-w-84 { width: 84%; }
+figure[data-ve-component="bars"] .ve-bars-w-85 { width: 85%; }
+figure[data-ve-component="bars"] .ve-bars-w-86 { width: 86%; }
+figure[data-ve-component="bars"] .ve-bars-w-87 { width: 87%; }
+figure[data-ve-component="bars"] .ve-bars-w-88 { width: 88%; }
+figure[data-ve-component="bars"] .ve-bars-w-89 { width: 89%; }
+figure[data-ve-component="bars"] .ve-bars-w-90 { width: 90%; }
+figure[data-ve-component="bars"] .ve-bars-w-91 { width: 91%; }
+figure[data-ve-component="bars"] .ve-bars-w-92 { width: 92%; }
+figure[data-ve-component="bars"] .ve-bars-w-93 { width: 93%; }
+figure[data-ve-component="bars"] .ve-bars-w-94 { width: 94%; }
+figure[data-ve-component="bars"] .ve-bars-w-95 { width: 95%; }
+figure[data-ve-component="bars"] .ve-bars-w-96 { width: 96%; }
+figure[data-ve-component="bars"] .ve-bars-w-97 { width: 97%; }
+figure[data-ve-component="bars"] .ve-bars-w-98 { width: 98%; }
+figure[data-ve-component="bars"] .ve-bars-w-99 { width: 99%; }
+figure[data-ve-component="bars"] .ve-bars-w-100 { width: 100%; }
+</style>
+  <style data-ve-component="kpi" data-ve-contract-version="2" data-ve-asset="kpi.css" data-ve-digest="5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78">[data-ve-component="kpi"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="kpi"] .ve-kpi-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="kpi"] .ve-kpi-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="kpi"] .ve-kpi-list {
+  display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center; }
+figure[data-ve-component="kpi"] .ve-kpi-item { display: grid; justify-items: center; gap: var(--space-2); max-width: 12rem; }
+figure[data-ve-component="kpi"] .ve-kpi-ring {
+  display: grid; place-items: center; width: 8.5rem; height: 8.5rem;
+  border: 5px solid var(--dg-primary); border-radius: 50%; text-align: center; }
+figure[data-ve-component="kpi"] .ve-kpi-num {
+  font-size: 2.1rem; font-weight: 700; color: var(--dg-primary); line-height: 1.1; }
+figure[data-ve-component="kpi"] .ve-kpi-num small { font-size: 1rem; color: var(--text-dim); }
+figure[data-ve-component="kpi"] .ve-kpi-cap { text-align: center; font-size: var(--fs-figure); margin: 0; }
+figure[data-ve-component="kpi"] .ve-kpi-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="kpi"] .ve-kpi-notes li { margin: 0; }
+</style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
+  <script>
+  /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    try {
+      const theme = window.localStorage.getItem(root.dataset.themeStorageKey);
+      if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+    } catch {
+      // Storage is optional; CSS keeps the OS preference when it is unavailable.
+    }
+  })();
+  </script>
+</head>
+<body>
+  <div class="theme-control">
+    <button type="button" data-theme-toggle aria-pressed="false">現在のテーマを確認中です。</button>
+  </div>
+  <script>
+  /* FIXED THEME CONTROL JS: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    const button = document.querySelector('[data-theme-toggle]');
+    if (!button) return;
+
+    let mediaQuery;
+    try {
+      mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    } catch {
+      mediaQuery = null;
+    }
+    let explicitTheme = root.dataset.theme === 'light' || root.dataset.theme === 'dark';
+    const systemTheme = () => mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+    const currentTheme = () => explicitTheme ? root.dataset.theme : systemTheme();
+    const label = (theme) => theme === 'dark' ? 'ダーク' : 'ライト';
+    const render = () => {
+      const current = currentTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+      button.textContent = `現在のテーマ: ${label(current)}。${label(next)}に切り替える`;
+      button.setAttribute('aria-pressed', String(current === 'dark'));
+    };
+    const persist = (theme) => {
+      try {
+        window.localStorage.setItem(root.dataset.themeStorageKey, theme);
+      } catch {
+        // A manual choice still works for this document if storage is unavailable.
+      }
+    };
+
+    render();
+    button.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      explicitTheme = true;
+      persist(next);
+      render();
+    });
+    if (mediaQuery) {
+      const updateFromSystem = () => { if (!explicitTheme) render(); };
+      if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', updateFromSystem);
+      else if (mediaQuery.addListener) mediaQuery.addListener(updateFromSystem);
+    }
+  })();
+  </script>
+  <main>
+    <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <section data-ve-section-kind="canonical" data-ve-component="matrix" data-ve-contract-version="2" data-ve-instance="sec-access-matrix" data-ve-fallback="static-content">
+<figure data-ve-component="matrix" role="group" aria-label="役割と操作の許可マトリクス" aria-describedby="sec-access-matrix-summary"><figcaption id="sec-access-matrix-caption" class="ve-matrix-caption">役割 × 操作の許可範囲</figcaption><p id="sec-access-matrix-summary" class="ve-matrix-summary">行が役割、列が操作を表し、各セルが許可の有無を示す表。</p><div class="ve-matrix-scroll"><table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td><th scope="col" data-ve-semantic-id="col-read">読み取り</th><th scope="col" data-ve-semantic-id="col-write">書き込み</th></tr></thead><tbody><tr><th scope="row" data-ve-semantic-id="row-admin">管理者</th><td data-ve-semantic-id="cell-admin-read" data-ve-row-id="row-admin" data-ve-column-id="col-read">許可<span class="ve-matrix-refs"><span class="ve-cert ve-cert-confirmed" data-ve-ref="cert-confirmed">確認済み</span><span class="ve-src" data-ve-ref="src-spec">権限仕様 v3</span></span></td><td data-ve-semantic-id="cell-admin-write" data-ve-row-id="row-admin" data-ve-column-id="col-write">許可<span class="ve-matrix-refs"><span class="ve-cert ve-cert-confirmed" data-ve-ref="cert-confirmed">確認済み</span><span class="ve-src" data-ve-ref="src-spec">権限仕様 v3</span></span></td></tr><tr><th scope="row" data-ve-semantic-id="row-viewer">閲覧者</th><td data-ve-semantic-id="cell-viewer-read" data-ve-row-id="row-viewer" data-ve-column-id="col-read">許可<span class="ve-matrix-refs"><span class="ve-cert ve-cert-confirmed" data-ve-ref="cert-confirmed">確認済み</span><span class="ve-src" data-ve-ref="src-spec">権限仕様 v3</span></span></td><td data-ve-semantic-id="cell-viewer-write" data-ve-row-id="row-viewer" data-ve-column-id="col-write">不可<span class="ve-matrix-refs"><span class="ve-cert ve-cert-inferred" data-ve-ref="cert-inferred">推論</span><span class="ve-src" data-ve-ref="src-spec">権限仕様 v3</span></span></td></tr></tbody></table></div><ul class="ve-matrix-notes"><li data-ve-semantic-id="cert-confirmed"><strong>確認済み:</strong> 管理者の全操作は仕様で確定済み。</li><li data-ve-semantic-id="cert-inferred"><strong>推論:</strong> 閲覧者の書き込み不可は既定方針からの推定。</li><li data-ve-semantic-id="src-spec"><strong>出典 権限仕様 v3</strong>（2026-06 版の権限表。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="flow" data-ve-contract-version="2" data-ve-instance="sec-review-flow" data-ve-fallback="static-content">
+<figure data-ve-component="flow" role="group" aria-label="レビュー承認フロー" aria-describedby="sec-review-flow-summary"><figcaption id="sec-review-flow-caption" class="ve-flow-caption">提案から承認までの遷移</figcaption><p id="sec-review-flow-summary" class="ve-flow-summary">起案・一次レビュー・承認の順に遷移する有向グラフ。</p><div class="ve-flow-scroll"><ol class="ve-flow-canvas"><li class="ve-flow-station"><span class="ve-flow-node" data-ve-semantic-id="node-draft" data-ve-node-id="node-draft">起案</span></li><li class="ve-flow-link" data-ve-semantic-id="edge-draft-review" data-ve-from="node-draft" data-ve-to="node-review" data-ve-relation="ordered-transition"><span class="ve-flow-arrow" aria-hidden="true">↓</span><span class="ve-flow-edge-label">提出</span><span class="ve-flow-rel">順序遷移</span></li><li class="ve-flow-station"><span class="ve-flow-node" data-ve-semantic-id="node-review" data-ve-node-id="node-review">一次レビュー</span></li><li class="ve-flow-link" data-ve-semantic-id="edge-review-approve" data-ve-from="node-review" data-ve-to="node-approve" data-ve-relation="directed-transition"><span class="ve-flow-arrow" aria-hidden="true">↓</span><span class="ve-flow-edge-label">合意</span><span class="ve-flow-rel">有向遷移</span></li><li class="ve-flow-station"><span class="ve-flow-node" data-ve-semantic-id="node-approve" data-ve-node-id="node-approve">承認</span></li></ol></div><ul class="ve-flow-edges visually-hidden"><li>起案 から 一次レビュー への順序遷移（提出）</li><li>一次レビュー から 承認 への有向遷移（合意）</li></ul><ul class="ve-flow-notes"><li data-ve-semantic-id="cert-flow-confirmed"><strong>確認済み:</strong> 起案から一次レビューへの遷移は運用で確定。</li><li data-ve-semantic-id="cert-flow-inferred"><strong>推論:</strong> 承認後の公開は既定運用からの推定。</li><li data-ve-semantic-id="src-runbook"><strong>出典 レビュー運用手順</strong>（2026-05 版の承認フロー。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="enumeration" data-ve-contract-version="2" data-ve-instance="sec-enum-list" data-ve-fallback="static-content">
+<figure data-ve-component="enumeration" role="group" aria-label="並列項目の列挙" aria-describedby="sec-enum-list-summary"><figcaption id="sec-enum-list-caption" class="ve-enumeration-caption">検討対象の並列項目</figcaption><p id="sec-enum-list-summary" class="ve-enumeration-summary">番号付きの縦リストで3項目を並列に示す。</p><ul class="ve-enum-items ve-enum-has-description"><li class="ve-enum-block" data-ve-semantic-id="item-a"><div class="ve-enum-concept ve-enum-box"><span class="ve-enum-number" aria-hidden="true">1</span><span class="ve-enum-title">福利厚生</span></div><p class="ve-enum-description ve-enum-desc">従業員向けに<strong class="dg-em">無料のフィットネス利用券</strong>を配布する</p></li><li class="ve-enum-block" data-ve-semantic-id="item-b"><div class="ve-enum-concept ve-enum-box"><span class="ve-enum-number" aria-hidden="true">2</span><span class="ve-enum-title">監査ログ</span></div><p class="ve-enum-description ve-enum-desc">必要な保持期間を決定する</p></li><li class="ve-enum-block" data-ve-semantic-id="item-c"><div class="ve-enum-concept ve-enum-box"><span class="ve-enum-number" aria-hidden="true">3</span><span class="ve-enum-title">通知チャネル</span></div><p class="ve-enum-description ve-enum-desc">通知経路を一つに統合する</p></li></ul><ul class="ve-enumeration-notes"><li data-ve-semantic-id="cert-enum-confirmed"><strong>確認済み:</strong> 3項目は同一会議で合意された範囲。</li><li data-ve-semantic-id="src-notes"><strong>出典 議事録 2026-06</strong>（並列検討の記録。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="chevron" data-ve-contract-version="2" data-ve-instance="sec-chevron-vertical" data-ve-fallback="static-content">
+<figure data-ve-component="chevron" role="group" aria-label="処理フローのチェブロン" aria-describedby="sec-chevron-vertical-summary"><figcaption id="sec-chevron-vertical-caption" class="ve-chevron-caption">処理フローの4段階</figcaption><p id="sec-chevron-vertical-summary" class="ve-chevron-summary">縦型の番号付き4段で線形順序を示す。</p><div class="ve-chevron-body"><ol class="ve-chevron-steps ve-chevron-centered ve-chevron-has-description"><li class="ve-chevron-step" data-ve-semantic-id="step-intake"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">1</span><span class="ve-chevron-title">受付</span></div><ul class="ve-chevron-description"><li>依頼を記録する</li><li>担当を割り当てる</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-verify"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">2</span><span class="ve-chevron-title">検証</span></div><ul class="ve-chevron-description"><li>入力を確認する</li><li>不足を差し戻す</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-execute"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">3</span><span class="ve-chevron-title">実行</span></div><ul class="ve-chevron-description"><li>手順に従い処理する</li><li>結果を保存する</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-report"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">4</span><span class="ve-chevron-title">報告</span></div><ul class="ve-chevron-description"><li>完了を記録する</li><li>関係者へ通知する</li></ul></li></ol></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-chevron"><strong>確認済み:</strong> 4段は運用手順書に準拠。</li><li data-ve-semantic-id="src-runbook"><strong>出典 運用手順書 v3</strong>（受付から報告まで。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="pyramid" data-ve-contract-version="2" data-ve-instance="sec-pyramid" data-ve-fallback="static-content">
+<figure data-ve-component="pyramid" role="group" aria-label="優先度ピラミッド" aria-describedby="sec-pyramid-summary"><figcaption id="sec-pyramid-caption" class="ve-pyramid-caption">優先度の4層ピラミッド</figcaption><p id="sec-pyramid-summary" class="ve-pyramid-summary">上から下へ4層の優先度を示す。</p><ul class="ve-pyramid-tiers ve-pyramid-count-4"><li class="ve-pyramid-tier ve-pyramid-index-1 ve-pyramid-level-1" data-ve-semantic-id="tier-apex"><span class="ve-pyramid-label">最優先事項</span></li><li class="ve-pyramid-tier ve-pyramid-index-2 ve-pyramid-level-2" data-ve-semantic-id="tier-high"><span class="ve-pyramid-label">重要施策</span><span class="ve-pyramid-sub">四半期で追う重点領域</span></li><li class="ve-pyramid-tier ve-pyramid-index-3 ve-pyramid-level-3" data-ve-semantic-id="tier-mid"><span class="ve-pyramid-label">維持管理</span></li><li class="ve-pyramid-tier ve-pyramid-index-4 ve-pyramid-level-4" data-ve-semantic-id="tier-base"><span class="ve-pyramid-label">基盤整備</span></li></ul><ul class="ve-pyramid-notes"><li data-ve-semantic-id="cert-pyramid"><strong>確認済み:</strong> 4層は経営会議で合意。</li><li data-ve-semantic-id="src-strategy"><strong>出典 戦略方針 v2</strong>（優先順位の定義。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="stairs" data-ve-contract-version="2" data-ve-instance="sec-stairs" data-ve-fallback="static-content">
+<figure data-ve-component="stairs" role="group" aria-label="成熟度階段" aria-describedby="sec-stairs-summary"><figcaption id="sec-stairs-caption" class="ve-stairs-caption">成熟度の5段階</figcaption><p id="sec-stairs-summary" class="ve-stairs-summary">低い段から高い段へ5段の成熟度を示す。</p><ol class="ve-stairs-stages ve-stairs-count-5"><li class="ve-stairs-stage ve-stairs-index-1 ve-stairs-done" data-ve-semantic-id="stage-1"><span class="ve-stairs-label">未整備</span></li><li class="ve-stairs-stage ve-stairs-index-2 ve-stairs-done" data-ve-semantic-id="stage-2"><span class="ve-stairs-label">部分導入</span></li><li class="ve-stairs-stage ve-stairs-index-3 ve-dg-highlight" data-ve-semantic-id="stage-3"><span class="ve-stairs-label">標準化</span><span class="ve-stairs-here">← 現在地</span></li><li class="ve-stairs-stage ve-stairs-index-4 ve-stairs-todo" data-ve-semantic-id="stage-4"><span class="ve-stairs-label">最適化</span></li><li class="ve-stairs-stage ve-stairs-index-5 ve-stairs-todo" data-ve-semantic-id="stage-5"><span class="ve-stairs-label">自律運用</span></li></ol><ul class="ve-stairs-notes"><li data-ve-semantic-id="cert-stairs"><strong>確認済み:</strong> 5段は成熟度モデルに準拠。</li><li data-ve-semantic-id="src-model"><strong>出典 成熟度モデル v1</strong>（段階定義。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="logic-tree" data-ve-contract-version="2" data-ve-instance="sec-logic-tree" data-ve-fallback="static-content">
+<figure data-ve-component="logic-tree" role="group" aria-label="ロジックツリー" aria-describedby="sec-logic-tree-summary"><figcaption id="sec-logic-tree-caption" class="ve-logic-tree-caption">全体テーマの3枝分解</figcaption><p id="sec-logic-tree-summary" class="ve-logic-tree-summary">左に全体テーマ、右に3枝と各枝の詳細を示す。</p><div class="ve-lt"><div class="ve-lt-node ve-lt-root" data-ve-semantic-id="root-topic">全体テーマ</div><div class="ve-lt-stub"></div><div class="ve-lt-children"><div class="ve-lt-child"><div class="ve-lt-node ve-lt-branch" data-ve-semantic-id="branch-a">市場機会</div></div><div class="ve-lt-child"><div class="ve-lt-node ve-lt-branch" data-ve-semantic-id="branch-b">実装負債</div><div class="ve-lt-stub"></div><div class="ve-lt-children"><div class="ve-lt-child"><div class="ve-lt-node ve-lt-leaf" data-ve-semantic-id="leaf-b1">レガシー連携の残債</div></div></div></div><div class="ve-lt-child"><div class="ve-lt-node ve-lt-branch" data-ve-semantic-id="branch-c">運用体制</div><div class="ve-lt-stub"></div><div class="ve-lt-children"><div class="ve-lt-child"><div class="ve-lt-node ve-lt-leaf" data-ve-semantic-id="leaf-c1">オンコール体制</div></div><div class="ve-lt-child"><div class="ve-lt-node ve-lt-leaf" data-ve-semantic-id="leaf-c2">権限委譲の遅れ</div></div></div></div></div></div><ul class="ve-logic-tree-notes"><li data-ve-semantic-id="cert-lt"><strong>確認済み:</strong> 3枝はレビューで合意された分解。</li><li data-ve-semantic-id="src-lt"><strong>出典 分解メモ v1</strong>（枝の定義。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="waterfall" data-ve-contract-version="2" data-ve-instance="sec-waterfall" data-ve-fallback="static-content">
+<figure data-ve-component="waterfall" role="group" aria-label="ウォーターフォール" aria-describedby="sec-waterfall-summary"><p class="ve-fig-title">営業利益</p><p class="ve-fig-unit">単位: 億円</p><figcaption id="sec-waterfall-caption" class="ve-waterfall-caption">営業利益ブリッジ</figcaption><p id="sec-waterfall-summary" class="ve-waterfall-summary">期首利益から増減を経て期末利益へつなぐ。</p><svg id="sec-waterfall-svg" class="ve-wf-chart --fs-figure" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ウォーターフォール" aria-describedby="sec-waterfall-summary"><title>営業利益ブリッジ</title><desc>期首利益から増減を経て期末利益へつなぐ。</desc><line class="ve-wf-axis" x1="70" y1="40" x2="70" y2="320"></line><line class="ve-wf-axis" x1="64" y1="46" x2="70" y2="40"></line><line class="ve-wf-axis" x1="76" y1="46" x2="70" y2="40"></line><line class="ve-wf-axis" x1="70" y1="320" x2="620" y2="320"></line><text class="ve-wf-tick" x="62" y="324" text-anchor="end">0</text><text class="ve-wf-tick" x="62" y="231" text-anchor="end">50</text><text class="ve-wf-tick" x="62" y="137" text-anchor="end">100</text><text class="ve-wf-tick" x="62" y="44" text-anchor="end">150</text><text class="ve-wf-unit-label" x="62" y="28" text-anchor="end">億円</text><g data-ve-semantic-id="wf-start"><rect class="ve-wf-bar ve-wf-total" x="80" y="152" width="70" height="168"></rect><text class="ve-wf-value-on-fill" x="115" y="240" text-anchor="middle">90</text><text class="ve-wf-factor" x="115" y="336" text-anchor="middle">期首</text></g><g data-ve-semantic-id="wf-step-1"><rect class="ve-wf-bar ve-wf-plus" x="171" y="77" width="70" height="75"></rect><text class="ve-wf-value-plus" x="206" y="118" text-anchor="middle">+40</text><text class="ve-wf-factor" x="206" y="69" text-anchor="middle">価格改定</text></g><g data-ve-semantic-id="wf-step-2"><rect class="ve-wf-bar ve-wf-plus" x="262" y="40" width="70" height="37"></rect><text class="ve-wf-value-plus" x="297" y="62" text-anchor="middle">+20</text><text class="ve-wf-factor" x="297" y="32" text-anchor="middle">販促費削減</text></g><g data-ve-semantic-id="wf-step-3"><rect class="ve-wf-bar ve-wf-minus" x="353" y="40" width="70" height="93"></rect><text class="ve-wf-value-on-fill" x="388" y="90" text-anchor="middle">▲50</text><text class="ve-wf-factor" x="388" y="149" text-anchor="middle">値引き</text></g><g data-ve-semantic-id="wf-step-4"><rect class="ve-wf-bar ve-wf-minus-soft" x="444" y="133" width="70" height="38"></rect><text class="ve-wf-value-minus-soft" x="479" y="156" text-anchor="middle">▲20</text><text class="ve-wf-factor" x="479" y="187" text-anchor="middle">原価上昇</text></g><g data-ve-semantic-id="wf-end"><rect class="ve-wf-bar ve-wf-total" x="535" y="171" width="70" height="149"></rect><text class="ve-wf-value-on-fill" x="570" y="249" text-anchor="middle">80</text><text class="ve-wf-factor" x="570" y="336" text-anchor="middle">期末</text></g><line class="ve-wf-connector" x1="150" y1="152" x2="171" y2="152"></line><line class="ve-wf-connector" x1="241" y1="77" x2="262" y2="77"></line><line class="ve-wf-connector" x1="332" y1="40" x2="353" y2="40"></line><line class="ve-wf-connector" x1="423" y1="133" x2="444" y2="133"></line><line class="ve-wf-connector" x1="514" y1="171" x2="535" y2="171"></line></svg><ul class="ve-waterfall-notes"><li data-ve-semantic-id="cert-wf"><strong>確認済み:</strong> 算術は台帳と一致。</li><li data-ve-semantic-id="src-wf"><strong>出典 利益台帳</strong>（四半期集計。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="slope" data-ve-contract-version="2" data-ve-instance="sec-slope" data-ve-fallback="static-content">
+<figure data-ve-component="slope" role="group" aria-label="2時点比較スロープ" aria-describedby="sec-slope-summary"><p class="ve-fig-title">主要指標</p><p class="ve-fig-unit">単位: 件</p><figcaption id="sec-slope-caption" class="ve-slope-caption">主要指標の推移</figcaption><p id="sec-slope-summary" class="ve-slope-summary">開始時点と終了時点の値変化を比較する。</p><svg id="sec-slope-svg" class="ve-slope-chart --fs-figure" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="2時点比較スロープ" aria-describedby="sec-slope-summary"><title>主要指標の推移</title><desc>開始時点と終了時点の値変化を比較する。</desc><text class="ve-slope-axis ve-slope-axis-from" x="120" y="210" text-anchor="middle">開始</text><text class="ve-slope-axis ve-slope-axis-to" x="480" y="210" text-anchor="middle">終了</text><g class="ve-slope-row ve-slope-index-1" data-ve-semantic-id="sl-up"><line class="ve-slope-item ve-slope-tone-highlight" x1="120" y1="174" x2="480" y2="20"></line><circle class="ve-slope-endpoint ve-slope-tone-highlight" cx="120" cy="174" r="4"></circle><circle class="ve-slope-endpoint ve-slope-tone-highlight" cx="480" cy="20" r="4"></circle><text class="ve-slope-value ve-slope-value-from" x="120" y="166" text-anchor="end">10件</text><text class="ve-slope-value ve-slope-value-to" x="490" y="12" text-anchor="start">40件 売上</text></g><g class="ve-slope-row ve-slope-index-2" data-ve-semantic-id="sl-down"><line class="ve-slope-item ve-slope-tone-default" x1="120" y1="71" x2="480" y2="200"></line><circle class="ve-slope-endpoint ve-slope-tone-default" cx="120" cy="71" r="4"></circle><circle class="ve-slope-endpoint ve-slope-tone-default" cx="480" cy="200" r="4"></circle><text class="ve-slope-value ve-slope-value-from" x="120" y="63" text-anchor="end">30件</text><text class="ve-slope-value ve-slope-value-to" x="490" y="192" text-anchor="start">5件 欠損</text></g><g class="ve-slope-row ve-slope-index-3" data-ve-semantic-id="sl-flat"><line class="ve-slope-item ve-slope-tone-default" x1="120" y1="123" x2="480" y2="123"></line><circle class="ve-slope-endpoint ve-slope-tone-default" cx="120" cy="123" r="4"></circle><circle class="ve-slope-endpoint ve-slope-tone-default" cx="480" cy="123" r="4"></circle><text class="ve-slope-value ve-slope-value-from" x="120" y="115" text-anchor="end">据置</text><text class="ve-slope-value ve-slope-value-to" x="490" y="115" text-anchor="start">据置 据置</text></g></svg><ul class="ve-slope-notes"><li data-ve-semantic-id="cert-slope"><strong>確認済み:</strong> 台帳値に基づく。</li><li data-ve-semantic-id="src-slope"><strong>出典 月次台帳</strong>（2026Q1。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="evidence-map" data-ve-contract-version="2" data-ve-instance="sec-em" data-ve-fallback="static-content">
+<figure data-ve-component="evidence-map" role="group" aria-label="論拠地図" aria-describedby="sec-em-summary"><figcaption id="sec-em-caption" class="ve-evidence-map-caption">移行判断の論拠</figcaption><p id="sec-em-summary" class="ve-evidence-map-summary">結論1件に対し根拠2件を対応づける。</p><div class="ve-em-layout"><div class="ve-em-conclusion" data-ve-semantic-id="conc-main"><span class="ve-em-conclusion-label">クラウド移行を今四半期で開始すべき</span></div><div class="ve-em-body"><div class="ve-em-item ve-em-solid" data-ve-semantic-id="ev-a" data-ve-certainty-ref="cert-conf" data-ve-source-ref="src-a"><span class="ve-cert ve-cert-confirmed">確認済み</span><span class="ve-em-evidence-label">運用コストが前年比18%増</span></div><div class="ve-em-item ve-em-dashed" data-ve-semantic-id="ev-b" data-ve-certainty-ref="cert-inf" data-ve-source-ref="src-b"><span class="ve-cert ve-cert-inferred">推論</span><span class="ve-em-evidence-label">同規模案件の移行期間は3〜4ヶ月</span></div></div></div><ul class="ve-evidence-map-notes"><li data-ve-semantic-id="cert-conf"><strong>確認済み:</strong> 監査済みの実績値。</li><li data-ve-semantic-id="cert-inf"><strong>推論:</strong> 類似案件からの推定。</li><li data-ve-semantic-id="src-a"><strong>出典 監査報告</strong>（2025年度。）</li><li data-ve-semantic-id="src-b"><strong>出典 ベンチマーク</strong>（業界平均。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="bars" data-ve-contract-version="2" data-ve-instance="sec-bars" data-ve-fallback="static-content">
+<figure data-ve-component="bars" role="group" aria-label="棒グラフ" aria-describedby="sec-bars-summary"><p class="ve-fig-title">各国の女性役員割合（2021年）</p><p class="ve-fig-unit">単位: %</p><figcaption id="sec-bars-caption" class="ve-bars-caption">女性役員割合の国別比較</figcaption><p id="sec-bars-summary" class="ve-bars-summary">各国の女性役員割合を横棒で比較する。</p><div class="ve-bars-list"><div class="ve-bars-row" data-ve-semantic-id="b1"><span class="ve-bars-label">フランス</span><span class="ve-bars-track"><span class="ve-bars-fill ve-bars-w-100"></span><span class="ve-bars-value">45.3%</span></span></div><div class="ve-bars-row" data-ve-semantic-id="b2"><span class="ve-bars-label">日本</span><span class="ve-bars-track"><span class="ve-bars-fill ve-bars-w-17 ve-dg-highlight"></span><span class="ve-bars-value">7.5%</span></span></div></div><ul class="ve-bars-notes"><li data-ve-semantic-id="cert-bars"><strong>確認済み:</strong> 公開統計に基づく。</li><li data-ve-semantic-id="src-bars"><strong>出典 役員統計</strong>（2021年。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="kpi" data-ve-contract-version="2" data-ve-instance="sec-kpi" data-ve-fallback="static-content">
+<figure data-ve-component="kpi" role="group" aria-label="KPI 指標" aria-describedby="sec-kpi-summary"><figcaption id="sec-kpi-caption" class="ve-kpi-caption">プログラム満足度の主要指標</figcaption><p id="sec-kpi-summary" class="ve-kpi-summary">満足度をリング型の数値で示す。</p><div class="ve-kpi-list"><div class="ve-kpi-item" data-ve-semantic-id="k1"><div class="ve-kpi-ring"><span class="ve-kpi-num">88<small>%</small></span></div><p class="ve-kpi-cap">本プログラムの満足度</p></div></div><ul class="ve-kpi-notes"><li data-ve-semantic-id="cert-kpi"><strong>確認済み:</strong> アンケート集計に基づく。</li><li data-ve-semantic-id="src-kpi"><strong>出典 満足度調査</strong>（2024年。）</li></ul></figure>
+</section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
+    <!-- CONTENT:END -->
+  </main>
+  <footer>AI が生成した資料</footer>
+
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN --><!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
+  <script>
+  /* FIXED CONNECTOR JS: DO NOT MODIFY. */
+  (() => {
+    let resizeObserver;
+    const SVG_NS = 'http:' + '//www.w3.org/2000/svg';
+    const directChild = (parent, className) => Array.from(parent.children).find((node) => node.classList && node.classList.contains(className));
+    const scopes = () => Array.from(new Set([
+      ...document.querySelectorAll('[data-connect-scope]'),
+      ...Array.from(document.querySelectorAll('.figure')).filter((figure) => figure.querySelector('[data-connect]'))
+    ]));
+    const nodeMap = (scope) => new Map(Array.from(scope.querySelectorAll('[id]')).map((node) => [node.id, node]));
+    const laneIndex = (node, scope) => Array.from(scope.querySelectorAll('[data-lane]')).findIndex((lane) => lane.contains(node));
+    const siblingIndex = (node) => Array.from(node.parentElement.querySelectorAll(':scope > [id]')).indexOf(node);
+    const adjacent = (from, to, scope) => {
+      const fromLane = laneIndex(from, scope);
+      const toLane = laneIndex(to, scope);
+      if (fromLane >= 0 && toLane >= 0) return fromLane === toLane ? Math.abs(siblingIndex(from) - siblingIndex(to)) === 1 : Math.abs(fromLane - toLane) === 1;
+      return from.parentElement === to.parentElement && Math.abs(siblingIndex(from) - siblingIndex(to)) === 1;
+    };
+    const pointPair = (from, to, scope) => {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), box = scope.getBoundingClientRect();
+      const ax = a.left + a.width / 2, ay = a.top + a.height / 2, bx = b.left + b.width / 2, by = b.top + b.height / 2;
+      if (Math.abs(bx - ax) >= Math.abs(by - ay)) return [bx >= ax ? a.right : a.left, ay, bx >= ax ? b.left : b.right, by, box];
+      return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
+    };
+    const pathFor = (from, to, scope) => {
+      const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
+      const x1 = sx - box.left, y1 = sy - box.top, x2 = ex - box.left, y2 = ey - box.top;
+      const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+      const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1, c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
+      const c2x = horizontal ? x2 - (x2 - x1) * .45 : x2, c2y = horizontal ? y2 : y2 - (y2 - y1) * .45;
+      return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+    };
+    const warning = (scope, message) => {
+      const badge = document.createElement('p');
+      badge.className = 'connector-warning';
+      badge.textContent = `接続を描画できません: ${message}`;
+      scope.append(badge);
+    };
+    const render = (scope) => {
+      scope.querySelectorAll('.connector-layer, .connector-warning').forEach((node) => node.remove());
+      const list = directChild(scope, 'connection-text') || document.createElement('ul');
+      list.className = 'connection-text visually-hidden';
+      list.setAttribute('aria-label', '接続関係');
+      list.replaceChildren();
+      if (!list.parentElement) scope.append(list);
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'connector-layer');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><marker id="connector-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"/></marker></defs>';
+      const nodes = nodeMap(scope);
+      let hasLine = false;
+      scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+        declaration.dataset.connect.split(',').map((item) => item.trim()).filter(Boolean).forEach((item) => {
+          const [fromId, toId] = item.split('->').map((id) => id && id.trim());
+          const from = nodes.get(fromId), to = nodes.get(toId);
+          if (!from || !to) {
+            console.error('visual-explain: unknown connector reference', item);
+            warning(scope, `「${item}」の ID が見つかりません。`);
+            return;
+          }
+          if (!adjacent(from, to, scope)) {
+            console.error('visual-explain: non-adjacent connector rejected', item);
+            warning(scope, `「${item}」は隣接ノードだけを接続できます。`);
+            return;
+          }
+          const path = document.createElementNS(SVG_NS, 'path');
+          path.setAttribute('d', pathFor(from, to, scope));
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', 'currentColor');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('marker-end', 'url(#connector-arrow)');
+          svg.append(path);
+          const text = document.createElement('li');
+          text.textContent = `${from.textContent.trim()} から ${to.textContent.trim()} へ接続`;
+          list.append(text);
+          hasLine = true;
+        });
+      });
+      if (hasLine) scope.append(svg);
+    };
+    const renderAll = () => scopes().forEach(render);
+    window.addEventListener('load', () => {
+      renderAll();
+      resizeObserver = new ResizeObserver(renderAll);
+      scopes().forEach((scope) => resizeObserver.observe(scope));
+    });
+    document.addEventListener('toggle', (event) => { if (event.target.matches('details')) renderAll(); }, true);
+    document.addEventListener('visual-explain:stepchange', renderAll);
+  })();
+
+  /* FIXED STEPPER AND DETAILS JS: DO NOT MODIFY. */
+  (() => {
+    const update = (stepper, current, all = false) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      panels.forEach((panel) => {
+        const active = Number(panel.dataset.step) === current;
+        panel.hidden = !all && !active;
+        panel.classList.toggle('is-current', active && !all);
+        panel.setAttribute('aria-current', active && !all ? 'step' : 'false');
+      });
+      let status = stepper.querySelector('.stepper-status');
+      if (!status) {
+        status = document.createElement('p');
+        status.className = 'stepper-status';
+        status.setAttribute('aria-live', 'polite');
+        stepper.prepend(status);
+      }
+      status.textContent = all ? `全体表示: ${total} 段階を同時に表示中。` : `現在の状態: ステップ ${current}/${total}。開始状態はステップ 1、終了状態はステップ ${total}。`;
+      const previous = stepper.querySelector('[data-step-action="previous"]');
+      const next = stepper.querySelector('[data-step-action="next"]');
+      if (previous) previous.disabled = all || current <= 1;
+      if (next) next.disabled = all || current >= total;
+      if (next) next.textContent = next.dataset.nextLabel || `次へ: ステップ ${Math.min(total, current + 1)} を表示`;
+      stepper.dataset.currentStep = String(current);
+      document.dispatchEvent(new CustomEvent('visual-explain:stepchange'));
+    };
+    document.querySelectorAll('details').forEach((details) => details.setAttribute('aria-expanded', String(details.open)));
+    document.querySelectorAll('[data-stepper]').forEach((stepper) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      if (!total) return;
+      update(stepper, 1);
+      stepper.addEventListener('click', (event) => {
+        const action = event.target.closest('button[data-step-action]');
+        if (!action) return;
+        const current = Number(stepper.dataset.currentStep) || 1;
+        if (action.dataset.stepAction === 'previous') update(stepper, Math.max(1, current - 1));
+        if (action.dataset.stepAction === 'next') update(stepper, Math.min(total, current + 1));
+        if (action.dataset.stepAction === 'all') update(stepper, current, true);
+      });
+    });
+    document.addEventListener('toggle', (event) => {
+      if (event.target.matches('details')) event.target.setAttribute('aria-expanded', String(event.target.open));
+    }, true);
+  })();
+  </script>
+</body>
+</html>

@@ -17,7 +17,11 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-PYRAMID_DEF = REGISTRY.find("pyramid", 1)
+PYRAMID_DEF = REGISTRY.find("pyramid", 2)
+
+
+def _fixture_path(name: str) -> Path:
+    return TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
 
 
 def _base_ir(**pyramid_overrides) -> dict:
@@ -37,7 +41,7 @@ def _base_ir(**pyramid_overrides) -> dict:
         },
         "selection": {
             "component": "pyramid",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["priority-layering"],
         },
         "caption": "優先度の階層",
@@ -64,9 +68,9 @@ def expect_violation(ir: dict, code: str = PYRAMID_STRUCTURE_VIOLATION) -> None:
     unittest.TestCase().assertIn(code, codes)
 
 
-def render_fixture(name: str):
+def render_fixture(name: str = "component-valid-pyramid"):
     from ve_components.renderers.pyramid import render_pyramid
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
     return ir, render_pyramid(CanonicalSection(ir=ir), PYRAMID_DEF)
 
@@ -126,7 +130,7 @@ class PyramidManifestTest(unittest.TestCase):
         self.assertIsNotNone(PYRAMID_DEF)
         self.assertEqual(PYRAMID_DEF.relationship_kind, "layered-priority")
         self.assertEqual(PYRAMID_DEF.capabilities, ("priority-layering",))
-        self.assertEqual(PYRAMID_DEF.renderer, "pyramid@1")
+        self.assertEqual(PYRAMID_DEF.renderer, "pyramid@2")
         self.assertEqual([a.id for a in PYRAMID_DEF.assets], ["pyramid.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
@@ -156,26 +160,6 @@ class PyramidMarkupTest(unittest.TestCase):
         for tier in self.ir.pyramid.tiers:
             self.assertIn(f'data-ve-semantic-id="{tier.id}"', self.markup)
 
-    def test_apex_tier_only_uses_strong_face_class(self) -> None:
-        apex_id = self.ir.pyramid.tiers[0].id
-        for tier in self.ir.pyramid.tiers[1:]:
-            block = re.search(
-                rf'<li[^>]*data-ve-semantic-id="{re.escape(tier.id)}"[^>]*>.*?</li>',
-                self.markup,
-                re.DOTALL,
-            )
-            self.assertIsNotNone(block)
-            self.assertIn("ve-pyramid-face-dim", block.group(0))
-            self.assertNotIn("ve-pyramid-face-strong", block.group(0))
-        apex_block = re.search(
-            rf'<li[^>]*data-ve-semantic-id="{re.escape(apex_id)}"[^>]*>.*?</li>',
-            self.markup,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(apex_block)
-        self.assertIn("ve-pyramid-face-strong", apex_block.group(0))
-        self.assertNotIn("ve-pyramid-face-dim", apex_block.group(0))
-
     def test_widths_via_count_and_index_classes(self) -> None:
         count = len(self.ir.pyramid.tiers)
         self.assertIn(f"ve-pyramid-count-{count}", self.markup)
@@ -191,6 +175,21 @@ class PyramidMarkupTest(unittest.TestCase):
         self.assertNotIn("data-ve-relation", self.markup)
         self.assertNotIn("data-ve-row-id", self.markup)
         self.assertNotIn("data-ve-column-id", self.markup)
+
+
+class PyramidV2Test(unittest.TestCase):
+    def test_pyramid_v2_emits_level_classes(self) -> None:
+        _, result = render_fixture("component-valid-pyramid")
+        markup = result.markup
+        for k in (1, 2, 3):
+            self.assertIn(f"ve-pyramid-level-{k}", markup)
+        self.assertNotIn("ve-pyramid-face-strong", markup)
+
+    def test_pyramid_css_prevents_one_char_wrap(self) -> None:
+        css = Path("../assets/components/pyramid.css").read_text(encoding="utf-8")
+        self.assertNotIn("fit-content", css)
+        self.assertIn("white-space: nowrap", css)
+        self.assertIn("min-width: max-content", css)
 
 
 if __name__ == "__main__":

@@ -1,55 +1,66 @@
 {
   "vocabularyVersion": 1,
+  "contractVersions": [2],
   "components": {
     "matrix": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "two-axis",
       "capabilities": ["two-axis-classification", "intersection-comparison"]
     },
     "flow": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "directed-graph",
       "capabilities": ["ordered-transition", "directed-transition", "branching"]
     },
     "enumeration": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "parallel-enumeration",
       "capabilities": ["parallel-itemization"]
     },
     "chevron": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "ordered-sequence",
       "capabilities": ["linear-sequence", "closed-loop"]
     },
     "pyramid": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "layered-priority",
       "capabilities": ["priority-layering"]
     },
     "stairs": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "staged-maturity",
       "capabilities": ["maturity-staging"]
     },
     "logic-tree": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "hierarchical-decomposition",
       "capabilities": ["mece-decomposition"]
     },
     "waterfall": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "additive-bridge",
       "capabilities": ["additive-bridging"]
     },
     "slope": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "two-point-change",
       "capabilities": ["two-point-comparison"]
     },
     "evidence-map": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "claim-support",
       "capabilities": ["claim-support-mapping"]
+    },
+    "bars": {
+      "contractVersion": 2,
+      "relationshipKind": "quantitative-comparison",
+      "capabilities": ["single-axis-quantity", "ranked-comparison"]
+    },
+    "kpi": {
+      "contractVersion": 2,
+      "relationshipKind": "headline-metrics",
+      "capabilities": ["metric-highlight"]
     }
   },
   "compatibility": {

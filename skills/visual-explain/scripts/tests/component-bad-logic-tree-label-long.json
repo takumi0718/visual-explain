@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "logic-tree",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["mece-decomposition"]
         },
         "caption": "ラベル過長",

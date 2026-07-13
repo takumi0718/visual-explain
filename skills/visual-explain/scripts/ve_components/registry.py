@@ -39,6 +39,7 @@ KNOWN_CHECKER_RULES = frozenset({
     "fixed-regions",
     "manifest-dom",
     "matrix-references",
+    "matrix-concept-length",
     "flow-edges",
     "no-external-reference",
     "escaping",
@@ -52,6 +53,9 @@ KNOWN_CHECKER_RULES = frozenset({
     "slope-structure",
     "renderer-svg",
     "evidence-map-references",
+    "bars-width-classes",
+    "kpi-item-limit",
+    "kpi-structure",
 })
 
 _ASSET_SLOTS = frozenset({"styles", "scripts"})

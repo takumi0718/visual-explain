@@ -18,7 +18,7 @@ SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
 COMPONENTS = SKILL / "assets" / "components"
-LOGIC_TREE_DEF = REGISTRY.find("logic-tree", 1)
+LOGIC_TREE_DEF = REGISTRY.find("logic-tree", 2)
 
 
 def _base_ir(**logic_tree_overrides) -> dict:
@@ -46,7 +46,7 @@ def _base_ir(**logic_tree_overrides) -> dict:
         },
         "selection": {
             "component": "logic-tree",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["mece-decomposition"],
         },
         "caption": "構成の分解",
@@ -81,9 +81,13 @@ def expect_violation(ir: dict, code: str = LOGIC_TREE_STRUCTURE_VIOLATION) -> No
     unittest.TestCase().assertIn(code, codes)
 
 
+def _fixture_path(name: str) -> Path:
+    return TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+
+
 def render_fixture(name: str):
     from ve_components.renderers.logic_tree import render_logic_tree
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
     return ir, render_logic_tree(CanonicalSection(ir=ir), LOGIC_TREE_DEF)
 
@@ -205,7 +209,7 @@ class LogicTreeManifestTest(unittest.TestCase):
         self.assertIsNotNone(LOGIC_TREE_DEF)
         self.assertEqual(LOGIC_TREE_DEF.relationship_kind, "hierarchical-decomposition")
         self.assertEqual(LOGIC_TREE_DEF.capabilities, ("mece-decomposition",))
-        self.assertEqual(LOGIC_TREE_DEF.renderer, "logic-tree@1")
+        self.assertEqual(LOGIC_TREE_DEF.renderer, "logic-tree@2")
         self.assertEqual([a.id for a in LOGIC_TREE_DEF.assets], ["logic-tree.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
@@ -231,14 +235,14 @@ class LogicTreeMarkupTest(unittest.TestCase):
         self.assertIn(self.ir.accessibility.summary, self.markup)
         self.assertIn("ve-logic-tree-notes", self.markup)
 
-    def test_horizontal_layout_classes(self) -> None:
-        self.assertIn("ve-logic-tree-layout-horizontal", self.markup)
-        self.assertIn("ve-logic-tree-root", self.markup)
-        self.assertIn("ve-logic-tree-branches", self.markup)
+    def test_elbow_layout_wrapper(self) -> None:
+        self.assertIn('class="ve-lt"', self.markup)
+        self.assertIn("ve-lt-root", self.markup)
+        self.assertIn("ve-lt-children", self.markup)
 
     def test_root_precedes_branches_in_dom(self) -> None:
-        root_pos = self.markup.index("ve-logic-tree-root")
-        branches_pos = self.markup.index("ve-logic-tree-branches")
+        root_pos = self.markup.index("ve-lt-root")
+        branches_pos = self.markup.index("ve-lt-children")
         self.assertLess(root_pos, branches_pos)
 
     def test_semantic_ids_on_root_branches_and_leaves(self) -> None:
@@ -248,53 +252,24 @@ class LogicTreeMarkupTest(unittest.TestCase):
             for leaf in branch.leaves:
                 self.assertIn(f'data-ve-semantic-id="{leaf.id}"', self.markup)
 
-    def test_connectors_are_presentation_only(self) -> None:
-        connectors = re.findall(r'<[^>]*\bve-logic-tree-connector\b[^>]*>', self.markup)
-        self.assertEqual(len(connectors), len(self.ir.logic_tree.branches))
-        for tag in connectors:
-            self.assertIn('aria-hidden="true"', tag)
+    def test_stubs_are_presentation_only(self) -> None:
+        stubs = re.findall(r'<div class="ve-lt-stub"[^>]*>', self.markup)
+        self.assertGreaterEqual(len(stubs), 1)
+        for tag in stubs:
             self.assertNotIn("data-ve-semantic-id", tag)
             self.assertNotIn("data-ve-from", tag)
             self.assertNotIn("data-ve-to", tag)
             self.assertNotIn("data-connect", tag)
 
-    def test_shared_spine_topology_in_dom(self) -> None:
-        spines = re.findall(
-            r'<[^>]*\bclass="[^"]*\bve-logic-tree-spine\b(?!-)[^"]*"[^>]*>',
-            self.markup,
-        )
-        self.assertEqual(len(spines), 1)
-        root_stems = re.findall(r'<[^>]*\bve-logic-tree-root-stem\b[^>]*>', self.markup)
-        self.assertEqual(len(root_stems), 1)
-        self.assertIn("ve-logic-tree-spine-column", self.markup)
-        root_pos = self.markup.index("ve-logic-tree-root-stem")
-        spine_pos = self.markup.index('class="ve-logic-tree-spine"')
-        branches_pos = self.markup.index("ve-logic-tree-branches")
-        self.assertLess(root_pos, spine_pos)
-        self.assertLess(spine_pos, branches_pos)
-
-    def test_spine_topology_in_css(self) -> None:
+    def test_elbow_connector_css(self) -> None:
         css = (COMPONENTS / "logic-tree.css").read_text("utf-8")
-        self.assertIn(".ve-logic-tree-spine", css)
-        spine_block = css.split(".ve-logic-tree-spine {")[1].split("}")[0]
+        self.assertIn(".ve-lt-stub", css)
+        stub_block = css.split(".ve-lt-stub {")[1].split("}")[0]
+        self.assertIn("border-top", stub_block)
+        child_block = css.split(".ve-lt-child::before {")[1].split("}")[0]
+        self.assertIn("border-top", child_block)
+        spine_block = css.split(".ve-lt-child::after {")[1].split("}")[0]
         self.assertIn("border-left", spine_block)
-        stem_block = css.split(".ve-logic-tree-root-stem {")[1].split("}")[0]
-        self.assertIn("border-top", stem_block)
-        connector_block = css.split(".ve-logic-tree-connector {")[1].split("}")[0]
-        self.assertIn("border-top", connector_block)
-
-    def test_branch_count_and_index_classes(self) -> None:
-        count = len(self.ir.logic_tree.branches)
-        self.assertIn(f"ve-logic-tree-count-{count}", self.markup)
-        for index in range(1, count + 1):
-            self.assertIn(f"ve-logic-tree-index-{index}", self.markup)
-
-    def test_narrow_screen_stacking_preserves_reading_order_in_css(self) -> None:
-        css = (COMPONENTS / "logic-tree.css").read_text("utf-8")
-        self.assertIn("ve-logic-tree-layout-horizontal", css)
-        media_block = css.split("@media")[1] if "@media" in css else ""
-        self.assertIn("ve-logic-tree-layout-horizontal", media_block)
-        self.assertIn("grid-template-columns: 1fr", media_block)
 
     def test_no_inline_style_attributes(self) -> None:
         self.assertNotIn("style=", self.markup)
@@ -305,6 +280,23 @@ class LogicTreeMarkupTest(unittest.TestCase):
         self.assertNotIn("data-ve-relation", self.markup)
         self.assertNotIn("data-ve-row-id", self.markup)
         self.assertNotIn("data-ve-column-id", self.markup)
+
+
+class LogicTreeV2Test(unittest.TestCase):
+    def test_logic_tree_v2_nests_children_with_elbow_wrappers(self) -> None:
+        _, result = render_fixture("component-valid-logic-tree")
+        markup = result.markup
+        self.assertGreaterEqual(markup.count('class="ve-lt-child"'), 6)
+        self.assertIn('class="ve-lt-stub"', markup)
+        self.assertNotIn("ve-logic-tree-spine", markup)
+
+    def test_logic_tree_v2_leafless_branch_has_no_nested_children(self) -> None:
+        _, result = render_fixture("component-valid-logic-tree")
+        markup = result.markup
+        branch = re.search(
+            r'<div class="ve-lt-child">(?:(?!ve-lt-child).)*?市場機会.*?</div>',
+            markup, re.S).group(0)
+        self.assertNotIn("ve-lt-children", branch)
 
 
 if __name__ == "__main__":

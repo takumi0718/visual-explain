@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -190,6 +202,9 @@
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
 
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
@@ -516,7 +531,7 @@
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section data-ve-section-kind="canonical" data-ve-component="waterfall" data-ve-contract-version="1" data-ve-instance="sec-waterfall-columns" data-ve-fallback="static-content">
-<figure data-ve-component="waterfall" role="group" aria-label="横並びウォーターフォール" aria-describedby="sec-waterfall-columns-summary"><figcaption id="sec-waterfall-columns-caption" class="ve-waterfall-caption">売上の段階変化</figcaption><p id="sec-waterfall-columns-summary" class="ve-waterfall-summary">開始から5段の増減を経て終了へ。</p><div class="ve-waterfall-scroll"><div class="ve-waterfall-bridge ve-wf-columns"><div class="ve-waterfall-row"><span class="ve-waterfall-label">期首</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-0 ve-wf-len-91" data-ve-semantic-id="wfc-start"><span class="ve-waterfall-value">100件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-91 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">増</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-91 ve-wf-len-9 ve-wf-tone-positive" data-ve-semantic-id="wfc-s1"><span class="ve-waterfall-value">+10件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-100 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">減</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-82 ve-wf-len-18 ve-wf-tone-warning" data-ve-semantic-id="wfc-s2"><span class="ve-waterfall-value">−20件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-82 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">増</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-82 ve-wf-len-4 ve-wf-tone-positive" data-ve-semantic-id="wfc-s3"><span class="ve-waterfall-value">+5件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-86 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">減</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-59 ve-wf-len-27 ve-wf-tone-warning" data-ve-semantic-id="wfc-s4"><span class="ve-waterfall-value">−30件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-59 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">増</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-59 ve-wf-len-14 ve-wf-tone-positive" data-ve-semantic-id="wfc-s5"><span class="ve-waterfall-value">+15件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-73 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">期末</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-0 ve-wf-len-73" data-ve-semantic-id="wfc-end"><span class="ve-waterfall-value">80件</span></div></div></div></div></div><ul class="ve-waterfall-notes"><li data-ve-semantic-id="cert-wfc"><strong>確定:</strong> 各段は監査済み。</li><li data-ve-semantic-id="src-wfc"><strong>出典 売上レポート</strong></li></ul></figure>
+<figure data-ve-component="waterfall" role="group" aria-label="横並びウォーターフォール" aria-describedby="sec-waterfall-columns-summary"><figcaption id="sec-waterfall-columns-caption" class="ve-waterfall-caption">売上の段階変化</figcaption><p id="sec-waterfall-columns-summary" class="ve-waterfall-summary">開始から5段の増減を経て終了へ。</p><div class="ve-waterfall-scroll"><div class="ve-waterfall-bridge ve-wf-columns"><div class="ve-waterfall-row"><span class="ve-waterfall-label">期首</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-0 ve-wf-len-91" data-ve-semantic-id="wfc-start"><span class="ve-waterfall-value">100件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-91 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">増</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-91 ve-wf-len-9 ve-wf-tone-positive" data-ve-semantic-id="wfc-s1"><span class="ve-waterfall-value">+10件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-100 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">減</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-82 ve-wf-len-18 ve-wf-tone-warning" data-ve-semantic-id="wfc-s2"><span class="ve-waterfall-value">−20件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-82 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">増</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-82 ve-wf-len-4 ve-wf-tone-positive" data-ve-semantic-id="wfc-s3"><span class="ve-waterfall-value">+5件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-86 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">減</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-59 ve-wf-len-27 ve-wf-tone-warning" data-ve-semantic-id="wfc-s4"><span class="ve-waterfall-value">−30件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-59 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">増</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-59 ve-wf-len-14 ve-wf-tone-positive" data-ve-semantic-id="wfc-s5"><span class="ve-waterfall-value">+15件</span></div></div></div><div class="ve-waterfall-connector-track"><span class="ve-waterfall-connector ve-wf-start-73 ve-wf-len-0" aria-hidden="true"></span></div><div class="ve-waterfall-row"><span class="ve-waterfall-label">期末</span><div class="ve-waterfall-track"><div class="ve-waterfall-bar ve-wf-start-0 ve-wf-len-73" data-ve-semantic-id="wfc-end"><span class="ve-waterfall-value">80件</span></div></div></div></div></div><ul class="ve-waterfall-notes"><li data-ve-semantic-id="cert-wfc"><strong>確認済み:</strong> 各段は監査済み。</li><li data-ve-semantic-id="src-wfc"><strong>出典 売上レポート</strong></li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

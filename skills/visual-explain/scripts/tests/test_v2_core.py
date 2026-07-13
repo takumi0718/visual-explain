@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from ve_components.diagnostics import ContractError
+from ve_components.model import CERTAINTY_LABEL
 from ve_components.validation import validate_assembly, validate_canonical_section
 
 FIXTURES = Path(__file__).resolve().parent
@@ -156,6 +157,25 @@ class PayloadDispatchRegistryTest(unittest.TestCase):
             self.assertIn("invalid_component_payload", codes)
         finally:
             v._PAYLOAD_KEYS = original_keys
+
+
+class CertaintyVocabularyTest(unittest.TestCase):
+    def test_certainty_label_uses_design_system_vocabulary(self) -> None:
+        self.assertEqual(CERTAINTY_LABEL, {
+            "confirmed": "確認済み", "inferred": "推論", "unverified": "未確認",
+        })
+
+    def test_no_renderer_defines_local_cert_label(self) -> None:
+        import pathlib
+        for path in pathlib.Path("ve_components/renderers").glob("*.py"):
+            if path.name == "__init__.py":
+                continue
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn('"confirmed": "確定"', text, path.name)
+
+    def test_schema_allows_contract_version_two(self) -> None:
+        schema = json.loads((FIXTURES.parent.parent / "references" / "component-ir.schema.json").read_text())
+        self.assertEqual(schema["$defs"]["contractVersion"]["enum"], [2])
 
 
 if __name__ == "__main__":

@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -191,6 +203,9 @@
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
 
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -213,26 +228,39 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="evidence-map" data-ve-contract-version="1" data-ve-asset="evidence-map.css" data-ve-digest="f988fe3d3d93658d4ff42790cd26d5b2101c91706d246d3cf463f9d8676b0547">[data-ve-component="evidence-map"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="evidence-map"] .ve-evidence-map-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="evidence-map"] .ve-evidence-map-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="evidence-map"] .ve-em-layout { display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--w-narrative); }
-[data-ve-component="evidence-map"] .ve-em-conclusion { padding: var(--space-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-weight: 700; font-size: var(--fs-figure); }
-[data-ve-component="evidence-map"] .ve-em-evidence-list { display: flex; flex-direction: column; gap: var(--space-2); }
-[data-ve-component="evidence-map"] .ve-em-evidence-card { display: flex; align-items: flex-start; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-figure); }
-[data-ve-component="evidence-map"] .ve-em-link { display: block; width: 2rem; height: 0; border-top-width: 2px; border-top-style: solid; margin: var(--space-1) 0 var(--space-1) var(--space-2); }
-[data-ve-component="evidence-map"] .ve-em-link-confirmed { border-top-style: solid; border-top-color: var(--text-dim); }
-[data-ve-component="evidence-map"] .ve-em-link-inferred { border-top-style: dashed; border-top-color: var(--text-dim); }
-[data-ve-component="evidence-map"] .ve-em-link-unverified { border-top-style: dotted; border-top-color: var(--text-faint); }
-[data-ve-component="evidence-map"] .ve-cert { display: inline-block; font-size: var(--fs-small); font-weight: 700; color: var(--text-dim); flex-shrink: 0; }
-[data-ve-component="evidence-map"] .ve-cert-confirmed,
-[data-ve-component="evidence-map"] .ve-cert-inferred,
-[data-ve-component="evidence-map"] .ve-cert-unverified { color: var(--text-dim); }
-[data-ve-component="evidence-map"] .ve-em-evidence-label { flex: 1 1 auto; min-width: 0; }
-[data-ve-component="evidence-map"] .ve-takeaway-target { outline: 2px solid var(--accent); outline-offset: 2px; }
-[data-ve-component="evidence-map"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="evidence-map"] .ve-evidence-map-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="evidence-map"] .ve-evidence-map-notes li { margin: 0; }
+  <style data-ve-component="evidence-map" data-ve-contract-version="2" data-ve-asset="evidence-map.css" data-ve-digest="b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b">figure[data-ve-component="evidence-map"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="evidence-map"] .ve-em-layout { display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--w-narrative); }
+figure[data-ve-component="evidence-map"] .ve-em-conclusion {
+  padding: var(--space-2); background: var(--dg-primary); color: var(--dg-on-primary);
+  font-weight: 700; font-size: var(--fs-figure); }
+figure[data-ve-component="evidence-map"] .ve-em-body { display: flex; flex-direction: column; gap: var(--space-2); }
+figure[data-ve-component="evidence-map"] .ve-em-item {
+  position: relative; padding: var(--space-2) var(--space-2) var(--space-2) 1.5rem;
+  display: flex; align-items: flex-start; gap: var(--space-1);
+  border: 1.5px solid var(--dg-line); font-size: var(--fs-figure); }
+figure[data-ve-component="evidence-map"] .ve-em-item::before {
+  content: ""; position: absolute; left: 0; top: 50%; width: 1.5rem;
+  border-top: 2px solid var(--dg-line); }
+figure[data-ve-component="evidence-map"] .ve-em-item::after {
+  content: ""; position: absolute; left: 0; top: calc(-1 * var(--space-2)); bottom: 0;
+  border-left: 2px solid var(--dg-line); }
+figure[data-ve-component="evidence-map"] .ve-em-item:first-child::after { top: 50%; }
+figure[data-ve-component="evidence-map"] .ve-em-item:last-child::after { bottom: 50%; }
+figure[data-ve-component="evidence-map"] .ve-em-item:only-child::after { content: none; }
+figure[data-ve-component="evidence-map"] .ve-em-solid::before { border-top-style: solid; }
+figure[data-ve-component="evidence-map"] .ve-em-dashed::before { border-top-style: dashed; }
+figure[data-ve-component="evidence-map"] .ve-em-dotted::before { border-top-style: dotted; }
+figure[data-ve-component="evidence-map"] .ve-cert { display: inline-block; font-size: var(--fs-small); font-weight: 700; color: var(--text-dim); flex-shrink: 0; }
+figure[data-ve-component="evidence-map"] .ve-cert-confirmed,
+figure[data-ve-component="evidence-map"] .ve-cert-inferred,
+figure[data-ve-component="evidence-map"] .ve-cert-unverified { color: var(--text-dim); }
+figure[data-ve-component="evidence-map"] .ve-em-evidence-label { flex: 1 1 auto; min-width: 0; }
+figure[data-ve-component="evidence-map"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="evidence-map"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="evidence-map"] .ve-evidence-map-notes li { margin: 0; }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
@@ -301,8 +329,8 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section data-ve-section-kind="canonical" data-ve-component="evidence-map" data-ve-contract-version="1" data-ve-instance="sec-em" data-ve-fallback="static-content">
-<figure data-ve-component="evidence-map" role="group" aria-label="論拠地図" aria-describedby="sec-em-summary"><figcaption id="sec-em-caption" class="ve-evidence-map-caption">移行判断の論拠</figcaption><p id="sec-em-summary" class="ve-evidence-map-summary">結論1件に対し根拠2件を対応づける。</p><div class="ve-em-layout ve-em-count-2"><div class="ve-em-conclusion ve-em-border-strong" data-ve-semantic-id="conc-main"><span class="ve-em-conclusion-label">クラウド移行を今四半期で開始すべき</span></div><div class="ve-em-evidence-list"><span class="ve-em-link ve-em-link-confirmed" aria-hidden="true"></span><div class="ve-em-evidence-card" data-ve-semantic-id="ev-a" data-ve-certainty-ref="cert-conf" data-ve-source-ref="src-a"><span class="ve-cert ve-cert-confirmed">確定</span><span class="ve-em-evidence-label">運用コストが前年比18%増</span></div><span class="ve-em-link ve-em-link-inferred" aria-hidden="true"></span><div class="ve-em-evidence-card" data-ve-semantic-id="ev-b" data-ve-certainty-ref="cert-inf" data-ve-source-ref="src-b"><span class="ve-cert ve-cert-inferred">推定</span><span class="ve-em-evidence-label">同規模案件の移行期間は3〜4ヶ月</span></div></div></div><ul class="ve-evidence-map-notes"><li data-ve-semantic-id="cert-conf"><strong>確定:</strong> 監査済みの実績値。</li><li data-ve-semantic-id="cert-inf"><strong>推定:</strong> 類似案件からの推定。</li><li data-ve-semantic-id="src-a"><strong>出典 監査報告</strong>（2025年度。）</li><li data-ve-semantic-id="src-b"><strong>出典 ベンチマーク</strong>（業界平均。）</li><span class="ve-em-link ve-em-link-confirmed" aria-hidden="true"></span><div class="ve-em-evidence-card" data-ve-semantic-id="ev-c" data-ve-certainty-ref="cert-conf"><span class="ve-cert ve-cert-confirmed">確定</span><span class="ve-em-evidence-label">余分3</span></div><span class="ve-em-link ve-em-link-confirmed" aria-hidden="true"></span><div class="ve-em-evidence-card" data-ve-semantic-id="ev-d" data-ve-certainty-ref="cert-conf"><span class="ve-cert ve-cert-confirmed">確定</span><span class="ve-em-evidence-label">余分4</span></div><span class="ve-em-link ve-em-link-confirmed" aria-hidden="true"></span><div class="ve-em-evidence-card" data-ve-semantic-id="ev-e" data-ve-certainty-ref="cert-conf"><span class="ve-cert ve-cert-confirmed">確定</span><span class="ve-em-evidence-label">余分5</span></div></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="evidence-map" data-ve-contract-version="2" data-ve-instance="sec-em" data-ve-fallback="static-content">
+<figure data-ve-component="evidence-map" role="group" aria-label="論拠地図" aria-describedby="sec-em-summary"><figcaption id="sec-em-caption" class="ve-evidence-map-caption">移行判断の論拠</figcaption><p id="sec-em-summary" class="ve-evidence-map-summary">結論1件に対し根拠2件を対応づける。</p><div class="ve-em-layout"><div class="ve-em-conclusion" data-ve-semantic-id="conc-main"><span class="ve-em-conclusion-label">クラウド移行を今四半期で開始すべき</span></div><div class="ve-em-body"><div class="ve-em-item ve-em-solid" data-ve-semantic-id="ev-a" data-ve-certainty-ref="cert-conf" data-ve-source-ref="src-a"><span class="ve-cert ve-cert-confirmed">確認済み</span><span class="ve-em-evidence-label">運用コストが前年比18%増</span></div><div class="ve-em-item ve-em-dashed" data-ve-semantic-id="ev-b" data-ve-certainty-ref="cert-inf" data-ve-source-ref="src-b"><span class="ve-cert ve-cert-inferred">推論</span><span class="ve-em-evidence-label">同規模案件の移行期間は3〜4ヶ月</span></div><div class="ve-em-item ve-em-solid" data-ve-semantic-id="ev-c" data-ve-certainty-ref="cert-conf"><span class="ve-cert ve-cert-confirmed">確認済み</span><span class="ve-em-evidence-label">追加根拠</span></div><div class="ve-em-item ve-em-dashed" data-ve-semantic-id="ev-d" data-ve-certainty-ref="cert-inf"><span class="ve-cert ve-cert-inferred">推論</span><span class="ve-em-evidence-label">さらに追加</span></div><div class="ve-em-item ve-em-dotted" data-ve-semantic-id="ev-e" data-ve-certainty-ref="cert-inf"><span class="ve-cert ve-cert-inferred">推論</span><span class="ve-em-evidence-label">5件目</span></div></div></div><ul class="ve-evidence-map-notes"><li data-ve-semantic-id="cert-conf"><strong>確認済み:</strong> 監査済みの実績値。</li><li data-ve-semantic-id="cert-inf"><strong>推論:</strong> 類似案件からの推定。</li><li data-ve-semantic-id="src-a"><strong>出典 監査報告</strong>（2025年度。）</li><li data-ve-semantic-id="src-b"><strong>出典 ベンチマーク</strong>（業界平均。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

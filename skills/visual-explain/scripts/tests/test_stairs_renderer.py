@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-from ve_components.diagnostics import ContractError
+from ve_components.diagnostics import ContractError, INVALID_COMPONENT_PAYLOAD
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry
 from ve_components.validation import validate_canonical_section
@@ -17,14 +17,35 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-STAIRS_DEF = REGISTRY.find("stairs", 1)
+STAIRS_DEF = REGISTRY.find("stairs", 2)
+
+
+def _fixture_path(name: str) -> Path:
+    return TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+
+
+class _FixtureRender:
+    __slots__ = ("ir", "result")
+
+    def __init__(self, ir, result) -> None:
+        self.ir = ir
+        self.result = result
+
+    @property
+    def markup(self) -> str:
+        return self.result.markup
+
+    def __iter__(self):
+        yield self.ir
+        yield self.result
 
 
 def _base_ir(**stairs_overrides) -> dict:
     stairs = {
+        "highlightId": "s-mid",
         "stages": [
             {"id": "s-low", "label": "初期段"},
-            {"id": "s-mid", "label": "移行段", "current": True, "note": "現在地"},
+            {"id": "s-mid", "label": "移行段"},
             {"id": "s-high", "label": "到達段"},
         ],
     }
@@ -37,7 +58,7 @@ def _base_ir(**stairs_overrides) -> dict:
         },
         "selection": {
             "component": "stairs",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["maturity-staging"],
         },
         "caption": "成熟度の階段",
@@ -48,15 +69,8 @@ def _base_ir(**stairs_overrides) -> dict:
     }
 
 
-def _stages(n: int, *, current_index: int | None = None) -> list[dict]:
-    out: list[dict] = []
-    for i in range(1, n + 1):
-        stage: dict = {"id": f"s{i}", "label": f"段{i}"}
-        if current_index == i:
-            stage["current"] = True
-            stage["note"] = "ここにいる"
-        out.append(stage)
-    return out
+def _stages(n: int) -> list[dict]:
+    return [{"id": f"s{i}", "label": f"段{i}"} for i in range(1, n + 1)]
 
 
 def validate_raw(ir: dict):
@@ -70,18 +84,22 @@ def expect_violation(ir: dict, code: str = STAIRS_STRUCTURE_VIOLATION) -> None:
     unittest.TestCase().assertIn(code, codes)
 
 
-def render_fixture(name: str):
+def render_fixture(name: str) -> _FixtureRender:
     from ve_components.renderers.stairs import render_stairs
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
-    return ir, render_stairs(CanonicalSection(ir=ir), STAIRS_DEF)
+    result = render_stairs(CanonicalSection(ir=ir), STAIRS_DEF)
+    return _FixtureRender(ir, result)
 
 
 class StairsValidationTest(unittest.TestCase):
     def test_accepts_three_to_five_stages_low_to_high(self) -> None:
         for n in range(3, 6):
             with self.subTest(stages=n):
-                ir = _base_ir(stages=_stages(n, current_index=2 if n >= 2 else None))
+                ir = _base_ir(
+                    stages=_stages(n),
+                    highlightId=f"s{2 if n >= 2 else 1}",
+                )
                 result = validate_raw(ir)
                 self.assertEqual(len(result.stairs.stages), n)
                 self.assertEqual(result.stairs.stages[0].id, "s1")
@@ -95,52 +113,38 @@ class StairsValidationTest(unittest.TestCase):
         expect_violation(ir)
 
     def test_label_accepts_14_chars(self) -> None:
-        ir = _base_ir(stages=[
-            {"id": "s1", "label": "あ" * 14},
-            {"id": "s2", "label": "中", "current": True, "note": "現在地"},
-            {"id": "s3", "label": "上"},
-        ])
+        ir = _base_ir(
+            highlightId="s2",
+            stages=[
+                {"id": "s1", "label": "あ" * 14},
+                {"id": "s2", "label": "中"},
+                {"id": "s3", "label": "上"},
+            ],
+        )
         validate_raw(ir)
 
     def test_label_rejects_15_chars(self) -> None:
         ir = _base_ir(stages=[
             {"id": "s1", "label": "あ" * 15},
-            {"id": "s2", "label": "中", "current": True, "note": "現在地"},
+            {"id": "s2", "label": "中"},
             {"id": "s3", "label": "上"},
         ])
         expect_violation(ir)
 
-    def test_note_accepts_20_chars(self) -> None:
-        ir = _base_ir(stages=[
-            {"id": "s1", "label": "下"},
-            {"id": "s2", "label": "中", "current": True, "note": "あ" * 20},
-            {"id": "s3", "label": "上"},
-        ])
-        validate_raw(ir)
-
-    def test_note_rejects_21_chars(self) -> None:
-        ir = _base_ir(stages=[
-            {"id": "s1", "label": "下"},
-            {"id": "s2", "label": "中", "current": True, "note": "あ" * 21},
-            {"id": "s3", "label": "上"},
-        ])
+    def test_rejects_unknown_highlight_id(self) -> None:
+        ir = _base_ir(highlightId="missing")
         expect_violation(ir)
 
-    def test_rejects_two_current_stages(self) -> None:
-        ir = _base_ir(stages=[
-            {"id": "s1", "label": "下", "current": True, "note": "A"},
-            {"id": "s2", "label": "中", "current": True, "note": "B"},
-            {"id": "s3", "label": "上"},
-        ])
-        expect_violation(ir)
-
-    def test_current_without_note_raises_stairs_structure_violation(self) -> None:
+    def test_rejects_legacy_current_field(self) -> None:
         ir = _base_ir(stages=[
             {"id": "s1", "label": "下"},
             {"id": "s2", "label": "中", "current": True},
             {"id": "s3", "label": "上"},
         ])
-        expect_violation(ir)
+        with self.assertRaises(ContractError) as ctx:
+            validate_raw(ir)
+        codes = {d.code for d in ctx.exception.diagnostics}
+        self.assertIn(INVALID_COMPONENT_PAYLOAD, codes)
 
 
 class StairsManifestTest(unittest.TestCase):
@@ -148,7 +152,7 @@ class StairsManifestTest(unittest.TestCase):
         self.assertIsNotNone(STAIRS_DEF)
         self.assertEqual(STAIRS_DEF.relationship_kind, "staged-maturity")
         self.assertEqual(STAIRS_DEF.capabilities, ("maturity-staging",))
-        self.assertEqual(STAIRS_DEF.renderer, "stairs@1")
+        self.assertEqual(STAIRS_DEF.renderer, "stairs@2")
         self.assertEqual([a.id for a in STAIRS_DEF.assets], ["stairs.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
@@ -178,9 +182,9 @@ class StairsMarkupTest(unittest.TestCase):
         for stage in self.ir.stairs.stages:
             self.assertIn(f'data-ve-semantic-id="{stage.id}"', self.markup)
 
-    def test_current_tread_only_gets_accent_class(self) -> None:
-        current = next(s for s in self.ir.stairs.stages if s.current)
-        last = self.ir.stairs.stages[-1]
+    def test_highlight_stage_gets_state_classes(self) -> None:
+        highlight_id = self.ir.stairs.highlight_id
+        assert highlight_id is not None
         for stage in self.ir.stairs.stages:
             block = re.search(
                 rf'<li[^>]*data-ve-semantic-id="{re.escape(stage.id)}"[^>]*>.*?</li>',
@@ -188,23 +192,13 @@ class StairsMarkupTest(unittest.TestCase):
                 re.DOTALL,
             )
             self.assertIsNotNone(block)
-            if stage.id == current.id:
-                self.assertIn("ve-stairs-tread-accent", block.group(0))
+            if stage.id == highlight_id:
+                self.assertIn("ve-dg-highlight", block.group(0))
+                self.assertIn("ve-stairs-here", block.group(0))
+            elif stage.id in {s.id for s in self.ir.stairs.stages[:2]}:
+                self.assertIn("ve-stairs-done", block.group(0))
             else:
-                self.assertNotIn("ve-stairs-tread-accent", block.group(0))
-        last_block = re.search(
-            rf'<li[^>]*data-ve-semantic-id="{re.escape(last.id)}"[^>]*>.*?</li>',
-            self.markup,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(last_block)
-        self.assertNotIn("ve-stairs-tread-accent", last_block.group(0))
-
-    def test_current_note_text_rendered_visibly(self) -> None:
-        current = next(s for s in self.ir.stairs.stages if s.current)
-        self.assertIsNotNone(current.note)
-        self.assertIn(current.note, self.markup)
-        self.assertIn("ve-stairs-note", self.markup)
+                self.assertIn("ve-stairs-todo", block.group(0))
 
     def test_heights_via_count_and_index_classes(self) -> None:
         count = len(self.ir.stairs.stages)
@@ -221,6 +215,33 @@ class StairsMarkupTest(unittest.TestCase):
         self.assertNotIn("data-ve-relation", self.markup)
         self.assertNotIn("data-ve-row-id", self.markup)
         self.assertNotIn("data-ve-column-id", self.markup)
+
+
+class StairsV2Test(unittest.TestCase):
+    def test_stairs_v2_marks_current_with_highlight_and_here_label(self) -> None:
+        markup = render_fixture("component-valid-stairs").markup
+        self.assertEqual(markup.count("ve-dg-highlight"), 1)
+        self.assertIn("← 現在地", markup)
+        self.assertIn("ve-stairs-done", markup)
+        self.assertIn("ve-stairs-todo", markup)
+
+    def test_stairs_v2_without_highlight_marks_all_stages_todo(self) -> None:
+        ir = _base_ir(stages=_stages(3))
+        ir["stairs"].pop("highlightId", None)
+        validated = validate_raw(ir)
+        from ve_components.renderers.stairs import render_stairs
+        markup = render_stairs(CanonicalSection(ir=validated), STAIRS_DEF).markup
+        self.assertNotIn("ve-dg-highlight", markup)
+        self.assertNotIn("ve-stairs-done", markup)
+        self.assertEqual(markup.count("ve-stairs-todo"), 3)
+        for stage in validated.stairs.stages:
+            block = re.search(
+                rf'<li[^>]*data-ve-semantic-id="{re.escape(stage.id)}"[^>]*>.*?</li>',
+                markup,
+                re.DOTALL,
+            )
+            self.assertIsNotNone(block)
+            self.assertIn("ve-stairs-todo", block.group(0))
 
 
 if __name__ == "__main__":

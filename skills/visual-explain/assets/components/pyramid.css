@@ -1,23 +1,11 @@
-[data-ve-component="pyramid"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="pyramid"] .ve-pyramid-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="pyramid"] .ve-pyramid-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="pyramid"] .ve-pyramid-tiers { list-style: none; margin: 0; padding: 0; width: fit-content; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-tier {
-  padding: var(--space-2); margin: 0 0 var(--space-1); border-radius: var(--radius);
-  font-size: var(--fs-figure); text-align: center;
-}
-[data-ve-component="pyramid"] .ve-pyramid-face-strong { background: var(--border-strong); color: var(--bg); }
-[data-ve-component="pyramid"] .ve-pyramid-face-dim { background: var(--text-dim); color: var(--bg); }
-[data-ve-component="pyramid"] .ve-pyramid-label { display: block; font-weight: 800; }
-[data-ve-component="pyramid"] .ve-pyramid-sub { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 400; }
-[data-ve-component="pyramid"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
-[data-ve-component="pyramid"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="pyramid"] .ve-pyramid-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="pyramid"] .ve-pyramid-notes li { margin: 0; }
-[data-ve-component="pyramid"] .ve-pyramid-count-3 .ve-pyramid-index-1 { width: 40%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-3 .ve-pyramid-index-2 { width: 65%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-3 .ve-pyramid-index-3 { width: 90%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-1 { width: 30%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-2 { width: 50%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-3 { width: 70%; margin-inline: auto; }
-[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-index-4 { width: 90%; margin-inline: auto; }
+figure[data-ve-component="pyramid"] .ve-pyramid-tiers {
+  display: grid; gap: 3px; width: min(100%, 24rem);
+  margin-inline: auto; justify-items: center; list-style: none; padding: 0; }
+figure[data-ve-component="pyramid"] .ve-pyramid-tier {
+  display: grid; place-items: center; padding: var(--space-1) var(--space-2);
+  font-weight: 700; white-space: nowrap; min-width: max-content; }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-1 { width: 40%; background: var(--dg-primary); color: var(--dg-on-primary); }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-2 { width: 70%; background: var(--dg-primary-mid); color: var(--dg-on-primary); }
+figure[data-ve-component="pyramid"] .ve-pyramid-level-3 { width: 100%; background: var(--dg-primary-light); color: var(--text); }
+figure[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-level-3 { width: 85%; }
+figure[data-ve-component="pyramid"] .ve-pyramid-count-4 .ve-pyramid-level-4 { width: 100%; background: var(--dg-neutral); color: var(--text); }

@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "enumeration",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["parallel-itemization"]
         },
         "caption": "検討対象の並列項目",
@@ -32,7 +32,12 @@
         },
         "enumeration": {
           "items": [
-            {"id": "item-a", "title": "権限モデル", "description": ["役割ごとの操作範囲を見直す"]},
+            {
+              "id": "item-a",
+              "title": "福利厚生",
+              "description": ["従業員向けに無料のフィットネス利用券を配布する"],
+              "descriptionEmphasis": "無料のフィットネス利用券"
+            },
             {"id": "item-b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]},
             {"id": "item-c", "title": "通知チャネル", "description": ["通知経路を一つに統合する"]}
           ],

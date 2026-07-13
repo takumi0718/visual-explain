@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>2時点比較スロープ</title>
+  <title>visual-explain 設計原則の調査</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -191,6 +203,9 @@
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
 
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -213,22 +228,6 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="slope" data-ve-contract-version="1" data-ve-asset="slope.css" data-ve-digest="21d450d28ece001f4483e90f75c4fd4a6881737e459a94bcf35f434a7e3c08f2">[data-ve-component="slope"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="slope"] .ve-slope-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="slope"] .ve-slope-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="slope"] .ve-slope-chart { display: block; width: 100%; max-width: 37.5rem; margin: 0 auto; font-size: var(--fs-figure); }
-[data-ve-component="slope"] .ve-slope-axis { fill: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="slope"] .ve-slope-item { stroke-width: 3; fill: none; stroke: var(--text-dim); }
-[data-ve-component="slope"] .ve-slope-tone-positive { stroke: var(--positive); }
-[data-ve-component="slope"] .ve-slope-tone-warning { stroke: var(--warning); }
-[data-ve-component="slope"] .ve-slope-tone-neutral { stroke: var(--text-faint); }
-[data-ve-component="slope"] .ve-slope-value,
-[data-ve-component="slope"] .ve-slope-label { fill: var(--text); font-size: var(--fs-figure); }
-[data-ve-component="slope"] .ve-takeaway-target { stroke-width: 4; }
-[data-ve-component="slope"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="slope"] .ve-slope-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="slope"] .ve-slope-notes li { margin: 0; }
-</style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
@@ -296,15 +295,35 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-<section data-ve-section-kind="canonical" data-ve-component="slope" data-ve-contract-version="1" data-ve-instance="sec-slope" data-ve-fallback="static-content">
-<figure data-ve-component="slope"><figcaption>cap</figcaption><p>sum</p><svg id="sec-slope-svg" class="ve-slope-chart" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="l" aria-describedby="s"><title>t</title><desc>d</desc><line class="ve-slope-item" data-ve-semantic-id="x" x1="0" y1="220" x2="600" y2="0"></line><rect x="0" y="0" width="10" height="10"></rect></svg><ul class="ve-slope-notes"><li data-ve-semantic-id="cert-slope">n</li><li data-ve-semantic-id="src-slope">s</li></ul></figure>
-</section>
+    <section class="first-screen" aria-label="最初に伝えること">
+      <p class="proposal">visual-explain の設計原則に関する調査結果を報告します。</p>
+    </section>
+    <section>
+      <h2>発見 1: congruence principle</h2>
+      <p class="claim">動きは変化そのものが内容のときにだけ使い、それ以外は静的説明を優先する <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">設計原則として文書に明記。移動や状態変化を説明の核心とする場合にのみステッパーや遷移図を使用し、それ以外の説明では静的 SVG または CSS 図で描く。</p>
+    </section>
+    <section>
+      <h2>発見 2: premortem の仕組み</h2>
+      <p class="claim">premortem はリスクを列挙するのではなく、読者に仮想的な失敗の原因を生成させることで、より深い分析を促す <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">単なるリスクリストではなく、読者に「なぜこれが失敗したか」の原因を想像させる手法。これにより発見できない因果関係が浮上する。</p>
+    </section>
+    <section>
+      <h2>発見 3: skill 発見のデファクト</h2>
+      <p class="claim"><code>~/.agents/skills</code> は de facto の skill 発見規約であり、Claude Code は独自の discovery-path 例外を持つ <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">多くのランタイムが <code>~/.agents/skills</code> を標準的にスキャンするが、Claude Code は独自の発見経路を持つため、この規約への準拠は必須ではない。</p>
+    </section>
+    <section class="closing-section" aria-label="限界・反証・確度">
+      <h2>限界・反証・確度</h2>
+      <p>調査は設計文書とコードベースの参照に限定。外部の A/B テスト結果や運用データの分析は行っていない。各発見は文書レベルで確認済み。反証として、文書参照だけでは実運用での効果量は測定できない <span class="certainty unverified">未確認</span>。</p>
+    </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
-  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN --><!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

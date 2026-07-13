@@ -66,14 +66,36 @@ PAIRS = [
     ("border-strong", "bg", 3.0, "表見出し罫線(非文字)"),
     ("focus", "bg", 3.0, "フォーカスリング(非文字)"),
     ("text-dim", "surface", 3.0, "確度バッジ枠線(非文字)"),
+    ("dg-on-primary", "dg-primary", 4.5, "図表プライマリ上の文字"),
+    ("text", "dg-primary-light", 4.5, "図表ライト面の本文"),
+    ("dg-negative", "#ffffff", 4.5, "図表ネガティブ/白背景"),
 ]
 
 
 def _resolve_bg(tokens, bg):
+    if isinstance(bg, str) and bg.startswith("#"):
+        return bg
     if isinstance(bg, tuple):
         _, fg_token, base_token, percent = bg
         return mix(tokens[fg_token], tokens[base_token], percent)
     return tokens[bg]
+
+
+DG_TOKENS = [
+    "--dg-primary:", "--dg-primary-mid:", "--dg-primary-light:",
+    "--dg-highlight:", "--dg-negative:", "--dg-neutral:",
+    "--dg-line:", "--dg-emphasis:", "--dg-on-primary:", "--radius:",
+]
+
+
+class DiagramTokenTest(unittest.TestCase):
+    def test_skeleton_defines_diagram_tokens_in_all_theme_blocks(self):
+        for token in DG_TOKENS:
+            self.assertGreaterEqual(SKELETON.count(token), 3, f"{token} は light / @media dark / [data-theme=dark] に必要")
+
+    def test_skeleton_defines_dg_em_rule(self):
+        self.assertIn(".dg-em", SKELETON)
+        self.assertIn("var(--dg-emphasis)", SKELETON)
 
 
 class ContrastAuditTest(unittest.TestCase):

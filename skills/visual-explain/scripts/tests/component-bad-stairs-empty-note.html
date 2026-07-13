@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -191,6 +203,9 @@
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
 
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -213,37 +228,40 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="stairs" data-ve-contract-version="1" data-ve-asset="stairs.css" data-ve-digest="8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe">[data-ve-component="stairs"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="stairs"] .ve-stairs-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="stairs"] .ve-stairs-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="stairs"] .ve-stairs-stages { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-end; gap: var(--space-1); }
-[data-ve-component="stairs"] .ve-stairs-stage {
+  <style data-ve-component="stairs" data-ve-contract-version="2" data-ve-asset="stairs.css" data-ve-digest="c490a27d4fda79c63cfbb0a1595ece6589715d65947a788737482c464adfacc6">figure[data-ve-component="stairs"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="stairs"] .ve-stairs-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="stairs"] .ve-stairs-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="stairs"] .ve-stairs-stages {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; align-items: flex-end; gap: 3px; }
+figure[data-ve-component="stairs"] .ve-stairs-stage {
   flex: 1 1 0; min-width: 0; padding: var(--space-2);
-  background: var(--text-dim); color: var(--bg); border-radius: var(--radius);
-  font-size: var(--fs-figure); text-align: center;
-}
-[data-ve-component="stairs"] .ve-stairs-tread-accent { background: var(--accent); color: var(--bg); }
-[data-ve-component="stairs"] .ve-stairs-label { display: block; font-weight: 800; }
-[data-ve-component="stairs"] .ve-stairs-note { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="stairs"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
-[data-ve-component="stairs"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="stairs"] .ve-stairs-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="stairs"] .ve-stairs-notes li { margin: 0; }
-[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-1 { min-height: 3rem; }
-[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-2 { min-height: 4.5rem; }
-[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-3 { min-height: 6rem; }
-[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-1 { min-height: 2.5rem; }
-[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-2 { min-height: 4rem; }
-[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-3 { min-height: 5.5rem; }
-[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-4 { min-height: 7rem; }
-[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-1 { min-height: 2rem; }
-[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-2 { min-height: 3.25rem; }
-[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-3 { min-height: 4.5rem; }
-[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-4 { min-height: 5.75rem; }
-[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-5 { min-height: 7rem; }
+  display: grid; place-items: center;
+  font-size: var(--fs-figure); text-align: center; }
+figure[data-ve-component="stairs"] .ve-stairs-done { background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-stage.ve-dg-highlight { background: var(--dg-highlight); color: var(--dg-on-primary); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-todo { background: var(--dg-neutral); color: var(--text); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-label { display: block; font-weight: 800; }
+figure[data-ve-component="stairs"] .ve-stairs-here { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="stairs"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="stairs"] .ve-stairs-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="stairs"] .ve-stairs-notes li { margin: 0; }
+figure[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-1 { min-height: 3rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-2 { min-height: 5.8rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-3 .ve-stairs-index-3 { min-height: 8.6rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-1 { min-height: 3rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-2 { min-height: 4.87rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-3 { min-height: 6.73rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-4 .ve-stairs-index-4 { min-height: 8.6rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-1 { min-height: 3rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-2 { min-height: 4.4rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-3 { min-height: 5.8rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-4 { min-height: 7.2rem; }
+figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-5 { min-height: 8.6rem; }
 @media (max-width: 40rem) {
-  [data-ve-component="stairs"] .ve-stairs-stages { flex-direction: column; align-items: stretch; }
-  [data-ve-component="stairs"] .ve-stairs-stage { min-height: auto !important; }
+  figure[data-ve-component="stairs"] .ve-stairs-stages { flex-direction: column; align-items: stretch; }
+  figure[data-ve-component="stairs"] .ve-stairs-stage { min-height: auto !important; }
 }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
@@ -313,8 +331,8 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section data-ve-section-kind="canonical" data-ve-component="stairs" data-ve-contract-version="1" data-ve-instance="sec-stairs" data-ve-fallback="static-content">
-<figure data-ve-component="stairs" role="group" aria-label="成熟度階段" aria-describedby="sec-stairs-summary"><figcaption id="sec-stairs-caption" class="ve-stairs-caption">成熟度の5段階</figcaption><p id="sec-stairs-summary" class="ve-stairs-summary">低い段から高い段へ5段の成熟度を示す。</p><ol class="ve-stairs-stages ve-stairs-count-5"><li class="ve-stairs-stage ve-stairs-index-1" data-ve-semantic-id="stage-1"><span class="ve-stairs-label">未整備</span></li><li class="ve-stairs-stage ve-stairs-index-2" data-ve-semantic-id="stage-2"><span class="ve-stairs-label">部分導入</span></li><li class="ve-stairs-stage ve-stairs-index-3 ve-stairs-tread-accent" data-ve-semantic-id="stage-3"><span class="ve-stairs-label">標準化</span><span class="ve-stairs-note"></span></li><li class="ve-stairs-stage ve-stairs-index-4" data-ve-semantic-id="stage-4"><span class="ve-stairs-label">最適化</span></li><li class="ve-stairs-stage ve-stairs-index-5" data-ve-semantic-id="stage-5"><span class="ve-stairs-label">自律運用</span></li></ol><ul class="ve-stairs-notes"><li data-ve-semantic-id="cert-stairs"><strong>確定:</strong> 5段は成熟度モデルに準拠。</li><li data-ve-semantic-id="src-model"><strong>出典 成熟度モデル v1</strong>（段階定義。）</li></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="stairs" data-ve-contract-version="2" data-ve-instance="sec-stairs" data-ve-fallback="static-content">
+<figure data-ve-component="stairs" role="group" aria-label="成熟度階段" aria-describedby="sec-stairs-summary"><figcaption id="sec-stairs-caption" class="ve-stairs-caption">成熟度の5段階</figcaption><p id="sec-stairs-summary" class="ve-stairs-summary">低い段から高い段へ5段の成熟度を示す。</p><ol class="ve-stairs-stages ve-stairs-count-5"><li class="ve-stairs-stage ve-stairs-index-1 ve-stairs-done" data-ve-semantic-id="stage-1"><span class="ve-stairs-label">未整備</span></li><li class="ve-stairs-stage ve-stairs-index-2 ve-stairs-done" data-ve-semantic-id="stage-2"><span class="ve-stairs-label">部分導入</span></li><li class="ve-stairs-stage ve-stairs-index-3 ve-dg-highlight" data-ve-semantic-id="stage-3"><span class="ve-stairs-label">標準化</span><span class="ve-stairs-here"></span></li><li class="ve-stairs-stage ve-stairs-index-4 ve-stairs-todo" data-ve-semantic-id="stage-4"><span class="ve-stairs-label">最適化</span></li><li class="ve-stairs-stage ve-stairs-index-5 ve-stairs-todo" data-ve-semantic-id="stage-5"><span class="ve-stairs-label">自律運用</span></li></ol><ul class="ve-stairs-notes"><li data-ve-semantic-id="cert-stairs"><strong>確認済み:</strong> 5段は成熟度モデルに準拠。</li><li data-ve-semantic-id="src-model"><strong>出典 成熟度モデル v1</strong>（段階定義。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

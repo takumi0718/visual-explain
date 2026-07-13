@@ -10,11 +10,34 @@ import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
 
 def _esc(value: str) -> str:
     return html.escape(str(value))
+
+
+def _desc_html(text: str, emphasis: str | None) -> str:
+    escaped = _esc(text)
+    if emphasis:
+        needle = _esc(emphasis)
+        escaped = escaped.replace(needle, f'<strong class="dg-em">{needle}</strong>', 1)
+    return escaped
+
+
+def _description_html(lines: tuple[str, ...], emphasis: str | None) -> str:
+    emphasis_used = False
+    parts: list[str] = []
+    for line in lines:
+        line_emphasis: str | None = None
+        if emphasis and not emphasis_used and emphasis in line:
+            line_emphasis = emphasis
+            emphasis_used = True
+        parts.append(
+            f'<p class="ve-enum-description ve-enum-desc">'
+            f'{_desc_html(line, line_emphasis)}</p>'
+        )
+    return "".join(parts)
 
 
 def render_enumeration(section: CanonicalSection, definition) -> RenderResult:
@@ -29,7 +52,7 @@ def render_enumeration(section: CanonicalSection, definition) -> RenderResult:
 
     blocks: list[str] = []
     for index, item in enumerate(enumeration.items, start=1):
-        concept_classes = ["ve-enum-concept"]
+        concept_classes = ["ve-enum-concept", "ve-enum-box"]
         if item.id in takeaway:
             concept_classes.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if item.id in takeaway else ""
@@ -46,19 +69,21 @@ def render_enumeration(section: CanonicalSection, definition) -> RenderResult:
         concept_html = f'<div class="{" ".join(concept_classes)}">{heading}</div>'
         description_html = ""
         if item.description:
-            lines = "".join(f"<li>{_esc(line)}</li>" for line in item.description)
-            description_html = f'<ul class="ve-enum-description">{lines}</ul>'
+            description_html = _description_html(
+                item.description,
+                item.description_emphasis,
+            )
         blocks.append(
             f'<li class="ve-enum-block" data-ve-semantic-id="{_esc(item.id)}"{takeaway_attr}>'
             f'{concept_html}{description_html}{emphasis_html}</li>'
         )
 
-    layout_classes = [
-        "ve-enum-columns" if enumeration.presentation == "columns" else "ve-enum-list-centered"
-    ]
+    layout_classes = ["ve-enum-items"]
+    if enumeration.presentation == "columns":
+        layout_classes.append("ve-enum-columns")
     if enumeration.items and enumeration.items[0].description:
         layout_classes.append("ve-enum-has-description")
-    list_markup = f'<ul class="ve-enum-items {" ".join(layout_classes)}">{"".join(blocks)}</ul>'
+    list_markup = f'<ul class="{" ".join(layout_classes)}">{"".join(blocks)}</ul>'
 
     notes = []
     for cert in ir.certainty:

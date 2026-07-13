@@ -15,6 +15,7 @@ from .diagnostics import (
     CHEVRON_STRUCTURE_VIOLATION,
     DUPLICATE_SEMANTIC_ID,
     ENUMERATION_STRUCTURE_VIOLATION,
+    ENUMERATION_EMPHASIS_NOT_FOUND,
     FORBIDDEN_AUTHORING_FIELD,
     INVALID_COMPATIBILITY_PROVENANCE,
     INVALID_COMPONENT_PAYLOAD,
@@ -22,18 +23,22 @@ from .diagnostics import (
     INVALID_MATRIX_REFERENCE,
     INVALID_RELATIONSHIP_DECLARATION,
     LOGIC_TREE_STRUCTURE_VIOLATION,
+    MATRIX_CONCEPT_LENGTH,
     MISSING_REQUIRED_SLOT,
     PYRAMID_STRUCTURE_VIOLATION,
+    QUANTITATIVE_UNIT_REQUIRED,
     SLOPE_STRUCTURE_VIOLATION,
     EVIDENCE_MAP_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,
     WATERFALL_ARITHMETIC_MISMATCH,
     WATERFALL_STRUCTURE_VIOLATION,
+    BARS_ITEM_LIMIT,
+    KPI_ITEM_LIMIT,
     ContractError,
     DiagnosticCollector,
 )
 from .flow_layout import assign_rails, check_row_budget, check_topology, edge_spans, order_index
-from .numeric import is_numeric, to_decimal, waterfall_scale_values
+from .numeric import is_numeric, to_decimal, waterfall_axis_max, waterfall_scale_values
 from .model import (
     AccessibilityInfo,
     AssemblyRequest,
@@ -64,6 +69,10 @@ from .model import (
     SlopeAxes,
     SlopeItem,
     SlopePayload,
+    BarsItem,
+    BarsPayload,
+    KpiItem,
+    KpiPayload,
     MatrixCell,
     MatrixPayload,
     PyramidPayload,
@@ -111,7 +120,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
     "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
-    "slope", "evidence-map",
+    "slope", "bars", "kpi", "evidence-map",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -121,20 +130,20 @@ _SOURCE_KEYS = {"id", "label", "detail"}
 _ACCESSIBILITY_KEYS = {"label", "summary"}
 _AXIS_KEYS = {"id", "label"}
 _CELL_KEYS = {"id", "rowId", "columnId", "content", "certaintyRef", "sourceRef"}
-_MATRIX_KEYS = {"rows", "columns", "cells"}
+_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId", "presentation"}
 _FLOW_KEYS = {"nodes", "edges", "groups", "startId", "readingOrder"}
 _NODE_KEYS = {"id", "label", "group"}
 _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
 _GROUP_KEYS = {"id", "label"}
 _ENUMERATION_KEYS = {"items", "presentation", "blockContent"}
-_ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description"}
+_ENUMERATION_ITEM_KEYS = {"id", "label", "title", "description", "descriptionEmphasis"}
 _CHEVRON_KEYS = {"steps", "orientation", "blockContent", "loop"}
-_CHEVRON_STEP_KEYS = {"id", "label", "title", "description"}
+_CHEVRON_STEP_KEYS = {"id", "label", "title", "description", "descriptionEmphasis"}
 _PYRAMID_KEYS = {"tiers"}
 _PYRAMID_TIER_KEYS = {"id", "label", "sub"}
-_STAIRS_KEYS = {"stages"}
-_STAIRS_STAGE_KEYS = {"id", "label", "note", "current"}
-_WATERFALL_KEYS = {"displayPrecision", "orientation", "start", "steps", "end"}
+_STAIRS_KEYS = {"stages", "highlightId"}
+_STAIRS_STAGE_KEYS = {"id", "label"}
+_WATERFALL_KEYS = {"displayPrecision", "start", "steps", "end", "title", "unitLabel", "axisTicks"}
 _WATERFALL_ENDPOINT_KEYS = {"id", "label", "value", "valueText"}
 _WATERFALL_STEP_KEYS = {"id", "label", "delta", "valueText", "tone"}
 _WATERFALL_TONES = frozenset({"positive", "warning", "neutral"})
@@ -142,9 +151,13 @@ _LOGIC_TREE_KEYS = {"root", "branches"}
 _LOGIC_TREE_ROOT_KEYS = {"id", "label"}
 _LOGIC_TREE_BRANCH_KEYS = {"id", "label", "leaves"}
 _LOGIC_TREE_LEAF_KEYS = {"id", "text"}
-_SLOPE_KEYS = {"axes", "unit", "items"}
+_SLOPE_KEYS = {"axes", "items", "title", "unitLabel", "highlightId"}
 _SLOPE_AXES_KEYS = {"fromLabel", "toLabel"}
 _SLOPE_ITEM_KEYS = {"id", "label", "fromValue", "toValue", "fromValueText", "toValueText", "tone"}
+_BARS_KEYS = {"title", "unitLabel", "items", "highlightId"}
+_BARS_ITEM_KEYS = {"id", "label", "value", "valueText"}
+_KPI_KEYS = {"items"}
+_KPI_ITEM_KEYS = {"id", "value", "unit", "caption"}
 _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
 _EVIDENCE_CONCLUSION_KEYS = {"id", "label"}
 _EVIDENCE_ITEM_KEYS = {"id", "label", "certaintyRef", "sourceRef"}
@@ -198,6 +211,8 @@ _ANNOTATION_TARGET_LABELS = {
     "waterfall": "開始/段/終了",
     "logic-tree": "枝/葉",
     "slope": "項目",
+    "bars": "項目",
+    "kpi": "項目",
     "evidence-map": "結論/根拠",
 }
 
@@ -258,6 +273,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     waterfall = None
     logic_tree = None
     slope = None
+    bars = None
+    kpi = None
     evidence_map = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
@@ -299,6 +316,10 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
                 logic_tree = validated_payload
             elif payload_kind == "slope":
                 slope = validated_payload
+            elif payload_kind == "bars":
+                bars = validated_payload
+            elif payload_kind == "kpi":
+                kpi = validated_payload
 
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
         raw, path, col, caption, payload_kind, validated_payload
@@ -338,6 +359,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         waterfall=waterfall,
         logic_tree=logic_tree,
         slope=slope,
+        bars=bars,
+        kpi=kpi,
         evidence_map=evidence_map,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
@@ -573,7 +596,32 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
             id=cid, row_id=rid, column_id=colid, content=item.get("content"),
             certainty_ref=item.get("certaintyRef"), source_ref=item.get("sourceRef"),
         ))
-    return MatrixPayload(rows=rows, columns=columns, cells=tuple(cells))
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(INVALID_COMPONENT_PAYLOAD, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {c.id for c in cells}:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"highlightId '{highlight_id}' が cells に存在しません", path)
+    presentation = raw.get("presentation", "dense")
+    if presentation not in ("concept", "dense"):
+        col.add(INVALID_COMPONENT_PAYLOAD, f"presentation '{presentation}' は concept か dense のみ有効です", path)
+        presentation = "dense"
+    if presentation == "concept":
+        ncol = len(columns)
+        if ncol < 2 or ncol > 4:
+            col.add(INVALID_COMPONENT_PAYLOAD, f"concept では columns は2〜4件である必要があります (found {ncol})", path)
+        for i, cell in enumerate(cells):
+            if len(cell.content) >= 7:
+                col.add(
+                    MATRIX_CONCEPT_LENGTH,
+                    f"concept セルの content は6文字以下である必要があります (found {len(cell.content)})",
+                    f"{path}.cells[{i}].content",
+                )
+    return MatrixPayload(
+        rows=rows, columns=columns, cells=tuple(cells),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+        presentation=presentation,
+    )
 
 
 def _validate_axis(raw: object, path: str, col: DiagnosticCollector) -> tuple[AxisEntry, ...]:
@@ -636,6 +684,7 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
         label = item.get("label")
         title = item.get("title")
         desc_raw = item.get("description")
+        desc_emphasis = item.get("descriptionEmphasis")
         desc_lines: list[str] = []
         if desc_raw is not None:
             if not isinstance(desc_raw, list) or not desc_raw:
@@ -668,11 +717,21 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
                 col.add(ENUMERATION_STRUCTURE_VIOLATION, "blockContent:number では title が必須です", p)
             elif len(str(title)) > 30:
                 col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は30字以内です", p)
+        if desc_emphasis is not None and not _nonblank_str(desc_emphasis):
+            col.add(ENUMERATION_STRUCTURE_VIOLATION, "descriptionEmphasis は空にできません", p)
+        elif isinstance(desc_emphasis, str) and desc_lines:
+            if not any(desc_emphasis in line for line in desc_lines):
+                col.add(
+                    ENUMERATION_EMPHASIS_NOT_FOUND,
+                    "descriptionEmphasis は description の部分文字列である必要があります",
+                    p,
+                )
 
         items.append(EnumerationItem(
             id=iid, label=label if isinstance(label, str) else None,
             title=title if isinstance(title, str) else None,
             description=tuple(desc_lines),
+            description_emphasis=desc_emphasis if isinstance(desc_emphasis, str) else None,
         ))
 
     if has_description and not all(has_description) and any(has_description):
@@ -742,6 +801,7 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
         label = item.get("label")
         title = item.get("title")
         desc_raw = item.get("description")
+        desc_emphasis = item.get("descriptionEmphasis")
         desc_lines: list[str] = []
         if desc_raw is not None:
             if not isinstance(desc_raw, list) or not desc_raw:
@@ -774,11 +834,14 @@ def _validate_chevron(raw: object, path: str, col: DiagnosticCollector,
                 col.add(CHEVRON_STRUCTURE_VIOLATION, "blockContent:number では title が必須です", p)
             elif len(str(title)) > 30:
                 col.add(CHEVRON_STRUCTURE_VIOLATION, "title は30字以内です", p)
+        if desc_emphasis is not None and not _nonblank_str(desc_emphasis):
+            col.add(CHEVRON_STRUCTURE_VIOLATION, "descriptionEmphasis は空にできません", p)
 
         steps.append(ChevronStep(
             id=sid, label=label if isinstance(label, str) else None,
             title=title if isinstance(title, str) else None,
             description=tuple(desc_lines),
+            description_emphasis=desc_emphasis if isinstance(desc_emphasis, str) else None,
         ))
 
     if has_description and not all(has_description) and any(has_description):
@@ -850,7 +913,6 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
                 f"stages は3〜5件である必要があります (found {count})", path)
 
     stages: list[StairsStage] = []
-    current_count = 0
     for i, item in enumerate(stages_raw):
         p = f"{path}.stages[{i}]"
         if not isinstance(item, dict):
@@ -865,33 +927,23 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
             col.add(STAIRS_STRUCTURE_VIOLATION, "stage.label は空にできません", p)
         elif len(str(label)) > 14:
             col.add(STAIRS_STRUCTURE_VIOLATION, "label は14字以内です", p)
-        note = item.get("note", "")
-        current = item.get("current", False)
-        if not isinstance(current, bool):
-            col.add(INVALID_COMPONENT_PAYLOAD, "current は真偽値である必要があります", p)
-            current = False
-        if current:
-            current_count += 1
-            if not _nonblank_str(note):
-                col.add(STAIRS_STRUCTURE_VIOLATION,
-                        "current:true の stage には note が必須です", p)
-        if note is not None and note != "":
-            if not isinstance(note, str) or not note.strip():
-                col.add(STAIRS_STRUCTURE_VIOLATION, "note は空にできません", p)
-            elif len(note) > 20:
-                col.add(STAIRS_STRUCTURE_VIOLATION, "note は20字以内です", p)
         stages.append(StairsStage(
             id=sid, label=label if isinstance(label, str) else "",
-            note=note if isinstance(note, str) else "",
-            current=current,
         ))
 
-    if current_count > 1:
-        col.add(STAIRS_STRUCTURE_VIOLATION, "current:true は最大1件です", path)
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(STAIRS_STRUCTURE_VIOLATION, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {s.id for s in stages}:
+        col.add(STAIRS_STRUCTURE_VIOLATION, f"highlightId '{highlight_id}' が stages に存在しません", path)
 
     if col:
         return None
-    return StairsPayload(stages=tuple(stages))
+    return StairsPayload(
+        stages=tuple(stages),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+    )
 
 
 def _parse_numeric_field(raw: object, path: str, col: DiagnosticCollector) -> int | Decimal | None:
@@ -946,10 +998,34 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         if to_decimal(display_precision) <= Decimal(0):
             col.add(WATERFALL_STRUCTURE_VIOLATION, "displayPrecision は正である必要があります", path)
 
-    orientation = raw.get("orientation", "bars")
-    if orientation not in ("bars", "columns"):
-        col.add(WATERFALL_STRUCTURE_VIOLATION, f"未知の orientation '{orientation}'", path)
-        orientation = "bars"
+    title = raw.get("title")
+    if not _nonblank_str(title):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "title は必須です", path)
+
+    unit_label = raw.get("unitLabel")
+    if not _nonblank_str(unit_label):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
+    elif len(str(unit_label)) > 8:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "unitLabel は8字以内です", path)
+
+    axis_ticks_raw = raw.get("axisTicks")
+    axis_ticks: list[str] = []
+    if not isinstance(axis_ticks_raw, list) or not axis_ticks_raw:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "axisTicks は非空の配列である必要があります", path)
+    else:
+        for i, tick in enumerate(axis_ticks_raw):
+            tp = f"{path}.axisTicks[{i}]"
+            if not isinstance(tick, str) or not tick.strip():
+                col.add(WATERFALL_STRUCTURE_VIOLATION, "axisTicks の各要素は非空文字列である必要があります", tp)
+                continue
+            try:
+                tick_val = to_decimal(tick.strip())
+            except Exception:
+                col.add(WATERFALL_STRUCTURE_VIOLATION, f"axisTicks '{tick}' は数値である必要があります", tp)
+                continue
+            if tick_val < Decimal(0):
+                col.add(WATERFALL_STRUCTURE_VIOLATION, f"axisTicks '{tick}' は 0 以上である必要があります", tp)
+            axis_ticks.append(tick.strip())
 
     start = _validate_waterfall_endpoint(raw.get("start"), f"{path}.start", col)
     end = _validate_waterfall_endpoint(raw.get("end"), f"{path}.end", col)
@@ -960,13 +1036,9 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         return None
 
     step_count = len(steps_raw)
-    if orientation == "bars":
-        if step_count < 1 or step_count > 4:
-            col.add(WATERFALL_STRUCTURE_VIOLATION,
-                    f"bars の steps は1〜4件である必要があります (found {step_count})", path)
-    elif step_count < 1 or step_count > 7:
+    if step_count < 1 or step_count > 5:
         col.add(WATERFALL_STRUCTURE_VIOLATION,
-                f"columns の steps は1〜7件である必要があります (found {step_count})", path)
+                f"steps は1〜5件である必要があります (found {step_count})", path)
 
     steps: list[WaterfallStep] = []
     for i, item in enumerate(steps_raw):
@@ -1005,20 +1077,35 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         col.add(WATERFALL_STRUCTURE_VIOLATION, "displayPrecision は必須です", path)
         return None
 
+    if not _nonblank_str(title) or not _nonblank_str(unit_label) or not axis_ticks:
+        if col:
+            return None
+        return None
+
     if col:
         return None
 
     payload = WaterfallPayload(
         display_precision=display_precision,
-        orientation=orientation,
         start=start,
         steps=tuple(steps),
         end=end,
+        title=str(title),
+        unit_label=str(unit_label),
+        axis_ticks=tuple(axis_ticks),
     )
-    _, lo, hi = waterfall_scale_values(payload)
+    scale_values, lo, hi = waterfall_scale_values(payload)
     if lo == hi:
         col.add(WATERFALL_STRUCTURE_VIOLATION, "range が 0 のため描画できません", path)
         return None
+
+    chart_v_max = waterfall_axis_max(scale_values)
+    for i, tick in enumerate(axis_ticks):
+        tick_val = to_decimal(tick)
+        if tick_val < Decimal(0) or tick_val > chart_v_max:
+            col.add(WATERFALL_STRUCTURE_VIOLATION,
+                    f"axisTicks[{i}] '{tick}' は 0..{chart_v_max} の範囲である必要があります",
+                    f"{path}.axisTicks[{i}]")
 
     total = to_decimal(start.value)
     for step in steps:
@@ -1159,11 +1246,15 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
     elif len(str(to_label)) > 8:
         col.add(SLOPE_STRUCTURE_VIOLATION, "axes.toLabel は8字以内です", axes_path)
 
-    unit = raw.get("unit")
-    if not _nonblank_str(unit):
-        col.add(SLOPE_STRUCTURE_VIOLATION, "unit は必須で空にできません", path)
-    elif len(str(unit)) > 8:
-        col.add(SLOPE_STRUCTURE_VIOLATION, "unit は8字以内です", path)
+    title = raw.get("title")
+    if not _nonblank_str(title):
+        col.add(SLOPE_STRUCTURE_VIOLATION, "title は必須です", path)
+
+    unit_label = raw.get("unitLabel")
+    if not _nonblank_str(unit_label):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
+    elif len(str(unit_label)) > 8:
+        col.add(SLOPE_STRUCTURE_VIOLATION, "unitLabel は8字以内です", path)
 
     items_raw = raw.get("items")
     if not isinstance(items_raw, list):
@@ -1216,16 +1307,167 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
             tone=tone if isinstance(tone, str) else "neutral",
         ))
 
-    if col or not _nonblank_str(from_label) or not _nonblank_str(to_label) or not _nonblank_str(unit):
+    if col or not _nonblank_str(from_label) or not _nonblank_str(to_label):
+        return None
+    if not _nonblank_str(title) or not _nonblank_str(unit_label):
+        return None
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(SLOPE_STRUCTURE_VIOLATION, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {item.id for item in items}:
+        col.add(SLOPE_STRUCTURE_VIOLATION, f"highlightId '{highlight_id}' が items に存在しません", path)
+    if col:
         return None
     return SlopePayload(
         axes=SlopeAxes(
             from_label=str(from_label),
             to_label=str(to_label),
         ),
-        unit=str(unit),
         items=tuple(items),
+        title=str(title),
+        unit_label=str(unit_label),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
     )
+
+
+def _parse_bars_numeric(raw: object, path: str, col: DiagnosticCollector) -> int | Decimal | None:
+    if isinstance(raw, bool):
+        col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドに bool は許可されません", path)
+        return None
+    if isinstance(raw, float):
+        col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドに float は許可されません", path)
+        return None
+    if is_numeric(raw):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            return Decimal(raw.strip())
+        except Exception:
+            col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
+            return None
+    col.add(INVALID_COMPONENT_PAYLOAD, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
+    return None
+
+
+def _validate_bars(raw: object, path: str, col: DiagnosticCollector) -> BarsPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "bars はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _BARS_KEYS, path, col, payload_code=INVALID_COMPONENT_PAYLOAD)
+
+    title = raw.get("title")
+    if not _nonblank_str(title):
+        col.add(INVALID_COMPONENT_PAYLOAD, "title は必須です", path)
+
+    unit_label = raw.get("unitLabel")
+    if not _nonblank_str(unit_label):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
+    elif len(str(unit_label)) > 8:
+        col.add(INVALID_COMPONENT_PAYLOAD, "unitLabel は8字以内です", path)
+
+    items_raw = raw.get("items")
+    if not isinstance(items_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "items は配列である必要があります", path)
+        return None
+    item_count = len(items_raw)
+    if item_count < 1 or item_count > 10:
+        col.add(BARS_ITEM_LIMIT, f"items は1〜10件である必要があります (found {item_count})", path)
+
+    items: list[BarsItem] = []
+    for i, item in enumerate(items_raw):
+        p = f"{path}.items[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _BARS_ITEM_KEYS, p, col, payload_code=INVALID_COMPONENT_PAYLOAD)
+        iid = item.get("id")
+        if not _nonblank_str(iid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.id は空にできません", p)
+        label = item.get("label")
+        if not _nonblank_str(label):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.label は空にできません", p)
+        value = _parse_bars_numeric(item.get("value"), f"{p}.value", col)
+        value_text = item.get("valueText")
+        if not _nonblank_str(value_text):
+            col.add(INVALID_COMPONENT_PAYLOAD, "valueText は空にできません", p)
+        if value is None or not _nonblank_str(iid):
+            continue
+        items.append(BarsItem(
+            id=iid,
+            label=label if isinstance(label, str) else "",
+            value=value,
+            value_text=value_text if isinstance(value_text, str) else "",
+        ))
+
+    if col:
+        return None
+    if not _nonblank_str(title) or not _nonblank_str(unit_label):
+        return None
+
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(INVALID_COMPONENT_PAYLOAD, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {item.id for item in items}:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"highlightId '{highlight_id}' が items に存在しません", path)
+    if col:
+        return None
+    return BarsPayload(
+        title=str(title),
+        unit_label=str(unit_label),
+        items=tuple(items),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+    )
+
+
+def _validate_kpi(raw: object, path: str, col: DiagnosticCollector) -> KpiPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "kpi はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _KPI_KEYS, path, col, payload_code=INVALID_COMPONENT_PAYLOAD)
+
+    items_raw = raw.get("items")
+    if not isinstance(items_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "items は配列である必要があります", path)
+        return None
+    item_count = len(items_raw)
+    if item_count < 1 or item_count > 5:
+        col.add(KPI_ITEM_LIMIT, f"items は1〜5件である必要があります (found {item_count})", path)
+
+    items: list[KpiItem] = []
+    for i, item in enumerate(items_raw):
+        p = f"{path}.items[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _KPI_ITEM_KEYS, p, col, payload_code=INVALID_COMPONENT_PAYLOAD)
+        iid = item.get("id")
+        if not _nonblank_str(iid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.id は空にできません", p)
+        value = item.get("value")
+        if not _nonblank_str(value):
+            col.add(INVALID_COMPONENT_PAYLOAD, "value は空にできません", p)
+        unit = item.get("unit")
+        if not _nonblank_str(unit):
+            col.add(INVALID_COMPONENT_PAYLOAD, "unit は空にできません", p)
+        elif len(str(unit)) > 8:
+            col.add(INVALID_COMPONENT_PAYLOAD, "unit は8字以内です", p)
+        caption = item.get("caption")
+        if not _nonblank_str(caption):
+            col.add(INVALID_COMPONENT_PAYLOAD, "caption は空にできません", p)
+        if not _nonblank_str(iid):
+            continue
+        items.append(KpiItem(
+            id=iid,
+            value=value if isinstance(value, str) else "",
+            unit=unit if isinstance(unit, str) else "",
+            caption=caption if isinstance(caption, str) else "",
+        ))
+
+    if col:
+        return None
+    return KpiPayload(items=tuple(items))
 
 
 def _validate_evidence_map(
@@ -1575,6 +1817,12 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     slope = raw.get("slope")
     if isinstance(slope, dict):
         collect(slope.get("items"))
+    bars = raw.get("bars")
+    if isinstance(bars, dict):
+        collect(bars.get("items"))
+    kpi = raw.get("kpi")
+    if isinstance(kpi, dict):
+        collect(kpi.get("items"))
     evidence_map = raw.get("evidence-map")
     if isinstance(evidence_map, dict):
         conclusion = evidence_map.get("conclusion")
@@ -1602,6 +1850,8 @@ _PAYLOAD_VALIDATORS = {
     "waterfall": _validate_waterfall,
     "logic-tree": _validate_logic_tree,
     "slope": _validate_slope,
+    "bars": _validate_bars,
+    "kpi": _validate_kpi,
 }
 
 
@@ -1651,6 +1901,14 @@ def _annotation_targets_slope(payload: SlopePayload | None) -> set[str]:
     return {item.id for item in payload.items} if payload is not None else set()
 
 
+def _annotation_targets_bars(payload: BarsPayload | None) -> set[str]:
+    return {item.id for item in payload.items} if payload is not None else set()
+
+
+def _annotation_targets_kpi(payload: KpiPayload | None) -> set[str]:
+    return {item.id for item in payload.items} if payload is not None else set()
+
+
 def _annotation_targets_evidence_map(payload: EvidenceMapPayload | None) -> set[str]:
     if payload is None:
         return set()
@@ -1667,6 +1925,8 @@ ANNOTATION_TARGETS = {
     "waterfall": _annotation_targets_waterfall,
     "logic-tree": _annotation_targets_logic_tree,
     "slope": _annotation_targets_slope,
+    "bars": _annotation_targets_bars,
+    "kpi": _annotation_targets_kpi,
     "evidence-map": _annotation_targets_evidence_map,
 }
 

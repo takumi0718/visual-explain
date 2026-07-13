@@ -1,6 +1,7 @@
 """Static, accessible renderer for the semantic ``evidence-map`` component.
 
-Claim-support mapping with certainty-derived link styles and monochrome badges.
+Claim-support mapping with spine-connected evidence cards and certainty-derived
+branch line styles.
 """
 from __future__ import annotations
 
@@ -8,8 +9,12 @@ import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
-_LINK_CLASS = {"confirmed": "ve-em-link-confirmed", "inferred": "ve-em-link-inferred", "unverified": "ve-em-link-unverified"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
+_BRANCH_CLASS = {
+    "confirmed": "ve-em-solid",
+    "inferred": "ve-em-dashed",
+    "unverified": "ve-em-dotted",
+}
 
 
 def _esc(value: str) -> str:
@@ -35,7 +40,7 @@ def render_evidence_map(section: CanonicalSection, definition) -> RenderResult:
         if conclusion.id in emphasis_by_id else ""
     )
     conclusion_html = (
-        f'<div class="ve-em-conclusion ve-em-border-strong{takeaway_cls}"'
+        f'<div class="ve-em-conclusion{takeaway_cls}"'
         f' data-ve-semantic-id="{_esc(conclusion.id)}"{takeaway_attr}>'
         f'<span class="ve-em-conclusion-label">{_esc(conclusion.label)}</span>'
         f'{conclusion_emphasis}</div>'
@@ -44,7 +49,7 @@ def render_evidence_map(section: CanonicalSection, definition) -> RenderResult:
     evidence_blocks: list[str] = []
     for item in em.evidence:
         cert = cert_by_id[item.certainty_ref]
-        link_cls = _LINK_CLASS.get(cert.level, "ve-em-link-unverified")
+        branch_cls = _BRANCH_CLASS.get(cert.level, "ve-em-dotted")
         takeaway_cls = " ve-takeaway-target" if item.id in takeaway else ""
         takeaway_attr = ' data-ve-takeaway="true"' if item.id in takeaway else ""
         source_attr = (
@@ -56,8 +61,7 @@ def render_evidence_map(section: CanonicalSection, definition) -> RenderResult:
             if item.id in emphasis_by_id else ""
         )
         evidence_blocks.append(
-            f'<span class="ve-em-link {link_cls}" aria-hidden="true"></span>'
-            f'<div class="ve-em-evidence-card{takeaway_cls}"'
+            f'<div class="ve-em-item {branch_cls}{takeaway_cls}"'
             f' data-ve-semantic-id="{_esc(item.id)}"'
             f' data-ve-certainty-ref="{_esc(item.certainty_ref)}"{source_attr}{takeaway_attr}>'
             f'<span class="ve-cert ve-cert-{_esc(cert.level)}">{_esc(_CERT_LABEL.get(cert.level, cert.level))}</span>'
@@ -66,9 +70,9 @@ def render_evidence_map(section: CanonicalSection, definition) -> RenderResult:
         )
 
     map_html = (
-        f'<div class="ve-em-layout ve-em-count-{len(em.evidence)}">'
+        f'<div class="ve-em-layout">'
         f'{conclusion_html}'
-        f'<div class="ve-em-evidence-list">{"".join(evidence_blocks)}</div>'
+        f'<div class="ve-em-body">{"".join(evidence_blocks)}</div>'
         f'</div>'
     )
 

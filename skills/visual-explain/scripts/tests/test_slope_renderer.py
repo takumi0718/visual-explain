@@ -19,21 +19,22 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-SLOPE_DEF = REGISTRY.find("slope", 1)
+SLOPE_DEF = REGISTRY.find("slope", 2)
 
 
 def _base_ir(**slope_overrides) -> dict:
     slope = {
         "axes": {"fromLabel": "開始", "toLabel": "終了"},
-        "unit": "件",
+        "title": "主要指標",
+        "unitLabel": "件",
         "items": [
             {
-                "id": "sl-1",
-                "label": "系列A",
-                "fromValue": 0,
-                "toValue": 100,
-                "fromValueText": "0件",
-                "toValueText": "100件",
+                "id": "s1",
+                "label": "売上",
+                "fromValue": 10,
+                "toValue": 40,
+                "fromValueText": "10件",
+                "toValueText": "40件",
                 "tone": "positive",
             }
         ],
@@ -44,7 +45,7 @@ def _base_ir(**slope_overrides) -> dict:
         "relationship": {"kind": "two-point-change", "capabilities": ["two-point-comparison"]},
         "selection": {
             "component": "slope",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["two-point-comparison"],
         },
         "caption": "推移",
@@ -72,6 +73,13 @@ def render_fixture(name: str):
     raw = json.loads((TESTS / name).read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
     return ir, render_slope(CanonicalSection(ir=ir), SLOPE_DEF)
+
+
+def render_ir(ir: dict):
+    from ve_components.renderers.slope import render_slope
+
+    validated = validate_canonical_section(ir)
+    return render_slope(CanonicalSection(ir=validated), SLOPE_DEF)
 
 
 class SlopeGeometryTest(unittest.TestCase):
@@ -107,10 +115,21 @@ class SlopeGeometryTest(unittest.TestCase):
 
 
 class SlopeValidationTest(unittest.TestCase):
-    def test_requires_unit(self) -> None:
+    def test_requires_unit_label(self) -> None:
         ir = _base_ir()
-        ir["slope"].pop("unit")
-        expect_violation(ir)
+        ir["slope"].pop("unitLabel")
+        with self.assertRaises(ContractError) as ctx:
+            validate_raw(ir)
+        self.assertIn("quantitative-unit-required", {d.code for d in ctx.exception.diagnostics})
+
+    def test_requires_title_reports_structure_violation(self) -> None:
+        ir = _base_ir()
+        ir["slope"].pop("title")
+        with self.assertRaises(ContractError) as ctx:
+            validate_raw(ir)
+        codes = {d.code for d in ctx.exception.diagnostics}
+        self.assertIn(SLOPE_STRUCTURE_VIOLATION, codes)
+        self.assertNotIn("quantitative-unit-required", codes)
 
     def test_rejects_float_value(self) -> None:
         ir = _base_ir(items=[{
@@ -142,7 +161,7 @@ class SlopeManifestTest(unittest.TestCase):
     def test_registry_entry_is_complete(self) -> None:
         self.assertIsNotNone(SLOPE_DEF)
         self.assertEqual(SLOPE_DEF.relationship_kind, "two-point-change")
-        self.assertEqual(SLOPE_DEF.renderer, "slope@1")
+        self.assertEqual(SLOPE_DEF.renderer, "slope@2")
 
     def test_manifest_declares_svg_root(self) -> None:
         ir, result = render_fixture("component-valid-slope.json")
@@ -152,6 +171,30 @@ class SlopeManifestTest(unittest.TestCase):
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir, result = render_fixture("component-valid-slope.json")
         self.assertEqual(set(result.manifest.consumed_semantic_ids), set(ir.semantic_ids()))
+
+
+class SlopeV2MarkupTest(unittest.TestCase):
+    def test_slope_v2_merges_series_label_into_endpoint(self) -> None:
+        ir = _base_ir(highlightId="s1")
+        markup = render_ir(ir).markup
+        self.assertIn("40件 売上", markup)
+        self.assertNotIn('x="300"', markup)
+
+    def test_slope_v2_emits_figure_header(self) -> None:
+        markup = render_ir(_base_ir()).markup
+        self.assertIn('class="ve-fig-title"', markup)
+        self.assertIn("単位: 件", markup)
+
+    def test_highlight_endpoints_use_tone_class_on_circles(self) -> None:
+        markup = render_ir(_base_ir(highlightId="s1")).markup
+        self.assertRegex(
+            markup,
+            r'<circle[^>]*class="ve-slope-endpoint ve-slope-tone-highlight"[^>]*r="4"',
+        )
+        css = (SKILL / "assets" / "components" / "slope.css").read_text("utf-8")
+        self.assertIn("circle.ve-slope-endpoint.ve-slope-tone-highlight", css)
+        self.assertIn("fill: var(--dg-highlight)", css)
+        self.assertNotIn("currentColor", css)
 
 
 class SlopeMarkupTest(unittest.TestCase):
@@ -174,8 +217,9 @@ class SlopeMarkupTest(unittest.TestCase):
                 rf'<line[^>]*data-ve-semantic-id="{re.escape(item.id)}"',
             )
 
-    def test_unit_visible_in_summary(self) -> None:
-        self.assertIn(self.ir.slope.unit, self.markup)
+    def test_unit_visible_in_figure_header(self) -> None:
+        self.assertIn(f"単位: {self.ir.slope.unit_label}", self.markup)
+        self.assertNotIn("（単位:", self.markup)
 
     def test_value_texts_rendered(self) -> None:
         for item in self.ir.slope.items:

@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "enumeration",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["parallel-itemization"]
         },
         "caption": "横並びの並列ラベル",

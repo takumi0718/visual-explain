@@ -1,7 +1,8 @@
 """Decimal-safe numeric helpers shared by waterfall and slope renderers."""
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
+from typing import Sequence
 
 from .model import SlopePayload, WaterfallPayload
 
@@ -56,3 +57,17 @@ def slope_y(value: int | Decimal, lo: int | Decimal, hi: int | Decimal) -> int:
     pct = (val - lo_d) / (hi_d - lo_d) * Decimal(180)
     offset = int(pct.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
     return 200 - offset
+
+
+def waterfall_axis_max(values: Sequence[Decimal]) -> Decimal:
+    """累積系列の最大値を 50 の倍数へ切上げ（最小 50）。"""
+    peak = max(values)
+    step = Decimal(50)
+    units = (peak / step).to_integral_value(rounding=ROUND_CEILING)
+    return max(step, units * step)
+
+
+def waterfall_y(value: Decimal, v_max: Decimal) -> int:
+    return 320 - int(
+        (Decimal(280) * value / v_max).to_integral_value(rounding=ROUND_HALF_UP)
+    )

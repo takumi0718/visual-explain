@@ -11,7 +11,7 @@
       "ir": {
         "id": "sec-bad-missing-title-h",
         "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
-        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence"]},
         "caption": "title 欠落",
         "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
         "sources": [{"id": "src-1", "label": "出典"}],

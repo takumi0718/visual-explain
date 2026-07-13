@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -191,6 +203,9 @@
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
 
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -297,7 +312,7 @@
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section data-ve-section-kind="canonical" data-ve-component="slope" data-ve-contract-version="1" data-ve-instance="sec-slope" data-ve-fallback="static-content">
-<figure data-ve-component="slope" role="group" aria-label="2時点比較スロープ" aria-describedby="sec-slope-summary"><figcaption id="sec-slope-caption" class="ve-slope-caption">主要指標の推移</figcaption><p id="sec-slope-summary" class="ve-slope-summary">開始時点と終了時点の値変化を比較する。（単位: 件）</p><svg id="sec-slope-svg" class="ve-slope-chart --fs-figure" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="2時点比較スロープ" aria-describedby="sec-slope-summary"><title>主要指標の推移</title><desc>開始時点と終了時点の値変化を比較する。</desc><text class="ve-slope-axis ve-slope-axis-from" x="120" y="210" text-anchor="middle">開始</text><text class="ve-slope-axis ve-slope-axis-to" x="480" y="210" text-anchor="middle">終了</text><g class="ve-slope-row ve-slope-index-1" data-ve-semantic-id="sl-up"><text class="ve-slope-value ve-slope-value-from" x="120" y="166" text-anchor="end">10件</text><text class="ve-slope-value ve-slope-value-to" x="480" y="12" text-anchor="start">40件</text><text class="ve-slope-label" x="300" y="20" text-anchor="middle">売上</text></g><g class="ve-slope-row ve-slope-index-2" data-ve-semantic-id="sl-down"><line class="ve-slope-item ve-slope-tone-warning" x1="120" y1="71" x2="480" y2="200"></line><text class="ve-slope-value ve-slope-value-from" x="120" y="63" text-anchor="end">30件</text><text class="ve-slope-value ve-slope-value-to" x="480" y="192" text-anchor="start">5件</text><text class="ve-slope-label" x="300" y="59" text-anchor="middle">欠損</text></g><g class="ve-slope-row ve-slope-index-3" data-ve-semantic-id="sl-flat"><line class="ve-slope-item ve-slope-tone-neutral" x1="120" y1="123" x2="480" y2="123"></line><text class="ve-slope-value ve-slope-value-from" x="120" y="115" text-anchor="end">据置</text><text class="ve-slope-value ve-slope-value-to" x="480" y="115" text-anchor="start">据置</text><text class="ve-slope-label" x="300" y="111" text-anchor="middle">据置</text></g></svg><ul class="ve-slope-notes"><li data-ve-semantic-id="cert-slope"><strong>確定:</strong> 台帳値に基づく。</li><li data-ve-semantic-id="src-slope"><strong>出典 月次台帳</strong>（2026Q1。）</li></ul></figure>
+<figure data-ve-component="slope" role="group" aria-label="2時点比較スロープ" aria-describedby="sec-slope-summary"><figcaption id="sec-slope-caption" class="ve-slope-caption">主要指標の推移</figcaption><p id="sec-slope-summary" class="ve-slope-summary">開始時点と終了時点の値変化を比較する。（単位: 件）</p><svg id="sec-slope-svg" class="ve-slope-chart --fs-figure" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="2時点比較スロープ" aria-describedby="sec-slope-summary"><title>主要指標の推移</title><desc>開始時点と終了時点の値変化を比較する。</desc><text class="ve-slope-axis ve-slope-axis-from" x="120" y="210" text-anchor="middle">開始</text><text class="ve-slope-axis ve-slope-axis-to" x="480" y="210" text-anchor="middle">終了</text><g class="ve-slope-row ve-slope-index-1" data-ve-semantic-id="sl-up"><text class="ve-slope-value ve-slope-value-from" x="120" y="166" text-anchor="end">10件</text><text class="ve-slope-value ve-slope-value-to" x="480" y="12" text-anchor="start">40件</text><text class="ve-slope-label" x="300" y="20" text-anchor="middle">売上</text></g><g class="ve-slope-row ve-slope-index-2" data-ve-semantic-id="sl-down"><line class="ve-slope-item ve-slope-tone-warning" x1="120" y1="71" x2="480" y2="200"></line><text class="ve-slope-value ve-slope-value-from" x="120" y="63" text-anchor="end">30件</text><text class="ve-slope-value ve-slope-value-to" x="480" y="192" text-anchor="start">5件</text><text class="ve-slope-label" x="300" y="59" text-anchor="middle">欠損</text></g><g class="ve-slope-row ve-slope-index-3" data-ve-semantic-id="sl-flat"><line class="ve-slope-item ve-slope-tone-neutral" x1="120" y1="123" x2="480" y2="123"></line><text class="ve-slope-value ve-slope-value-from" x="120" y="115" text-anchor="end">据置</text><text class="ve-slope-value ve-slope-value-to" x="480" y="115" text-anchor="start">据置</text><text class="ve-slope-label" x="300" y="111" text-anchor="middle">据置</text></g></svg><ul class="ve-slope-notes"><li data-ve-semantic-id="cert-slope"><strong>確認済み:</strong> 台帳値に基づく。</li><li data-ve-semantic-id="src-slope"><strong>出典 月次台帳</strong>（2026Q1。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

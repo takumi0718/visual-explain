@@ -19,7 +19,7 @@
         },
         "selection": {
           "component": "flow",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": [
             "ordered-transition",
             "directed-transition"

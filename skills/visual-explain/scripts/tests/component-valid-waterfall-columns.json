@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "waterfall",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["additive-bridging"]
         },
         "caption": "売上の段階変化",
@@ -32,7 +32,9 @@
         },
         "waterfall": {
           "displayPrecision": 1,
-          "orientation": "columns",
+          "title": "売上",
+          "unitLabel": "件",
+          "axisTicks": ["0", "50", "100", "150"],
           "start": {"id": "wfc-start", "label": "期首", "value": 100, "valueText": "100件"},
           "steps": [
             {"id": "wfc-s1", "label": "増", "delta": 10, "tone": "positive", "valueText": "+10件"},

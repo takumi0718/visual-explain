@@ -25,6 +25,10 @@
       --warning-strong: #7c3d08;
       --accent-warm: #9a4e0e;
       --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
       --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
       --lh-body: 1.75; --lh-heading: 1.45;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
@@ -51,6 +55,10 @@
         --warning-strong: #eab884;
         --accent-warm: #e0a05e;
         --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
       }
     }
 
@@ -73,6 +81,10 @@
       --warning-strong: #eab884;
       --accent-warm: #e0a05e;
       --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -191,6 +203,9 @@
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
 
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -213,29 +228,32 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="enumeration" data-ve-contract-version="1" data-ve-asset="enumeration.css" data-ve-digest="b7a284d3364d12e068b684885039889d40f1bd063f55ceed1c869035d4e8f781">[data-ve-component="enumeration"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="enumeration"] .ve-enumeration-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="enumeration"] .ve-enumeration-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="enumeration"] .ve-enum-items { list-style: none; margin: 0; padding: 0; }
-[data-ve-component="enumeration"] .ve-enum-list-centered { width: fit-content; margin-inline: auto; }
-[data-ve-component="enumeration"] .ve-enum-list-centered.ve-enum-has-description { width: 100%; }
-[data-ve-component="enumeration"] .ve-enum-columns { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
-[data-ve-component="enumeration"] .ve-enum-block { min-width: 0; margin: 0 0 var(--space-2); font-size: var(--fs-figure); }
-[data-ve-component="enumeration"] .ve-enum-concept { background: var(--text-dim); color: var(--bg); padding: var(--space-2); border-radius: var(--radius); text-align: center; }
-[data-ve-component="enumeration"] .ve-enum-list-centered.ve-enum-has-description .ve-enum-block { display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); align-items: center; gap: var(--space-2); }
-[data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { display: flex; flex: 1 1 10rem; min-width: 8rem; max-width: 14rem; flex-direction: column; margin: 0; }
-[data-ve-component="enumeration"] .ve-enum-number { display: inline-block; font-weight: 800; margin-right: var(--space-1); }
-[data-ve-component="enumeration"] .ve-enum-label,
-[data-ve-component="enumeration"] .ve-enum-title { display: block; font-weight: 800; }
-[data-ve-component="enumeration"] .ve-enum-description { margin: var(--space-1) 0 0; padding-left: var(--space-3); color: var(--text); font-size: var(--fs-small); text-align: left; }
-[data-ve-component="enumeration"] .ve-takeaway-target { outline: 2px solid var(--border-strong); outline-offset: 2px; }
-[data-ve-component="enumeration"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="enumeration"] .ve-enumeration-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="enumeration"] .ve-enumeration-notes li { margin: 0; }
-@media (max-width: 40rem) {
-  [data-ve-component="enumeration"] .ve-enum-list-centered.ve-enum-has-description .ve-enum-block { grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr); }
-  [data-ve-component="enumeration"] .ve-enum-columns { flex-direction: column; align-items: stretch; }
-  [data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { max-width: none; }
+  <style data-ve-component="enumeration" data-ve-contract-version="2" data-ve-asset="enumeration.css" data-ve-digest="70c182dfb356bb58117fac1cce740dde5e5b1201a5eeb309d0555a9e84ab7e34">figure[data-ve-component="enumeration"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="enumeration"] .ve-enumeration-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="enumeration"] .ve-enumeration-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="enumeration"] ul.ve-enum-items { display: grid; gap: var(--space-4); list-style: none; margin: 0; padding: 0; }
+figure[data-ve-component="enumeration"] .ve-enum-columns { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-3); }
+figure[data-ve-component="enumeration"] .ve-enum-block {
+  display: grid; grid-template-columns: 13rem minmax(0, 1fr);
+  gap: var(--space-3); align-items: center; min-width: 0; }
+figure[data-ve-component="enumeration"] .ve-enum-columns .ve-enum-block { grid-template-columns: 1fr; }
+figure[data-ve-component="enumeration"] .ve-enum-box {
+  display: grid; place-items: center; min-height: 5.5rem; padding: var(--space-2);
+  background: var(--dg-primary); color: var(--dg-on-primary);
+  font-size: 1.0625rem; font-weight: 700; text-align: center; line-height: 1.5; }
+figure[data-ve-component="enumeration"] .ve-enum-number { display: block; font-weight: 800; margin-bottom: var(--space-1); }
+figure[data-ve-component="enumeration"] .ve-enum-label,
+figure[data-ve-component="enumeration"] .ve-enum-title { display: block; font-weight: 800; }
+figure[data-ve-component="enumeration"] .ve-enum-desc {
+  margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
+figure[data-ve-component="enumeration"] .ve-enum-desc::before { content: "・"; }
+figure[data-ve-component="enumeration"] .ve-enum-description + .ve-enum-description { margin-top: var(--space-1); }
+figure[data-ve-component="enumeration"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="enumeration"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="enumeration"] .ve-enumeration-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); list-style: disc; }
+figure[data-ve-component="enumeration"] .ve-enumeration-notes li { margin: 0; }
+@media (max-width: 42rem) {
+  figure[data-ve-component="enumeration"] .ve-enum-block { grid-template-columns: 1fr; }
 }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
@@ -305,8 +323,8 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section data-ve-section-kind="canonical" data-ve-component="enumeration" data-ve-contract-version="1" data-ve-instance="sec-enum-list" data-ve-fallback="static-content">
-<figure data-ve-component="enumeration" role="group" aria-label="並列項目の列挙" aria-describedby="sec-enum-list-summary"><figcaption id="sec-enum-list-caption" class="ve-enumeration-caption">検討対象の並列項目</figcaption><p id="sec-enum-list-summary" class="ve-enumeration-summary">番号付きの縦リストで3項目を並列に示す。</p><ul class="ve-enum-items ve-enum-list-centered ve-enum-has-description"><li class="ve-enum-block" data-ve-semantic-id="item-a"><div class="ve-enum-concept"><span class="ve-enum-number" aria-hidden="true">1</span><span class="ve-enum-title">権限モデル</span></div><ul class="ve-enum-description"><li>役割ごとの操作範囲を見直す</li></ul></li><li class="ve-enum-block" data-ve-semantic-id="item-b"><div class="ve-enum-concept"><span class="ve-enum-number" aria-hidden="true">2</span><span class="ve-enum-title">監査ログ</span></div><ul class="ve-enum-description"><li>必要な保持期間を決定する</li></ul></li><li class="ve-enum-block" data-ve-semantic-id="item-c"><div class="ve-enum-concept"><span class="ve-enum-number" aria-hidden="true">3</span><span class="ve-enum-title">通知チャネル</span></div><ul class="ve-enum-description"><li>通知経路を一つに統合する</li></ul></li></ul><ul class="ve-enumeration-notes"><li data-ve-semantic-id="cert-enum-confirmed"><strong>確定:</strong> 3項目は同一会議で合意された範囲。</li><li data-ve-semantic-id="src-notes"><strong>出典 議事録 2026-06</strong>（並列検討の記録。）</li></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="enumeration" data-ve-contract-version="2" data-ve-instance="sec-enum-list" data-ve-fallback="static-content">
+<figure data-ve-component="enumeration" role="group" aria-label="並列項目の列挙" aria-describedby="sec-enum-list-summary"><figcaption id="sec-enum-list-caption" class="ve-enumeration-caption">検討対象の並列項目</figcaption><p id="sec-enum-list-summary" class="ve-enumeration-summary">番号付きの縦リストで3項目を並列に示す。</p><ul class="ve-enum-items ve-enum-has-description"><li class="ve-enum-block" data-ve-semantic-id="item-a"><div class="ve-enum-concept ve-enum-box"><span class="ve-enum-number" aria-hidden="true">1</span><span class="ve-enum-title">福利厚生</span></div><p class="ve-enum-description ve-enum-desc">従業員向けに<strong class="dg-em">無料のフィットネス利用券</strong>を配布する</p></li><li class="ve-enum-block" data-ve-semantic-id="item-b"><div class="ve-enum-concept ve-enum-box"><span class="ve-enum-number" aria-hidden="true">2</span><span class="ve-enum-title">監査ログ</span></div><p class="ve-enum-description ve-enum-desc">必要な保持期間を決定する</p></li><li class="ve-enum-block" data-ve-semantic-id="item-c"><div class="ve-enum-concept ve-enum-box"><span class="ve-enum-number" aria-hidden="true">3</span><span class="ve-enum-title">通知チャネル</span></div><p class="ve-enum-description ve-enum-desc">通知経路を一つに統合する</p></li></ul><ul class="ve-enumeration-notes"><li data-ve-semantic-id="cert-enum-confirmed"><strong>確認済み:</strong> 3項目は同一会議で合意された範囲。</li><li data-ve-semantic-id="src-notes"><strong>出典 議事録 2026-06</strong>（並列検討の記録。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

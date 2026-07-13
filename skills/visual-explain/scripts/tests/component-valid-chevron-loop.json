@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "chevron",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["linear-sequence", "closed-loop"]
         },
         "caption": "改善サイクルの3段",

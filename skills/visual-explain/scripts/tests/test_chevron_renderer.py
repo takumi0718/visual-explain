@@ -1,6 +1,8 @@
 """S2 tests: chevron validation and renderer DOM contract."""
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import json
 import re
 import unittest
@@ -18,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-CHEVRON_DEF = REGISTRY.find("chevron", 1)
+CHEVRON_DEF = REGISTRY.find("chevron", 2)
 
 
 def _base_ir(**chevron_overrides) -> dict:
@@ -41,7 +43,7 @@ def _base_ir(**chevron_overrides) -> dict:
         },
         "selection": {
             "component": "chevron",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["linear-sequence"],
         },
         "caption": "線形順序のチェブロン",
@@ -77,11 +79,22 @@ def expect_violation(ir: dict, code: str = CHEVRON_STRUCTURE_VIOLATION) -> None:
     unittest.TestCase().assertIn(code, codes)
 
 
-def render_fixture(name: str):
+class _FixtureRender(NamedTuple):
+    ir: object
+    result: object
+
+    @property
+    def markup(self) -> str:
+        return self.result.markup
+
+
+def render_fixture(name: str) -> _FixtureRender:
     from ve_components.renderers.chevron import render_chevron
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+    path = TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+    raw = json.loads(path.read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
-    return ir, render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
+    result = render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
+    return _FixtureRender(ir, result)
 
 
 class ChevronValidationTest(unittest.TestCase):
@@ -249,7 +262,7 @@ class ChevronManifestTest(unittest.TestCase):
         self.assertIsNotNone(CHEVRON_DEF)
         self.assertEqual(CHEVRON_DEF.relationship_kind, "ordered-sequence")
         self.assertEqual(CHEVRON_DEF.capabilities, ("linear-sequence", "closed-loop"))
-        self.assertEqual(CHEVRON_DEF.renderer, "chevron@1")
+        self.assertEqual(CHEVRON_DEF.renderer, "chevron@2")
         self.assertEqual([a.id for a in CHEVRON_DEF.assets], ["chevron.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
@@ -265,8 +278,10 @@ class ChevronManifestTest(unittest.TestCase):
 
 class ChevronMarkupTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.ir, self.result = render_fixture("component-valid-chevron.json")
-        self.markup = self.result.markup
+        fixture = render_fixture("component-valid-chevron.json")
+        self.ir = fixture.ir
+        self.result = fixture.result
+        self.markup = fixture.markup
 
     def test_semantic_figure_with_visible_caption_summary_and_notes(self) -> None:
         self.assertIn('<figure data-ve-component="chevron"', self.markup)
@@ -305,6 +320,18 @@ class ChevronMarkupTest(unittest.TestCase):
             r've-chevron-concept[^>]*>.*?</div><ul class="ve-chevron-description">',
         )
 
+    def test_description_uses_ul_li_list_semantics(self) -> None:
+        _, result = render_fixture("component-valid-chevron.json")
+        self.assertRegex(
+            result.markup,
+            r'<ul class="ve-chevron-description"><li>依頼を記録する</li><li>担当を割り当てる</li></ul>',
+        )
+        self.assertNotRegex(result.markup, r'<p class="ve-chevron-description">')
+
+    def test_concept_emits_chv_box_class(self) -> None:
+        _, result = render_fixture("component-valid-chevron.json")
+        self.assertIn('class="ve-chevron-concept ve-chv-box"', result.markup)
+
     def test_concept_only_emits_no_description_region(self) -> None:
         raw = _base_ir(steps=[
             {"id": "s1", "title": "受付"},
@@ -326,7 +353,14 @@ class ChevronMarkupTest(unittest.TestCase):
             '<li class="ve-chevron-step" data-ve-semantic-id="s1" data-ve-takeaway="true">',
             result.markup,
         )
-        self.assertIn('<div class="ve-chevron-concept ve-takeaway-target">', result.markup)
+        self.assertIn('<div class="ve-chevron-concept ve-chv-box ve-takeaway-target">', result.markup)
+
+    def test_chevron_v2_emits_rail_and_tail_only_when_loop(self) -> None:
+        looped = render_fixture("component-valid-chevron-loop").markup
+        plain = render_fixture("component-valid-chevron").markup
+        self.assertEqual(looped.count('ve-chevron-loop-rail'), 1)
+        self.assertEqual(looped.count('ve-chevron-loop-tail'), 1)
+        self.assertNotIn('ve-chevron-loop', plain)
 
     def test_loop_renders_exactly_one_return_rail_without_from_to(self) -> None:
         _, result = render_fixture("component-valid-chevron-loop.json")
@@ -336,12 +370,12 @@ class ChevronMarkupTest(unittest.TestCase):
         self.assertNotIn("data-ve-from", markup)
         self.assertNotIn("data-ve-to", markup)
 
-    def test_loop_wraps_centered_column_for_rail_alignment(self) -> None:
+    def test_loop_wraps_data_ve_loop_for_rail_alignment(self) -> None:
         _, result = render_fixture("component-valid-chevron-loop.json")
-        self.assertIn("ve-chevron-centered-column", result.markup)
+        self.assertIn('data-ve-loop="true"', result.markup)
         self.assertRegex(
             result.markup,
-            r'<div class="ve-chevron-centered-column">.*?ve-chevron-loop-rail.*?ve-chevron-steps',
+            r'<div data-ve-loop="true">.*?ve-chevron-loop-rail.*?ve-chevron-loop-tail.*?ve-chevron-steps',
             re.DOTALL,
         )
 
@@ -357,27 +391,28 @@ class ChevronMarkupTest(unittest.TestCase):
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
         self.assertIn(".ve-chevron-loop-rail::after", css)
         after_block = css.split(".ve-chevron-loop-rail::after")[1].split("}")[0]
-        self.assertIn("top: 0", after_block)
-        self.assertIn("border-bottom-color", after_block)
-        self.assertNotIn("border-top-color", after_block)
+        self.assertIn("border-top:", after_block)
+        self.assertNotIn("border-bottom-color", after_block)
 
-    def test_horizontal_clip_path_has_right_tip_and_left_notch(self) -> None:
+    def test_horizontal_clip_path_is_flat_left_pentagon(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
-        horiz_block = css.split(".ve-chevron-horizontal .ve-chevron-concept {")[1].split("}")[0]
+        horiz_block = css.split(".ve-chevron-horizontal .ve-chv-box {")[1].split("}")[0]
         self.assertIn("clip-path: polygon(", horiz_block)
         self.assertIn("100% 50%", horiz_block)
-        self.assertIn("0 50%", horiz_block)
-        self.assertIn("calc(100% - 0.75rem)", horiz_block)
-        self.assertIn("0.75rem 0", horiz_block)
+        self.assertIn("0 0", horiz_block)
+        self.assertIn("0 100%", horiz_block)
+        self.assertNotIn("0 50%", horiz_block)
 
-    def test_narrow_screen_resets_horizontal_overlap_margin(self) -> None:
+    def test_horizontal_steps_have_no_overlap_margin(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
-        media_block = css.split("@media (max-width: 40rem)")[1]
-        self.assertIn(".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step", media_block)
-        reset_block = media_block.split(
-            ".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step"
-        )[1].split("}")[0]
-        self.assertIn("margin-left: 0", reset_block)
+        horiz_start = css.index(".ve-chevron-horizontal {")
+        horiz_end = css.index("@media (max-width: 42rem)")
+        horiz_block = css[horiz_start:horiz_end]
+        self.assertNotIn("margin-left: -", horiz_block)
+        self.assertNotIn(
+            ".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step",
+            horiz_block,
+        )
 
     def test_loop_adds_visually_hidden_last_to_first_sentence(self) -> None:
         ir, result = render_fixture("component-valid-chevron-loop.json")

@@ -1,157 +1,183 @@
-"""Static, accessible renderer for the semantic ``waterfall`` component.
-
-Additive bridge with bars or columns orientation. Layout uses pre-generated
-``ve-wf-start-{0..100}`` / ``ve-wf-len-{0..100}`` classes only — no inline
-styles. Geometry is quantized from Decimal scale math; valueText is primary.
-"""
+"""Static, accessible renderer for the semantic ``waterfall`` component (v2 SVG)."""
 from __future__ import annotations
 
 import html
 import re
 from decimal import Decimal
 
-from ..diagnostics import RENDERER_FAILURE, Diagnostic
-from ..model import CanonicalSection, RenderManifest, RenderResult, WaterfallPayload
-from ..numeric import quantize_percent, to_decimal, waterfall_scale_values
+from ..model import CanonicalSection, RenderManifest, RenderResult
+from ..numeric import to_decimal, waterfall_axis_max, waterfall_scale_values, waterfall_y
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
-_WF_CLASS_RE = re.compile(r"^ve-wf-(start|len)-(\d+)$")
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
+
+_CHART_LEFT = 70
+_CHART_RIGHT = 620
+_BASELINE_Y = 320
+_AXIS_X = 70
 
 
 def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
-def _bar_geometry(from_val, to_val, lo, hi) -> tuple[int, int] | None:
-    p_from = quantize_percent(from_val, lo, hi)
-    p_to = quantize_percent(to_val, lo, hi)
-    start = min(p_from, p_to)
-    length = abs(p_to - p_from)
-    if start < 0 or start > 100 or length < 0 or length > 100 or start + length > 100:
+def _triangle_value_text(value_text: str, delta: Decimal) -> str:
+    if delta < 0:
+        body = re.sub(r"^[-−]+", "", value_text.strip())
+        return f"▲{body}" if body else f"▲{abs(delta)}"
+    return value_text
+
+
+def _largest_decrease_step_id(steps) -> str | None:
+    negatives = [(step.id, abs(to_decimal(step.delta))) for step in steps if to_decimal(step.delta) < 0]
+    if not negatives:
         return None
-    return start, length
-
-
-def _class_pair(start: int, length: int) -> str:
-    return f"ve-wf-start-{start} ve-wf-len-{length}"
-
-
-def _render_bar(
-    semantic_id: str,
-    label: str,
-    value_text: str,
-    from_val,
-    to_val,
-    lo,
-    hi,
-    *,
-    tone: str | None = None,
-    takeaway: bool = False,
-    emphasis: str = "",
-) -> tuple[str, Diagnostic | None]:
-    geom = _bar_geometry(from_val, to_val, lo, hi)
-    if geom is None:
-        return "", Diagnostic(RENDERER_FAILURE, f"棒 '{semantic_id}' の百分率が域外です")
-    start, length = geom
-    tone_cls = f" ve-wf-tone-{tone}" if tone else ""
-    takeaway_cls = " ve-takeaway-target" if takeaway else ""
-    takeaway_attr = ' data-ve-takeaway="true"' if takeaway else ""
-    emphasis_html = f'<span class="ve-emphasis">{_esc(emphasis)}</span>' if emphasis else ""
-    markup = (
-        f'<div class="ve-waterfall-row">'
-        f'<span class="ve-waterfall-label">{_esc(label)}</span>'
-        f'<div class="ve-waterfall-track">'
-        f'<div class="ve-waterfall-bar {_class_pair(start, length)}{tone_cls}{takeaway_cls}"'
-        f' data-ve-semantic-id="{_esc(semantic_id)}"{takeaway_attr}>'
-        f'<span class="ve-waterfall-value">{_esc(value_text)}</span>{emphasis_html}'
-        f'</div></div></div>'
-    )
-    return markup, None
-
-
-def _render_connector(from_val, to_val, lo, hi) -> tuple[str, Diagnostic | None]:
-    geom = _bar_geometry(from_val, to_val, lo, hi)
-    if geom is None:
-        return "", Diagnostic(RENDERER_FAILURE, "コネクタの百分率が域外です")
-    start, length = geom
-    return (
-        f'<div class="ve-waterfall-connector-track">'
-        f'<span class="ve-waterfall-connector {_class_pair(start, length)}" aria-hidden="true"></span>'
-        f'</div>',
-        None,
-    )
+    return max(negatives, key=lambda item: item[1])[0]
 
 
 def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
     ir = section.ir
     wf = ir.waterfall
     assert wf is not None
-    takeaway = set(ir.takeaway_target_ids)
-    emphasis_by_id = {e.target_id: e.label for e in ir.emphasis}
-    diagnostics: list[Diagnostic] = []
-
-    _, lo, hi = waterfall_scale_values(wf)
-    orientation = wf.orientation
-    container_cls = "ve-wf-columns" if orientation == "columns" else "ve-wf-bars"
 
     caption_id = f"{ir.id}-caption"
     summary_id = f"{ir.id}-summary"
+    svg_id = f"{ir.id}-svg"
 
-    items: list[str] = []
+    scale_values, _, _ = waterfall_scale_values(wf)
+    v_max = waterfall_axis_max(scale_values)
+
+    bars: list[dict] = []
+    bars.append({
+        "semantic_id": wf.start.id,
+        "label": wf.start.label,
+        "value_text": wf.start.value_text,
+        "kind": "total",
+        "bottom": Decimal(0),
+        "top": to_decimal(wf.start.value),
+    })
+
     running = to_decimal(wf.start.value)
+    running_levels: list[Decimal] = [running]
+    largest_minus_id = _largest_decrease_step_id(wf.steps)
 
-    bar_html, diag = _render_bar(
-        wf.start.id, wf.start.label, wf.start.value_text,
-        Decimal(0), running, lo, hi,
-        takeaway=wf.start.id in takeaway,
-        emphasis=emphasis_by_id.get(wf.start.id, ""),
-    )
-    if diag:
-        diagnostics.append(diag)
-    items.append(bar_html)
-
-    prev = running
     for step in wf.steps:
-        conn_html, conn_diag = _render_connector(prev, running, lo, hi)
-        if conn_diag:
-            diagnostics.append(conn_diag)
+        prev = running
+        running = running + to_decimal(step.delta)
+        running_levels.append(running)
+        if to_decimal(step.delta) >= 0:
+            kind = "plus"
+        elif step.id == largest_minus_id:
+            kind = "minus"
         else:
-            items.append(conn_html)
-        nxt = running + to_decimal(step.delta)
-        bar_html, diag = _render_bar(
-            step.id, step.label, step.value_text,
-            prev, nxt, lo, hi,
-            tone=step.tone,
-            takeaway=step.id in takeaway,
-            emphasis=emphasis_by_id.get(step.id, ""),
-        )
-        if diag:
-            diagnostics.append(diag)
-        items.append(bar_html)
-        prev = nxt
-        running = nxt
+            kind = "minus-soft"
+        bars.append({
+            "semantic_id": step.id,
+            "label": step.label,
+            "value_text": _triangle_value_text(step.value_text, to_decimal(step.delta)),
+            "kind": kind,
+            "bottom": min(prev, running),
+            "top": max(prev, running),
+        })
 
-    conn_html, conn_diag = _render_connector(prev, to_decimal(wf.end.value), lo, hi)
-    if conn_diag:
-        diagnostics.append(conn_diag)
-    else:
-        items.append(conn_html)
+    bars.append({
+        "semantic_id": wf.end.id,
+        "label": wf.end.label,
+        "value_text": wf.end.value_text,
+        "kind": "total",
+        "bottom": Decimal(0),
+        "top": to_decimal(wf.end.value),
+    })
 
-    bar_html, diag = _render_bar(
-        wf.end.id, wf.end.label, wf.end.value_text,
-        Decimal(0), to_decimal(wf.end.value), lo, hi,
-        takeaway=wf.end.id in takeaway,
-        emphasis=emphasis_by_id.get(wf.end.id, ""),
+    n = len(bars)
+    slot_w = 550 // n
+    bar_w = min(70, slot_w - 20)
+
+    svg_parts: list[str] = []
+
+    svg_parts.append(
+        f'<line class="ve-wf-axis" x1="{_AXIS_X}" y1="40" x2="{_AXIS_X}" y2="{_BASELINE_Y}"></line>'
     )
-    if diag:
-        diagnostics.append(diag)
-    items.append(bar_html)
+    svg_parts.append(
+        f'<line class="ve-wf-axis" x1="{_AXIS_X - 6}" y1="46" x2="{_AXIS_X}" y2="40"></line>'
+    )
+    svg_parts.append(
+        f'<line class="ve-wf-axis" x1="{_AXIS_X + 6}" y1="46" x2="{_AXIS_X}" y2="40"></line>'
+    )
+    svg_parts.append(
+        f'<line class="ve-wf-axis" x1="{_CHART_LEFT}" y1="{_BASELINE_Y}"'
+        f' x2="{_CHART_RIGHT}" y2="{_BASELINE_Y}"></line>'
+    )
 
-    scroll_open = '<div class="ve-waterfall-scroll">' if orientation == "columns" else ""
-    scroll_close = "</div>" if orientation == "columns" else ""
-    bridge = (
-        f'{scroll_open}<div class="ve-waterfall-bridge {container_cls}">'
-        f'{"".join(items)}</div>{scroll_close}'
+    for tick in wf.axis_ticks:
+        tick_val = to_decimal(tick)
+        y = waterfall_y(tick_val, v_max)
+        svg_parts.append(
+            f'<text class="ve-wf-tick" x="{_AXIS_X - 8}" y="{y + 4}" text-anchor="end">{_esc(tick)}</text>'
+        )
+
+    svg_parts.append(
+        f'<text class="ve-wf-unit-label" x="{_AXIS_X - 8}" y="28" text-anchor="end">'
+        f'{_esc(wf.unit_label)}</text>'
+    )
+
+    bar_centers: list[int] = []
+    for index, bar in enumerate(bars):
+        cx = _CHART_LEFT + index * slot_w + slot_w // 2
+        bar_centers.append(cx)
+        x = cx - bar_w // 2
+        y_top = waterfall_y(bar["top"], v_max)
+        y_bottom = waterfall_y(bar["bottom"], v_max)
+        height = y_bottom - y_top
+        if height < 1:
+            height = 1
+            y_top = y_bottom - 1
+
+        kind = bar["kind"]
+        if kind == "total":
+            bar_cls = "ve-wf-bar ve-wf-total"
+            value_cls = "ve-wf-value-on-fill"
+        elif kind == "plus":
+            bar_cls = "ve-wf-bar ve-wf-plus"
+            value_cls = "ve-wf-value-plus"
+        elif kind == "minus":
+            bar_cls = "ve-wf-bar ve-wf-minus"
+            value_cls = "ve-wf-value-on-fill"
+        else:
+            bar_cls = "ve-wf-bar ve-wf-minus-soft"
+            value_cls = "ve-wf-value-minus-soft"
+
+        value_y = y_top + max(12, height // 2 + 4)
+        factor_y = y_top - 8 if kind == "plus" else y_bottom + 16
+
+        svg_parts.append(
+            f'<g data-ve-semantic-id="{_esc(bar["semantic_id"])}">'
+            f'<rect class="{bar_cls}" x="{x}" y="{y_top}" width="{bar_w}" height="{height}"></rect>'
+            f'<text class="{value_cls}" x="{cx}" y="{value_y}" text-anchor="middle">'
+            f'{_esc(bar["value_text"])}</text>'
+            f'<text class="ve-wf-factor" x="{cx}" y="{factor_y}" text-anchor="middle">'
+            f'{_esc(bar["label"])}</text>'
+            f'</g>'
+        )
+
+    for index in range(n - 1):
+        level = running_levels[index]
+        y = waterfall_y(level, v_max)
+        x1 = bar_centers[index] + bar_w // 2
+        x2 = bar_centers[index + 1] - bar_w // 2
+        if x2 > x1:
+            svg_parts.append(
+                f'<line class="ve-wf-connector" x1="{x1}" y1="{y}" x2="{x2}" y2="{y}"></line>'
+            )
+
+    svg_markup = (
+        f'<svg id="{_esc(svg_id)}" class="ve-wf-chart --fs-figure"'
+        f' viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet"'
+        f' role="img" aria-label="{_esc(ir.accessibility.label)}"'
+        f' aria-describedby="{_esc(summary_id)}">'
+        f'<title>{_esc(ir.caption)}</title>'
+        f'<desc>{_esc(ir.accessibility.summary)}</desc>'
+        f'{"".join(svg_parts)}'
+        f'</svg>'
     )
 
     notes = []
@@ -167,17 +193,14 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
             f'<strong>出典 {_esc(src.label)}</strong>{detail}</li>'
         )
 
-    annotation_note = ""
-    if emphasis_by_id:
-        joined = "、".join(f"注釈: {_esc(label)}" for label in emphasis_by_id.values())
-        annotation_note = f" {joined}"
-
     markup = (
         f'<figure data-ve-component="waterfall" role="group"'
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
+        f'<p class="ve-fig-title">{_esc(wf.title)}</p>'
+        f'<p class="ve-fig-unit">単位: {_esc(wf.unit_label)}</p>'
         f'<figcaption id="{_esc(caption_id)}" class="ve-waterfall-caption">{_esc(ir.caption)}</figcaption>'
-        f'<p id="{_esc(summary_id)}" class="ve-waterfall-summary">{_esc(ir.accessibility.summary)}{annotation_note}</p>'
-        f'{bridge}'
+        f'<p id="{_esc(summary_id)}" class="ve-waterfall-summary">{_esc(ir.accessibility.summary)}</p>'
+        f'{svg_markup}'
         f'<ul class="ve-waterfall-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
@@ -189,16 +212,16 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
         instance_id=ir.id,
         consumed_semantic_ids=ir.semantic_ids(),
         generated_relationship_ids=(),
-        generated_landmark_ids=(caption_id, summary_id),
+        generated_landmark_ids=(caption_id, summary_id, svg_id),
         asset_ids=tuple(a.id for a in style_assets),
         asset_digests=tuple(a.digest for a in style_assets),
         declared_dependencies=tuple(definition.dependencies),
         fallback_mode=definition.fallback,
+        svg_root_ids=(svg_id,),
     )
     return RenderResult(
         markup=markup,
         style_asset_ids=tuple(a.id for a in style_assets),
         script_asset_ids=(),
         manifest=manifest,
-        diagnostics=tuple(diagnostics),
     )

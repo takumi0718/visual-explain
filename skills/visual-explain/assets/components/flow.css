@@ -5,14 +5,15 @@
 [data-ve-component="flow"] .ve-flow-canvas { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, var(--space-3)); grid-auto-rows: min-content; min-width: 24rem; margin: 0; padding: 0; list-style: none; }
 [data-ve-component="flow"] .ve-flow-canvas > li { min-width: 0; }
 [data-ve-component="flow"] .ve-flow-station, [data-ve-component="flow"] .ve-flow-link, [data-ve-component="flow"] .ve-flow-group-label { grid-column: 1; }
-[data-ve-component="flow"] .ve-flow-node { display: block; padding: var(--space-1) var(--space-2); background: var(--surface); border-radius: .4rem; font-weight: 700; font-size: var(--fs-figure); }
-[data-ve-component="flow"] .ve-flow-station.in-group .ve-flow-node { border-left: 2px solid var(--border-strong); border-radius: 0 .4rem .4rem 0; }
-[data-ve-component="flow"] .ve-flow-link { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-1); align-items: center; padding: var(--space-1) var(--space-2); color: var(--text-dim); font-size: var(--fs-figure); }
-[data-ve-component="flow"] .ve-flow-arrow { color: var(--text-dim); font-weight: 700; }
+[data-ve-component="flow"] .ve-flow-node { display: block; padding: var(--space-1) var(--space-2); background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; font-size: var(--fs-figure); }
+[data-ve-component="flow"] .ve-flow-node[data-tone="muted"] { background: var(--bg); color: var(--text); border: 1.5px solid var(--dg-primary); }
+[data-ve-component="flow"] .ve-flow-station.in-group .ve-flow-node { border-left: 2.5px solid var(--dg-line); }
+[data-ve-component="flow"] .ve-flow-link { display: grid; grid-template-columns: auto auto 1fr; gap: var(--space-1); align-items: center; padding: var(--space-1) var(--space-2); color: var(--text-dim); font-size: var(--fs-figure); }
+[data-ve-component="flow"] .ve-flow-arrow { color: var(--dg-line); font-weight: 700; }
 [data-ve-component="flow"] .ve-flow-rel { font-size: var(--fs-small); color: var(--text-faint); }
 [data-ve-component="flow"] .ve-flow-group-label { color: var(--text-faint); font-size: var(--fs-small); font-weight: 700; letter-spacing: .06em; padding: var(--space-1) 0 0; }
-[data-ve-component="flow"] .ve-flow-rail { position: relative; border-right: 2px solid var(--border-strong); border-top: 2px solid var(--border-strong); border-bottom: 2px solid var(--border-strong); border-top-right-radius: .4rem; border-bottom-right-radius: .4rem; writing-mode: vertical-rl; font-size: var(--fs-small); color: var(--text-dim); padding: var(--space-1) 0; }
-[data-ve-component="flow"] .ve-flow-rail::after { content: "\25C0"; position: absolute; inset-block-end: -0.15rem; inset-inline-start: -0.5rem; color: var(--text-dim); font-size: .7rem; writing-mode: horizontal-tb; }
+[data-ve-component="flow"] .ve-flow-rail { position: relative; border-right: 2.5px solid var(--dg-line); border-top: 2.5px solid var(--dg-line); border-bottom: 2.5px solid var(--dg-line); writing-mode: vertical-rl; font-size: var(--fs-small); color: var(--text-dim); padding: var(--space-1) 0; }
+[data-ve-component="flow"] .ve-flow-rail::after { content: "\25C0"; position: absolute; inset-block-end: -0.15rem; inset-inline-start: -0.5rem; color: var(--dg-line); font-size: .7rem; writing-mode: horizontal-tb; }
 [data-ve-component="flow"] .ve-rail-lane-0 { grid-column: 2; }
 [data-ve-component="flow"] .ve-rail-lane-1 { grid-column: 3; }
 [data-ve-component="flow"] .ve-rail-lane-2 { grid-column: 4; }

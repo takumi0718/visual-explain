@@ -18,7 +18,7 @@ from ..diagnostics import RENDERER_FAILURE, Diagnostic
 from ..flow_layout import MAX_SPINE_ROWS, assign_rails, edge_spans, order_index
 from ..model import CanonicalSection, RenderManifest, RenderResult
 
-_CERT_LABEL = {"confirmed": "確定", "inferred": "推定", "unverified": "未確認"}
+from ..model import CERTAINTY_LABEL as _CERT_LABEL
 _RELATION_LABEL = {
     "ordered-transition": "順序遷移",
     "directed-transition": "有向遷移",

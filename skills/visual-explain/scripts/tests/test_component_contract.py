@@ -40,7 +40,7 @@ class VocabularyFixtureTest(unittest.TestCase):
         request = validate_assembly(self.matrix)
         section = request.sections[0]
         self.assertEqual(section.ir.selection.component, "matrix")
-        self.assertEqual(section.ir.selection.version, 1)
+        self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "two-axis")
         allowed = set(VOCABULARY["components"]["matrix"]["capabilities"])
         self.assertTrue(set(section.ir.selection.matched_capabilities) <= allowed)
@@ -51,7 +51,7 @@ class VocabularyFixtureTest(unittest.TestCase):
         request = validate_assembly(self.flow)
         section = request.sections[0]
         self.assertEqual(section.ir.selection.component, "flow")
-        self.assertEqual(section.ir.selection.version, 1)
+        self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "directed-graph")
         allowed = set(VOCABULARY["components"]["flow"]["capabilities"])
         self.assertTrue(set(section.ir.selection.matched_capabilities) <= allowed)
@@ -84,8 +84,13 @@ class SchemaVocabularyConsistencyTest(unittest.TestCase):
         self.assertEqual(set(IR_SCHEMA["$defs"]["capability"]["enum"]), caps)
 
     def test_contract_versions_match(self) -> None:
-        versions = {c["contractVersion"] for c in VOCABULARY["components"].values()}
-        self.assertEqual(set(IR_SCHEMA["$defs"]["contractVersion"]["enum"]), versions)
+        allowed = set(IR_SCHEMA["$defs"]["contractVersion"]["enum"])
+        declared = set(VOCABULARY.get("contractVersions", []))
+        if declared:
+            self.assertEqual(allowed, declared)
+        else:
+            versions = {c["contractVersion"] for c in VOCABULARY["components"].values()}
+            self.assertEqual(allowed, versions)
 
     def test_oneof_branches_mutually_exclude_all_payloads(self) -> None:
         payload_keys = list(VOCABULARY["components"].keys())
@@ -330,6 +335,74 @@ class DocumentationConsistencyTest(unittest.TestCase):
                 else:
                     self.assertIn(section.provenance.source, sources)
                     self.assertIn(section.provenance.reason, reasons)
+
+    def test_docs_have_canonical_examples_for_all_twelve_components(self) -> None:
+        text = Path("../references/patterns.md").read_text(encoding="utf-8")
+        for comp in [
+            "matrix",
+            "flow",
+            "enumeration",
+            "chevron",
+            "pyramid",
+            "stairs",
+            "logic-tree",
+            "waterfall",
+            "slope",
+            "evidence-map",
+            "bars",
+            "kpi",
+        ]:
+            self.assertIn(f'"component": "{comp}"', text, comp)
+
+    def test_design_system_documents_dg_tokens(self) -> None:
+        ds = Path("../references/design-system.md").read_text(encoding="utf-8")
+        self.assertIn("--dg-primary", ds)
+        self.assertIn("dg-em", ds)
+
+    _TWELVE_COMPONENTS = (
+        "matrix",
+        "flow",
+        "enumeration",
+        "chevron",
+        "pyramid",
+        "stairs",
+        "logic-tree",
+        "waterfall",
+        "slope",
+        "evidence-map",
+        "bars",
+        "kpi",
+    )
+
+    def test_patterns_canonical_assembly_blocks_declare_version_two(self) -> None:
+        seen: set[str] = set()
+        for raw in self._assembly_blocks("patterns.md"):
+            for section in raw.get("sections", []):
+                if section.get("kind") != "canonical":
+                    continue
+                selection = section["ir"]["selection"]
+                comp = selection["component"]
+                self.assertEqual(selection["version"], 2, comp)
+                seen.add(comp)
+        self.assertEqual(seen, set(self._TWELVE_COMPONENTS))
+
+    def test_patterns_canonical_section_headers_mark_at2(self) -> None:
+        text = Path("../references/patterns.md").read_text(encoding="utf-8")
+        for header in (
+            "### matrix（二軸分類・交差比較）@2",
+            "### flow（順序・有向遷移・分岐）@2",
+            "### enumeration（並列列挙）@2",
+            "### chevron（線形順序）@2",
+            "### pyramid（優先階層）@2",
+            "### stairs（成熟度階段）@2",
+            "### logic-tree（構成の分解）@2",
+            "### waterfall（加算的ブリッジ）@2",
+            "### slope（2時点比較）@2",
+            "### evidence-map（論拠地図）@2",
+            "### bars（単軸定量比較）@2",
+            "### kpi（主要指標・リング型）@2",
+        ):
+            self.assertIn(header, text, header)
 
 
 class FlowTopologyContractTest(unittest.TestCase):

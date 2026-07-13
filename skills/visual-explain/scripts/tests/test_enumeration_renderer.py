@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-from ve_components.diagnostics import ContractError
+from ve_components.diagnostics import ContractError, ENUMERATION_EMPHASIS_NOT_FOUND
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry
 from ve_components.renderers.enumeration import render_enumeration
@@ -16,11 +16,31 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-ENUM_DEF = REGISTRY.find("enumeration", 1)
+ENUM_DEF = REGISTRY.find("enumeration", 2)
 
 
-def render_fixture(name: str = "component-valid-enumeration.json"):
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+def _fixture_path(name: str) -> Path:
+    return TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+
+
+def validate_raw(ir: dict):
+    return validate_canonical_section(ir)
+
+
+def expect_violation(ir: dict, code: str) -> None:
+    with unittest.TestCase().assertRaises(ContractError) as ctx:
+        validate_raw(ir)
+    codes = {d.code for d in ctx.exception.diagnostics}
+    unittest.TestCase().assertIn(code, codes)
+
+
+def expect_violation_fixture(name: str, code: str) -> None:
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
+    expect_violation(raw["sections"][0]["ir"], code)
+
+
+def render_fixture(name: str = "component-valid-enumeration"):
+    raw = json.loads(_fixture_path(name).read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
     return ir, render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
 
@@ -30,7 +50,7 @@ class EnumerationManifestTest(unittest.TestCase):
         self.assertIsNotNone(ENUM_DEF)
         self.assertEqual(ENUM_DEF.relationship_kind, "parallel-enumeration")
         self.assertEqual(ENUM_DEF.capabilities, ("parallel-itemization",))
-        self.assertEqual(ENUM_DEF.renderer, "enumeration@1")
+        self.assertEqual(ENUM_DEF.renderer, "enumeration@2")
         self.assertEqual([a.id for a in ENUM_DEF.assets], ["enumeration.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
@@ -63,12 +83,12 @@ class EnumerationMarkupTest(unittest.TestCase):
     def test_number_mode_renders_sequence_without_ir_numbers(self) -> None:
         numbers = re.findall(r'class="ve-enum-number"[^>]*>(\d+)<', self.markup)
         self.assertEqual(numbers, ["1", "2", "3"])
-        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
         for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
             self.assertNotIn("number", item)
 
     def test_number_mode_requires_title_even_with_description(self) -> None:
-        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
         items = raw["sections"][0]["ir"]["enumeration"]["items"]
         for item in items:
             item["description"] = ["全項目に説明がある"]
@@ -90,8 +110,9 @@ class EnumerationMarkupTest(unittest.TestCase):
         for match in re.finditer(r'<span class="ve-enum-number"([^>]*)>', self.markup):
             self.assertIn('aria-hidden="true"', match.group(1))
 
-    def test_list_presentation_uses_centered_wrapper(self) -> None:
-        self.assertIn("ve-enum-list-centered", self.markup)
+    def test_list_presentation_uses_items_wrapper(self) -> None:
+        self.assertIn("ve-enum-items", self.markup)
+        self.assertNotIn("ve-enum-list-centered", self.markup)
 
     def test_columns_presentation_uses_columns_wrapper(self) -> None:
         ir, result = render_fixture("component-valid-enumeration-columns.json")
@@ -105,18 +126,18 @@ class EnumerationMarkupTest(unittest.TestCase):
             re.DOTALL,
         )
         self.assertEqual(len(concepts), 3)
-        self.assertEqual(result.markup.count('class="ve-enum-description"'), 3)
+        self.assertEqual(result.markup.count('class="ve-enum-description ve-enum-desc"'), 3)
         self.assertTrue(all("ve-enum-description" not in concept for concept in concepts))
 
     def test_columns_emit_concept_then_description(self) -> None:
         _, result = render_fixture("component-valid-enumeration-columns.json")
         self.assertRegex(
             result.markup,
-            r've-enum-concept[^>]*>.*?</div><ul class="ve-enum-description">',
+            r've-enum-concept[^>]*>.*?</div><p class="ve-enum-description ve-enum-desc">',
         )
 
     def test_concept_only_emits_no_description_region(self) -> None:
-        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
         for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
             item.pop("description")
         ir = validate_canonical_section(raw["sections"][0]["ir"])
@@ -125,7 +146,7 @@ class EnumerationMarkupTest(unittest.TestCase):
         self.assertNotIn("ve-enum-has-description", result.markup)
 
     def test_takeaway_class_is_on_concept_not_outer_item(self) -> None:
-        raw = json.loads((TESTS / "component-valid-enumeration.json").read_text("utf-8"))
+        raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
         raw["sections"][0]["ir"]["takeawayTargetIds"] = ["item-a"]
         ir = validate_canonical_section(raw["sections"][0]["ir"])
         result = render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
@@ -133,7 +154,7 @@ class EnumerationMarkupTest(unittest.TestCase):
             result.markup,
             r'<li class="ve-enum-block" data-ve-semantic-id="item-a" data-ve-takeaway="true">',
         )
-        self.assertIn('<div class="ve-enum-concept ve-takeaway-target">', result.markup)
+        self.assertIn('<div class="ve-enum-concept ve-enum-box ve-takeaway-target">', result.markup)
 
     def test_no_flow_or_matrix_relation_attributes(self) -> None:
         self.assertNotIn("data-ve-from", self.markup)
@@ -141,6 +162,21 @@ class EnumerationMarkupTest(unittest.TestCase):
         self.assertNotIn("data-ve-relation", self.markup)
         self.assertNotIn("data-ve-row-id", self.markup)
         self.assertNotIn("data-ve-column-id", self.markup)
+
+
+class EnumerationV2Test(unittest.TestCase):
+    def test_enumeration_v2_wraps_emphasis_once(self) -> None:
+        _, result = render_fixture("component-valid-enumeration")
+        markup = result.markup
+        self.assertEqual(
+            markup.count('<strong class="dg-em">無料のフィットネス利用券</strong>'), 1)
+        self.assertIn('class="ve-enum-concept ve-enum-box"', markup)
+
+    def test_enumeration_v2_rejects_emphasis_not_in_description(self) -> None:
+        expect_violation_fixture(
+            "component-bad-enum-emphasis-missing",
+            ENUMERATION_EMPHASIS_NOT_FOUND,
+        )
 
 
 if __name__ == "__main__":

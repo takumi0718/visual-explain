@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Callable, Optional
 
+CERTAINTY_LABEL = {"confirmed": "確認済み", "inferred": "推論", "unverified": "未確認"}
+
 # ---------------------------------------------------------------------------
 # Document + assembly envelope
 # ---------------------------------------------------------------------------
@@ -81,6 +83,8 @@ class MatrixPayload:
     rows: tuple[AxisEntry, ...]
     columns: tuple[AxisEntry, ...]
     cells: tuple[MatrixCell, ...]
+    highlight_id: Optional[str] = None
+    presentation: str = "dense"
 
 
 @dataclass(frozen=True)
@@ -126,6 +130,7 @@ class EnumerationItem:
     label: Optional[str] = None
     title: Optional[str] = None
     description: tuple[str, ...] = ()
+    description_emphasis: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -141,6 +146,7 @@ class ChevronStep:
     label: Optional[str] = None
     title: Optional[str] = None
     description: tuple[str, ...] = ()
+    description_emphasis: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -167,13 +173,12 @@ class PyramidPayload:
 class StairsStage:
     id: str
     label: str
-    note: str = ""
-    current: bool = False
 
 
 @dataclass(frozen=True)
 class StairsPayload:
     stages: tuple[StairsStage, ...]
+    highlight_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -196,10 +201,12 @@ class WaterfallStep:
 @dataclass(frozen=True)
 class WaterfallPayload:
     display_precision: int | Decimal
-    orientation: str
     start: WaterfallEndpoint
     steps: tuple[WaterfallStep, ...]
     end: WaterfallEndpoint
+    title: str
+    unit_label: str
+    axis_ticks: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -247,8 +254,39 @@ class SlopeItem:
 @dataclass(frozen=True)
 class SlopePayload:
     axes: SlopeAxes
-    unit: str
     items: tuple[SlopeItem, ...]
+    title: str
+    unit_label: str
+    highlight_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class BarsItem:
+    id: str
+    label: str
+    value: int | Decimal
+    value_text: str
+
+
+@dataclass(frozen=True)
+class BarsPayload:
+    title: str
+    unit_label: str
+    items: tuple[BarsItem, ...]
+    highlight_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class KpiItem:
+    id: str
+    value: str
+    unit: str
+    caption: str
+
+
+@dataclass(frozen=True)
+class KpiPayload:
+    items: tuple[KpiItem, ...]
 
 
 @dataclass(frozen=True)
@@ -294,6 +332,8 @@ class CanonicalIR:
     waterfall: Optional[WaterfallPayload] = None
     logic_tree: Optional[LogicTreePayload] = None
     slope: Optional[SlopePayload] = None
+    bars: Optional[BarsPayload] = None
+    kpi: Optional[KpiPayload] = None
     evidence_map: Optional[EvidenceMapPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
@@ -319,6 +359,10 @@ class CanonicalIR:
             return "logic-tree"
         if self.slope is not None:
             return "slope"
+        if self.bars is not None:
+            return "bars"
+        if self.kpi is not None:
+            return "kpi"
         if self.evidence_map is not None:
             return "evidence-map"
         raise ValueError("canonical IR has no payload")
@@ -354,6 +398,10 @@ class CanonicalIR:
                 ids.extend(leaf.id for leaf in branch.leaves)
         if self.slope is not None:
             ids.extend(item.id for item in self.slope.items)
+        if self.bars is not None:
+            ids.extend(item.id for item in self.bars.items)
+        if self.kpi is not None:
+            ids.extend(item.id for item in self.kpi.items)
         if self.evidence_map is not None:
             ids.append(self.evidence_map.conclusion.id)
             ids.extend(item.id for item in self.evidence_map.evidence)

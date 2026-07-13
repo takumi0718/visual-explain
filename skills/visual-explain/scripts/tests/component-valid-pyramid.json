@@ -16,7 +16,7 @@
         },
         "selection": {
           "component": "pyramid",
-          "version": 1,
+          "version": 2,
           "matchedCapabilities": ["priority-layering"]
         },
         "caption": "優先度の4層ピラミッド",

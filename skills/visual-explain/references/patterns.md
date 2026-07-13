@@ -174,7 +174,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 </ol>
 ```
 
-### kpi — 効果・指標
+### kpi — 効果・指標（legacy HTML・canonical 昇格済み）
+
+> **注記**: `kpi` は canonical `kpi@2` に昇格済みである。通常経路は末尾のカノニカル組み立て例を使え。以下は互換節用の legacy マークアップである。
 
 値、指標名、必要なら比較基準を近接させる。確定していない値を確定値として表示しない。
 
@@ -185,7 +187,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 </div>
 ```
 
-### bars — 定量比較
+### bars — 定量比較（legacy HTML・canonical 昇格済み）
+
+> **注記**: `bars` は canonical `bars@2` に昇格済みである。通常経路は末尾のカノニカル組み立て例を使え。以下は互換節用の legacy マークアップである。
 
 量の比較にだけ使う。横棒の長さは `--value` に百分率で宣言し、座標を計算しない。数値をテキストでも併記する。
 
@@ -245,9 +249,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / bars / kpi / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は canonical IR（**contractVersion 2 / @2**）から生成する。以下の組み立て例はすべて `selection.version: 2` を宣言する。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
@@ -257,11 +261,13 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **構成の分解** → `logic-tree`（`hierarchical-decomposition` / `mece-decomposition`）。**読者がたどる判断分岐は decision-tree（バックログ）** — 誤用は選択ガイドで防ぐ。MECE 性は機械検証できないため caption / certainty で主張する。
 - **優先の階層（上ほど重要・少ない）** → `pyramid`（`layered-priority` / `priority-layering`）。**単なる並列3項目は enumeration、優先構造だけ pyramid** — pyramid は誤用しない。
 - **到達したら留まる状態（成熟度・移行フェーズ）** → `stairs`（`staged-maturity` / `maturity-staging`）。**流れる工程は chevron**。
-- **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。`orientation: "bars"`（行型・既定）は狭い画面向き、`orientation: "columns"`（横並び縦棒）は広い画面向き。**columns は狭い画面では bars を推奨**（レンダラは縮退せず横スクロールで溢れさせる）。
+- **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。v2 は単一の SVG ウォーターフォール（Y 軸・目盛・点線コネクタ・期首/期末塗り棒）。`title` / `unitLabel` / `axisTicks` は必須。`steps` は最大 5 件（期首・期末込みで最大 7 本）。
 - **2時点比較（同一単位の before/after）** → `slope`（`two-point-change` / `two-point-comparison`）。**3点以上の時系列は timeline か文章へ** — item は最大5件だが各 item は2値のみ。
 - **結論と根拠の1段マッピング** → `evidence-map`（`claim-support` / `claim-support-mapping`）。**根拠の根拠は図を分割** — 階層は1段のみ。
+- **単軸の定量比較・ランキング** → `bars`（`quantitative-comparison` / `single-axis-quantity`）。**時系列や加算的ブリッジは waterfall / slope へ** — 最大10行、主題の1本だけ teal ハイライト。
+- **主要指標の強調（リング型）** → `kpi`（`headline-metrics` / `metric-highlight`）。**複数系列の時系列比較は slope へ** — 最大5個（1行3個まで）。
 
-### matrix（二軸分類・交差比較）
+### matrix（二軸分類・交差比較）@2
 
 ```json
 {
@@ -273,7 +279,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-matrix",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison"]},
-        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
+        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
         "caption": "閲覧者は書き込みだけ不可、それ以外は全許可",
         "takeawayTargetIds": ["d-c4"],
         "certainty": [{"id": "d-cert", "level": "confirmed", "statement": "管理者の全操作は仕様で確定。"}],
@@ -295,7 +301,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### flow（順序・有向遷移・分岐）
+### flow（順序・有向遷移・分岐）@2
 
 前向き・fan 3以下・レール3以下・行予算28以下を守る。超える構造は受理されないため、matrix か文章へ縮退する。
 
@@ -309,7 +315,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-flow",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition"]},
-        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
+        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
         "caption": "一次レビューの合意なしに承認へ進めない",
         "takeawayTargetIds": ["f-e2"],
         "certainty": [{"id": "f-cert", "level": "confirmed", "statement": "起案から一次レビューへの遷移は確定。"}],
@@ -329,9 +335,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### enumeration（並列列挙）
+### enumeration（並列列挙）@2
 
-2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、全 item に `title` が必要。`description` は任意補足で、全 item で省略するか全 item で指定する（歯抜け不可）。list（縦）は説明をコンセプトの右、columns（横）は下に置く。
+2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、全 item に `title` が必要。`description` は任意補足で、全 item で省略するか全 item で指定する（歯抜け不可）。`descriptionEmphasis` で文中強調（`dg-em`）対象を1フレーズ指定できる（1 item につき最大1個）。list（縦）は説明をコンセプトの右、columns（横）は下に置く。
 
 ```json
 {
@@ -343,14 +349,14 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-enum",
         "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 1, "matchedCapabilities": ["parallel-itemization"]},
+        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
         "caption": "検討対象の並列項目",
         "certainty": [{"id": "e-cert", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}],
         "sources": [{"id": "e-src", "label": "議事録 2026-06"}],
         "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
         "enumeration": {
           "items": [
-            {"id": "e-a", "title": "権限モデル", "description": ["役割ごとの操作範囲を見直す"]},
+            {"id": "e-a", "title": "福利厚生", "description": ["従業員向けに無料のフィットネス利用券を配布する"], "descriptionEmphasis": "無料のフィットネス利用券"},
             {"id": "e-b", "title": "監査ログ", "description": ["必要な保持期間を決める"]},
             {"id": "e-c", "title": "通知チャネル", "description": ["通知経路を統合する"]}
           ],
@@ -363,7 +369,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### chevron（線形順序）
+### chevron（線形順序）@2
 
 2〜6段（`orientation: "horizontal"` は3〜6段）。`blockContent: "number"` では番号をレンダラが採番し、全 step に `title` が必要。`description` は任意補足で全有/全無。縦型は説明をコンセプトの右、横型は下に置く。`loop: true` は縦型のみで `closed-loop` capability と併用し、レールはコンセプト列だけに沿わせる。縦型 `description` は1〜3行・各40字以内、横型は1〜2行・各30字以内。
 
@@ -377,7 +383,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-chevron",
         "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
-        "selection": {"component": "chevron", "version": 1, "matchedCapabilities": ["linear-sequence"]},
+        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence"]},
         "caption": "受付から報告までの4段",
         "certainty": [{"id": "c-cert", "level": "confirmed", "statement": "4段は運用手順書に準拠。"}],
         "sources": [{"id": "c-src", "label": "運用手順書 v3"}],
@@ -401,7 +407,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 横型 number モードも番号＋`title`を図形内に置き、説明は下へ分離する。全 step から`description`を省略した場合は、空の説明欄を生成せずコンセプトだけを表示する。
 
-### pyramid（優先階層）
+### pyramid（優先階層）@2
 
 3〜4層（上から下＝頂点から基盤）。`label` 12字以内、`sub` 30字以内。頂点層のみ強調面。幅は `ve-pyramid-count-{3,4}` と `ve-pyramid-index-{n}` の列挙クラスで割り当てる。
 
@@ -415,7 +421,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-pyramid",
         "relationship": {"kind": "layered-priority", "capabilities": ["priority-layering"]},
-        "selection": {"component": "pyramid", "version": 1, "matchedCapabilities": ["priority-layering"]},
+        "selection": {"component": "pyramid", "version": 2, "matchedCapabilities": ["priority-layering"]},
         "caption": "優先度の4層ピラミッド",
         "certainty": [{"id": "p-cert", "level": "confirmed", "statement": "4層は経営会議で合意。"}],
         "sources": [{"id": "p-src", "label": "戦略方針 v2"}],
@@ -434,9 +440,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### stairs（成熟度階段）
+### stairs（成熟度階段）@2
 
-3〜5段（低い段から高い段）。`label` 14字以内、`note` 20字以内。`current: true` は最大1件で `note` 必須。現在地段のみ accent。高さは `ve-stairs-count-{3..5}` と `ve-stairs-index-{n}` の列挙クラスで割り当てる。
+3〜5段（低い段から高い段）。`label` 14字以内。`highlightId` で現在地段を指定する（省略可）。到達済み=紺、現在地=teal＋`← 現在地`、未到達=neutral。高さは `ve-stairs-count-{3..5}` と `ve-stairs-index-{n}` の列挙クラスで割り当てる。
 
 ```json
 {
@@ -448,16 +454,17 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-stairs",
         "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging"]},
-        "selection": {"component": "stairs", "version": 1, "matchedCapabilities": ["maturity-staging"]},
+        "selection": {"component": "stairs", "version": 2, "matchedCapabilities": ["maturity-staging"]},
         "caption": "成熟度の5段階",
         "certainty": [{"id": "s-cert", "level": "confirmed", "statement": "5段は成熟度モデルに準拠。"}],
         "sources": [{"id": "s-src", "label": "成熟度モデル v1"}],
         "accessibility": {"label": "成熟度階段", "summary": "低い段から高い段へ5段の成熟度を示す。"},
         "stairs": {
+          "highlightId": "s-3",
           "stages": [
             {"id": "s-1", "label": "未整備"},
             {"id": "s-2", "label": "部分導入"},
-            {"id": "s-3", "label": "標準化", "current": true, "note": "ここにいる"},
+            {"id": "s-3", "label": "標準化"},
             {"id": "s-4", "label": "最適化"},
             {"id": "s-5", "label": "自律運用"}
           ]
@@ -468,7 +475,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### logic-tree（構成の分解）
+### logic-tree（構成の分解）@2
 
 2〜4枝。`root.label` 20字以内、`branch.label` 16字以内、`leaf.text` 40字以内。各枝の leaf は0〜2件。深さは root → branch → leaf の2段固定。接続線はレンダラ所有（grid＋境界線、`data-ve-from/to` 禁止）。狭い画面では root 上・枝下の縦積み（DOM 順序は root が先）。
 
@@ -482,7 +489,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-logic-tree",
         "relationship": {"kind": "hierarchical-decomposition", "capabilities": ["mece-decomposition"]},
-        "selection": {"component": "logic-tree", "version": 1, "matchedCapabilities": ["mece-decomposition"]},
+        "selection": {"component": "logic-tree", "version": 2, "matchedCapabilities": ["mece-decomposition"]},
         "caption": "全体テーマの3枝分解",
         "certainty": [{"id": "lt-cert", "level": "inferred", "statement": "分解はレビューで合意（MECE は機械未検証）。"}],
         "sources": [{"id": "lt-src", "label": "分解メモ v1"}],
@@ -501,41 +508,44 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### waterfall（加算的ブリッジ）
+### waterfall（加算的ブリッジ）@2
 
-`displayPrecision` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。幾何（百分率クラス）は補助的で、値の伝達は `valueText` が主である。
+`displayPrecision`・`title`・`unitLabel`・`axisTicks` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。`steps` は 1〜5 件（期首・期末込みで最大 7 本）。`axisTicks` の各値は 0..v_max の数値文字列であること。v2 は renderer-SVG（Y 軸・目盛・点線コネクタ・期首/期末塗り棒）で、幾何は整数座標へ丸める。
 
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-waterfall", "title": "件数ブリッジ", "summary": "開始から増減を経て終了へ。"},
+  "document": {"id": "doc-waterfall", "title": "利益ブリッジ", "summary": "期首から増減を経て期末へ。"},
   "sections": [{
     "kind": "canonical",
     "ir": {
       "id": "sec-doc-waterfall",
       "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
-      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
-      "caption": "件数の増減ブリッジ",
+      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "営業利益の増減ブリッジ",
       "certainty": [{"id": "wf-cert", "level": "confirmed", "statement": "台帳と一致。"}],
-      "sources": [{"id": "wf-src", "label": "件数台帳"}],
-      "accessibility": {"label": "ウォーターフォール", "summary": "開始値から増減を経て終了値へ。"},
+      "sources": [{"id": "wf-src", "label": "利益台帳"}],
+      "accessibility": {"label": "ウォーターフォール", "summary": "期首利益から増減を経て期末利益へ。"},
       "waterfall": {
         "displayPrecision": 1,
-        "orientation": "bars",
-        "start": {"id": "wf-start", "label": "開始", "value": 30, "valueText": "30件"},
+        "title": "営業利益",
+        "unitLabel": "億円",
+        "axisTicks": ["0", "50", "100", "150"],
+        "start": {"id": "wf-start", "label": "期首", "value": 90, "valueText": "90"},
         "steps": [
-          {"id": "wf-s1", "label": "減少", "delta": -50, "tone": "warning", "valueText": "−50件"},
-          {"id": "wf-s2", "label": "回復", "delta": 45, "tone": "positive", "valueText": "+45件"}
+          {"id": "wf-s1", "label": "価格改定", "delta": 40, "tone": "positive", "valueText": "+40"},
+          {"id": "wf-s2", "label": "値引き", "delta": -50, "tone": "warning", "valueText": "−50"}
         ],
-        "end": {"id": "wf-end", "label": "終了", "value": 25, "valueText": "25件"}
+        "end": {"id": "wf-end", "label": "期末", "value": 80, "valueText": "80"}
       }
     }
   }]
 }
 ```
 
-### slope（2時点比較）
+### slope（2時点比較）@2
 
+`title`・`unitLabel` は必須。`highlightId` で注目系列を1本指定できる（省略可）。
 ```json
 {
   "schemaVersion": 1,
@@ -545,14 +555,16 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     "ir": {
       "id": "sec-doc-slope",
       "relationship": {"kind": "two-point-change", "capabilities": ["two-point-comparison"]},
-      "selection": {"component": "slope", "version": 1, "matchedCapabilities": ["two-point-comparison"]},
+      "selection": {"component": "slope", "version": 2, "matchedCapabilities": ["two-point-comparison"]},
       "caption": "主要指標の推移",
       "certainty": [{"id": "sl-cert", "level": "confirmed", "statement": "台帳値。"}],
       "sources": [{"id": "sl-src", "label": "月次台帳"}],
       "accessibility": {"label": "スロープ", "summary": "2時点の値変化。"},
       "slope": {
+        "title": "主要指標",
         "axes": {"fromLabel": "開始", "toLabel": "終了"},
-        "unit": "件",
+        "unitLabel": "件",
+        "highlightId": "sl-1",
         "items": [{
           "id": "sl-1", "label": "売上", "fromValue": 10, "toValue": 40,
           "fromValueText": "10件", "toValueText": "40件", "tone": "positive"
@@ -563,7 +575,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### evidence-map（論拠地図）
+### evidence-map（論拠地図）@2
 
 ```json
 {
@@ -574,7 +586,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     "ir": {
       "id": "sec-doc-em",
       "relationship": {"kind": "claim-support", "capabilities": ["claim-support-mapping"]},
-      "selection": {"component": "evidence-map", "version": 1, "matchedCapabilities": ["claim-support-mapping"]},
+      "selection": {"component": "evidence-map", "version": 2, "matchedCapabilities": ["claim-support-mapping"]},
       "caption": "移行判断の論拠",
       "certainty": [
         {"id": "em-cert", "level": "confirmed", "statement": "監査済み。"},
@@ -587,6 +599,66 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
         "evidence": [
           {"id": "em-e1", "label": "コスト増加", "certaintyRef": "em-cert", "sourceRef": "em-src"},
           {"id": "em-e2", "label": "期間見積", "certaintyRef": "em-inf"}
+        ]
+      }
+    }
+  }]
+}
+```
+
+### bars（単軸定量比較）@2
+
+`title`・`unitLabel` は必須。`items` は 1〜10 件。`highlightId` で主題の1本だけ teal にできる（省略可）。`value` は数値文字列、`valueText` は表示用。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-bars", "title": "棒グラフ比較", "summary": "2系列の定量比較を示す。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-bars",
+      "relationship": {"kind": "quantitative-comparison", "capabilities": ["single-axis-quantity", "ranked-comparison"]},
+      "selection": {"component": "bars", "version": 2, "matchedCapabilities": ["single-axis-quantity", "ranked-comparison"]},
+      "caption": "日本の女性役員割合が最も低い",
+      "certainty": [{"id": "b-cert", "level": "confirmed", "statement": "公開統計に基づく。"}],
+      "sources": [{"id": "b-src", "label": "役員統計 2021"}],
+      "accessibility": {"label": "棒グラフ", "summary": "各国の女性役員割合を横棒で比較する。"},
+      "bars": {
+        "title": "各国の女性役員割合（2021年）",
+        "unitLabel": "%",
+        "highlightId": "b2",
+        "items": [
+          {"id": "b1", "label": "フランス", "value": "45.3", "valueText": "45.3%"},
+          {"id": "b2", "label": "日本", "value": "7.5", "valueText": "7.5%"}
+        ]
+      }
+    }
+  }]
+}
+```
+
+### kpi（主要指標・リング型）@2
+
+`items` は 1〜5 件（1行3個まで）。`value`・`unit`・`caption` を各 item に置く。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-kpi", "title": "KPI 指標", "summary": "リング型の主要指標を示す。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-kpi",
+      "relationship": {"kind": "headline-metrics", "capabilities": ["metric-highlight"]},
+      "selection": {"component": "kpi", "version": 2, "matchedCapabilities": ["metric-highlight"]},
+      "caption": "プログラム満足度の主要指標",
+      "certainty": [{"id": "k-cert", "level": "confirmed", "statement": "アンケート集計に基づく。"}],
+      "sources": [{"id": "k-src", "label": "満足度調査 2024"}],
+      "accessibility": {"label": "KPI 指標", "summary": "満足度をリング型の数値で示す。"},
+      "kpi": {
+        "items": [
+          {"id": "k1", "value": "88", "unit": "%", "caption": "本プログラムの満足度"}
         ]
       }
     }
@@ -608,7 +680,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
       "ir": {
         "id": "sec-mx",
         "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification"]},
-        "selection": {"component": "matrix", "version": 1, "matchedCapabilities": ["two-axis-classification"]},
+        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification"]},
         "caption": "管理者は読み取りを許可される",
         "takeawayScope": "whole",
         "certainty": [{"id": "mx-c", "level": "confirmed", "statement": "確定。"}],
@@ -632,7 +704,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
       "ir": {
         "id": "sec-fl",
         "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition"]},
-        "selection": {"component": "flow", "version": 1, "matchedCapabilities": ["ordered-transition"]},
+        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition"]},
         "caption": "起案は承認へ進む",
         "takeawayScope": "whole",
         "certainty": [{"id": "fl-c", "level": "confirmed", "statement": "確定。"}],
