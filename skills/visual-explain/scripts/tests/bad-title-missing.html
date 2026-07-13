@@ -195,7 +195,7 @@
     @media (min-width: 60rem) {
       .figure:has(.flow, .matrix) { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); }
       figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }
-      .figure .matrix table, figure[data-ve-component="matrix"] table { width: auto; margin-inline: auto; }
+      .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
     }
 
     @media (max-width: 42rem) {

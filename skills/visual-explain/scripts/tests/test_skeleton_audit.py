@@ -185,7 +185,7 @@ class ResponsiveLayoutTest(unittest.TestCase):
             block)
         self.assertIn(
             '.figure .matrix table, figure[data-ve-component="matrix"] table '
-            "{ width: auto; margin-inline: auto; }",
+            "{ width: min(var(--w-narrative), 100%); margin-inline: auto; }",
             block)
         # 張り出しの適格列挙は2ルールで閉じる（値の再利用による黙った拡張を拒否する）
         self.assertEqual(SKELETON.count(_BREAKOUT_MARGIN), 2)
