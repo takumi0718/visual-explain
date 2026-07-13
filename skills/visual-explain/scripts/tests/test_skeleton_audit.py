@@ -183,6 +183,12 @@ class ResponsiveLayoutTest(unittest.TestCase):
             'figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: '
             "calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }",
             block)
+        self.assertIn(
+            '.figure .matrix table, figure[data-ve-component="matrix"] table '
+            "{ width: auto; margin-inline: auto; }",
+            block)
+        # 張り出しの適格列挙は2ルールで閉じる（値の再利用による黙った拡張を拒否する）
+        self.assertEqual(SKELETON.count(_BREAKOUT_MARGIN), 2)
 
     def test_ask_options_stack_on_mobile(self):
         mobile = SKELETON.split("@media (max-width: 42rem) {", 1)[1]
