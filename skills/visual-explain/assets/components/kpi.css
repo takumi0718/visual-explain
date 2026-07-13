@@ -1,0 +1,15 @@
+[data-ve-component="kpi"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="kpi"] .ve-kpi-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="kpi"] .ve-kpi-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="kpi"] .ve-kpi-list {
+  display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center; }
+figure[data-ve-component="kpi"] .ve-kpi-item { display: grid; justify-items: center; gap: var(--space-2); max-width: 12rem; }
+figure[data-ve-component="kpi"] .ve-kpi-ring {
+  display: grid; place-items: center; width: 8.5rem; height: 8.5rem;
+  border: 5px solid var(--dg-primary); border-radius: 50%; text-align: center; }
+figure[data-ve-component="kpi"] .ve-kpi-num {
+  font-size: 2.1rem; font-weight: 700; color: var(--dg-primary); line-height: 1.1; }
+figure[data-ve-component="kpi"] .ve-kpi-num small { font-size: 1rem; color: var(--text-dim); }
+figure[data-ve-component="kpi"] .ve-kpi-cap { text-align: center; font-size: var(--fs-figure); margin: 0; }
+figure[data-ve-component="kpi"] .ve-kpi-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="kpi"] .ve-kpi-notes li { margin: 0; }

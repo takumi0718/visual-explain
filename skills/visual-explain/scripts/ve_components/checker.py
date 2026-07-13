@@ -30,6 +30,7 @@ from .diagnostics import (
     RENDERER_SVG_VIOLATION,
     SLOPE_STRUCTURE_VIOLATION,
     BARS_WIDTH_CLASSES,
+    KPI_ITEM_LIMIT,
     Diagnostic,
 )
 from .validation import VOCABULARY
@@ -1473,6 +1474,35 @@ def _check_matrix_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
     return diagnostics
 
 
+def _check_kpi_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+
+    item_count = len(re.findall(r'class="ve-kpi-item"', body))
+    if item_count < 1 or item_count > 5:
+        diagnostics.append(Diagnostic(
+            KPI_ITEM_LIMIT,
+            f"kpi は1〜5項目である必要があります (found {item_count})",
+        ))
+
+    if item_count >= 1:
+        ring_count = len(re.findall(r'class="ve-kpi-ring"', body))
+        num_count = len(re.findall(r'class="ve-kpi-num"', body))
+        cap_count = len(re.findall(r'class="ve-kpi-cap"', body))
+        small_count = body.count("<small>")
+        semantic_count = len(re.findall(r'class="ve-kpi-item"[^>]*data-ve-semantic-id="', body))
+        if ring_count != item_count:
+            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に ve-kpi-ring がありません"))
+        if num_count != item_count:
+            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に ve-kpi-num がありません"))
+        if small_count != item_count:
+            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に単位 small がありません"))
+        if cap_count != item_count:
+            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に ve-kpi-cap がありません"))
+        if semantic_count != item_count:
+            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に data-ve-semantic-id がありません"))
+    return diagnostics
+
+
 COMPONENT_ARTIFACT_CHECKS = {
     "enumeration": _check_enumeration_artifact,
     "chevron": _check_chevron_artifact,
@@ -1482,6 +1512,7 @@ COMPONENT_ARTIFACT_CHECKS = {
     "logic-tree": _check_logic_tree_artifact,
     "slope": _check_slope_artifact,
     "bars": _check_bars_artifact,
+    "kpi": _check_kpi_artifact,
     "evidence-map": _check_evidence_map_artifact,
 }
 

@@ -538,6 +538,52 @@
           "digest": "dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9"
         }
       ]
+    },
+    {
+      "id": "kpi",
+      "version": 2,
+      "relationshipKind": "headline-metrics",
+      "capabilities": [
+        "metric-highlight"
+      ],
+      "semanticResponsibility": "主要指標のリング型ハイライト表示のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources"
+      ],
+      "behavior": "静的なリング円で数値・単位・キャプションを描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と項目ごとのキャプション。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "kpi-item-limit"
+      ],
+      "renderer": "kpi@2",
+      "assets": [
+        {
+          "id": "kpi.css",
+          "slot": "styles",
+          "path": "kpi.css",
+          "digest": "5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78"
+        }
+      ]
     }
   ]
 }

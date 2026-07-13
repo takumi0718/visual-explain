@@ -19,6 +19,7 @@ from .waterfall import render_waterfall
 from .slope import render_slope
 from .evidence_map import render_evidence_map
 from .bars import render_bars
+from .kpi import render_kpi
 
 TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "matrix@2": render_matrix,
@@ -32,4 +33,5 @@ TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "slope@2": render_slope,
     "evidence-map@2": render_evidence_map,
     "bars@2": render_bars,
+    "kpi@2": render_kpi,
 }

@@ -56,6 +56,11 @@
       "contractVersion": 2,
       "relationshipKind": "quantitative-comparison",
       "capabilities": ["single-axis-quantity", "ranked-comparison"]
+    },
+    "kpi": {
+      "contractVersion": 2,
+      "relationshipKind": "headline-metrics",
+      "capabilities": ["metric-highlight"]
     }
   },
   "compatibility": {

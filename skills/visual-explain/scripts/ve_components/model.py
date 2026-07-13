@@ -277,6 +277,19 @@ class BarsPayload:
 
 
 @dataclass(frozen=True)
+class KpiItem:
+    id: str
+    value: str
+    unit: str
+    caption: str
+
+
+@dataclass(frozen=True)
+class KpiPayload:
+    items: tuple[KpiItem, ...]
+
+
+@dataclass(frozen=True)
 class EvidenceConclusion:
     id: str
     label: str
@@ -320,6 +333,7 @@ class CanonicalIR:
     logic_tree: Optional[LogicTreePayload] = None
     slope: Optional[SlopePayload] = None
     bars: Optional[BarsPayload] = None
+    kpi: Optional[KpiPayload] = None
     evidence_map: Optional[EvidenceMapPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
@@ -347,6 +361,8 @@ class CanonicalIR:
             return "slope"
         if self.bars is not None:
             return "bars"
+        if self.kpi is not None:
+            return "kpi"
         if self.evidence_map is not None:
             return "evidence-map"
         raise ValueError("canonical IR has no payload")
@@ -384,6 +400,8 @@ class CanonicalIR:
             ids.extend(item.id for item in self.slope.items)
         if self.bars is not None:
             ids.extend(item.id for item in self.bars.items)
+        if self.kpi is not None:
+            ids.extend(item.id for item in self.kpi.items)
         if self.evidence_map is not None:
             ids.append(self.evidence_map.conclusion.id)
             ids.extend(item.id for item in self.evidence_map.evidence)

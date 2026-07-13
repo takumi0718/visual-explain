@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "kpi-demo",
+    "title": "KPI 指標",
+    "summary": "リング型の主要指標を示す KPI。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-kpi",
+        "relationship": {
+          "kind": "headline-metrics",
+          "capabilities": ["metric-highlight"]
+        },
+        "selection": {
+          "component": "kpi",
+          "version": 2,
+          "matchedCapabilities": ["metric-highlight"]
+        },
+        "caption": "プログラム満足度の主要指標",
+        "certainty": [
+          {"id": "cert-kpi", "level": "confirmed", "statement": "アンケート集計に基づく。"}
+        ],
+        "sources": [
+          {"id": "src-kpi", "label": "満足度調査", "detail": "2024年。"}
+        ],
+        "accessibility": {
+          "label": "KPI 指標",
+          "summary": "満足度をリング型の数値で示す。"
+        },
+        "kpi": {
+          "items": [
+            {"id": "k1", "value": "88", "unit": "%", "caption": "本プログラムの満足度"}
+          ]
+        }
+      }
+    }
+  ]
+}

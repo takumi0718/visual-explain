@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ja" data-theme-storage-key="visual-explain-theme">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <!-- TITLE:BEGIN -->
+  <title>KPI 上限超過</title>
+  <!-- TITLE:END -->
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --surface: #f4f5f7;
+      --border: #e2e5e9;
+      --border-strong: #1a1d21;
+      --text: #1a1d21;
+      --text-dim: #555e6a;
+      --text-faint: #676f7a;
+      --accent: #2456b3;
+      --accent-strong: #1a4290;
+      --positive: #1e6b46;
+      --positive-strong: #14532f;
+      --warning: #9a4e0e;
+      --warning-strong: #7c3d08;
+      --accent-warm: #9a4e0e;
+      --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
+      --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
+      --lh-body: 1.75; --lh-heading: 1.45;
+      --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
+      --space-5: 3rem; --space-6: 4rem; --space-7: 5.5rem;
+      --w-narrative: 45rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        color-scheme: dark;
+        --bg: #15181c;
+        --surface: #1e2226;
+        --border: #33383f;
+        --border-strong: #e9ebee;
+        --text: #e9ebee;
+        --text-dim: #aab1bb;
+        --text-faint: #838b96;
+        --accent: #85aef2;
+        --accent-strong: #a8c4f6;
+        --positive: #6cc496;
+        --positive-strong: #92d6b2;
+        --warning: #e0a05e;
+        --warning-strong: #eab884;
+        --accent-warm: #e0a05e;
+        --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
+      }
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #15181c;
+      --surface: #1e2226;
+      --border: #33383f;
+      --border-strong: #e9ebee;
+      --text: #e9ebee;
+      --text-dim: #aab1bb;
+      --text-faint: #838b96;
+      --accent: #85aef2;
+      --accent-strong: #a8c4f6;
+      --positive: #6cc496;
+      --positive-strong: #92d6b2;
+      --warning: #e0a05e;
+      --warning-strong: #eab884;
+      --accent-warm: #e0a05e;
+      --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--text); font-size: clamp(1rem, 0.7rem + 0.5vw, 1.25rem); }
+    body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
+    main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-4) 0 var(--space-6); }
+    section { min-width: 0; margin-block: var(--space-7); }
+    h1, h2, h3, p { min-width: 0; }
+    p, ul, ol, .claim, .evidence { max-width: var(--w-narrative); }
+    h1 { font-size: var(--fs-hero); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    a { color: var(--accent-strong); }
+    button, summary, a { outline-offset: 3px; }
+    button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); }
+    button { font: inherit; color: inherit; background: var(--surface); border: 0; border-radius: .4rem; padding: var(--space-1) var(--space-2); cursor: pointer; }
+    button:hover:not(:disabled) { background: var(--border); }
+    button:disabled { color: var(--text-dim); cursor: not-allowed; }
+
+    .first-screen { display: grid; gap: var(--space-4); padding: var(--space-6) 0; background: transparent; border-left: 0; min-height: 60vh; align-content: center; }
+    .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
+    .decision strong { color: var(--accent-strong); }
+    .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
+    .conditions { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); color: var(--text-dim); }
+
+    .claim { margin-bottom: var(--space-2); font-size: var(--fs-h2); font-weight: 700; }
+    .figure { position: relative; min-width: 0; margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border: 0; border-radius: .5rem; overflow: auto; }
+    .figure figcaption { margin-top: var(--space-2); color: var(--text-dim); font-size: var(--fs-body); }
+    .evidence { margin-top: var(--space-2); padding-left: var(--space-2); border-left: .2rem solid var(--border); color: var(--text-dim); font-size: var(--fs-body); }
+    details.deep-dive { margin-top: var(--space-2); padding: var(--space-1) var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; }
+    details.deep-dive summary { cursor: pointer; font-weight: 700; }
+    pre { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); }
+
+    .flow-node { position: relative; z-index: 1; min-width: 0; padding: var(--space-1) var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font-size: var(--fs-figure); }
+    .flow { display: flex; align-items: stretch; gap: var(--space-4); }
+    .flow .flow-node { flex: 1 1 10rem; }
+    .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + var(--space-1)); color: var(--text-dim); font-weight: 700; transform: translateY(-50%); }
+    .flow[data-connect] > .flow-node:not(:last-of-type)::after { content: none; }
+    .layers { display: grid; gap: var(--space-2); }
+    .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+    .lane-label { color: var(--text-dim); font-weight: 700; font-size: var(--fs-figure); }
+    .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); min-width: 0; font-size: var(--fs-figure); }
+    .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .compare-frame h3 { margin-top: 0; }
+    .matrix { max-width: 100%; overflow: auto; }
+    .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
+    .matrix-label, .matrix-cell { padding: var(--space-1) var(--space-2) var(--space-1) 0; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: transparent; font-size: var(--fs-figure); }
+    .matrix-label { color: var(--text); font-weight: 800; }
+    .matrix thead .matrix-label { border-bottom: 1px solid var(--border-strong); }
+    .option-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .matrix .option-card { padding: 0; background: transparent; border: 0; border-radius: 0; }
+    [data-tone="accent"] { --tone-border: var(--accent); --tone-background: color-mix(in srgb, var(--accent) 12%, var(--surface)); --tone-text: var(--accent-strong); }
+    [data-tone="positive"] { --tone-border: var(--positive); --tone-background: color-mix(in srgb, var(--positive) 12%, var(--surface)); --tone-text: var(--positive-strong); }
+    [data-tone="warning"] { --tone-border: var(--warning); --tone-background: color-mix(in srgb, var(--warning) 12%, var(--surface)); --tone-text: var(--warning); }
+    [data-tone="muted"] { --tone-border: var(--border); --tone-background: var(--bg); --tone-text: var(--text-dim); }
+    .flow-node[data-tone], .option-card[data-tone], .matrix-label[data-tone], .matrix-cell[data-tone] { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
+    .matrix .option-card[data-tone] { background: transparent; color: inherit; }
+    .matrix .option-card[data-tone] > .matrix-label, .matrix .option-card[data-tone] > .matrix-cell, .matrix .matrix-label[data-tone], .matrix .matrix-cell[data-tone] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .matrix .option-card[data-tone="accent"] > .matrix-label, .matrix .option-card[data-tone="accent"] > .matrix-cell, .matrix .matrix-label[data-tone="accent"], .matrix .matrix-cell[data-tone="accent"] { background: var(--tone-background); }
+    .timeline { display: grid; gap: var(--space-2); border-left: .2rem solid var(--border-strong); padding-left: var(--space-3); font-size: var(--fs-figure); }
+    .timeline-item { position: relative; min-width: 0; }
+    .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.5rem - .45rem); top: .45rem; background: var(--border-strong); border-radius: 50%; }
+    .timeline time { color: var(--text-dim); font-weight: 700; }
+    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-2); }
+    .kpi-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .kpi-value { display: block; color: var(--text); font-size: var(--fs-hero); font-weight: 800; line-height: 1.2; }
+    .bars { display: grid; gap: var(--space-2); }
+    .bar-row { display: grid; grid-template-columns: minmax(7rem, .35fr) minmax(8rem, 1fr) auto; gap: var(--space-2); align-items: center; min-width: 0; font-size: var(--fs-figure); }
+    .bar-track { min-width: 0; height: 1rem; overflow: hidden; background: var(--bg); border-radius: 999px; }
+    .bar-fill { display: block; width: var(--value, 0%); min-width: .25rem; height: 100%; background: var(--text-dim); }
+    .bar-fill[data-tone] { background: var(--tone-border); }
+    .terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-2); }
+    .term { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .term dt { color: var(--text); font-weight: 800; }
+    .term dd { margin: var(--space-1) 0 0; color: var(--text-dim); }
+
+    .certainty { display: inline-flex; align-items: center; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty.confirmed { border-style: solid; }
+    .certainty.inferred { border-style: dashed; }
+    .certainty.unverified { border-style: dotted; }
+    details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
+    details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
+    details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
+
+    .stepper { display: grid; gap: var(--space-2); padding: var(--space-2); background: var(--surface); border: 0; border-radius: .5rem; }
+    .stepper-status { margin: 0; color: var(--text-dim); }
+    .step-panel[hidden] { display: none; }
+    .step-panel.is-current { border-left: .25rem solid var(--accent); padding-left: var(--space-2); }
+    .stepper-controls { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+    .closing-section { padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-top: 1px solid var(--border-strong); }
+    .closing-section h2 { margin-top: 0; }
+    .closing-section h3 { margin-bottom: var(--space-1); }
+    .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .connector-warning { margin: var(--space-2) 0 0; color: var(--warning); font-weight: 700; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
+
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
+    .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: var(--bg); }
+    .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: var(--bg); }
+    /* request は警告ではないためモノクロ。意味色は decision のチップ（選択=青）と既定案（推奨=緑）のみ */
+    .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
+    .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: minmax(8rem, .35fr) 1fr; gap: var(--space-2); padding: var(--space-1); border-radius: .3rem; }
+    .ask-options [data-ask-default] { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); }
+    .ask-options [data-ask-default] > :first-child::after { content: "既定案"; margin-left: var(--space-1); color: var(--positive); font-size: var(--fs-small); font-weight: 700; }
+    .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); }
+    .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+    .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
+    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
+    footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
+
+    /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
+    @media (min-width: 60rem) {
+      .figure:has(.flow, .matrix) { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); }
+      figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }
+      .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
+    }
+
+    @media (max-width: 42rem) {
+      main { width: min(100% - var(--space-2), var(--w-narrative)); padding-top: var(--space-2); }
+      .theme-control { width: min(100% - var(--space-2), var(--w-narrative)); }
+      .theme-control button { max-width: 100%; white-space: normal; }
+      .flow { flex-direction: column; gap: var(--space-3); }
+      .flow .flow-node { flex: 0 1 auto; }
+      .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
+      .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
+      .compare { grid-template-columns: 1fr; }
+      .ask-options [data-ask-option] { grid-template-columns: 1fr; gap: var(--space-1); }
+    }
+  </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <style data-ve-component="kpi" data-ve-contract-version="2" data-ve-asset="kpi.css" data-ve-digest="5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78">[data-ve-component="kpi"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="kpi"] .ve-kpi-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="kpi"] .ve-kpi-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="kpi"] .ve-kpi-list {
+  display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center; }
+figure[data-ve-component="kpi"] .ve-kpi-item { display: grid; justify-items: center; gap: var(--space-2); max-width: 12rem; }
+figure[data-ve-component="kpi"] .ve-kpi-ring {
+  display: grid; place-items: center; width: 8.5rem; height: 8.5rem;
+  border: 5px solid var(--dg-primary); border-radius: 50%; text-align: center; }
+figure[data-ve-component="kpi"] .ve-kpi-num {
+  font-size: 2.1rem; font-weight: 700; color: var(--dg-primary); line-height: 1.1; }
+figure[data-ve-component="kpi"] .ve-kpi-num small { font-size: 1rem; color: var(--text-dim); }
+figure[data-ve-component="kpi"] .ve-kpi-cap { text-align: center; font-size: var(--fs-figure); margin: 0; }
+figure[data-ve-component="kpi"] .ve-kpi-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="kpi"] .ve-kpi-notes li { margin: 0; }
+</style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
+  <script>
+  /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    try {
+      const theme = window.localStorage.getItem(root.dataset.themeStorageKey);
+      if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+    } catch {
+      // Storage is optional; CSS keeps the OS preference when it is unavailable.
+    }
+  })();
+  </script>
+</head>
+<body>
+  <div class="theme-control">
+    <button type="button" data-theme-toggle aria-pressed="false">現在のテーマを確認中です。</button>
+  </div>
+  <script>
+  /* FIXED THEME CONTROL JS: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    const button = document.querySelector('[data-theme-toggle]');
+    if (!button) return;
+
+    let mediaQuery;
+    try {
+      mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    } catch {
+      mediaQuery = null;
+    }
+    let explicitTheme = root.dataset.theme === 'light' || root.dataset.theme === 'dark';
+    const systemTheme = () => mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+    const currentTheme = () => explicitTheme ? root.dataset.theme : systemTheme();
+    const label = (theme) => theme === 'dark' ? 'ダーク' : 'ライト';
+    const render = () => {
+      const current = currentTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+      button.textContent = `現在のテーマ: ${label(current)}。${label(next)}に切り替える`;
+      button.setAttribute('aria-pressed', String(current === 'dark'));
+    };
+    const persist = (theme) => {
+      try {
+        window.localStorage.setItem(root.dataset.themeStorageKey, theme);
+      } catch {
+        // A manual choice still works for this document if storage is unavailable.
+      }
+    };
+
+    render();
+    button.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      explicitTheme = true;
+      persist(next);
+      render();
+    });
+    if (mediaQuery) {
+      const updateFromSystem = () => { if (!explicitTheme) render(); };
+      if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', updateFromSystem);
+      else if (mediaQuery.addListener) mediaQuery.addListener(updateFromSystem);
+    }
+  })();
+  </script>
+  <main>
+    <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <section data-ve-section-kind="canonical" data-ve-component="kpi" data-ve-contract-version="2" data-ve-instance="sec-kpi-bad" data-ve-fallback="static-content"><figure data-ve-component="kpi" role="group" aria-label="KPI" aria-describedby="sec-kpi-bad-summary"><figcaption id="sec-kpi-bad-caption" class="ve-kpi-caption">上限超過</figcaption><p id="sec-kpi-bad-summary" class="ve-kpi-summary">6項目の不正例。</p><div class="ve-kpi-list"><div class="ve-kpi-item" data-ve-semantic-id="k1"><div class="ve-kpi-ring"><span class="ve-kpi-num">85<small>%</small></span></div><p class="ve-kpi-cap">指標1</p></div><div class="ve-kpi-item" data-ve-semantic-id="k2"><div class="ve-kpi-ring"><span class="ve-kpi-num">80<small>%</small></span></div><p class="ve-kpi-cap">指標2</p></div><div class="ve-kpi-item" data-ve-semantic-id="k3"><div class="ve-kpi-ring"><span class="ve-kpi-num">75<small>%</small></span></div><p class="ve-kpi-cap">指標3</p></div><div class="ve-kpi-item" data-ve-semantic-id="k4"><div class="ve-kpi-ring"><span class="ve-kpi-num">70<small>%</small></span></div><p class="ve-kpi-cap">指標4</p></div><div class="ve-kpi-item" data-ve-semantic-id="k5"><div class="ve-kpi-ring"><span class="ve-kpi-num">65<small>%</small></span></div><p class="ve-kpi-cap">指標5</p></div><div class="ve-kpi-item" data-ve-semantic-id="k6"><div class="ve-kpi-ring"><span class="ve-kpi-num">60<small>%</small></span></div><p class="ve-kpi-cap">指標6</p></div></div><ul class="ve-kpi-notes"><li data-ve-semantic-id="cert-kpi-bad"><strong>確認済み:</strong> テスト用。</li><li data-ve-semantic-id="src-kpi-bad"><strong>出典 テスト</strong></li></ul></figure>    </section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
+    <!-- CONTENT:END -->
+  </main>
+  <footer>AI が生成した資料</footer>
+
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN --><!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
+  <script>
+  /* FIXED CONNECTOR JS: DO NOT MODIFY. */
+  (() => {
+    let resizeObserver;
+    const SVG_NS = 'http:' + '//www.w3.org/2000/svg';
+    const directChild = (parent, className) => Array.from(parent.children).find((node) => node.classList && node.classList.contains(className));
+    const scopes = () => Array.from(new Set([
+      ...document.querySelectorAll('[data-connect-scope]'),
+      ...Array.from(document.querySelectorAll('.figure')).filter((figure) => figure.querySelector('[data-connect]'))
+    ]));
+    const nodeMap = (scope) => new Map(Array.from(scope.querySelectorAll('[id]')).map((node) => [node.id, node]));
+    const laneIndex = (node, scope) => Array.from(scope.querySelectorAll('[data-lane]')).findIndex((lane) => lane.contains(node));
+    const siblingIndex = (node) => Array.from(node.parentElement.querySelectorAll(':scope > [id]')).indexOf(node);
+    const adjacent = (from, to, scope) => {
+      const fromLane = laneIndex(from, scope);
+      const toLane = laneIndex(to, scope);
+      if (fromLane >= 0 && toLane >= 0) return fromLane === toLane ? Math.abs(siblingIndex(from) - siblingIndex(to)) === 1 : Math.abs(fromLane - toLane) === 1;
+      return from.parentElement === to.parentElement && Math.abs(siblingIndex(from) - siblingIndex(to)) === 1;
+    };
+    const pointPair = (from, to, scope) => {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), box = scope.getBoundingClientRect();
+      const ax = a.left + a.width / 2, ay = a.top + a.height / 2, bx = b.left + b.width / 2, by = b.top + b.height / 2;
+      if (Math.abs(bx - ax) >= Math.abs(by - ay)) return [bx >= ax ? a.right : a.left, ay, bx >= ax ? b.left : b.right, by, box];
+      return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
+    };
+    const pathFor = (from, to, scope) => {
+      const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
+      const x1 = sx - box.left, y1 = sy - box.top, x2 = ex - box.left, y2 = ey - box.top;
+      const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+      const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1, c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
+      const c2x = horizontal ? x2 - (x2 - x1) * .45 : x2, c2y = horizontal ? y2 : y2 - (y2 - y1) * .45;
+      return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+    };
+    const warning = (scope, message) => {
+      const badge = document.createElement('p');
+      badge.className = 'connector-warning';
+      badge.textContent = `接続を描画できません: ${message}`;
+      scope.append(badge);
+    };
+    const render = (scope) => {
+      scope.querySelectorAll('.connector-layer, .connector-warning').forEach((node) => node.remove());
+      const list = directChild(scope, 'connection-text') || document.createElement('ul');
+      list.className = 'connection-text visually-hidden';
+      list.setAttribute('aria-label', '接続関係');
+      list.replaceChildren();
+      if (!list.parentElement) scope.append(list);
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'connector-layer');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><marker id="connector-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"/></marker></defs>';
+      const nodes = nodeMap(scope);
+      let hasLine = false;
+      scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+        declaration.dataset.connect.split(',').map((item) => item.trim()).filter(Boolean).forEach((item) => {
+          const [fromId, toId] = item.split('->').map((id) => id && id.trim());
+          const from = nodes.get(fromId), to = nodes.get(toId);
+          if (!from || !to) {
+            console.error('visual-explain: unknown connector reference', item);
+            warning(scope, `「${item}」の ID が見つかりません。`);
+            return;
+          }
+          if (!adjacent(from, to, scope)) {
+            console.error('visual-explain: non-adjacent connector rejected', item);
+            warning(scope, `「${item}」は隣接ノードだけを接続できます。`);
+            return;
+          }
+          const path = document.createElementNS(SVG_NS, 'path');
+          path.setAttribute('d', pathFor(from, to, scope));
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', 'currentColor');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('marker-end', 'url(#connector-arrow)');
+          svg.append(path);
+          const text = document.createElement('li');
+          text.textContent = `${from.textContent.trim()} から ${to.textContent.trim()} へ接続`;
+          list.append(text);
+          hasLine = true;
+        });
+      });
+      if (hasLine) scope.append(svg);
+    };
+    const renderAll = () => scopes().forEach(render);
+    window.addEventListener('load', () => {
+      renderAll();
+      resizeObserver = new ResizeObserver(renderAll);
+      scopes().forEach((scope) => resizeObserver.observe(scope));
+    });
+    document.addEventListener('toggle', (event) => { if (event.target.matches('details')) renderAll(); }, true);
+    document.addEventListener('visual-explain:stepchange', renderAll);
+  })();
+
+  /* FIXED STEPPER AND DETAILS JS: DO NOT MODIFY. */
+  (() => {
+    const update = (stepper, current, all = false) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      panels.forEach((panel) => {
+        const active = Number(panel.dataset.step) === current;
+        panel.hidden = !all && !active;
+        panel.classList.toggle('is-current', active && !all);
+        panel.setAttribute('aria-current', active && !all ? 'step' : 'false');
+      });
+      let status = stepper.querySelector('.stepper-status');
+      if (!status) {
+        status = document.createElement('p');
+        status.className = 'stepper-status';
+        status.setAttribute('aria-live', 'polite');
+        stepper.prepend(status);
+      }
+      status.textContent = all ? `全体表示: ${total} 段階を同時に表示中。` : `現在の状態: ステップ ${current}/${total}。開始状態はステップ 1、終了状態はステップ ${total}。`;
+      const previous = stepper.querySelector('[data-step-action="previous"]');
+      const next = stepper.querySelector('[data-step-action="next"]');
+      if (previous) previous.disabled = all || current <= 1;
+      if (next) next.disabled = all || current >= total;
+      if (next) next.textContent = next.dataset.nextLabel || `次へ: ステップ ${Math.min(total, current + 1)} を表示`;
+      stepper.dataset.currentStep = String(current);
+      document.dispatchEvent(new CustomEvent('visual-explain:stepchange'));
+    };
+    document.querySelectorAll('details').forEach((details) => details.setAttribute('aria-expanded', String(details.open)));
+    document.querySelectorAll('[data-stepper]').forEach((stepper) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      if (!total) return;
+      update(stepper, 1);
+      stepper.addEventListener('click', (event) => {
+        const action = event.target.closest('button[data-step-action]');
+        if (!action) return;
+        const current = Number(stepper.dataset.currentStep) || 1;
+        if (action.dataset.stepAction === 'previous') update(stepper, Math.max(1, current - 1));
+        if (action.dataset.stepAction === 'next') update(stepper, Math.min(total, current + 1));
+        if (action.dataset.stepAction === 'all') update(stepper, current, true);
+      });
+    });
+    document.addEventListener('toggle', (event) => {
+      if (event.target.matches('details')) event.target.setAttribute('aria-expanded', String(event.target.open));
+    }, true);
+  })();
+  </script>
+</body>
+</html>

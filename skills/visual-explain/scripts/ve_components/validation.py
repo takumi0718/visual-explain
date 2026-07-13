@@ -33,6 +33,7 @@ from .diagnostics import (
     WATERFALL_ARITHMETIC_MISMATCH,
     WATERFALL_STRUCTURE_VIOLATION,
     BARS_ITEM_LIMIT,
+    KPI_ITEM_LIMIT,
     ContractError,
     DiagnosticCollector,
 )
@@ -70,6 +71,8 @@ from .model import (
     SlopePayload,
     BarsItem,
     BarsPayload,
+    KpiItem,
+    KpiPayload,
     MatrixCell,
     MatrixPayload,
     PyramidPayload,
@@ -117,7 +120,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
     "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
-    "slope", "bars", "evidence-map",
+    "slope", "bars", "kpi", "evidence-map",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -153,6 +156,8 @@ _SLOPE_AXES_KEYS = {"fromLabel", "toLabel"}
 _SLOPE_ITEM_KEYS = {"id", "label", "fromValue", "toValue", "fromValueText", "toValueText", "tone"}
 _BARS_KEYS = {"title", "unitLabel", "items", "highlightId"}
 _BARS_ITEM_KEYS = {"id", "label", "value", "valueText"}
+_KPI_KEYS = {"items"}
+_KPI_ITEM_KEYS = {"id", "value", "unit", "caption"}
 _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
 _EVIDENCE_CONCLUSION_KEYS = {"id", "label"}
 _EVIDENCE_ITEM_KEYS = {"id", "label", "certaintyRef", "sourceRef"}
@@ -207,6 +212,7 @@ _ANNOTATION_TARGET_LABELS = {
     "logic-tree": "枝/葉",
     "slope": "項目",
     "bars": "項目",
+    "kpi": "項目",
     "evidence-map": "結論/根拠",
 }
 
@@ -268,6 +274,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     logic_tree = None
     slope = None
     bars = None
+    kpi = None
     evidence_map = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
@@ -311,6 +318,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
                 slope = validated_payload
             elif payload_kind == "bars":
                 bars = validated_payload
+            elif payload_kind == "kpi":
+                kpi = validated_payload
 
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
         raw, path, col, caption, payload_kind, validated_payload
@@ -351,6 +360,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         logic_tree=logic_tree,
         slope=slope,
         bars=bars,
+        kpi=kpi,
         evidence_map=evidence_map,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
@@ -1411,6 +1421,55 @@ def _validate_bars(raw: object, path: str, col: DiagnosticCollector) -> BarsPayl
     )
 
 
+def _validate_kpi(raw: object, path: str, col: DiagnosticCollector) -> KpiPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "kpi はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _KPI_KEYS, path, col, payload_code=INVALID_COMPONENT_PAYLOAD)
+
+    items_raw = raw.get("items")
+    if not isinstance(items_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "items は配列である必要があります", path)
+        return None
+    item_count = len(items_raw)
+    if item_count < 1 or item_count > 5:
+        col.add(KPI_ITEM_LIMIT, f"items は1〜5件である必要があります (found {item_count})", path)
+
+    items: list[KpiItem] = []
+    for i, item in enumerate(items_raw):
+        p = f"{path}.items[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _KPI_ITEM_KEYS, p, col, payload_code=INVALID_COMPONENT_PAYLOAD)
+        iid = item.get("id")
+        if not _nonblank_str(iid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.id は空にできません", p)
+        value = item.get("value")
+        if not _nonblank_str(value):
+            col.add(INVALID_COMPONENT_PAYLOAD, "value は空にできません", p)
+        unit = item.get("unit")
+        if not _nonblank_str(unit):
+            col.add(INVALID_COMPONENT_PAYLOAD, "unit は空にできません", p)
+        elif len(str(unit)) > 8:
+            col.add(INVALID_COMPONENT_PAYLOAD, "unit は8字以内です", p)
+        caption = item.get("caption")
+        if not _nonblank_str(caption):
+            col.add(INVALID_COMPONENT_PAYLOAD, "caption は空にできません", p)
+        if not _nonblank_str(iid):
+            continue
+        items.append(KpiItem(
+            id=iid,
+            value=value if isinstance(value, str) else "",
+            unit=unit if isinstance(unit, str) else "",
+            caption=caption if isinstance(caption, str) else "",
+        ))
+
+    if col:
+        return None
+    return KpiPayload(items=tuple(items))
+
+
 def _validate_evidence_map(
     raw: object,
     path: str,
@@ -1761,6 +1820,9 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     bars = raw.get("bars")
     if isinstance(bars, dict):
         collect(bars.get("items"))
+    kpi = raw.get("kpi")
+    if isinstance(kpi, dict):
+        collect(kpi.get("items"))
     evidence_map = raw.get("evidence-map")
     if isinstance(evidence_map, dict):
         conclusion = evidence_map.get("conclusion")
@@ -1789,6 +1851,7 @@ _PAYLOAD_VALIDATORS = {
     "logic-tree": _validate_logic_tree,
     "slope": _validate_slope,
     "bars": _validate_bars,
+    "kpi": _validate_kpi,
 }
 
 
@@ -1842,6 +1905,10 @@ def _annotation_targets_bars(payload: BarsPayload | None) -> set[str]:
     return {item.id for item in payload.items} if payload is not None else set()
 
 
+def _annotation_targets_kpi(payload: KpiPayload | None) -> set[str]:
+    return {item.id for item in payload.items} if payload is not None else set()
+
+
 def _annotation_targets_evidence_map(payload: EvidenceMapPayload | None) -> set[str]:
     if payload is None:
         return set()
@@ -1859,6 +1926,7 @@ ANNOTATION_TARGETS = {
     "logic-tree": _annotation_targets_logic_tree,
     "slope": _annotation_targets_slope,
     "bars": _annotation_targets_bars,
+    "kpi": _annotation_targets_kpi,
     "evidence-map": _annotation_targets_evidence_map,
 }
 

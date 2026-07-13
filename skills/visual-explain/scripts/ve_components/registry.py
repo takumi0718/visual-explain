@@ -54,6 +54,7 @@ KNOWN_CHECKER_RULES = frozenset({
     "renderer-svg",
     "evidence-map-references",
     "bars-width-classes",
+    "kpi-item-limit",
 })
 
 _ASSET_SLOTS = frozenset({"styles", "scripts"})
