@@ -39,21 +39,25 @@ _COMPONENTS = set(VOCABULARY["components"])
 _SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
 _ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
 
-RENDERER_SVG_ALLOWLIST = frozenset({"slope@2"})
+RENDERER_SVG_ALLOWLIST = frozenset({"slope@2", "waterfall@2"})
 
-_SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "desc"})
+_SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "desc", "rect"})
 _SVG_ATTR_ALLOWLIST = {
     "svg": frozenset({"id", "class", "viewBox", "preserveAspectRatio", "role", "aria-label", "aria-describedby"}),
     "g": frozenset({"class", "data-ve-semantic-id", "data-ve-takeaway"}),
     "line": frozenset({"class", "x1", "y1", "x2", "y2"}),
     "circle": frozenset({"class", "cx", "cy", "r", "data-ve-semantic-id", "data-ve-takeaway"}),
     "text": frozenset({"class", "x", "y", "text-anchor"}),
+    "rect": frozenset({"class", "x", "y", "width", "height"}),
     "title": frozenset(),
     "desc": frozenset(),
 }
 _SVG_INT_COORD_RE = re.compile(r"^-?[0-9]+$")
 _SVG_R_RE = re.compile(r"^[0-9]+$")
-_SVG_VIEWBOX_EXACT = "0 0 600 220"
+_RENDERER_SVG_VIEWBOX = {
+    "slope@2": "0 0 600 220",
+    "waterfall@2": "0 0 640 360",
+}
 _SVG_PRESERVE_EXACT = "xMidYMid meet"
 _SVG_TEXT_ANCHOR = frozenset({"start", "middle", "end"})
 _SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
@@ -932,92 +936,54 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
 
 def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    bar_blocks = re.findall(
-        r'<div\s+([^>]*\bve-waterfall-bar\b[^>]*)>(.*?)</div>',
-        body,
-        re.DOTALL,
-    )
-    if not bar_blocks:
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に棒がありません"))
-        return diagnostics
+    if 'class="ve-fig-title"' not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に ve-fig-title がありません"))
+    if 'class="ve-fig-unit"' not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に ve-fig-unit がありません"))
 
-    for attrs, inner in bar_blocks:
-        bar_sid = _semantic_id_from_attrs(attrs)
-        if bar_sid is None:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "waterfall 棒に data-ve-semantic-id がありません"))
-        classes = _class_tokens_from_attr_string(attrs)
-        starts = [c for c in classes if c.startswith("ve-wf-start-")]
-        lens = [c for c in classes if c.startswith("ve-wf-len-")]
-        if len(starts) != 1 or len(lens) != 1:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "waterfall 棒は ve-wf-start/len を1つずつ持つ必要があります"))
-            continue
-        for token in starts + lens:
-            suffix = token.rsplit("-", 1)[-1]
-            if not suffix.isdigit() or not (0 <= int(suffix) <= 100):
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"waterfall 百分率クラス '{token}' が範囲外です"))
-        value_spans = re.findall(
-            r'<span\s+[^>]*\bve-waterfall-value\b[^>]*>([^<]*)</span>',
-            inner,
-        )
-        if len(value_spans) != 1:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "waterfall 棒は ve-waterfall-value を1つだけ持つ必要があります"))
-        elif not value_spans[0].strip():
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "waterfall 棒の ve-waterfall-value に可視テキストがありません"))
+    svg_matches = list(_SVG_OPEN_RE.finditer(body))
+    if len(svg_matches) != 1:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall には <svg> がちょうど1つ必要です"))
 
-    connector_blocks = re.findall(
-        r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
-        r'(<span\s+[^>]*\bve-waterfall-connector\b[^>]*>\s*</span>)',
-        body,
-        re.DOTALL,
-    )
-    for connector_html in connector_blocks:
-        starts = re.findall(r'\bve-wf-start-(\d+)\b', connector_html)
-        lens = re.findall(r'\bve-wf-len-(\d+)\b', connector_html)
-        if len(starts) != 1 or len(lens) != 1:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "waterfall コネクタは ve-wf-start/len を1つずつ持つ必要があります"))
+    bar_rects = re.findall(r'<rect\s+[^>]*\bve-wf-bar\b', body)
+    if not bar_rects:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に棒 rect がありません"))
+
+    connectors = re.findall(r'<line\s+[^>]*\bve-wf-connector\b', body)
+    bar_count = len(bar_rects)
+    expected_connectors = max(0, bar_count - 1)
+    if len(connectors) != expected_connectors:
+        diagnostics.append(Diagnostic(
+            ARTIFACT_SEMANTIC_MISMATCH,
+            f"waterfall コネクタは {expected_connectors} 本である必要があります (found {len(connectors)})",
+        ))
 
     if "ve-waterfall-notes" not in body:
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "waterfall に ve-waterfall-notes がありません"))
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall に ve-waterfall-notes がありません"))
 
-    has_bars = "ve-wf-bars" in body
-    has_columns = "ve-wf-columns" in body
-    if has_bars == has_columns:
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "waterfall は ve-wf-bars か ve-wf-columns のどちらか一方である必要があります"))
-    if has_columns and "ve-waterfall-scroll" not in body:
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "columns waterfall に横スクロールコンテナがありません"))
+    if "ve-wf-bars" in body or "ve-wf-columns" in body or "ve-waterfall-bar" in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall v1 の DOM クラスが残っています"))
 
-    row_attrs = re.findall(
-        r'<div\s+([^>]*\bve-waterfall-row\b[^>]*)>',
+    g_blocks = re.findall(
+        r'<g\s+([^>]*data-ve-semantic-id="([^"]+)"[^>]*)>',
         body,
     )
-    for attrs in row_attrs:
-        if _semantic_id_from_attrs(attrs) is not None:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "waterfall row に data-ve-semantic-id は許可されていません"))
-
-    bar_ids = [_semantic_id_from_attrs(attrs) for attrs, _ in bar_blocks]
-    bar_ids = [sid for sid in bar_ids if sid is not None]
-    if len(bar_ids) != len(set(bar_ids)):
-        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "waterfall の意味 ID が重複しています"))
-    for sid in bar_ids:
+    g_ids = [sid for _, sid in g_blocks]
+    if len(g_ids) != len(set(g_ids)):
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall の意味 ID が重複しています"))
+    for sid in g_ids:
         if body.count(f'data-ve-semantic-id="{sid}"') != 1:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          f"waterfall の意味 ID '{sid}' は DOM に1回だけ現れる必要があります"))
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"waterfall の意味 ID '{sid}' は DOM に1回だけ現れる必要があります",
+            ))
 
     for sid in parser.semantic_ids:
         if sid not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          f"waterfall 意味 ID '{sid}' が DOM にありません"))
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"waterfall 意味 ID '{sid}' が DOM にありません",
+            ))
     return diagnostics
 
 
@@ -1139,18 +1105,20 @@ def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Di
 class _SvgSubtreeParser(HTMLParser):
     """Validate one SVG subtree against the closed element/attribute allowlist."""
 
-    def __init__(self) -> None:
+    def __init__(self, component_key: str = "slope@2") -> None:
         super().__init__(convert_charrefs=True)
         self.diagnostics: list[Diagnostic] = []
         self._svg_depth = 0
+        self._component_key = component_key
 
     def _reject(self, message: str) -> None:
         self.diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, message))
 
     def _check_value(self, tag: str, name: str, value: str) -> None:
         if name == "viewBox":
-            if value != _SVG_VIEWBOX_EXACT:
-                self._reject(f"viewBox は '{_SVG_VIEWBOX_EXACT}' の完全一致である必要があります")
+            expected = _RENDERER_SVG_VIEWBOX.get(self._component_key, _RENDERER_SVG_VIEWBOX["slope@2"])
+            if value != expected:
+                self._reject(f"viewBox は '{expected}' の完全一致である必要があります")
         elif name == "preserveAspectRatio":
             if value != _SVG_PRESERVE_EXACT:
                 self._reject(f"preserveAspectRatio は '{_SVG_PRESERVE_EXACT}' のみ許可されます")
@@ -1160,7 +1128,7 @@ class _SvgSubtreeParser(HTMLParser):
         elif name == "r":
             if not _SVG_R_RE.match(value):
                 self._reject(f"属性 r の値 '{value}' が不正です")
-        elif name in {"x", "y", "x1", "y1", "x2", "y2", "cx", "cy"}:
+        elif name in {"x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "width", "height"}:
             if not _SVG_INT_COORD_RE.match(value):
                 self._reject(f"座標属性 {name} の値 '{value}' は整数である必要があります")
 
@@ -1206,8 +1174,8 @@ def _section_attr(attrs: str, name: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _validate_svg_subtree(fragment: str) -> list[Diagnostic]:
-    parser = _SvgSubtreeParser()
+def _validate_svg_subtree(fragment: str, component_key: str = "slope@2") -> list[Diagnostic]:
+    parser = _SvgSubtreeParser(component_key=component_key)
     parser.feed(fragment)
     parser.close()
     return parser.diagnostics
@@ -1259,7 +1227,7 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
                 diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "<svg> が閉じられていません"))
                 continue
             subtree = body[start:end + len("</svg>")]
-            diagnostics.extend(_validate_svg_subtree(subtree))
+            diagnostics.extend(_validate_svg_subtree(subtree, component_key))
     outside = content
     for match in _WRAPPER_SECTION_RE.finditer(content):
         outside = outside.replace(match.group(0), "")

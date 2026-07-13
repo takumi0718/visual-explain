@@ -371,20 +371,24 @@
     "waterfallPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["displayPrecision", "start", "steps", "end"],
+      "required": ["displayPrecision", "start", "steps", "end", "title", "unitLabel", "axisTicks"],
       "properties": {
         "displayPrecision": {"type": "number", "exclusiveMinimum": 0},
-        "orientation": {"enum": ["bars", "columns"]},
         "start": {"$ref": "#/$defs/waterfallEndpoint"},
         "steps": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 7,
+          "maxItems": 5,
           "items": {"$ref": "#/$defs/waterfallStep"}
         },
         "end": {"$ref": "#/$defs/waterfallEndpoint"},
         "title": {"type": "string", "minLength": 1},
-        "unitLabel": {"type": "string", "minLength": 1}
+        "unitLabel": {"type": "string", "minLength": 1, "maxLength": 8},
+        "axisTicks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
       }
     },
     "waterfallEndpoint": {

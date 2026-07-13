@@ -201,12 +201,12 @@ class WaterfallStep:
 @dataclass(frozen=True)
 class WaterfallPayload:
     display_precision: int | Decimal
-    orientation: str
     start: WaterfallEndpoint
     steps: tuple[WaterfallStep, ...]
     end: WaterfallEndpoint
-    title: Optional[str] = None
-    unit_label: Optional[str] = None
+    title: str
+    unit_label: str
+    axis_ticks: tuple[str, ...]
 
 
 @dataclass(frozen=True)

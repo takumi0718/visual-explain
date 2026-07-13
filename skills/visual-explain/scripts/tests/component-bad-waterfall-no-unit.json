@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "bad", "title": "bad", "summary": "bad"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-bad",
+      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
+      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "c",
+      "certainty": [{"id": "c1", "level": "confirmed", "statement": "s"}],
+      "sources": [{"id": "s1", "label": "出"}],
+      "accessibility": {"label": "l", "summary": "s"},
+      "waterfall": {
+        "displayPrecision": 1,
+        "title": "図表",
+        "axisTicks": ["0", "50", "100"],
+        "start": {"id": "st", "label": "期首", "value": 10, "valueText": "10"},
+        "steps": [{"id": "s1", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5"}],
+        "end": {"id": "en", "label": "期末", "value": 15, "valueText": "15"}
+      }
+    }
+  }]
+}

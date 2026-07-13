@@ -340,7 +340,7 @@
     },
     {
       "id": "waterfall",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "additive-bridge",
       "capabilities": [
         "additive-bridging"
@@ -350,23 +350,25 @@
         "caption",
         "accessibility",
         "displayPrecision",
+        "title",
+        "unitLabel",
+        "axisTicks",
         "start",
         "steps",
         "end"
       ],
       "optionalInputs": [
         "certainty",
-        "sources",
-        "orientation"
+        "sources"
       ],
-      "behavior": "静的なウォーターフォールで開始・増減・終了を百分率クラスで描画する。",
+      "behavior": "決定的 SVG ジオメトリで開始・増減・終了のウォーターフォールを描画する。",
       "slots": [
         "caption",
         "certainty",
         "source",
         "accessibility"
       ],
-      "accessibility": "caption/summary を持つラベル付き figure と開始/段/終了の一覧。",
+      "accessibility": "caption/summary を持つラベル付き figure と SVG 代替テキスト。",
       "responsive": true,
       "dependencies": [],
       "fallback": "static-content",
@@ -376,15 +378,16 @@
         "escaping",
         "no-external-reference",
         "responsive-order",
-        "waterfall-consistency"
+        "waterfall-consistency",
+        "renderer-svg"
       ],
-      "renderer": "waterfall@1",
+      "renderer": "waterfall@2",
       "assets": [
         {
           "id": "waterfall.css",
           "slot": "styles",
           "path": "waterfall.css",
-          "digest": "11ee3225b0fa91f2df31c18c52f4c7412452f60e5d1481b54ad19d0090ae8d5f"
+          "digest": "b6662c0fa0d983c0c6ae5bdb742aaf4818dc341122c381380e2779e8847504a8"
         }
       ]
     },

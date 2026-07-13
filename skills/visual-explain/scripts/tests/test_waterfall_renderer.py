@@ -20,13 +20,15 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "visual-explain"
 REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
-WATERFALL_DEF = REGISTRY.find("waterfall", 1)
+WATERFALL_DEF = REGISTRY.find("waterfall", 2)
 
 
 def _base_ir(**waterfall_overrides) -> dict:
     waterfall = {
         "displayPrecision": 1,
-        "orientation": "bars",
+        "title": "主要指標",
+        "unitLabel": "件",
+        "axisTicks": ["0", "10", "20"],
         "start": {"id": "wf-start", "label": "開始", "value": 10, "valueText": "10件"},
         "steps": [{"id": "wf-step", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"}],
         "end": {"id": "wf-end", "label": "終了", "value": 15, "valueText": "15件"},
@@ -37,7 +39,7 @@ def _base_ir(**waterfall_overrides) -> dict:
         "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
         "selection": {
             "component": "waterfall",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["additive-bridging"],
         },
         "caption": "件数ブリッジ",
@@ -62,9 +64,19 @@ def expect_violation(ir: dict, code: str) -> None:
 def render_fixture(name: str):
     from ve_components.renderers.waterfall import render_waterfall
 
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+    path = TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+    raw = json.loads(path.read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
-    return ir, render_waterfall(CanonicalSection(ir=ir), WATERFALL_DEF)
+    return render_waterfall(CanonicalSection(ir=ir), WATERFALL_DEF)
+
+
+def expect_violation_fixture(test_case: unittest.TestCase, fixture_name: str, code: str) -> None:
+    path = TESTS / fixture_name if fixture_name.endswith(".json") else TESTS / f"{fixture_name}.json"
+    raw = json.loads(path.read_text("utf-8"))
+    with test_case.assertRaises(ContractError) as ctx:
+        validate_canonical_section(raw["sections"][0]["ir"])
+    codes = {d.code for d in ctx.exception.diagnostics}
+    test_case.assertIn(code, codes)
 
 
 class WaterfallValidationTest(unittest.TestCase):
@@ -115,8 +127,8 @@ class WaterfallValidationTest(unittest.TestCase):
         )
         validate_raw(ir)
 
-    def test_bars_accepts_one_to_four_steps(self) -> None:
-        for n in range(1, 5):
+    def test_bars_accepts_one_to_five_steps(self) -> None:
+        for n in range(1, 6):
             with self.subTest(steps=n):
                 steps = [
                     {"id": f"s{i}", "label": f"段{i}", "delta": 0, "tone": "neutral", "valueText": "0件"}
@@ -124,33 +136,26 @@ class WaterfallValidationTest(unittest.TestCase):
                 ]
                 validate_raw(_base_ir(steps=steps, end={"id": "en", "label": "終", "value": 10, "valueText": "10件"}))
 
-    def test_bars_rejects_five_steps(self) -> None:
+    def test_bars_rejects_six_steps(self) -> None:
         raw = json.loads((TESTS / "component-bad-waterfall-too-many-bars.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
             validate_canonical_section(raw["sections"][0]["ir"])
         self.assertIn(WATERFALL_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
-    def test_columns_accepts_one_to_seven_steps(self) -> None:
-        for n in range(1, 8):
-            with self.subTest(steps=n):
-                steps = [
-                    {"id": f"s{i}", "label": f"段{i}", "delta": 0, "tone": "neutral", "valueText": "0件"}
-                    for i in range(1, n + 1)
-                ]
-                validate_raw(_base_ir(
-                    orientation="columns",
-                    steps=steps,
-                    end={"id": "en", "label": "終", "value": 10, "valueText": "10件"},
-                ))
+    def test_requires_unit_label(self) -> None:
+        ir = _base_ir()
+        ir["waterfall"].pop("unitLabel")
+        expect_violation(ir, "quantitative-unit-required")
 
-    def test_columns_rejects_eight_steps(self) -> None:
-        steps = [
-            {"id": f"s{i}", "label": f"段{i}", "delta": 0, "tone": "neutral", "valueText": "0件"}
-            for i in range(1, 9)
-        ]
-        expect_violation(_base_ir(orientation="columns", steps=steps,
-                                  end={"id": "en", "label": "終", "value": 10, "valueText": "10件"}),
-                         WATERFALL_STRUCTURE_VIOLATION)
+    def test_requires_title(self) -> None:
+        ir = _base_ir()
+        ir["waterfall"].pop("title")
+        expect_violation(ir, WATERFALL_STRUCTURE_VIOLATION)
+
+    def test_requires_axis_ticks(self) -> None:
+        ir = _base_ir()
+        ir["waterfall"].pop("axisTicks")
+        expect_violation(ir, WATERFALL_STRUCTURE_VIOLATION)
 
     def test_rejects_missing_tone(self) -> None:
         raw = json.loads((TESTS / "component-bad-waterfall-missing-tone.json").read_text("utf-8"))
@@ -275,183 +280,46 @@ class WaterfallManifestTest(unittest.TestCase):
         self.assertIsNotNone(WATERFALL_DEF)
         self.assertEqual(WATERFALL_DEF.relationship_kind, "additive-bridge")
         self.assertEqual(WATERFALL_DEF.capabilities, ("additive-bridging",))
-        self.assertEqual(WATERFALL_DEF.renderer, "waterfall@1")
+        self.assertEqual(WATERFALL_DEF.renderer, "waterfall@2")
         self.assertEqual([a.id for a in WATERFALL_DEF.assets], ["waterfall.css"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
-        ir, result = render_fixture("component-valid-waterfall.json")
+        raw = json.loads((TESTS / "component-valid-waterfall.json").read_text("utf-8"))
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        result = render_fixture("component-valid-waterfall.json")
         self.assertEqual(set(result.manifest.consumed_semantic_ids), set(ir.semantic_ids()))
 
     def test_declares_css_and_no_script(self) -> None:
-        _, result = render_fixture("component-valid-waterfall.json")
+        result = render_fixture("component-valid-waterfall.json")
         self.assertEqual(result.style_asset_ids, ("waterfall.css",))
         self.assertEqual(result.script_asset_ids, ())
         self.assertEqual(result.manifest.generated_relationship_ids, ())
+        self.assertTrue(result.manifest.svg_root_ids)
 
 
-class WaterfallMarkupTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.ir, self.result = render_fixture("component-valid-waterfall.json")
-        self.markup = self.result.markup
+class WaterfallV2MarkupTest(unittest.TestCase):
+    def test_waterfall_v2_renders_svg_with_fixed_viewbox(self) -> None:
+        result = render_fixture("component-valid-waterfall")
+        self.assertIn('viewBox="0 0 640 360"', result.markup)
+        self.assertTrue(result.manifest.svg_root_ids)
 
-    def _bar_blocks(self) -> list[str]:
-        return re.findall(
-            r'<div\s+[^>]*\bve-waterfall-bar\b[^>]*>.*?</div>',
-            self.markup,
-            re.DOTALL,
-        )
+    def test_waterfall_v2_negative_uses_triangle_notation(self) -> None:
+        markup = render_fixture("component-valid-waterfall").markup
+        self.assertIn("▲50", markup)
+        self.assertIn("▲20", markup)
+        self.assertNotIn(">-50<", markup)
 
-    def test_figure_with_caption_summary_and_notes(self) -> None:
-        self.assertIn('<figure data-ve-component="waterfall"', self.markup)
-        self.assertIn(self.ir.caption, self.markup)
-        self.assertIn(self.ir.accessibility.summary, self.markup)
-        self.assertIn("ve-waterfall-notes", self.markup)
+    def test_waterfall_v2_only_largest_decrease_is_filled(self) -> None:
+        markup = render_fixture("component-valid-waterfall").markup
+        self.assertEqual(markup.count('class="ve-wf-bar ve-wf-minus"'), 1)
+        self.assertEqual(markup.count('class="ve-wf-bar ve-wf-minus-soft"'), 1)
 
-    def test_each_bar_has_exactly_one_visible_value_span(self) -> None:
-        for block in self._bar_blocks():
-            values = re.findall(
-                r'<span\s+[^>]*\bve-waterfall-value\b[^>]*>([^<]*)</span>',
-                block,
-            )
-            self.assertEqual(len(values), 1, block)
-            self.assertTrue(values[0].strip(), block)
+    def test_waterfall_v2_emits_connectors_between_adjacent_bars(self) -> None:
+        markup = render_fixture("component-valid-waterfall").markup
+        self.assertEqual(markup.count("ve-wf-connector"), 5)
 
-    def test_connectors_in_track_with_position_classes(self) -> None:
-        connectors = re.findall(
-            r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
-            r'<span\s+([^>]*\bve-waterfall-connector\b[^>]*)></span>',
-            self.markup,
-        )
-        wf = self.ir.waterfall
-        assert wf is not None
-        self.assertEqual(len(connectors), len(wf.steps) + 1)
-        for attrs in connectors:
-            self.assertEqual(len(re.findall(r"\bve-wf-start-\d+\b", attrs)), 1)
-            self.assertEqual(len(re.findall(r"\bve-wf-len-\d+\b", attrs)), 1)
-
-    def test_css_has_exactly_202_percent_rules(self) -> None:
-        css = (SKILL / "assets" / "components" / "waterfall.css").read_text("utf-8")
-        percent_rules = [
-            line for line in css.splitlines()
-            if re.search(r"\.ve-wf-(start|len)-\d+\s*\{", line)
-        ]
-        self.assertEqual(len(percent_rules), 202)
-        self.assertNotIn(".ve-wf-bars .ve-wf-start-", css)
-        self.assertNotIn(".ve-wf-columns .ve-wf-start-", css)
-
-    def test_each_bar_has_exactly_one_start_and_len_class(self) -> None:
-        for block in self._bar_blocks():
-            starts = re.findall(r"\bve-wf-start-(\d+)\b", block)
-            lens = re.findall(r"\bve-wf-len-(\d+)\b", block)
-            self.assertEqual(len(starts), 1, block)
-            self.assertEqual(len(lens), 1, block)
-            p_start, p_len = int(starts[0]), int(lens[0])
-            self.assertGreaterEqual(p_start, 0)
-            self.assertLessEqual(p_start, 100)
-            self.assertGreaterEqual(p_len, 0)
-            self.assertLessEqual(p_len, 100)
-
-    def test_endpoints_map_min_to_zero_max_to_hundred(self) -> None:
-        from ve_components.numeric import quantize_percent, waterfall_scale_values
-
-        wf = self.ir.waterfall
-        assert wf is not None
-        values, lo, hi = waterfall_scale_values(wf)
-        self.assertEqual(quantize_percent(lo, lo, hi), 0)
-        self.assertEqual(quantize_percent(hi, lo, hi), 100)
-
-    def test_no_inline_style_attributes(self) -> None:
-        self.assertNotIn("style=", self.markup)
-
-    def test_value_text_visible_for_start_steps_and_end(self) -> None:
-        wf = self.ir.waterfall
-        assert wf is not None
-        self.assertIn(wf.start.value_text, self.markup)
-        self.assertIn(wf.end.value_text, self.markup)
-        for step in wf.steps:
-            self.assertIn(step.value_text, self.markup)
-
-    def test_each_semantic_id_appears_once_in_dom(self) -> None:
-        wf = self.ir.waterfall
-        assert wf is not None
-        bar_ids = [wf.start.id, wf.end.id, *(step.id for step in wf.steps)]
-        for sid in bar_ids:
-            self.assertEqual(
-                self.markup.count(f'data-ve-semantic-id="{sid}"'),
-                1,
-                sid,
-            )
-
-    def test_tone_classes_only_on_steps(self) -> None:
-        wf = self.ir.waterfall
-        assert wf is not None
-        bar_blocks = {
-            m.group(1): m.group(0)
-            for m in re.finditer(
-                r'<div\s+[^>]*\bve-waterfall-bar\b[^>]*data-ve-semantic-id="([^"]+)"[^>]*>.*?</div>',
-                self.markup,
-                re.DOTALL,
-            )
-        }
-        self.assertIn(wf.start.id, bar_blocks)
-        self.assertIn(wf.end.id, bar_blocks)
-        for block in (bar_blocks[wf.start.id], bar_blocks[wf.end.id]):
-            self.assertNotRegex(block, r"ve-wf-tone-")
-        for step in wf.steps:
-            self.assertIn(step.id, bar_blocks)
-            self.assertIn(f"ve-wf-tone-{step.tone}", bar_blocks[step.id])
-
-    def test_dashed_connectors_between_consecutive_bars(self) -> None:
-        connectors = re.findall(r'<span\s+[^>]*\bve-waterfall-connector\b', self.markup)
-        wf = self.ir.waterfall
-        assert wf is not None
-        expected = len(wf.steps) + 1
-        self.assertEqual(len(connectors), expected)
-
-    def test_bars_orientation_container(self) -> None:
-        self.assertIn("ve-wf-bars", self.markup)
-        self.assertNotIn("ve-wf-columns", self.markup)
-
-
-class WaterfallColumnsMarkupTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.ir, self.result = render_fixture("component-valid-waterfall-columns.json")
-        self.markup = self.result.markup
-
-    def test_columns_in_horizontal_scroll_container(self) -> None:
-        self.assertIn("ve-waterfall-scroll", self.markup)
-        self.assertIn("overflow-x: auto", (SKILL / "assets" / "components" / "waterfall.css").read_text("utf-8"))
-        self.assertIn("ve-wf-columns", self.markup)
-        self.assertNotIn("ve-wf-bars", self.markup)
-
-    def test_columns_never_degrades_to_bars(self) -> None:
-        self.assertNotIn("ve-wf-bars", self.markup)
-
-    def test_connectors_in_track_with_position_classes(self) -> None:
-        connectors = re.findall(
-            r'<div\s+[^>]*\bve-waterfall-connector-track\b[^>]*>\s*'
-            r'<span\s+([^>]*\bve-waterfall-connector\b[^>]*)></span>',
-            self.markup,
-        )
-        wf = self.ir.waterfall
-        assert wf is not None
-        self.assertEqual(len(connectors), len(wf.steps) + 1)
-        for attrs in connectors:
-            self.assertEqual(len(re.findall(r"\bve-wf-start-\d+\b", attrs)), 1)
-            self.assertEqual(len(re.findall(r"\bve-wf-len-\d+\b", attrs)), 1)
-
-
-class WaterfallRendererFailureTest(unittest.TestCase):
-    def test_out_of_range_percent_is_renderer_failure_not_clamp(self) -> None:
-        from ve_components.renderers.waterfall import render_waterfall
-
-        ir, _ = render_fixture("component-valid-waterfall.json")
-        with patch("ve_components.renderers.waterfall.quantize_percent", return_value=101):
-            result = render_waterfall(CanonicalSection(ir=ir), WATERFALL_DEF)
-        codes = {d.code for d in result.diagnostics}
-        self.assertIn(RENDERER_FAILURE, codes)
-        self.assertNotIn("ve-wf-start-101", result.markup)
-        self.assertNotIn("ve-wf-len-101", result.markup)
+    def test_waterfall_v2_requires_unit_label(self) -> None:
+        expect_violation_fixture(self, "component-bad-waterfall-no-unit", "quantitative-unit-required")
 
 
 if __name__ == "__main__":

@@ -6,14 +6,16 @@
     "ir": {
       "id": "sec-bad-wf-tone",
       "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
-      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
+      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
       "caption": "bad",
       "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
       "sources": [{"id": "s1", "label": "x"}],
       "accessibility": {"label": "x", "summary": "x"},
       "waterfall": {
         "displayPrecision": 1,
-        "orientation": "bars",
+        "title": "件数",
+        "unitLabel": "件",
+        "axisTicks": ["0", "10", "20"],
         "start": {"id": "st", "label": "開始", "value": 10, "valueText": "10件"},
         "steps": [{"id": "sp", "label": "増", "delta": 5, "valueText": "+5件"}],
         "end": {"id": "en", "label": "終了", "value": 15, "valueText": "15件"}

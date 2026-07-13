@@ -36,7 +36,7 @@ from .diagnostics import (
     DiagnosticCollector,
 )
 from .flow_layout import assign_rails, check_row_budget, check_topology, edge_spans, order_index
-from .numeric import is_numeric, to_decimal, waterfall_scale_values
+from .numeric import is_numeric, to_decimal, waterfall_axis_max, waterfall_scale_values
 from .model import (
     AccessibilityInfo,
     AssemblyRequest,
@@ -137,7 +137,7 @@ _PYRAMID_KEYS = {"tiers"}
 _PYRAMID_TIER_KEYS = {"id", "label", "sub"}
 _STAIRS_KEYS = {"stages", "highlightId"}
 _STAIRS_STAGE_KEYS = {"id", "label"}
-_WATERFALL_KEYS = {"displayPrecision", "orientation", "start", "steps", "end", "title", "unitLabel"}
+_WATERFALL_KEYS = {"displayPrecision", "start", "steps", "end", "title", "unitLabel", "axisTicks"}
 _WATERFALL_ENDPOINT_KEYS = {"id", "label", "value", "valueText"}
 _WATERFALL_STEP_KEYS = {"id", "label", "delta", "valueText", "tone"}
 _WATERFALL_TONES = frozenset({"positive", "warning", "neutral"})
@@ -978,10 +978,34 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         if to_decimal(display_precision) <= Decimal(0):
             col.add(WATERFALL_STRUCTURE_VIOLATION, "displayPrecision は正である必要があります", path)
 
-    orientation = raw.get("orientation", "bars")
-    if orientation not in ("bars", "columns"):
-        col.add(WATERFALL_STRUCTURE_VIOLATION, f"未知の orientation '{orientation}'", path)
-        orientation = "bars"
+    title = raw.get("title")
+    if not _nonblank_str(title):
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "title は必須です", path)
+
+    unit_label = raw.get("unitLabel")
+    if not _nonblank_str(unit_label):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
+    elif len(str(unit_label)) > 8:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "unitLabel は8字以内です", path)
+
+    axis_ticks_raw = raw.get("axisTicks")
+    axis_ticks: list[str] = []
+    if not isinstance(axis_ticks_raw, list) or not axis_ticks_raw:
+        col.add(WATERFALL_STRUCTURE_VIOLATION, "axisTicks は非空の配列である必要があります", path)
+    else:
+        for i, tick in enumerate(axis_ticks_raw):
+            tp = f"{path}.axisTicks[{i}]"
+            if not isinstance(tick, str) or not tick.strip():
+                col.add(WATERFALL_STRUCTURE_VIOLATION, "axisTicks の各要素は非空文字列である必要があります", tp)
+                continue
+            try:
+                tick_val = to_decimal(tick.strip())
+            except Exception:
+                col.add(WATERFALL_STRUCTURE_VIOLATION, f"axisTicks '{tick}' は数値である必要があります", tp)
+                continue
+            if tick_val < Decimal(0):
+                col.add(WATERFALL_STRUCTURE_VIOLATION, f"axisTicks '{tick}' は 0 以上である必要があります", tp)
+            axis_ticks.append(tick.strip())
 
     start = _validate_waterfall_endpoint(raw.get("start"), f"{path}.start", col)
     end = _validate_waterfall_endpoint(raw.get("end"), f"{path}.end", col)
@@ -992,13 +1016,9 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         return None
 
     step_count = len(steps_raw)
-    if orientation == "bars":
-        if step_count < 1 or step_count > 4:
-            col.add(WATERFALL_STRUCTURE_VIOLATION,
-                    f"bars の steps は1〜4件である必要があります (found {step_count})", path)
-    elif step_count < 1 or step_count > 7:
+    if step_count < 1 or step_count > 5:
         col.add(WATERFALL_STRUCTURE_VIOLATION,
-                f"columns の steps は1〜7件である必要があります (found {step_count})", path)
+                f"steps は1〜5件である必要があります (found {step_count})", path)
 
     steps: list[WaterfallStep] = []
     for i, item in enumerate(steps_raw):
@@ -1037,22 +1057,35 @@ def _validate_waterfall(raw: object, path: str, col: DiagnosticCollector) -> Wat
         col.add(WATERFALL_STRUCTURE_VIOLATION, "displayPrecision は必須です", path)
         return None
 
+    if not _nonblank_str(title) or not _nonblank_str(unit_label) or not axis_ticks:
+        if col:
+            return None
+        return None
+
     if col:
         return None
 
     payload = WaterfallPayload(
         display_precision=display_precision,
-        orientation=orientation,
         start=start,
         steps=tuple(steps),
         end=end,
-        title=raw.get("title") if _nonblank_str(raw.get("title")) else None,
-        unit_label=raw.get("unitLabel") if _nonblank_str(raw.get("unitLabel")) else None,
+        title=str(title),
+        unit_label=str(unit_label),
+        axis_ticks=tuple(axis_ticks),
     )
-    _, lo, hi = waterfall_scale_values(payload)
+    scale_values, lo, hi = waterfall_scale_values(payload)
     if lo == hi:
         col.add(WATERFALL_STRUCTURE_VIOLATION, "range が 0 のため描画できません", path)
         return None
+
+    chart_v_max = waterfall_axis_max(scale_values)
+    for i, tick in enumerate(axis_ticks):
+        tick_val = to_decimal(tick)
+        if tick_val < Decimal(0) or tick_val > chart_v_max:
+            col.add(WATERFALL_STRUCTURE_VIOLATION,
+                    f"axisTicks[{i}] '{tick}' は 0..{chart_v_max} の範囲である必要があります",
+                    f"{path}.axisTicks[{i}]")
 
     total = to_decimal(start.value)
     for step in steps:

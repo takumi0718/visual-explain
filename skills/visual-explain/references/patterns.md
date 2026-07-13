@@ -257,7 +257,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **構成の分解** → `logic-tree`（`hierarchical-decomposition` / `mece-decomposition`）。**読者がたどる判断分岐は decision-tree（バックログ）** — 誤用は選択ガイドで防ぐ。MECE 性は機械検証できないため caption / certainty で主張する。
 - **優先の階層（上ほど重要・少ない）** → `pyramid`（`layered-priority` / `priority-layering`）。**単なる並列3項目は enumeration、優先構造だけ pyramid** — pyramid は誤用しない。
 - **到達したら留まる状態（成熟度・移行フェーズ）** → `stairs`（`staged-maturity` / `maturity-staging`）。**流れる工程は chevron**。
-- **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。`orientation: "bars"`（行型・既定）は狭い画面向き、`orientation: "columns"`（横並び縦棒）は広い画面向き。**columns は狭い画面では bars を推奨**（レンダラは縮退せず横スクロールで溢れさせる）。
+- **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。v2 は単一の SVG ウォーターフォール（Y 軸・目盛・点線コネクタ・期首/期末塗り棒）。`title` / `unitLabel` / `axisTicks` は必須。`steps` は最大 5 件（期首・期末込みで最大 7 本）。
 - **2時点比較（同一単位の before/after）** → `slope`（`two-point-change` / `two-point-comparison`）。**3点以上の時系列は timeline か文章へ** — item は最大5件だが各 item は2値のみ。
 - **結論と根拠の1段マッピング** → `evidence-map`（`claim-support` / `claim-support-mapping`）。**根拠の根拠は図を分割** — 階層は1段のみ。
 
@@ -504,31 +504,33 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ### waterfall（加算的ブリッジ）
 
-`displayPrecision` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。幾何（百分率クラス）は補助的で、値の伝達は `valueText` が主である。
+`displayPrecision`・`title`・`unitLabel`・`axisTicks` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。`steps` は 1〜5 件（期首・期末込みで最大 7 本）。`axisTicks` の各値は 0..v_max の数値文字列であること。
 
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-waterfall", "title": "件数ブリッジ", "summary": "開始から増減を経て終了へ。"},
+  "document": {"id": "doc-waterfall", "title": "利益ブリッジ", "summary": "期首から増減を経て期末へ。"},
   "sections": [{
     "kind": "canonical",
     "ir": {
       "id": "sec-doc-waterfall",
       "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
-      "selection": {"component": "waterfall", "version": 1, "matchedCapabilities": ["additive-bridging"]},
-      "caption": "件数の増減ブリッジ",
+      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
+      "caption": "営業利益の増減ブリッジ",
       "certainty": [{"id": "wf-cert", "level": "confirmed", "statement": "台帳と一致。"}],
-      "sources": [{"id": "wf-src", "label": "件数台帳"}],
-      "accessibility": {"label": "ウォーターフォール", "summary": "開始値から増減を経て終了値へ。"},
+      "sources": [{"id": "wf-src", "label": "利益台帳"}],
+      "accessibility": {"label": "ウォーターフォール", "summary": "期首利益から増減を経て期末利益へ。"},
       "waterfall": {
         "displayPrecision": 1,
-        "orientation": "bars",
-        "start": {"id": "wf-start", "label": "開始", "value": 30, "valueText": "30件"},
+        "title": "営業利益",
+        "unitLabel": "億円",
+        "axisTicks": ["0", "50", "100", "150"],
+        "start": {"id": "wf-start", "label": "期首", "value": 90, "valueText": "90"},
         "steps": [
-          {"id": "wf-s1", "label": "減少", "delta": -50, "tone": "warning", "valueText": "−50件"},
-          {"id": "wf-s2", "label": "回復", "delta": 45, "tone": "positive", "valueText": "+45件"}
+          {"id": "wf-s1", "label": "価格改定", "delta": 40, "tone": "positive", "valueText": "+40"},
+          {"id": "wf-s2", "label": "値引き", "delta": -50, "tone": "warning", "valueText": "−50"}
         ],
-        "end": {"id": "wf-end", "label": "終了", "value": 25, "valueText": "25件"}
+        "end": {"id": "wf-end", "label": "期末", "value": 80, "valueText": "80"}
       }
     }
   }]

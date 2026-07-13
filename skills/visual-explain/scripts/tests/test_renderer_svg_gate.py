@@ -23,7 +23,7 @@ COMPONENTS = SKILL / "assets" / "components"
 
 BAD_SVG_FIXTURES = [
     "component-bad-svg-foreign-section.html",
-    "component-bad-svg-rect-element.html",
+    "component-bad-svg-polygon-element.html",
     "component-bad-svg-transform-attr.html",
     "component-bad-svg-xlink-attr.html",
     "component-bad-svg-xmlns-decl.html",
@@ -39,12 +39,19 @@ def _check(name: str) -> set[str]:
 
 
 class RendererSvgGateTest(unittest.TestCase):
-    def test_allowlist_contains_only_slope(self) -> None:
-        self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@2"}))
+    def test_allowlist_contains_slope_and_waterfall(self) -> None:
+        self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@2", "waterfall@2"}))
 
-    def test_svg_gate_accepts_slope_v2_only(self) -> None:
+    def test_svg_gate_accepts_slope_v2_and_waterfall_v2(self) -> None:
         self.assertIn("slope@2", RENDERER_SVG_ALLOWLIST)
+        self.assertIn("waterfall@2", RENDERER_SVG_ALLOWLIST)
         self.assertNotIn("slope@1", RENDERER_SVG_ALLOWLIST)
+
+    def test_rect_allowlist_matches_committed_spec(self) -> None:
+        self.assertEqual(
+            _SVG_ATTR_ALLOWLIST["rect"],
+            frozenset({"class", "x", "y", "width", "height"}),
+        )
 
     def test_line_allowlist_matches_committed_spec(self) -> None:
         self.assertEqual(

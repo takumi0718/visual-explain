@@ -38,7 +38,7 @@
       "capabilities": ["mece-decomposition"]
     },
     "waterfall": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "additive-bridge",
       "capabilities": ["additive-bridging"]
     },
