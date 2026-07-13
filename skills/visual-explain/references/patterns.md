@@ -224,7 +224,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ## 広い画面での二層幅
 
-`figure` に包んだ legacy の `flow` / `matrix` は、広い画面で本文カラムの中心軸から左右対称に張り出す（コンポーネント `matrix` も同様。詳細は `design-system.md` の幅の節）。裸の `flow` / `matrix` は本文幅のまま。張り出しを意図するなら `figure` に包め。
+`figure` に包んだ legacy の `flow` / `matrix` は、広い画面で本文カラムの中心軸から左右対称に張り出す（コンポーネント `matrix` も同様。詳細は `design-system.md` の幅の節）。裸の `flow` / `matrix` は本文幅のまま。張り出しを意図するなら `figure` に包め。張り出しコンテナ内では matrix の table は内容幅になり、疎な表は広がらない。
 
 ## コネクタ宣言
 

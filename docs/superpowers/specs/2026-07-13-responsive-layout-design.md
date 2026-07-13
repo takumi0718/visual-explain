@@ -64,6 +64,7 @@ Two **separate** rules (they must not share one selector list: an unsupported `:
     margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2));
     max-width: none;
   }
+  .figure .matrix table, figure[data-ve-component="matrix"] table { width: auto; margin-inline: auto; }
 }
 ```
 
@@ -72,6 +73,7 @@ Two **separate** rules (they must not share one selector list: an unsupported `:
 - Total widened width is `45rem + min(20rem, 100vw − 60rem)` ≤ `100vw − 15rem`, so no page-level horizontal overflow can occur even with classic (always-visible) scrollbars.
 - **Legacy route:** the whole `.figure` surface card widens, because its own `overflow: auto` would clip a widened child. The figcaption sits inside the card and moves with it; the card boundary provides its own alignment context. Browsers without `:has()` keep the figure at narrative width — a fail-safe degradation.
 - **Component route:** only the `.ve-matrix-scroll` container widens. `max-width: none` is required because the component sheet declares `max-width: 100%`, which would otherwise re-clamp the width and turn the negative margins into a leftward shift instead of a symmetric widening. The skeleton selector (specificity 0,2,1) deliberately overrides the component's declaration (0,2,0); this cross-boundary override is documented in the ownership amendment below. Captions, summaries, and notes keep `max-width: var(--w-narrative)` and stay flush with the body-text edge.
+- **Matrix tables are content-width inside the breakout** (user decision after QA review of the sparse 2×2 case): within the 60rem gate, `.figure .matrix table` and `figure[data-ve-component="matrix"] table` get `width: auto; margin-inline: auto`, so a sparse table sizes to its content (respecting the component `min-width` floors) and centers on the column axis instead of stretching to ≈1300px. A dense table wider than the container still overflows into its scroll container. Known cosmetic consequence: for sparse tables the width snaps from full-column to content-width when crossing the 960px gate; judged in QA item 4.
 Effective figure widths with both mechanisms active: ≈1160px on a 1440px screen, ≈1300px on a 1920px screen.
 
 ### Mechanism 3 — mobile hardening
@@ -115,13 +117,13 @@ The single-width principle is amended honestly rather than silently diverging:
 3. Resize continuously from 900px to 1920px and confirm eligible figures widen smoothly from the 960px knee with no discontinuous jump.
 4. With classic (always-visible) scrollbars forced, confirm no page-level horizontal scrollbar appears at any width ≥ 960px.
 5. Confirm component-route matrix captions stay flush with the body-text edge while the scroll canvas widens.
-6. Inspect a sparse component matrix (2×2) at 1920px: its table stretches to the widened container (`table { width: 100% }`); judge whether the stretched sparse table is acceptable. If not, the fallback is the opt-in `data-wide` route, not a density heuristic.
+6. Inspect a sparse component matrix (2×2) at 1920px: its table stays content-width (≥ the component's `min-width` floor) and centered on the column axis; it must NOT stretch to the widened container. Also resize across 960px and judge the sparse table's width snap acceptable.
 7. Check browser zoom at 200% and 400% on a 1280px window: content reflows without page-level horizontal scrolling and text scales as expected.
 8. This QA pass may be combined with the still-open browser visual QA for the enumeration/chevron description-layout change.
 
 ## Trade-offs and Risks
 
-- **Sparse eligible figures widen too.** A figure-wrapped 2–3 node legacy flow stretches across the widened card (flow nodes flex-grow), and a sparse component matrix stretches likewise (`table { width: 100% }`). The breakout is density-blind by design — density heuristics or per-figure judgment would reintroduce generator/checker complexity. Accepted pending the visual QA items above; if QA rejects it, the fallback is the opt-in `data-wide` attribute with a fail-closed checker rule (explicitly out of scope for this change).
+- **Sparse legacy flows widen too.** A figure-wrapped 2–3 node legacy flow stretches across the widened card (flow nodes flex-grow). Sparse matrix stretching was eliminated by the content-width table rule above; the flow case remains accepted pending visual QA, with the opt-in `data-wide` attribute as the fallback (explicitly out of scope for this change).
 - **`:has()` dependency (legacy route only)** degrades to the current narrative width on old browsers; no content is lost. The component-route rule is kept in a separate selector list precisely so this degradation cannot spread to it.
 - **Cross-boundary `max-width` override** slightly blurs skeleton/component ownership; accepted as a documented, closed exception in preference to editing component CSS and invalidating registry hashes.
 - **Breakpoint inconsistency (skeleton 42rem vs components 40rem)** predates this change and is left as-is; unifying it would require touching all component assets and registry hashes for no user-visible gain.

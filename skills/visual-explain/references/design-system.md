@@ -49,6 +49,7 @@
 - `--w-narrative`（45rem）: 見出し・本文・キャプション・非適格の図を収める唯一の本文カラム。左右のエッジを共有する
 - 二層幅の適格は閉じた列挙とする: `figure` に包んだ legacy の `flow` / `matrix` と、コンポーネント `matrix` のスクロールコンテナだけが、広い画面（初期換算 960px 以上）で本文カラムの中心軸から左右対称に張り出せる（連続ランプ、片側最大 10rem、合計 65rem 以下）。裸の legacy `flow` / `matrix`、コンポーネント `flow`、その他の図は張り出さない
 - ルート文字サイズは流体スケールする（`clamp(1rem, 0.7rem + 0.5vw, 1.25rem)`。960px 以下で 16px、1760px で 20px 到達）。トークン値と1行の字数は不変
+- 張り出しコンテナ内の matrix の table は内容幅（`width: auto`）とし、本文カラムの中心軸に中央揃えする。疎な表を張り出し幅まで引き伸ばさない
 - caption の位置は経路で決まる: コンポーネント経路の caption / summary / notes は `--w-narrative` を保ち本文エッジに揃える。張り出した legacy カードの figcaption はカードに追従し、カード境界を整列コンテキストとする
 
 密な表・flow は各自の横スクロールコンテナ内で溢れさせ、ページ全体を広げるな。カラム内で内容を中央寄せしない。二層幅の張り出しは本文カラムの中心軸に対する対称拡張であり、この規則の例外ではない。
@@ -168,7 +169,7 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 - **二層幅のための閉じた例外**: 骨格は二層幅レイアウトに限り、コンポーネント名前空間セレクタ（`figure[data-ve-component="matrix"] .ve-matrix-scroll`）を対象にでき、その `max-width` を上書きできる。それ以外の名前空間規則は引き続きコンポーネントが所有する。
 - 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
 - CSS は意味の可読性・既存トークン・名前空間・静的アクセシビリティ・レスポンシブ順序だけに限る。狭い画面では積み重ねてよいが、意味的な読み順を反転しない。美的レビューは本スライスの範囲外。
-- **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。二層幅の対称張り出しは中央軸に対する拡張であり、この規則とは独立である。
+- **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。二層幅の対称張り出しと、その張り出しコンテナ内で matrix の table を中心軸に中央揃えすることは、中央軸に対する対称配置であり、この規則とは独立である。
 - **コンセプトと説明を分離する**: enumeration / chevron は `label` または番号＋`title` だけを図形内に置く。description は縦型で右、横型で下の兄弟領域へ置き、全省略時は空領域を作らない。意味 ID はコンセプト＋説明の外側項目に置き、takeaway の可視枠はコンセプト図形だけに付ける。
 - **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は行型6行（steps 1〜4）/横並び9列（steps 1〜7）、slope は最大5項目、evidence-map は根拠4件。超過は分割か縮退。
 - **waterfall の幾何は補助・valueText が主**: 累積オフセットは事前生成の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）で表現する。読者への数値伝達は必ず `valueText` で行い、幾何の量子化は情報を失わない補助である。
