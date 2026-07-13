@@ -293,7 +293,7 @@
     },
     {
       "id": "logic-tree",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "hierarchical-decomposition",
       "capabilities": [
         "mece-decomposition"
@@ -328,13 +328,13 @@
         "responsive-order",
         "logic-tree-structure"
       ],
-      "renderer": "logic-tree@1",
+      "renderer": "logic-tree@2",
       "assets": [
         {
           "id": "logic-tree.css",
           "slot": "styles",
           "path": "logic-tree.css",
-          "digest": "392189a53a978812139170109f88a1846863b141a338e6240719a9bea8309dd2"
+          "digest": "35957653801908743eb6c2aa15a90129e02b9b79269cec2d14922b6c1e3ccc92"
         }
       ]
     },

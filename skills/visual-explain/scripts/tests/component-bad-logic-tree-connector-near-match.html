@@ -228,96 +228,34 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="logic-tree" data-ve-contract-version="1" data-ve-asset="logic-tree.css" data-ve-digest="392189a53a978812139170109f88a1846863b141a338e6240719a9bea8309dd2">[data-ve-component="logic-tree"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-[data-ve-component="logic-tree"] .ve-logic-tree-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-[data-ve-component="logic-tree"] .ve-logic-tree-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="logic-tree"] .ve-logic-tree-layout-horizontal {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: stretch;
-  gap: 0;
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-root-cell {
-  display: flex;
-  align-items: center;
-  align-self: center;
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-root {
-  background: var(--border-strong); color: var(--bg);
-  padding: var(--space-2); border-radius: var(--radius);
-  font-size: var(--fs-figure); font-weight: 800; text-align: center;
-  min-width: 8rem;
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-root-stem {
-  display: block;
-  width: var(--space-2);
-  border-top: 2px solid var(--text-dim);
-  flex-shrink: 0;
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-spine-column {
-  display: flex;
-  align-self: stretch;
-  justify-content: center;
-  width: 2px;
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-spine {
-  display: block;
-  width: 0;
-  flex: 1 1 auto;
-  min-height: 100%;
-  border-left: 2px solid var(--text-dim);
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-branches {
-  list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; justify-content: space-around;
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-branch-row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0;
-  align-items: center;
-  margin: 0 0 var(--space-1);
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-connector {
-  display: block;
-  width: var(--space-2);
-  border-top: 2px solid var(--text-dim);
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-branch {
-  background: var(--text-dim); color: var(--bg);
-  padding: var(--space-2); border-radius: var(--radius);
-  font-size: var(--fs-figure);
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-branch-label { display: block; font-weight: 800; }
-[data-ve-component="logic-tree"] .ve-logic-tree-leaves { list-style: none; margin: var(--space-1) 0 0; padding: 0; }
-[data-ve-component="logic-tree"] .ve-logic-tree-leaf {
-  margin: var(--space-1) 0 0;
-  padding: var(--space-1);
-  border-left: 2px solid var(--bg);
-  font-size: var(--fs-small);
-}
-[data-ve-component="logic-tree"] .ve-logic-tree-leaf-text { display: block; }
-[data-ve-component="logic-tree"] .ve-takeaway-target { outline: 2px solid var(--bg); outline-offset: 2px; }
-[data-ve-component="logic-tree"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
-[data-ve-component="logic-tree"] .ve-logic-tree-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-[data-ve-component="logic-tree"] .ve-logic-tree-notes li { margin: 0; }
-@media (max-width: 40rem) {
-  [data-ve-component="logic-tree"] .ve-logic-tree-layout-horizontal {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    align-items: stretch;
-  }
-  [data-ve-component="logic-tree"] .ve-logic-tree-root-cell { align-self: stretch; }
-  [data-ve-component="logic-tree"] .ve-logic-tree-root { min-width: 0; width: 100%; }
-  [data-ve-component="logic-tree"] .ve-logic-tree-root-stem { display: none; }
-  [data-ve-component="logic-tree"] .ve-logic-tree-spine-column {
-    width: auto; min-height: var(--space-2); align-self: stretch;
-  }
-  [data-ve-component="logic-tree"] .ve-logic-tree-spine {
-    min-height: 0; width: 100%; border-left: none;
-    border-top: 2px solid var(--text-dim);
-  }
-}
+  <style data-ve-component="logic-tree" data-ve-contract-version="2" data-ve-asset="logic-tree.css" data-ve-digest="35957653801908743eb6c2aa15a90129e02b9b79269cec2d14922b6c1e3ccc92">figure[data-ve-component="logic-tree"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="logic-tree"] .ve-lt { display: flex; align-items: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-node { padding: var(--space-1) var(--space-2); font-weight: 700; }
+figure[data-ve-component="logic-tree"] .ve-lt-root { background: var(--dg-primary); color: var(--dg-on-primary); text-align: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-branch { background: var(--dg-primary-mid); color: var(--dg-on-primary); }
+figure[data-ve-component="logic-tree"] .ve-lt-leaf {
+  border: 1.5px solid var(--dg-line); color: var(--text);
+  font-size: var(--fs-figure); font-weight: 400; padding: var(--space-1) var(--space-2); }
+figure[data-ve-component="logic-tree"] .ve-lt-stub {
+  flex: 0 0 1.5rem; border-top: 2px solid var(--dg-line); align-self: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-children { display: flex; flex-direction: column; gap: var(--space-1); }
+figure[data-ve-component="logic-tree"] .ve-lt-child {
+  position: relative; padding-left: 1.5rem; display: flex; align-items: center; }
+figure[data-ve-component="logic-tree"] .ve-lt-child::before {
+  content: ""; position: absolute; left: 0; top: 50%; width: 1.5rem;
+  border-top: 2px solid var(--dg-line); }
+figure[data-ve-component="logic-tree"] .ve-lt-child::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  border-left: 2px solid var(--dg-line); }
+figure[data-ve-component="logic-tree"] .ve-lt-child:first-child::after { top: 50%; }
+figure[data-ve-component="logic-tree"] .ve-lt-child:last-child::after { top: 0; bottom: 50%; }
+figure[data-ve-component="logic-tree"] .ve-lt-child:only-child::after { content: none; }
+figure[data-ve-component="logic-tree"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
+figure[data-ve-component="logic-tree"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="logic-tree"] .ve-logic-tree-notes li { margin: 0; }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
@@ -386,8 +324,8 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section data-ve-section-kind="canonical" data-ve-component="logic-tree" data-ve-contract-version="1" data-ve-instance="sec-logic-tree" data-ve-fallback="static-content">
-<figure data-ve-component="logic-tree" role="group" aria-label="ロジックツリー" aria-describedby="sec-logic-tree-summary"><figcaption id="sec-logic-tree-caption" class="ve-logic-tree-caption">全体テーマの3枝分解</figcaption><p id="sec-logic-tree-summary" class="ve-logic-tree-summary">左に全体テーマ、右に3枝と各枝の詳細を示す。</p><div class="ve-logic-tree-layout ve-logic-tree-layout-horizontal"><div class="ve-logic-tree-root-cell"><div class="ve-logic-tree-root" data-ve-semantic-id="root-topic"><span class="ve-logic-tree-root-label">全体テーマ</span></div><span class="ve-logic-tree-root-stem" aria-hidden="true"></span></div><div class="ve-logic-tree-spine-column" aria-hidden="true"><span class="ve-logic-tree-spine"></span></div><ol class="ve-logic-tree-branches ve-logic-tree-count-3"><li class="ve-logic-tree-branch-row ve-logic-tree-index-1"><span class="ve-logic-tree-connector-x" aria-hidden="true"></span><div class="ve-logic-tree-branch" data-ve-semantic-id="branch-a"><span class="ve-logic-tree-branch-label">市場機会</span></div></li><li class="ve-logic-tree-branch-row ve-logic-tree-index-2"><span class="ve-logic-tree-connector" aria-hidden="true"></span><div class="ve-logic-tree-branch" data-ve-semantic-id="branch-b"><span class="ve-logic-tree-branch-label">実装負債</span><ul class="ve-logic-tree-leaves"><li class="ve-logic-tree-leaf" data-ve-semantic-id="leaf-b1"><span class="ve-logic-tree-leaf-text">レガシー連携の残債</span></li></ul></div></li><li class="ve-logic-tree-branch-row ve-logic-tree-index-3"><span class="ve-logic-tree-connector" aria-hidden="true"></span><div class="ve-logic-tree-branch" data-ve-semantic-id="branch-c"><span class="ve-logic-tree-branch-label">運用体制</span><ul class="ve-logic-tree-leaves"><li class="ve-logic-tree-leaf" data-ve-semantic-id="leaf-c1"><span class="ve-logic-tree-leaf-text">オンコール体制</span></li><li class="ve-logic-tree-leaf" data-ve-semantic-id="leaf-c2"><span class="ve-logic-tree-leaf-text">権限委譲の遅れ</span></li></ul></div></li></ol></div><ul class="ve-logic-tree-notes"><li data-ve-semantic-id="cert-lt"><strong>確認済み:</strong> 3枝はレビューで合意された分解。</li><li data-ve-semantic-id="src-lt"><strong>出典 分解メモ v1</strong>（枝の定義。）</li></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="logic-tree" data-ve-contract-version="2" data-ve-instance="sec-logic-tree" data-ve-fallback="static-content">
+<figure data-ve-component="logic-tree" role="group" aria-label="ロジックツリー" aria-describedby="sec-logic-tree-summary"><figcaption id="sec-logic-tree-caption" class="ve-logic-tree-caption">全体テーマの3枝分解</figcaption><p id="sec-logic-tree-summary" class="ve-logic-tree-summary">左に全体テーマ、右に3枝と各枝の詳細を示す。</p><div class="ve-lt"><div class="ve-lt-node ve-lt-root" data-ve-semantic-id="root-topic">全体テーマ</div><div class="ve-lt-stub-x"></div><div class="ve-lt-children"><div class="ve-lt-child"><div class="ve-lt-node ve-lt-branch" data-ve-semantic-id="branch-a">市場機会</div></div><div class="ve-lt-child"><div class="ve-lt-node ve-lt-branch" data-ve-semantic-id="branch-b">実装負債</div><div class="ve-lt-stub"></div><div class="ve-lt-children"><div class="ve-lt-child"><div class="ve-lt-node ve-lt-leaf" data-ve-semantic-id="leaf-b1">レガシー連携の残債</div></div></div></div><div class="ve-lt-child"><div class="ve-lt-node ve-lt-branch" data-ve-semantic-id="branch-c">運用体制</div><div class="ve-lt-stub"></div><div class="ve-lt-children"><div class="ve-lt-child"><div class="ve-lt-node ve-lt-leaf" data-ve-semantic-id="leaf-c1">オンコール体制</div></div><div class="ve-lt-child"><div class="ve-lt-node ve-lt-leaf" data-ve-semantic-id="leaf-c2">権限委譲の遅れ</div></div></div></div></div></div><ul class="ve-logic-tree-notes"><li data-ve-semantic-id="cert-lt"><strong>確認済み:</strong> 3枝はレビューで合意された分解。</li><li data-ve-semantic-id="src-lt"><strong>出典 分解メモ v1</strong>（枝の定義。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

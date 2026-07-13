@@ -33,7 +33,7 @@
       "capabilities": ["maturity-staging"]
     },
     "logic-tree": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "hierarchical-decomposition",
       "capabilities": ["mece-decomposition"]
     },

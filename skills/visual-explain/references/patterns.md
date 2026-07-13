@@ -483,7 +483,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-logic-tree",
         "relationship": {"kind": "hierarchical-decomposition", "capabilities": ["mece-decomposition"]},
-        "selection": {"component": "logic-tree", "version": 1, "matchedCapabilities": ["mece-decomposition"]},
+        "selection": {"component": "logic-tree", "version": 2, "matchedCapabilities": ["mece-decomposition"]},
         "caption": "全体テーマの3枝分解",
         "certainty": [{"id": "lt-cert", "level": "inferred", "statement": "分解はレビューで合意（MECE は機械未検証）。"}],
         "sources": [{"id": "lt-src", "label": "分解メモ v1"}],

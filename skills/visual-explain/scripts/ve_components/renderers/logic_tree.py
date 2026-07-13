@@ -1,7 +1,7 @@
 """Static, accessible renderer for the semantic ``logic-tree`` component.
 
-Hierarchical decomposition with root left and branches right. Produces a shared
-vertical spine with per-branch connectors (grid + border, no flow attributes).
+Hierarchical decomposition with root left and branches right. Produces nested
+elbow connectors (flex + border, no flow attributes).
 """
 from __future__ import annotations
 
@@ -16,6 +16,73 @@ def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
+def _node_markup(
+    *,
+    kind: str,
+    node_id: str,
+    label: str,
+    takeaway: set[str],
+    emphasis_by_id: dict[str, str],
+) -> str:
+    cls_parts = ["ve-lt-node", f"ve-lt-{kind}"]
+    if node_id in takeaway:
+        cls_parts.append("ve-takeaway-target")
+    takeaway_attr = f' data-ve-semantic-id="{_esc(node_id)}"'
+    takeaway_attr += ' data-ve-takeaway="true"' if node_id in takeaway else ""
+    emphasis = (
+        f'<span class="ve-emphasis">{_esc(emphasis_by_id[node_id])}</span>'
+        if node_id in emphasis_by_id else ""
+    )
+    return (
+        f'<div class="{" ".join(cls_parts)}"{takeaway_attr}>'
+        f'{_esc(label)}{emphasis}</div>'
+    )
+
+
+def _render_leaf(
+    leaf,
+    *,
+    takeaway: set[str],
+    emphasis_by_id: dict[str, str],
+) -> str:
+    node = _node_markup(
+        kind="leaf",
+        node_id=leaf.id,
+        label=leaf.text,
+        takeaway=takeaway,
+        emphasis_by_id=emphasis_by_id,
+    )
+    return f'<div class="ve-lt-child">{node}</div>'
+
+
+def _render_branch(
+    branch,
+    *,
+    takeaway: set[str],
+    emphasis_by_id: dict[str, str],
+) -> str:
+    node = _node_markup(
+        kind="branch",
+        node_id=branch.id,
+        label=branch.label,
+        takeaway=takeaway,
+        emphasis_by_id=emphasis_by_id,
+    )
+    if not branch.leaves:
+        return f'<div class="ve-lt-child">{node}</div>'
+    leaf_blocks = [
+        _render_leaf(leaf, takeaway=takeaway, emphasis_by_id=emphasis_by_id)
+        for leaf in branch.leaves
+    ]
+    return (
+        f'<div class="ve-lt-child">'
+        f'{node}'
+        f'<div class="ve-lt-stub"></div>'
+        f'<div class="ve-lt-children">{"".join(leaf_blocks)}</div>'
+        f'</div>'
+    )
+
+
 def render_logic_tree(section: CanonicalSection, definition) -> RenderResult:
     ir = section.ir
     logic_tree = ir.logic_tree
@@ -25,70 +92,25 @@ def render_logic_tree(section: CanonicalSection, definition) -> RenderResult:
 
     caption_id = f"{ir.id}-caption"
     summary_id = f"{ir.id}-summary"
-    count = len(logic_tree.branches)
 
     root = logic_tree.root
-    root_cls = ["ve-logic-tree-root"]
-    if root.id in takeaway:
-        root_cls.append("ve-takeaway-target")
-    root_takeaway = ' data-ve-takeaway="true"' if root.id in takeaway else ""
-    root_emphasis = (
-        f'<span class="ve-emphasis">{_esc(emphasis_by_id[root.id])}</span>'
-        if root.id in emphasis_by_id else ""
+    root_markup = _node_markup(
+        kind="root",
+        node_id=root.id,
+        label=root.label,
+        takeaway=takeaway,
+        emphasis_by_id=emphasis_by_id,
     )
-    root_markup = (
-        f'<div class="{" ".join(root_cls)}" data-ve-semantic-id="{_esc(root.id)}"{root_takeaway}>'
-        f'<span class="ve-logic-tree-root-label">{_esc(root.label)}</span>{root_emphasis}</div>'
-    )
-
-    branch_rows: list[str] = []
-    for index, branch in enumerate(logic_tree.branches, start=1):
-        cls_parts = ["ve-logic-tree-branch-row", f"ve-logic-tree-index-{index}"]
-        branch_cls = ["ve-logic-tree-branch"]
-        if branch.id in takeaway:
-            branch_cls.append("ve-takeaway-target")
-        branch_takeaway = ' data-ve-takeaway="true"' if branch.id in takeaway else ""
-        branch_emphasis = (
-            f'<span class="ve-emphasis">{_esc(emphasis_by_id[branch.id])}</span>'
-            if branch.id in emphasis_by_id else ""
-        )
-        leaf_blocks: list[str] = []
-        for leaf in branch.leaves:
-            leaf_cls = ["ve-logic-tree-leaf"]
-            if leaf.id in takeaway:
-                leaf_cls.append("ve-takeaway-target")
-            leaf_takeaway = ' data-ve-takeaway="true"' if leaf.id in takeaway else ""
-            leaf_emphasis = (
-                f'<span class="ve-emphasis">{_esc(emphasis_by_id[leaf.id])}</span>'
-                if leaf.id in emphasis_by_id else ""
-            )
-            leaf_blocks.append(
-                f'<li class="{" ".join(leaf_cls)}" data-ve-semantic-id="{_esc(leaf.id)}"{leaf_takeaway}>'
-                f'<span class="ve-logic-tree-leaf-text">{_esc(leaf.text)}</span>{leaf_emphasis}</li>'
-            )
-        leaves_html = (
-            f'<ul class="ve-logic-tree-leaves">{"".join(leaf_blocks)}</ul>'
-            if leaf_blocks else ""
-        )
-        branch_rows.append(
-            f'<li class="{" ".join(cls_parts)}">'
-            f'<span class="ve-logic-tree-connector" aria-hidden="true"></span>'
-            f'<div class="{" ".join(branch_cls)}" data-ve-semantic-id="{_esc(branch.id)}"{branch_takeaway}>'
-            f'<span class="ve-logic-tree-branch-label">{_esc(branch.label)}</span>'
-            f'{branch_emphasis}{leaves_html}</div></li>'
-        )
-
+    branch_blocks = [
+        _render_branch(branch, takeaway=takeaway, emphasis_by_id=emphasis_by_id)
+        for branch in logic_tree.branches
+    ]
     tree_markup = (
-        f'<div class="ve-logic-tree-layout ve-logic-tree-layout-horizontal">'
-        f'<div class="ve-logic-tree-root-cell">'
+        f'<div class="ve-lt">'
         f'{root_markup}'
-        f'<span class="ve-logic-tree-root-stem" aria-hidden="true"></span>'
+        f'<div class="ve-lt-stub"></div>'
+        f'<div class="ve-lt-children">{"".join(branch_blocks)}</div>'
         f'</div>'
-        f'<div class="ve-logic-tree-spine-column" aria-hidden="true">'
-        f'<span class="ve-logic-tree-spine"></span>'
-        f'</div>'
-        f'<ol class="ve-logic-tree-branches ve-logic-tree-count-{count}">'
-        f'{"".join(branch_rows)}</ol></div>'
     )
 
     notes = []
