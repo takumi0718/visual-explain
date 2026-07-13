@@ -418,10 +418,10 @@ class ArtifactSemanticTest(unittest.TestCase):
     def test_enumeration_description_nested_in_concept_fails(self) -> None:
         doc = build("component-valid-enumeration.json")
         tampered = doc.replace(
-            '</div><ul class="ve-enum-description">',
-            '<ul class="ve-enum-description">',
+            '</div><p class="ve-enum-description ve-enum-desc">',
+            '<p class="ve-enum-description ve-enum-desc">',
             1,
-        ).replace('</ul></li>', '</ul></div></li>', 1)
+        ).replace('</p></li>', '</p></div></li>', 1)
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))
 
     def test_chevron_missing_concept_child_fails(self) -> None:
@@ -435,7 +435,7 @@ class ArtifactSemanticTest(unittest.TestCase):
 
     def test_enumeration_duplicate_concept_child_fails(self) -> None:
         doc = build("component-valid-enumeration.json")
-        marker = '<div class="ve-enum-concept">'
+        marker = '<div class="ve-enum-concept ve-enum-box">'
         tampered = doc.replace(
             marker,
             marker + '<div class="ve-enum-concept">duplicate</div>',
@@ -459,8 +459,8 @@ class ArtifactSemanticTest(unittest.TestCase):
             '',
             1,
         ).replace(
-            '<div class="ve-enum-concept">',
-            '<div class="ve-enum-concept" data-ve-semantic-id="item-a">',
+            '<div class="ve-enum-concept ve-enum-box">',
+            '<div class="ve-enum-concept ve-enum-box" data-ve-semantic-id="item-a">',
             1,
         )
         self.assertIn("artifact_semantic_mismatch", self.diags(tampered))

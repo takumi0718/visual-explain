@@ -15,6 +15,7 @@ from .diagnostics import (
     CHEVRON_STRUCTURE_VIOLATION,
     DUPLICATE_SEMANTIC_ID,
     ENUMERATION_STRUCTURE_VIOLATION,
+    ENUMERATION_EMPHASIS_NOT_FOUND,
     FORBIDDEN_AUTHORING_FIELD,
     INVALID_COMPATIBILITY_PROVENANCE,
     INVALID_COMPONENT_PAYLOAD,
@@ -680,6 +681,13 @@ def _validate_enumeration(raw: object, path: str, col: DiagnosticCollector) -> E
                 col.add(ENUMERATION_STRUCTURE_VIOLATION, "title は30字以内です", p)
         if desc_emphasis is not None and not _nonblank_str(desc_emphasis):
             col.add(ENUMERATION_STRUCTURE_VIOLATION, "descriptionEmphasis は空にできません", p)
+        elif isinstance(desc_emphasis, str) and desc_lines:
+            if not any(desc_emphasis in line for line in desc_lines):
+                col.add(
+                    ENUMERATION_EMPHASIS_NOT_FOUND,
+                    "descriptionEmphasis は description の部分文字列である必要があります",
+                    p,
+                )
 
         items.append(EnumerationItem(
             id=iid, label=label if isinstance(label, str) else None,

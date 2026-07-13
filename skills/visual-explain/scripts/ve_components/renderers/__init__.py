@@ -22,7 +22,7 @@ from .evidence_map import render_evidence_map
 TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "matrix@1": render_matrix,
     "flow@1": render_flow,
-    "enumeration@1": render_enumeration,
+    "enumeration@2": render_enumeration,
     "chevron@1": render_chevron,
     "pyramid@1": render_pyramid,
     "stairs@1": render_stairs,

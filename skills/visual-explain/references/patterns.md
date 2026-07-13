@@ -343,7 +343,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-enum",
         "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 1, "matchedCapabilities": ["parallel-itemization"]},
+        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
         "caption": "検討対象の並列項目",
         "certainty": [{"id": "e-cert", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}],
         "sources": [{"id": "e-src", "label": "議事録 2026-06"}],

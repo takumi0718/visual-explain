@@ -13,7 +13,7 @@
       "capabilities": ["ordered-transition", "directed-transition", "branching"]
     },
     "enumeration": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "parallel-enumeration",
       "capabilities": ["parallel-itemization"]
     },

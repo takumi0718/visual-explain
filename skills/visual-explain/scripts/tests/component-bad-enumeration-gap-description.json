@@ -11,7 +11,7 @@
       "ir": {
         "id": "sec-bad-gap",
         "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 1, "matchedCapabilities": ["parallel-itemization"]},
+        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
         "caption": "歯抜け description",
         "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
         "sources": [{"id": "src-1", "label": "出典"}],

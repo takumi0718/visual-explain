@@ -639,6 +639,7 @@ def _check_item_layout(
     outer: str,
     concept: str,
     description: str,
+    max_description_blocks: int = 1,
 ) -> list[Diagnostic]:
     parser = _ItemLayoutParser(outer, concept, description)
     parser.feed(body)
@@ -656,12 +657,12 @@ def _check_item_layout(
                 ARTIFACT_SEMANTIC_MISMATCH,
                 f"{component} 項目 {index} の concept は直接の子として1個必要です",
             ))
-        if record.description_count > 1 or record.description_nested_in_concept:
+        if record.description_count > max_description_blocks or record.description_nested_in_concept:
             diagnostics.append(Diagnostic(
                 ARTIFACT_SEMANTIC_MISMATCH,
                 f"{component} 項目 {index} の description は concept の兄弟である必要があります",
             ))
-    if any(description_counts) and not all(count == 1 for count in description_counts):
+    if any(description_counts) and not all(count > 0 for count in description_counts):
         diagnostics.append(Diagnostic(
             ARTIFACT_SEMANTIC_MISMATCH,
             f"{component} の description は全有または全無である必要があります",
@@ -762,6 +763,7 @@ def _check_enumeration_artifact(body: str, parser: _DomSemanticParser) -> list[D
         outer="ve-enum-block",
         concept="ve-enum-concept",
         description="ve-enum-description",
+        max_description_blocks=3,
     ))
     return diagnostics
 

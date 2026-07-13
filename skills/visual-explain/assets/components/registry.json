@@ -104,7 +104,7 @@
     },
     {
       "id": "enumeration",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "parallel-enumeration",
       "capabilities": [
         "parallel-itemization"
@@ -138,13 +138,13 @@
         "responsive-order",
         "enumeration-structure"
       ],
-      "renderer": "enumeration@1",
+      "renderer": "enumeration@2",
       "assets": [
         {
           "id": "enumeration.css",
           "slot": "styles",
           "path": "enumeration.css",
-          "digest": "b7a284d3364d12e068b684885039889d40f1bd063f55ceed1c869035d4e8f781"
+          "digest": "70c182dfb356bb58117fac1cce740dde5e5b1201a5eeb309d0555a9e84ab7e34"
         }
       ]
     },

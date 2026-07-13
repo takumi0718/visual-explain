@@ -55,6 +55,7 @@ ARTIFACT_SEMANTIC_MISMATCH = "artifact_semantic_mismatch"
 
 # S1 — enumeration structure codes.
 ENUMERATION_STRUCTURE_VIOLATION = "enumeration_structure_violation"
+ENUMERATION_EMPHASIS_NOT_FOUND = "enumeration-emphasis-not-found"
 
 # S2 — chevron structure codes.
 CHEVRON_STRUCTURE_VIOLATION = "chevron_structure_violation"
@@ -111,6 +112,7 @@ ALL_CODES = frozenset({
     FLOW_TOPOLOGY_TOO_COMPLEX,
     ASK_CONTRACT_VIOLATION,
     ENUMERATION_STRUCTURE_VIOLATION,
+    ENUMERATION_EMPHASIS_NOT_FOUND,
     CHEVRON_STRUCTURE_VIOLATION,
     PYRAMID_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,

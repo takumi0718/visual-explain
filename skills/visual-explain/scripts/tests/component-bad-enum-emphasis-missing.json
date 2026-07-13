@@ -1,28 +1,33 @@
 {
   "schemaVersion": 1,
   "document": {
-    "id": "bad-enum-label",
-    "title": "ラベル欠落",
-    "summary": "label モードで label が無い列挙。"
+    "id": "bad-enum-emphasis",
+    "title": "不正な descriptionEmphasis",
+    "summary": "descriptionEmphasis が description の部分文字列でない列挙。"
   },
   "sections": [
     {
       "kind": "canonical",
       "ir": {
-        "id": "sec-bad-label",
+        "id": "sec-bad-emphasis",
         "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
         "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
-        "caption": "ラベル欠落",
+        "caption": "強調不一致",
         "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
         "sources": [{"id": "src-1", "label": "出典"}],
         "accessibility": {"label": "列挙", "summary": "不正 fixture。"},
         "enumeration": {
           "items": [
-            {"id": "a", "label": "A"},
-            {"id": "b"}
+            {
+              "id": "a",
+              "title": "福利厚生",
+              "description": ["従業員向けに無料のフィットネス利用券を配布する"],
+              "descriptionEmphasis": "存在しない強調語"
+            },
+            {"id": "b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]}
           ],
           "presentation": "list",
-          "blockContent": "label"
+          "blockContent": "number"
         }
       }
     }
