@@ -122,6 +122,15 @@ class SlopeValidationTest(unittest.TestCase):
             validate_raw(ir)
         self.assertIn("quantitative-unit-required", {d.code for d in ctx.exception.diagnostics})
 
+    def test_requires_title_reports_structure_violation(self) -> None:
+        ir = _base_ir()
+        ir["slope"].pop("title")
+        with self.assertRaises(ContractError) as ctx:
+            validate_raw(ir)
+        codes = {d.code for d in ctx.exception.diagnostics}
+        self.assertIn(SLOPE_STRUCTURE_VIOLATION, codes)
+        self.assertNotIn("quantitative-unit-required", codes)
+
     def test_rejects_float_value(self) -> None:
         ir = _base_ir(items=[{
             "id": "sl-1", "label": "A", "fromValue": 0.1, "toValue": 2,
@@ -175,6 +184,17 @@ class SlopeV2MarkupTest(unittest.TestCase):
         markup = render_ir(_base_ir()).markup
         self.assertIn('class="ve-fig-title"', markup)
         self.assertIn("単位: 件", markup)
+
+    def test_highlight_endpoints_use_tone_class_on_circles(self) -> None:
+        markup = render_ir(_base_ir(highlightId="s1")).markup
+        self.assertRegex(
+            markup,
+            r'<circle[^>]*class="ve-slope-endpoint ve-slope-tone-highlight"[^>]*r="4"',
+        )
+        css = (SKILL / "assets" / "components" / "slope.css").read_text("utf-8")
+        self.assertIn("circle.ve-slope-endpoint.ve-slope-tone-highlight", css)
+        self.assertIn("fill: var(--dg-highlight)", css)
+        self.assertNotIn("currentColor", css)
 
 
 class SlopeMarkupTest(unittest.TestCase):

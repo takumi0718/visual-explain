@@ -1195,7 +1195,7 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
 
     title = raw.get("title")
     if not _nonblank_str(title):
-        col.add(QUANTITATIVE_UNIT_REQUIRED, "title は必須です", path)
+        col.add(SLOPE_STRUCTURE_VIOLATION, "title は必須です", path)
 
     unit_label = raw.get("unitLabel")
     if not _nonblank_str(unit_label):
