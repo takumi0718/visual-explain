@@ -32,6 +32,8 @@ from .diagnostics import (
     STAIRS_STRUCTURE_VIOLATION,
     WATERFALL_ARITHMETIC_MISMATCH,
     WATERFALL_STRUCTURE_VIOLATION,
+    BARS_ITEM_LIMIT,
+    BARS_STRUCTURE_VIOLATION,
     ContractError,
     DiagnosticCollector,
 )
@@ -67,6 +69,8 @@ from .model import (
     SlopeAxes,
     SlopeItem,
     SlopePayload,
+    BarsItem,
+    BarsPayload,
     MatrixCell,
     MatrixPayload,
     PyramidPayload,
@@ -114,7 +118,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
     "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
-    "slope", "evidence-map",
+    "slope", "bars", "evidence-map",
     "takeawayTargetIds", "takeawayScope", "emphasis",
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
@@ -148,6 +152,8 @@ _LOGIC_TREE_LEAF_KEYS = {"id", "text"}
 _SLOPE_KEYS = {"axes", "items", "title", "unitLabel", "highlightId"}
 _SLOPE_AXES_KEYS = {"fromLabel", "toLabel"}
 _SLOPE_ITEM_KEYS = {"id", "label", "fromValue", "toValue", "fromValueText", "toValueText", "tone"}
+_BARS_KEYS = {"title", "unitLabel", "items", "highlightId"}
+_BARS_ITEM_KEYS = {"id", "label", "value", "valueText"}
 _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
 _EVIDENCE_CONCLUSION_KEYS = {"id", "label"}
 _EVIDENCE_ITEM_KEYS = {"id", "label", "certaintyRef", "sourceRef"}
@@ -201,6 +207,7 @@ _ANNOTATION_TARGET_LABELS = {
     "waterfall": "開始/段/終了",
     "logic-tree": "枝/葉",
     "slope": "項目",
+    "bars": "項目",
     "evidence-map": "結論/根拠",
 }
 
@@ -261,6 +268,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     waterfall = None
     logic_tree = None
     slope = None
+    bars = None
     evidence_map = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
@@ -302,6 +310,8 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
                 logic_tree = validated_payload
             elif payload_kind == "slope":
                 slope = validated_payload
+            elif payload_kind == "bars":
+                bars = validated_payload
 
     takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
         raw, path, col, caption, payload_kind, validated_payload
@@ -341,6 +351,7 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         waterfall=waterfall,
         logic_tree=logic_tree,
         slope=slope,
+        bars=bars,
         evidence_map=evidence_map,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
@@ -1311,6 +1322,96 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
     )
 
 
+def _parse_bars_numeric(raw: object, path: str, col: DiagnosticCollector) -> int | Decimal | None:
+    if isinstance(raw, bool):
+        col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドに bool は許可されません", path)
+        return None
+    if isinstance(raw, float):
+        col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドに float は許可されません", path)
+        return None
+    if is_numeric(raw):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            return Decimal(raw.strip())
+        except Exception:
+            col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
+            return None
+    col.add(BARS_STRUCTURE_VIOLATION, "数値フィールドは int、Decimal、または数値文字列である必要があります", path)
+    return None
+
+
+def _validate_bars(raw: object, path: str, col: DiagnosticCollector) -> BarsPayload | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "bars はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _BARS_KEYS, path, col, payload_code=BARS_STRUCTURE_VIOLATION)
+
+    title = raw.get("title")
+    if not _nonblank_str(title):
+        col.add(BARS_STRUCTURE_VIOLATION, "title は必須です", path)
+
+    unit_label = raw.get("unitLabel")
+    if not _nonblank_str(unit_label):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
+    elif len(str(unit_label)) > 8:
+        col.add(BARS_STRUCTURE_VIOLATION, "unitLabel は8字以内です", path)
+
+    items_raw = raw.get("items")
+    if not isinstance(items_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "items は配列である必要があります", path)
+        return None
+    item_count = len(items_raw)
+    if item_count < 1 or item_count > 10:
+        col.add(BARS_ITEM_LIMIT, f"items は1〜10件である必要があります (found {item_count})", path)
+
+    items: list[BarsItem] = []
+    for i, item in enumerate(items_raw):
+        p = f"{path}.items[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _BARS_ITEM_KEYS, p, col, payload_code=BARS_STRUCTURE_VIOLATION)
+        iid = item.get("id")
+        if not _nonblank_str(iid):
+            col.add(INVALID_COMPONENT_PAYLOAD, "item.id は空にできません", p)
+        label = item.get("label")
+        if not _nonblank_str(label):
+            col.add(BARS_STRUCTURE_VIOLATION, "item.label は空にできません", p)
+        value = _parse_bars_numeric(item.get("value"), f"{p}.value", col)
+        value_text = item.get("valueText")
+        if not _nonblank_str(value_text):
+            col.add(BARS_STRUCTURE_VIOLATION, "valueText は空にできません", p)
+        if value is None or not _nonblank_str(iid):
+            continue
+        items.append(BarsItem(
+            id=iid,
+            label=label if isinstance(label, str) else "",
+            value=value,
+            value_text=value_text if isinstance(value_text, str) else "",
+        ))
+
+    if col:
+        return None
+    if not _nonblank_str(title) or not _nonblank_str(unit_label):
+        return None
+
+    highlight_id = raw.get("highlightId")
+    if highlight_id is not None and not _nonblank_str(highlight_id):
+        col.add(BARS_STRUCTURE_VIOLATION, "highlightId は空にできません", path)
+        highlight_id = None
+    elif highlight_id is not None and highlight_id not in {item.id for item in items}:
+        col.add(BARS_STRUCTURE_VIOLATION, f"highlightId '{highlight_id}' が items に存在しません", path)
+    if col:
+        return None
+    return BarsPayload(
+        title=str(title),
+        unit_label=str(unit_label),
+        items=tuple(items),
+        highlight_id=highlight_id if isinstance(highlight_id, str) else None,
+    )
+
+
 def _validate_evidence_map(
     raw: object,
     path: str,
@@ -1658,6 +1759,9 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
     slope = raw.get("slope")
     if isinstance(slope, dict):
         collect(slope.get("items"))
+    bars = raw.get("bars")
+    if isinstance(bars, dict):
+        collect(bars.get("items"))
     evidence_map = raw.get("evidence-map")
     if isinstance(evidence_map, dict):
         conclusion = evidence_map.get("conclusion")
@@ -1685,6 +1789,7 @@ _PAYLOAD_VALIDATORS = {
     "waterfall": _validate_waterfall,
     "logic-tree": _validate_logic_tree,
     "slope": _validate_slope,
+    "bars": _validate_bars,
 }
 
 
@@ -1734,6 +1839,10 @@ def _annotation_targets_slope(payload: SlopePayload | None) -> set[str]:
     return {item.id for item in payload.items} if payload is not None else set()
 
 
+def _annotation_targets_bars(payload: BarsPayload | None) -> set[str]:
+    return {item.id for item in payload.items} if payload is not None else set()
+
+
 def _annotation_targets_evidence_map(payload: EvidenceMapPayload | None) -> set[str]:
     if payload is None:
         return set()
@@ -1750,6 +1859,7 @@ ANNOTATION_TARGETS = {
     "waterfall": _annotation_targets_waterfall,
     "logic-tree": _annotation_targets_logic_tree,
     "slope": _annotation_targets_slope,
+    "bars": _annotation_targets_bars,
     "evidence-map": _annotation_targets_evidence_map,
 }
 

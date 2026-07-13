@@ -261,6 +261,22 @@ class SlopePayload:
 
 
 @dataclass(frozen=True)
+class BarsItem:
+    id: str
+    label: str
+    value: int | Decimal
+    value_text: str
+
+
+@dataclass(frozen=True)
+class BarsPayload:
+    title: str
+    unit_label: str
+    items: tuple[BarsItem, ...]
+    highlight_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class EvidenceConclusion:
     id: str
     label: str
@@ -303,6 +319,7 @@ class CanonicalIR:
     waterfall: Optional[WaterfallPayload] = None
     logic_tree: Optional[LogicTreePayload] = None
     slope: Optional[SlopePayload] = None
+    bars: Optional[BarsPayload] = None
     evidence_map: Optional[EvidenceMapPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
@@ -328,6 +345,8 @@ class CanonicalIR:
             return "logic-tree"
         if self.slope is not None:
             return "slope"
+        if self.bars is not None:
+            return "bars"
         if self.evidence_map is not None:
             return "evidence-map"
         raise ValueError("canonical IR has no payload")
@@ -363,6 +382,8 @@ class CanonicalIR:
                 ids.extend(leaf.id for leaf in branch.leaves)
         if self.slope is not None:
             ids.extend(item.id for item in self.slope.items)
+        if self.bars is not None:
+            ids.extend(item.id for item in self.bars.items)
         if self.evidence_map is not None:
             ids.append(self.evidence_map.conclusion.id)
             ids.extend(item.id for item in self.evidence_map.evidence)

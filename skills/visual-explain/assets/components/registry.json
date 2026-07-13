@@ -488,6 +488,56 @@
           "digest": "be823c82a99e43f49c5c07e8b5db17a736e4c9f69b356ba9cbf85cd8cf008822"
         }
       ]
+    },
+    {
+      "id": "bars",
+      "version": 2,
+      "relationshipKind": "quantitative-comparison",
+      "capabilities": [
+        "single-axis-quantity",
+        "ranked-comparison"
+      ],
+      "semanticResponsibility": "単一軸の定量比較と順位付き比較のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "title",
+        "unitLabel",
+        "items"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources",
+        "highlightId"
+      ],
+      "behavior": "静的な横棒で定量値を最大値基準の幅%で描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure と行ごとのラベル/値。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "bars-width-classes"
+      ],
+      "renderer": "bars@2",
+      "assets": [
+        {
+          "id": "bars.css",
+          "slot": "styles",
+          "path": "bars.css",
+          "digest": "dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9"
+        }
+      ]
     }
   ]
 }

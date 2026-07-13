@@ -53,6 +53,7 @@ KNOWN_CHECKER_RULES = frozenset({
     "slope-structure",
     "renderer-svg",
     "evidence-map-references",
+    "bars-width-classes",
 })
 
 _ASSET_SLOTS = frozenset({"styles", "scripts"})

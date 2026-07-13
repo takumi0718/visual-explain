@@ -29,6 +29,7 @@ from .diagnostics import (
     NOTATION_HIGHLIGHT_LIMIT,
     RENDERER_SVG_VIOLATION,
     SLOPE_STRUCTURE_VIOLATION,
+    BARS_STRUCTURE_VIOLATION,
     Diagnostic,
 )
 from .validation import VOCABULARY
@@ -1292,6 +1293,64 @@ def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnos
     return diagnostics
 
 
+def _check_bars_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    if 'class="ve-fig-title"' not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "bars に ve-fig-title がありません"))
+    if 'class="ve-fig-unit"' not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "bars に ve-fig-unit がありません"))
+
+    row_blocks = re.findall(
+        r'<div\s+([^>]*\bve-bars-row\b[^>]*)>(.*?)</div>',
+        body,
+        re.DOTALL,
+    )
+    item_count = len(row_blocks)
+    if item_count < 1 or item_count > 10:
+        diagnostics.append(Diagnostic(
+            BARS_STRUCTURE_VIOLATION,
+            f"bars は1〜10項目である必要があります (found {item_count})",
+        ))
+
+    highlight_count = len(re.findall(
+        r'\bve-bars-fill\b[^>]*\bve-dg-highlight\b|\bve-dg-highlight\b[^>]*\bve-bars-fill\b',
+        body,
+    ))
+    if highlight_count > 1:
+        diagnostics.append(Diagnostic(
+            BARS_STRUCTURE_VIOLATION,
+            "bars の highlight は最大1つです",
+        ))
+
+    for attrs, inner in row_blocks:
+        if 'data-ve-semantic-id="' not in attrs:
+            diagnostics.append(Diagnostic(
+                BARS_STRUCTURE_VIOLATION,
+                "bars 行に data-ve-semantic-id がありません",
+            ))
+        fill_match = re.search(r'\bve-bars-fill\b[^>]*\b(ve-bars-w-\d+)\b', inner)
+        if fill_match is None:
+            fill_match = re.search(r'\b(ve-bars-w-\d+)\b[^>]*\bve-bars-fill\b', inner)
+        if fill_match is None:
+            diagnostics.append(Diagnostic(
+                BARS_STRUCTURE_VIOLATION,
+                "bars 行に ve-bars-fill と幅クラスがありません",
+            ))
+            continue
+        width_token = fill_match.group(1)
+        try:
+            width_pct = int(width_token.removeprefix("ve-bars-w-"))
+        except ValueError:
+            diagnostics.append(Diagnostic(BARS_STRUCTURE_VIOLATION, f"不正な幅クラス '{width_token}'"))
+            continue
+        if width_pct < 0 or width_pct > 100:
+            diagnostics.append(Diagnostic(
+                BARS_STRUCTURE_VIOLATION,
+                f"bars 幅クラスは 0..100 である必要があります (found {width_pct})",
+            ))
+    return diagnostics
+
+
 def _notes_semantic_ids(body: str, notes_class: str) -> set[str]:
     notes_match = re.search(
         rf'<ul[^>]*class="[^"]*\b{re.escape(notes_class)}\b[^"]*"[^>]*>(.*?)</ul>',
@@ -1422,6 +1481,7 @@ COMPONENT_ARTIFACT_CHECKS = {
     "waterfall": _check_waterfall_artifact,
     "logic-tree": _check_logic_tree_artifact,
     "slope": _check_slope_artifact,
+    "bars": _check_bars_artifact,
     "evidence-map": _check_evidence_map_artifact,
 }
 

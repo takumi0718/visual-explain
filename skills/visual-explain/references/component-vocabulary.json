@@ -51,6 +51,11 @@
       "contractVersion": 2,
       "relationshipKind": "claim-support",
       "capabilities": ["claim-support-mapping"]
+    },
+    "bars": {
+      "contractVersion": 2,
+      "relationshipKind": "quantitative-comparison",
+      "capabilities": ["single-axis-quantity", "ranked-comparison"]
     }
   },
   "compatibility": {

@@ -31,6 +31,7 @@
     "waterfall": {"$ref": "#/$defs/waterfallPayload"},
     "logic-tree": {"$ref": "#/$defs/logicTreePayload"},
     "slope": {"$ref": "#/$defs/slopePayload"},
+    "bars": {"$ref": "#/$defs/barsPayload"},
     "evidence-map": {"$ref": "#/$defs/evidenceMapPayload"},
     "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     "takeawayScope": {"enum": ["targets", "whole"]},
@@ -43,21 +44,22 @@
     }
   },
   "oneOf": [
-    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["waterfall"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["logic-tree"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["slope"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["evidence-map"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}]}}
+    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["waterfall"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["logic-tree"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["slope"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["bars"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["evidence-map"]}]}},
+    {"required": ["evidence-map"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}]}}
   ],
   "$defs": {
-    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree", "slope", "evidence-map"]},
+    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree", "slope", "bars", "evidence-map"]},
     "contractVersion": {"enum": [1, 2]},
-    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition", "additive-bridge", "two-point-change", "claim-support"]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition", "additive-bridge", "two-point-change", "quantitative-comparison", "claim-support"]},
     "capability": {
       "enum": [
         "two-axis-classification",
@@ -73,6 +75,8 @@
         "mece-decomposition",
         "additive-bridging",
         "two-point-comparison",
+        "single-axis-quantity",
+        "ranked-comparison",
         "claim-support-mapping"
       ]
     },
@@ -451,6 +455,33 @@
         "fromValueText": {"type": "string", "minLength": 1, "maxLength": 12},
         "toValueText": {"type": "string", "minLength": 1, "maxLength": 12},
         "tone": {"enum": ["positive", "warning", "neutral"]}
+      }
+    },
+    "barsPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "unitLabel", "items"],
+      "properties": {
+        "title": {"type": "string", "minLength": 1},
+        "unitLabel": {"type": "string", "minLength": 1, "maxLength": 8},
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/barsItem"}
+        },
+        "highlightId": {"type": "string", "minLength": 1}
+      }
+    },
+    "barsItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "value", "valueText"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "value": {"type": "number"},
+        "valueText": {"type": "string", "minLength": 1}
       }
     },
     "evidenceMapPayload": {
