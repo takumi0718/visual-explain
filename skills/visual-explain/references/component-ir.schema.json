@@ -60,7 +60,7 @@
   ],
   "$defs": {
     "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree", "slope", "bars", "kpi", "evidence-map"]},
-    "contractVersion": {"enum": [1, 2]},
+    "contractVersion": {"enum": [2]},
     "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition", "additive-bridge", "two-point-change", "quantitative-comparison", "headline-metrics", "claim-support"]},
     "capability": {
       "enum": [

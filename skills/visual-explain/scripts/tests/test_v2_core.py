@@ -175,7 +175,7 @@ class CertaintyVocabularyTest(unittest.TestCase):
 
     def test_schema_allows_contract_version_two(self) -> None:
         schema = json.loads((FIXTURES.parent.parent / "references" / "component-ir.schema.json").read_text())
-        self.assertEqual(schema["$defs"]["contractVersion"]["enum"], [1, 2])
+        self.assertEqual(schema["$defs"]["contractVersion"]["enum"], [2])
 
 
 if __name__ == "__main__":
