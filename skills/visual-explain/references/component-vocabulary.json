@@ -48,7 +48,7 @@
       "capabilities": ["two-point-comparison"]
     },
     "evidence-map": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "claim-support",
       "capabilities": ["claim-support-mapping"]
     }

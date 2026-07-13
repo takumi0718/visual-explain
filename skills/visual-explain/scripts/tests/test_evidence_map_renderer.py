@@ -5,6 +5,7 @@ import json
 import re
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from ve_components.checker import check_final_document
 from ve_components.diagnostics import ContractError
@@ -20,7 +21,7 @@ REGISTRY = load_registry(SKILL / "assets" / "components" / "registry.json")
 TESTS = SKILL / "scripts" / "tests"
 SKELETON = (SKILL / "assets" / "skeleton.html").read_text("utf-8")
 COMPONENTS = SKILL / "assets" / "components"
-EM_DEF = REGISTRY.find("evidence-map", 1)
+EM_DEF = REGISTRY.find("evidence-map", 2)
 
 
 def _base_ir(**em_overrides) -> dict:
@@ -37,7 +38,7 @@ def _base_ir(**em_overrides) -> dict:
         "relationship": {"kind": "claim-support", "capabilities": ["claim-support-mapping"]},
         "selection": {
             "component": "evidence-map",
-            "version": 1,
+            "version": 2,
             "matchedCapabilities": ["claim-support-mapping"],
         },
         "caption": "論拠",
@@ -65,9 +66,11 @@ def expect_violation(ir: dict, code: str = EVIDENCE_MAP_STRUCTURE_VIOLATION) -> 
 def render_fixture(name: str):
     from ve_components.renderers.evidence_map import render_evidence_map
 
-    raw = json.loads((TESTS / name).read_text("utf-8"))
+    path = TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
+    raw = json.loads(path.read_text("utf-8"))
     ir = validate_canonical_section(raw["sections"][0]["ir"])
-    return ir, render_evidence_map(CanonicalSection(ir=ir), EM_DEF)
+    result = render_evidence_map(CanonicalSection(ir=ir), EM_DEF)
+    return SimpleNamespace(ir=ir, result=result, markup=result.markup)
 
 
 class EvidenceMapValidationTest(unittest.TestCase):
@@ -96,11 +99,14 @@ class EvidenceMapValidationTest(unittest.TestCase):
 
 class EvidenceMapMarkupTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.ir, self.result = render_fixture("component-valid-evidence-map.json")
-        self.markup = self.result.markup
+        fixture = render_fixture("component-valid-evidence-map.json")
+        self.ir = fixture.ir
+        self.result = fixture.result
+        self.markup = fixture.markup
 
-    def test_conclusion_border_strong(self) -> None:
-        self.assertIn("ve-em-border-strong", self.markup)
+    def test_conclusion_uses_navy_fill(self) -> None:
+        self.assertIn('class="ve-em-conclusion"', self.markup)
+        self.assertNotIn("ve-em-border-strong", self.markup)
 
     def test_evidence_cards_have_certainty_ref(self) -> None:
         for item in self.ir.evidence_map.evidence:
@@ -110,9 +116,9 @@ class EvidenceMapMarkupTest(unittest.TestCase):
         item = next(i for i in self.ir.evidence_map.evidence if i.source_ref)
         self.assertIn(f'data-ve-source-ref="{item.source_ref}"', self.markup)
 
-    def test_link_classes_from_certainty(self) -> None:
-        self.assertIn("ve-em-link-confirmed", self.markup)
-        self.assertIn("ve-em-link-inferred", self.markup)
+    def test_branch_classes_from_certainty(self) -> None:
+        self.assertIn("ve-em-solid", self.markup)
+        self.assertIn("ve-em-dashed", self.markup)
 
     def test_monochrome_certainty_badge_on_each_card(self) -> None:
         for item in self.ir.evidence_map.evidence:
@@ -127,6 +133,11 @@ class EvidenceMapMarkupTest(unittest.TestCase):
     def test_no_data_ve_from_or_to(self) -> None:
         self.assertNotIn("data-ve-from", self.markup)
         self.assertNotIn("data-ve-to", self.markup)
+
+    def test_evidence_map_v2_uses_spine_children(self) -> None:
+        markup = render_fixture("component-valid-evidence-map").markup
+        self.assertIn('class="ve-em-body"', markup)
+        self.assertIn("ve-em-solid", markup)   # 確認済み=実線の枝
 
 
 class EvidenceMapReferencesFixtureTest(unittest.TestCase):

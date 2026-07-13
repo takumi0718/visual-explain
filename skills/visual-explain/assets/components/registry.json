@@ -439,7 +439,7 @@
     },
     {
       "id": "evidence-map",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "claim-support",
       "capabilities": [
         "claim-support-mapping"
@@ -474,13 +474,13 @@
         "responsive-order",
         "evidence-map-references"
       ],
-      "renderer": "evidence-map@1",
+      "renderer": "evidence-map@2",
       "assets": [
         {
           "id": "evidence-map.css",
           "slot": "styles",
           "path": "evidence-map.css",
-          "digest": "f988fe3d3d93658d4ff42790cd26d5b2101c91706d246d3cf463f9d8676b0547"
+          "digest": "be823c82a99e43f49c5c07e8b5db17a736e4c9f69b356ba9cbf85cd8cf008822"
         }
       ]
     }

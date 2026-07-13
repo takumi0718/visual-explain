@@ -1319,7 +1319,7 @@ def _notes_semantic_ids(body: str, notes_class: str) -> set[str]:
 def _check_evidence_map_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     card_blocks = re.findall(
-        r'<div\s+([^>]*\bve-em-evidence-card\b[^>]*)>(.*?)</div>',
+        r'<div\s+([^>]*\bve-em-item\b[^>]*)>(.*?)</div>',
         body,
         re.DOTALL,
     )
@@ -1330,24 +1330,38 @@ def _check_evidence_map_artifact(body: str, parser: _DomSemanticParser) -> list[
             f"evidence-map は根拠2〜4件である必要があります (found {card_count})",
         ))
 
+    if "ve-em-evidence-card" in body or "ve-em-link" in body:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            "evidence-map に旧クラス ve-em-evidence-card / ve-em-link が残っています",
+        ))
+
+    body_blocks = re.findall(r'<div\s+([^>]*\bve-em-body\b[^>]*)>', body)
+    if len(body_blocks) != 1:
+        diagnostics.append(Diagnostic(
+            EVIDENCE_MAP_STRUCTURE_VIOLATION,
+            "evidence-map に ve-em-body がちょうど1つ必要です",
+        ))
+
     conclusion_blocks = re.findall(r'<div\s+([^>]*\bve-em-conclusion\b[^>]*)>', body)
     if len(conclusion_blocks) != 1:
         diagnostics.append(Diagnostic(
             EVIDENCE_MAP_STRUCTURE_VIOLATION,
             "evidence-map には結論カードがちょうど1つ必要です",
         ))
-    elif "ve-em-border-strong" not in conclusion_blocks[0]:
-        diagnostics.append(Diagnostic(
-            EVIDENCE_MAP_STRUCTURE_VIOLATION,
-            "結論カードに ve-em-border-strong がありません",
-        ))
 
     note_ids = _notes_semantic_ids(body, "ve-evidence-map-notes")
+    branch_classes = ("ve-em-solid", "ve-em-dashed", "ve-em-dotted")
     for attrs, inner in card_blocks:
         if "data-ve-from" in attrs or "data-ve-to" in attrs:
             diagnostics.append(Diagnostic(
                 EVIDENCE_MAP_STRUCTURE_VIOLATION,
                 "evidence カードに data-ve-from/to は許可されていません",
+            ))
+        if not any(branch in attrs for branch in branch_classes):
+            diagnostics.append(Diagnostic(
+                EVIDENCE_MAP_STRUCTURE_VIOLATION,
+                "evidence カードに枝線クラス ve-em-solid|dashed|dotted がありません",
             ))
         cert_ref_match = re.search(r'data-ve-certainty-ref="([^"]+)"', attrs)
         if cert_ref_match is None:

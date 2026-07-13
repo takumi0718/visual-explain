@@ -575,7 +575,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     "ir": {
       "id": "sec-doc-em",
       "relationship": {"kind": "claim-support", "capabilities": ["claim-support-mapping"]},
-      "selection": {"component": "evidence-map", "version": 1, "matchedCapabilities": ["claim-support-mapping"]},
+      "selection": {"component": "evidence-map", "version": 2, "matchedCapabilities": ["claim-support-mapping"]},
       "caption": "移行判断の論拠",
       "certainty": [
         {"id": "em-cert", "level": "confirmed", "statement": "監査済み。"},
