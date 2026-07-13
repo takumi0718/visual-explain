@@ -254,10 +254,9 @@ class SlopeItem:
 @dataclass(frozen=True)
 class SlopePayload:
     axes: SlopeAxes
-    unit: str
     items: tuple[SlopeItem, ...]
-    title: Optional[str] = None
-    unit_label: Optional[str] = None
+    title: str
+    unit_label: str
     highlight_id: Optional[str] = None
 
 

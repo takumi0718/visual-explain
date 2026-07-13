@@ -26,6 +26,7 @@ from .diagnostics import (
     MATRIX_CONCEPT_LENGTH,
     MISSING_REQUIRED_SLOT,
     PYRAMID_STRUCTURE_VIOLATION,
+    QUANTITATIVE_UNIT_REQUIRED,
     SLOPE_STRUCTURE_VIOLATION,
     EVIDENCE_MAP_STRUCTURE_VIOLATION,
     STAIRS_STRUCTURE_VIOLATION,
@@ -144,7 +145,7 @@ _LOGIC_TREE_KEYS = {"root", "branches"}
 _LOGIC_TREE_ROOT_KEYS = {"id", "label"}
 _LOGIC_TREE_BRANCH_KEYS = {"id", "label", "leaves"}
 _LOGIC_TREE_LEAF_KEYS = {"id", "text"}
-_SLOPE_KEYS = {"axes", "unit", "items", "title", "unitLabel", "highlightId"}
+_SLOPE_KEYS = {"axes", "items", "title", "unitLabel", "highlightId"}
 _SLOPE_AXES_KEYS = {"fromLabel", "toLabel"}
 _SLOPE_ITEM_KEYS = {"id", "label", "fromValue", "toValue", "fromValueText", "toValueText", "tone"}
 _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
@@ -1192,11 +1193,15 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
     elif len(str(to_label)) > 8:
         col.add(SLOPE_STRUCTURE_VIOLATION, "axes.toLabel は8字以内です", axes_path)
 
-    unit = raw.get("unit")
-    if not _nonblank_str(unit):
-        col.add(SLOPE_STRUCTURE_VIOLATION, "unit は必須で空にできません", path)
-    elif len(str(unit)) > 8:
-        col.add(SLOPE_STRUCTURE_VIOLATION, "unit は8字以内です", path)
+    title = raw.get("title")
+    if not _nonblank_str(title):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "title は必須です", path)
+
+    unit_label = raw.get("unitLabel")
+    if not _nonblank_str(unit_label):
+        col.add(QUANTITATIVE_UNIT_REQUIRED, "unitLabel は必須です", path)
+    elif len(str(unit_label)) > 8:
+        col.add(SLOPE_STRUCTURE_VIOLATION, "unitLabel は8字以内です", path)
 
     items_raw = raw.get("items")
     if not isinstance(items_raw, list):
@@ -1249,7 +1254,9 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
             tone=tone if isinstance(tone, str) else "neutral",
         ))
 
-    if col or not _nonblank_str(from_label) or not _nonblank_str(to_label) or not _nonblank_str(unit):
+    if col or not _nonblank_str(from_label) or not _nonblank_str(to_label):
+        return None
+    if not _nonblank_str(title) or not _nonblank_str(unit_label):
         return None
     highlight_id = raw.get("highlightId")
     if highlight_id is not None and not _nonblank_str(highlight_id):
@@ -1264,10 +1271,9 @@ def _validate_slope(raw: object, path: str, col: DiagnosticCollector) -> SlopePa
             from_label=str(from_label),
             to_label=str(to_label),
         ),
-        unit=str(unit),
         items=tuple(items),
-        title=raw.get("title") if _nonblank_str(raw.get("title")) else None,
-        unit_label=raw.get("unitLabel") if _nonblank_str(raw.get("unitLabel")) else None,
+        title=str(title),
+        unit_label=str(unit_label),
         highlight_id=highlight_id if isinstance(highlight_id, str) else None,
     )
 

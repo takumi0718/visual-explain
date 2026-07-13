@@ -546,14 +546,15 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     "ir": {
       "id": "sec-doc-slope",
       "relationship": {"kind": "two-point-change", "capabilities": ["two-point-comparison"]},
-      "selection": {"component": "slope", "version": 1, "matchedCapabilities": ["two-point-comparison"]},
+      "selection": {"component": "slope", "version": 2, "matchedCapabilities": ["two-point-comparison"]},
       "caption": "主要指標の推移",
       "certainty": [{"id": "sl-cert", "level": "confirmed", "statement": "台帳値。"}],
       "sources": [{"id": "sl-src", "label": "月次台帳"}],
       "accessibility": {"label": "スロープ", "summary": "2時点の値変化。"},
       "slope": {
+        "title": "主要指標",
         "axes": {"fromLabel": "開始", "toLabel": "終了"},
-        "unit": "件",
+        "unitLabel": "件",
         "items": [{
           "id": "sl-1", "label": "売上", "fromValue": 10, "toValue": 40,
           "fromValueText": "10件", "toValueText": "40件", "tone": "positive"

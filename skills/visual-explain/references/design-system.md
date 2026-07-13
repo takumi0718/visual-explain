@@ -173,7 +173,7 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 - **コンセプトと説明を分離する**: enumeration / chevron は `label` または番号＋`title` だけを図形内に置く。description は縦型で右、横型で下の兄弟領域へ置き、全省略時は空領域を作らない。意味 ID はコンセプト＋説明の外側項目に置き、takeaway の可視枠はコンセプト図形だけに付ける。
 - **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は行型6行（steps 1〜4）/横並び9列（steps 1〜7）、slope は最大5項目、evidence-map は根拠4件。超過は分割か縮退。
 - **waterfall の幾何は補助・valueText が主**: 累積オフセットは事前生成の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）で表現する。読者への数値伝達は必ず `valueText` で行い、幾何の量子化は情報を失わない補助である。
-- **renderer-svg ゲート（slope のみ）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@1"}` の canonical セクション内だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（`viewBox` 完全一致 `0 0 600 220`）。互換節経由の SVG 持込も拒否する。
+- **renderer-svg ゲート（slope のみ）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@2"}` の canonical セクション内だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（`viewBox` 完全一致 `0 0 600 220`）。互換節経由の SVG 持込も拒否する。
 - **信頼アセットは単一の fail-closed ゲート**として扱う。レジストリの ID/バージョン/ダイジェスト、レンダラ許可リスト、マニフェスト宣言、名前空間、スロット種別、CSP、外部参照なしをまとめて満たさない資産は拒否する。CSS を変更したら `shasum -a 256` で再計算し、`registry.json` のダイジェストをワイルドカードや初回信頼ではなく厳密な値で更新する。
 
 ## 新コンポーネントの拡張ゲート（10 手順）

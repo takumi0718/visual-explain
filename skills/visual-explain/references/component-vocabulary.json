@@ -43,7 +43,7 @@
       "capabilities": ["additive-bridging"]
     },
     "slope": {
-      "contractVersion": 1,
+      "contractVersion": 2,
       "relationshipKind": "two-point-change",
       "capabilities": ["two-point-comparison"]
     },

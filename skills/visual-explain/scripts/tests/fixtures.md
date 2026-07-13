@@ -164,7 +164,7 @@ S6 スライスで追加したスロープ・論拠地図と renderer-svg ゲー
 | ファイル | 意図 |
 |---|---|
 | `component-valid-slope.json` | 増加・減少・横ばい3系列の有効 IR |
-| `component-bad-slope-no-unit.json` | `unit` 欠落 → `slope_structure_violation` |
+| `component-bad-slope-no-unit.json` | `unitLabel` 欠落 → `quantitative-unit-required` |
 | `component-bad-slope-three-points-shape.json` | 3点形状フィールド → `invalid_component_payload` |
 | `component-bad-slope-float-value.json` | float 値 → `slope_structure_violation` |
 | `component-bad-slope-too-many-items.json` | 6項目 → `slope_structure_violation` |

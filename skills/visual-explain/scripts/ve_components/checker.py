@@ -39,7 +39,7 @@ _COMPONENTS = set(VOCABULARY["components"])
 _SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
 _ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
 
-RENDERER_SVG_ALLOWLIST = frozenset({"slope@1"})
+RENDERER_SVG_ALLOWLIST = frozenset({"slope@2"})
 
 _SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "desc"})
 _SVG_ATTR_ALLOWLIST = {

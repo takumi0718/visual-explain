@@ -40,7 +40,11 @@ def _check(name: str) -> set[str]:
 
 class RendererSvgGateTest(unittest.TestCase):
     def test_allowlist_contains_only_slope(self) -> None:
-        self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@1"}))
+        self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@2"}))
+
+    def test_svg_gate_accepts_slope_v2_only(self) -> None:
+        self.assertIn("slope@2", RENDERER_SVG_ALLOWLIST)
+        self.assertNotIn("slope@1", RENDERER_SVG_ALLOWLIST)
 
     def test_line_allowlist_matches_committed_spec(self) -> None:
         self.assertEqual(
@@ -119,7 +123,7 @@ class RendererSvgGateTest(unittest.TestCase):
 
 class RenderCanonicalSvgGateTest(unittest.TestCase):
     def test_undeclared_svg_is_renderer_failure(self) -> None:
-        slope_def = REGISTRY.find("slope", 1)
+        slope_def = REGISTRY.find("slope", 2)
         raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
         ir = validate_canonical_section(raw["sections"][0]["ir"])
         section = CanonicalSection(ir=ir)
@@ -135,7 +139,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
                 script_asset_ids=(),
                 manifest=RenderManifest(
                     component_id="slope",
-                    component_version=1,
+                    component_version=2,
                     instance_id=section.ir.id,
                     consumed_semantic_ids=section.ir.semantic_ids(),
                     generated_relationship_ids=(),
@@ -153,7 +157,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
         self.assertIn(RENDERER_FAILURE, {d.code for d in ctx.exception.diagnostics})
 
     def test_id_less_svg_is_renderer_failure(self) -> None:
-        slope_def = REGISTRY.find("slope", 1)
+        slope_def = REGISTRY.find("slope", 2)
         raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
         ir = validate_canonical_section(raw["sections"][0]["ir"])
         section = CanonicalSection(ir=ir)
@@ -169,7 +173,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
                 script_asset_ids=(),
                 manifest=RenderManifest(
                     component_id="slope",
-                    component_version=1,
+                    component_version=2,
                     instance_id=section.ir.id,
                     consumed_semantic_ids=section.ir.semantic_ids(),
                     generated_relationship_ids=(),
@@ -191,7 +195,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
         self.assertIn("id", messages.lower())
 
     def test_extra_undeclared_svg_with_id_is_renderer_failure(self) -> None:
-        slope_def = REGISTRY.find("slope", 1)
+        slope_def = REGISTRY.find("slope", 2)
         raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
         ir = validate_canonical_section(raw["sections"][0]["ir"])
         section = CanonicalSection(ir=ir)
@@ -209,7 +213,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
                 script_asset_ids=(),
                 manifest=RenderManifest(
                     component_id="slope",
-                    component_version=1,
+                    component_version=2,
                     instance_id=section.ir.id,
                     consumed_semantic_ids=section.ir.semantic_ids(),
                     generated_relationship_ids=(),
@@ -240,7 +244,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
                 script_asset_ids=(),
                 manifest=RenderManifest(
                     component_id="stairs",
-                    component_version=1,
+                    component_version=2,
                     instance_id=section.ir.id,
                     consumed_semantic_ids=section.ir.semantic_ids(),
                     generated_relationship_ids=(),
