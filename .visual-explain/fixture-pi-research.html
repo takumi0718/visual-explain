@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>有効な調査フィクスチャ</title>
+  <title>visual-explain 設計原則の調査</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -295,8 +295,28 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section class="first-screen"><p class="proposal">仕組みを説明します。</p></section>
-    <section class="closing-section"><h2>限界・反証・確度</h2><p>推論を含みます。</p></section>
+    <section class="first-screen" aria-label="最初に伝えること">
+      <p class="proposal">visual-explain の設計原則に関する調査結果を報告します。</p>
+    </section>
+    <section>
+      <h2>発見 1: congruence principle</h2>
+      <p class="claim">動きは変化そのものが内容のときにだけ使い、それ以外は静的説明を優先する <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">設計原則として文書に明記。移動や状態変化を説明の核心とする場合にのみステッパーや遷移図を使用し、それ以外の説明では静的 SVG または CSS 図で描く。</p>
+    </section>
+    <section>
+      <h2>発見 2: premortem の仕組み</h2>
+      <p class="claim">premortem はリスクを列挙するのではなく、読者に仮想的な失敗の原因を生成させることで、より深い分析を促す <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">単なるリスクリストではなく、読者に「なぜこれが失敗したか」の原因を想像させる手法。これにより発見できない因果関係が浮上する。</p>
+    </section>
+    <section>
+      <h2>発見 3: skill 発見のデファクト</h2>
+      <p class="claim"><code>~/.agents/skills</code> は de facto の skill 発見規約であり、Claude Code は独自の discovery-path 例外を持つ <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">多くのランタイムが <code>~/.agents/skills</code> を標準的にスキャンするが、Claude Code は独自の発見経路を持つため、この規約への準拠は必須ではない。</p>
+    </section>
+    <section class="closing-section" aria-label="限界・反証・確度">
+      <h2>限界・反証・確度</h2>
+      <p>調査は設計文書とコードベースの参照に限定。外部の A/B テスト結果や運用データの分析は行っていない。各発見は文書レベルで確認済み。反証として、文書参照だけでは実運用での効果量は測定できない <span class="certainty unverified">未確認</span>。</p>
+    </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>

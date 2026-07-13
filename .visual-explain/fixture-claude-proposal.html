@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>有効な提案フィクスチャ</title>
+  <title>ctx 自己修復ラッパーの承認</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -296,12 +296,91 @@
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
+      <p class="proposal"><code>ctx</code> ラッパーを自己修復型にし、console-script shim が欠落・stale でも実行時に自動再生成する変更を提案します。</p>
+      <p class="decision"><strong>あなたが決めること:</strong> 自己修復ラッパーを承認するか、直接 shim 呼び出しの維持を選ぶかを決めます。</p>
+      <ul class="conditions">
+        <li>fresh clone・git pull・<code>project.scripts</code> 変更の直後に直接実行が失敗し得るか</li>
+        <li>venv の有無で再生成処理を分岐させてよいか</li>
+      </ul>
     </section>
+
+    <section>
+      <p class="claim">shim が欠落・stale だと、直接実行はクローン直後などに失敗し得る。</p>
+      <p>console-script shim が欠落または stale の場合、fresh clone・git pull・<code>project.scripts</code> 変更の直後に <code>ctx</code> の直接実行が失敗し得る <span class="certainty confirmed">確認済み</span></p>
+      <details class="source-note"><summary>出所</summary><p>agent-stack commit b799a3f「fix: ctx ラッパーを自己修復型にし stale/欠落 shim を自動再生成」</p></details>
+    </section>
+
+    <section>
+      <p class="claim">直接 shim 呼び出しから、実行時に自己修復するラッパーへ変える。</p>
+      <div class="compare">
+        <section class="compare-frame">
+          <h3>Before: 直接 shim 呼び出し</h3>
+          <p>shim が欠落・stale だと clone・pull・scripts 変更の直後に直接実行が失敗し得る <span class="certainty confirmed">確認済み</span>。復旧手段は手動の再インストールに依存する <span class="certainty inferred">推論</span></p>
+        </section>
+        <section class="compare-frame">
+          <h3>After: 自己修復ラッパー</h3>
+          <p>shim の欠落・stale を実行時に自動再生成して直接実行の失敗を防ぐ <span class="certainty confirmed">確認済み</span></p>
+        </section>
+      </div>
+    </section>
+
+    <section>
+      <p class="claim">再生成は venv の有無で2経路に分岐する。</p>
+      <div class="matrix">
+        <table>
+          <thead><tr>
+            <th class="matrix-label" scope="col">条件</th>
+            <th class="matrix-label" scope="col">実行する処理</th>
+            <th class="matrix-label" scope="col">効果</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <th class="matrix-label" scope="row">venv が既にある</th>
+              <td class="matrix-cell"><code>uv pip install --python "$venv/bin/python" -e "$proj" --force-reinstall --no-deps --quiet</code></td>
+              <td class="matrix-cell">依存を触らず console script だけ再生成する（fast path）</td>
+            </tr>
+            <tr>
+              <th class="matrix-label" scope="row">venv が無い</th>
+              <td class="matrix-cell"><code>uv venv</code> で作成し、完全な editable install を行う</td>
+              <td class="matrix-cell">環境を新規構築し shim を生成する</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="evidence">2経路とも commit b799a3f のラッパー実装に基づく <span class="certainty confirmed">確認済み</span></p>
+    </section>
+
+    <section>
+      <p class="claim">検討した2案のトレードオフ。</p>
+      <div class="matrix">
+        <table>
+          <thead><tr>
+            <th class="matrix-label" scope="col">案</th>
+            <th class="matrix-label" scope="col">利点</th>
+            <th class="matrix-label" scope="col">制約</th>
+          </tr></thead>
+          <tbody>
+            <tr class="option-card" data-tone="accent">
+              <th class="matrix-label" scope="row">案A: 自己修復ラッパー（推奨）</th>
+              <td class="matrix-cell">clone・pull・scripts 変更後も追加操作なく直接実行が通る</td>
+              <td class="matrix-cell">起動時に判定と再生成のコストが加わる</td>
+            </tr>
+            <tr class="option-card">
+              <th class="matrix-label" scope="row">案B: 直接 shim 呼び出し維持</th>
+              <td class="matrix-cell">起動処理が単純で追加コストがない</td>
+              <td class="matrix-cell">shim 欠落・stale 時に手動再インストールが必要</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="evidence">案Aを淡い背景の選択案として示す。各案の利点・制約は上記の必須事実からの評価であり、選択理由は起動時の直接実行の失敗を回避できる点にある <span class="certainty inferred">推論</span></p>
+    </section>
+
     <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+      <h2>リスクと弱い前提</h2>
+      <p>毎回の起動で venv 判定と再生成が走るため起動が僅かに遅くなり得る。<code>--force-reinstall</code> が環境差でまれに失敗する可能性も残る <span class="certainty inferred">推論</span></p>
+      <h2>不確かな点</h2>
+      <p>再生成の所要時間や失敗率は未計測で、実運用での発生頻度は未確認 <span class="certainty unverified">未確認</span></p>
     </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

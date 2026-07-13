@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>有効な仕組みフィクスチャ</title>
+  <title>agent-stack Nix wiring の仕組み</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -295,8 +295,34 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section class="first-screen"><p class="proposal">仕組みを説明します。</p></section>
-    <section class="closing-section"><h2>限界・確度</h2><p>推論を含みます。</p></section>
+    <section class="first-screen" aria-label="最初に伝えること">
+      <p class="proposal">agent-stack の public dotfiles flake から private overlay 読み込み、Nix 構築、skill 配置、Home Manager activation までの wiring を説明します。</p>
+    </section>
+    <section>
+      <h2>全体地図</h2>
+      <p class="claim">public dotfiles flake は <code>DOTFILES_PRIVATE_ROOT</code> が private overlay を指すときだけ private overlay をインポートする <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="claim"><code>mkOutOfStoreSymlink</code> は mutable sources を Nix store 経由でコピーせず、in-place 編集でリンクする <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="claim"><code>crossRuntimeSkill</code> は 4 つの runtime link を宣言する: <code>.agents</code>, <code>.codex</code>, <code>.claude</code>, <code>.hermes</code> <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="claim">Antigravity settings は missing 時に seed するため、Home Manager activation step により runtime が live settings ファイルを書き換える <span class="certainty confirmed">[confirmed]</span>。</p>
+    </section>
+    <section>
+      <h2>構造と制約の比較</h2>
+      <div class="matrix">
+        <table>
+          <thead><tr><th class="matrix-label" scope="col">コンポーネント</th><th class="matrix-label" scope="col">責務</th><th class="matrix-label" scope="col">制約</th></tr></thead>
+          <tbody>
+            <tr class="option-card" data-tone="accent"><th class="matrix-label" scope="row">flake 読み込み</th><td class="matrix-cell">public dotfiles flake は <code>DOTFILES_PRIVATE_ROOT</code> が private overlay を指すときだけ private overlay をインポートする <span class="certainty confirmed">[confirmed]</span></td><td class="matrix-cell">変数未設定時はインポートしない</td></tr>
+            <tr class="option-card"><th class="matrix-label" scope="row">Nix 構築</th><td class="matrix-cell"><code>mkOutOfStoreSymlink</code> は mutable sources を Nix store 経由でコピーせず、in-place 編集でリンクする <span class="certainty confirmed">[confirmed]</span></td><td class="matrix-cell">store 経由コピーを行わない</td></tr>
+            <tr class="option-card"><th class="matrix-label" scope="row">runtime 設定</th><td class="matrix-cell"><code>crossRuntimeSkill</code> は <code>.agents</code>, <code>.codex</code>, <code>.claude</code>, <code>.hermes</code> の 4 つの runtime link を宣言する <span class="certainty confirmed">[confirmed]</span></td><td class="matrix-cell">4 種類に限定</td></tr>
+            <tr class="option-card"><th class="matrix-label" scope="row">Antigravity seed</th><td class="matrix-cell">Antigravity settings は missing 時に seed するため、Home Manager activation step により runtime が live settings ファイルを書き換える <span class="certainty confirmed">[confirmed]</span></td><td class="matrix-cell">runtime による live settings 書き換えが前提</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="closing-section" aria-label="判断材料">
+      <h2>限界・確度</h2>
+      <p>fixture に明記された 4 事実の範囲内のみ。順序関係は明示されていないため、flow 図ではなく matrix で並置した。Antigravity の cause→effect は原文どおり保持。</p>
+    </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>有効な仕組みフィクスチャ</title>
+  <title>agent-stack の Nix 配線の仕組み</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -295,8 +295,70 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section class="first-screen"><p class="proposal">仕組みを説明します。</p></section>
-    <section class="closing-section"><h2>限界・確度</h2><p>推論を含みます。</p></section>
+    <section class="first-screen" aria-label="最初に伝えること">
+      <p class="proposal">agent-stack の Nix 配線は、public flake が private overlay を条件付きで取り込み、可変ソースを store 経由せず直接リンクし、ランタイムが書き換える設定だけ seed-on-missing で扱う仕組みです。</p>
+    </section>
+
+    <section>
+      <dl class="terms">
+        <div class="term"><dt>overlay</dt><dd>public flake に private 設定を重ねる層。</dd></div>
+        <div class="term"><dt>mkOutOfStoreSymlink</dt><dd>ソースを store にコピーせず実体へ symlink する Home Manager 関数。</dd></div>
+        <div class="term"><dt>crossRuntimeSkill</dt><dd>複数ランタイム向けの skill リンクを宣言する定義。</dd></div>
+        <div class="term"><dt>seed-on-missing</dt><dd>ファイルが無いときだけ初期値を置く方式。</dd></div>
+      </dl>
+    </section>
+
+    <section>
+      <p class="claim">全体は public flake・private overlay・ランタイムリンクの3層で構成される。</p>
+      <figure class="figure">
+        <div class="layers">
+          <section class="lane" data-lane>
+            <p class="lane-label">public</p>
+            <div class="lane-nodes"><div class="flow-node">dotfiles flake</div></div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">private</p>
+            <div class="lane-nodes"><div class="flow-node">overlay（<code>DOTFILES_PRIVATE_ROOT</code> がそれを指すときだけ import）</div></div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">runtime</p>
+            <div class="lane-nodes">
+              <div class="flow-node">.agents</div>
+              <div class="flow-node">.codex</div>
+              <div class="flow-node">.claude</div>
+              <div class="flow-node">.hermes</div>
+            </div>
+          </section>
+        </div>
+        <figcaption>3層の責務。crossRuntimeSkill が runtime 層の4リンクを宣言する。</figcaption>
+      </figure>
+      <p class="evidence">public は <code>DOTFILES_PRIVATE_ROOT</code> がそれを指すときだけ overlay を import し、<code>crossRuntimeSkill</code> は <code>.agents</code>・<code>.codex</code>・<code>.claude</code>・<code>.hermes</code> の4リンクを宣言する <span class="certainty confirmed">確認済み</span></p>
+    </section>
+
+    <section>
+      <p class="claim">可変ソースは store 経由コピーではなく、実体への symlink で edit-in-place にする。</p>
+      <div class="compare">
+        <section class="compare-frame">
+          <h3>通常のコピー</h3>
+          <p>ソースを Nix store に複製するため、編集はその場では反映されない <span class="certainty inferred">推論</span></p>
+        </section>
+        <section class="compare-frame">
+          <h3>mkOutOfStoreSymlink</h3>
+          <p>可変ソースを store 経由でコピーせず、実体へ symlink して edit-in-place にする <span class="certainty confirmed">確認済み</span></p>
+        </section>
+      </div>
+    </section>
+
+    <section>
+      <p class="claim">Antigravity 設定は Home Manager の activation で seed-on-missing にする。</p>
+      <p>Antigravity のランタイムが live settings ファイルを書き換えるため、設定は Home Manager の activation step を通じて seed-on-missing にする <span class="certainty confirmed">確認済み</span></p>
+      <details class="deep-dive"><summary>なぜ seed-on-missing か</summary><p>ランタイムが live settings を書き換える以上、宣言側が常に上書きすると実行時の変更が消える。無いときだけ seed することで、宣言的な初期化と実行時の書き換えを両立する <span class="certainty inferred">推論</span></p></details>
+    </section>
+
+    <section class="closing-section" aria-label="限界と確度">
+      <h2>限界・確度</h2>
+      <p>条件付き import、mkOutOfStoreSymlink の edit-in-place、crossRuntimeSkill の4リンク、seed-on-missing の因果は必須事実に一致する <span class="certainty confirmed">確認済み</span>。overlay の評価順序や activation の内部手順など、ここに書かない実装詳細は本資料の対象外で未確認 <span class="certainty unverified">未確認</span></p>
+    </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>

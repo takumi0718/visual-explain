@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>有効な提案フィクスチャ</title>
+  <title>agent-stack ctx 自己修復ラッパーの提案</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -296,12 +296,22 @@
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
+      <p class="proposal">agent-stack の <code>ctx</code> console-script shim を自己修復型ラッパーに置き換える提案です。</p>
+      <p class="decision"><strong>あなたが決めること:</strong> 自己修復ラッパーの導入を承認するか、既存の直接 shim 呼び出しを維持するか決めます。</p>
+      <ul class="conditions"><li>欠落または古い <code>ctx</code> shim により fresh clone や <code>git pull</code> 後に直接実行が失敗する</li><li>既存 venv での高速再生成と venv 未存在時のフル install の両パターンを処理する</li></ul>
+    </section>
+    <section>
+      <h2>提案の根拠</h2>
+      <p class="claim">欠落または古い <code>ctx</code> console-script shim は、fresh clone、<code>git pull</code>、<code>project.scripts</code> 変更後に直接実行を失敗させる <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="claim">既存 venv がある場合、高速パスは <code>uv pip install --python "$venv/bin/python" -e "$proj" --force-reinstall --no-deps --quiet</code> を実行して依存関係の混乱なく console scripts を再生成する <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="claim">venv がない場合、<code>uv venv</code> で venv を作成し、フル editable install を行う <span class="certainty confirmed">[confirmed]</span>。</p>
+      <p class="evidence">source: agent-stack commit <code>b799a3f</code> (<code>fix: ctx ラッパーを自己修復型にし stale/欠落 shim を自動再生成</code>)</p>
     </section>
     <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
+      <h2>リスクと弱い前提</h2>
+      <p>shim 再生成のトリガー条件がすべての環境で正確に判定されるとは限らない。venv 作成権限のない環境では失敗しうる。</p>
+      <h2>不確かな点</h2>
+      <p>既存の直接 shim 呼び出しに依存するワークフローとの互換性は未確認。</p>
     </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

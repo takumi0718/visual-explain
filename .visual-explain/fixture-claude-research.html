@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>有効な調査フィクスチャ</title>
+  <title>visual-explain 設計調査の発見</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -295,8 +295,32 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section class="first-screen"><p class="proposal">仕組みを説明します。</p></section>
-    <section class="closing-section"><h2>限界・反証・確度</h2><p>推論を含みます。</p></section>
+    <section class="first-screen" aria-label="最初に伝えること">
+      <p class="proposal">visual-explain の設計調査の結論は、動きは変化そのものが内容のときだけ使い、リスクは premortem で因果的に引き出し、skill 発見は <code>~/.agents/skills</code> を de facto 規約としつつ Claude Code の独自例外を織り込む、という3点です。</p>
+    </section>
+
+    <section>
+      <p class="claim">発見1: 動きは変化そのものが内容のときだけ使う（congruence 原則）。</p>
+      <p>変化そのものが内容であるときだけ動きを用い、それ以外は静的な説明を優先する <span class="certainty confirmed">確認済み</span></p>
+      <details class="source-note"><summary>出所</summary><p>visual-explain 設計調査（congruence 原則）</p></details>
+    </section>
+
+    <section>
+      <p class="claim">発見2: premortem は仮想の失敗に対し読者が因果理由を生成する手法。</p>
+      <p>premortem は単にリスクを列挙させるのではなく、仮想の失敗について読者に因果的な理由を生成させることで働く <span class="certainty confirmed">確認済み</span></p>
+      <details class="source-note"><summary>出所</summary><p>visual-explain 設計調査（premortem の定義）</p></details>
+    </section>
+
+    <section>
+      <p class="claim">発見3: <code>~/.agents/skills</code> が de facto の skill 発見規約で、Claude Code は独自の例外を持つ。</p>
+      <p><code>~/.agents/skills</code> は skill 発見の de facto な規約である。一方 Claude Code は独自の発見パス例外を持つ <span class="certainty confirmed">確認済み</span></p>
+      <details class="source-note"><summary>出所</summary><p>visual-explain 設計調査（skill 発見規約）</p></details>
+    </section>
+
+    <section class="closing-section" aria-label="限界・反証・確度">
+      <h2>限界・反証・確度</h2>
+      <p>3発見は必須事実に一致する <span class="certainty confirmed">確認済み</span>。ただし congruence や premortem の効果量はここでは測定しておらず、数値効果は約束できない <span class="certainty unverified">未確認</span>。反証として、動きが常に理解を助けるとは限らず、静的説明が優る場面が多い点を併記する <span class="certainty inferred">推論</span></p>
+    </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
