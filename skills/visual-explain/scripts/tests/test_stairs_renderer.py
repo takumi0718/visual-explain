@@ -225,6 +225,24 @@ class StairsV2Test(unittest.TestCase):
         self.assertIn("ve-stairs-done", markup)
         self.assertIn("ve-stairs-todo", markup)
 
+    def test_stairs_v2_without_highlight_marks_all_stages_todo(self) -> None:
+        ir = _base_ir(stages=_stages(3))
+        ir["stairs"].pop("highlightId", None)
+        validated = validate_raw(ir)
+        from ve_components.renderers.stairs import render_stairs
+        markup = render_stairs(CanonicalSection(ir=validated), STAIRS_DEF).markup
+        self.assertNotIn("ve-dg-highlight", markup)
+        self.assertNotIn("ve-stairs-done", markup)
+        self.assertEqual(markup.count("ve-stairs-todo"), 3)
+        for stage in validated.stairs.stages:
+            block = re.search(
+                rf'<li[^>]*data-ve-semantic-id="{re.escape(stage.id)}"[^>]*>.*?</li>',
+                markup,
+                re.DOTALL,
+            )
+            self.assertIsNotNone(block)
+            self.assertIn("ve-stairs-todo", block.group(0))
+
 
 if __name__ == "__main__":
     unittest.main()

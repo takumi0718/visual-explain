@@ -37,13 +37,14 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
     blocks: list[str] = []
     for index, stage in enumerate(stairs.stages, start=1):
         cls_parts = ["ve-stairs-stage", f"ve-stairs-index-{index}"]
-        if highlight_index is not None:
-            if index - 1 < highlight_index:
-                cls_parts.append("ve-stairs-done")
-            elif index - 1 == highlight_index:
-                cls_parts.append("ve-dg-highlight")
-            else:
-                cls_parts.append("ve-stairs-todo")
+        if highlight_index is None:
+            cls_parts.append("ve-stairs-todo")
+        elif index - 1 < highlight_index:
+            cls_parts.append("ve-stairs-done")
+        elif index - 1 == highlight_index:
+            cls_parts.append("ve-dg-highlight")
+        else:
+            cls_parts.append("ve-stairs-todo")
         if stage.id in takeaway:
             cls_parts.append("ve-takeaway-target")
         takeaway_attr = ' data-ve-takeaway="true"' if stage.id in takeaway else ""
