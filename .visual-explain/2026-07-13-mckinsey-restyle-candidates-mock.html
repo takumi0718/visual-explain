@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>McKinsey 流リスタイル候補 — canonical 10 + bars/kpi（デザインモック）</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff; --text: #1a1d21; --text-dim: #595959; --text-faint: #7f7f7f;
+  --rule: #bfbfbf; --rule-light: #e0e0e0;
+  /* McKinsey 固定パレット */
+  --mck-navy: #1F4E79;        /* 構造の既定塗り（白抜き文字） */
+  --mck-navy-mid: #2E6DA4;    /* 第2階調 */
+  --mck-navy-light: #BDD7EE;  /* 第3階調（濃色文字） */
+  --mck-teal: #2E8B9A;        /* ハイライト（現在地・注目） */
+  --mck-orange: #C55A11;      /* 減少・リスク */
+  --mck-gray-fill: #F2F2F2;   /* 中立面 */
+  --mck-gray: #7F7F7F;
+  --mck-emphasis: #2E75B6;    /* 文中強調（1説明文に1フレーズ上限） */
+  --on-navy: #ffffff;
+  --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-figure: .875rem; --fs-small: .8125rem;
+  --sp-1: .5rem; --sp-2: 1rem; --sp-3: 1.5rem; --sp-4: 2rem; --sp-5: 3rem; --sp-6: 4rem;
+  --w: 45rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #15181c; --text: #e9ebee; --text-dim: #aab1bb; --text-faint: #838b96;
+    --rule: #4a5058; --rule-light: #33383f;
+    --mck-navy: #2E5A8F; --mck-navy-mid: #3E77B4; --mck-navy-light: #274664;
+    --mck-teal: #3FA3B4; --mck-orange: #E07B39; --mck-gray-fill: #262b31; --mck-gray: #9aa1ab;
+    --mck-emphasis: #6FA8DC; --on-navy: #f2f5f9;
+  }
+  .pyr3 .t3, .lt-leaf, .wf-plus-fill { color: var(--text); }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); color: var(--text); font-size: clamp(1rem, .7rem + .5vw, 1.25rem); }
+body { margin: 0; font-size: var(--fs-body); line-height: 1.75; overflow-wrap: anywhere; }
+main { width: min(100% - var(--sp-4), var(--w)); margin: 0 auto; padding: var(--sp-4) 0 var(--sp-6); }
+section { margin-block: var(--sp-6); }
+h1 { font-size: var(--fs-hero); line-height: 1.45; }
+h2 { font-size: var(--fs-h2); line-height: 1.45; }
+.lead { color: var(--text-dim); }
+
+/* 図の紙面規約: タイトル + 単位 + 細罫（参照1枚目の文法） */
+.fig { margin: var(--sp-3) 0 var(--sp-5); }
+.fig-head { margin-bottom: var(--sp-3); }
+.fig-title { margin: 0; font-size: var(--fs-h2); font-weight: 700; }
+.fig-unit { margin: 0; color: var(--text-faint); font-size: var(--fs-figure); font-weight: 700; }
+.fig-head::after { content: ""; display: block; margin-top: .4rem; border-bottom: 1.5px solid var(--rule); }
+.fig-note { margin-top: var(--sp-2); color: var(--text-dim); font-size: var(--fs-figure); }
+.em { color: var(--mck-emphasis); font-weight: 700; }
+
+/* enumeration — 紺コンセプト箱 + 右説明（Image2 再現） */
+.enum { display: grid; gap: var(--sp-4); }
+.enum-row { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
+.enum-box { display: grid; place-items: center; min-height: 5.5rem; padding: var(--sp-2); background: var(--mck-navy); color: var(--on-navy); font-size: 1.0625rem; font-weight: 700; text-align: center; line-height: 1.5; }
+.enum-desc { margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; font-size: var(--fs-body); }
+.enum-desc::before { content: "・"; }
+
+/* chevron — 下向き五角形 + 閉ループレール（Image3 再現）
+   ループ経路（途切れない単一経路）: 最終段下端の頂点 → 縦降下 → 下辺を左へ → 左辺を上昇
+   → 上辺を右へ → 先頭段上辺の中央へ縦降下 → 矢尻が上辺に接触 */
+.chv-wrap { position: relative; --chv-cx: 9rem; padding-left: 2.5rem; padding-top: 2.3rem; padding-bottom: 1.2rem; }
+.chv-rail { position: absolute; left: .5rem; top: .5rem; bottom: .2rem; width: calc(var(--chv-cx) - .5rem); border: 2.5px solid var(--rule); border-right: 0; }
+.chv-rail::before { content: ""; position: absolute; top: -2.5px; right: -2.5px; height: .95rem; border-right: 2.5px solid var(--rule); }
+.chv-rail::after { content: ""; position: absolute; top: calc(.95rem - 2.5px); right: -.6rem; border: .6rem solid transparent; border-top: .85rem solid var(--rule); border-bottom: 0; }
+.chv-tail { position: absolute; left: calc(var(--chv-cx) - 1.25px); bottom: .2rem; height: 1rem; border-left: 2.5px solid var(--rule); }
+.chv { display: grid; gap: var(--sp-4); }
+.chv-row { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
+.chv-box { display: grid; place-items: center; min-height: 6.5rem; padding: var(--sp-2) var(--sp-2) 2.2rem; background: var(--mck-navy); color: var(--on-navy); font-size: 1.0625rem; font-weight: 700; text-align: center; line-height: 1.5; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.9rem), 50% 100%, 0 calc(100% - 1.9rem)); }
+.chv-desc { margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
+.chv-desc::before { content: "・"; }
+
+/* matrix — 紺ヘッダ箱 + グレー行ラベル箱 + 白抜き値セル（22.19.04 再現） */
+.mx { display: grid; grid-template-columns: 8rem repeat(2, minmax(0, 1fr)); gap: .6rem; max-width: 34rem; }
+.mx-corner { }
+.mx-colhead { display: grid; place-items: center; padding: .5rem; background: var(--mck-navy); color: var(--on-navy); font-weight: 700; }
+.mx-rowhead { display: grid; place-items: center; padding: .5rem; background: var(--mck-gray-fill); color: var(--text); font-weight: 700; }
+.mx-cell { display: grid; place-items: center; padding: .6rem; border: 1.5px solid var(--mck-navy); font-weight: 700; font-size: 1.0625rem; }
+.mx-cell.hl { background: var(--mck-navy-light); }
+
+/* flow — 紺ノード + 矢印直近ラベル */
+.flow { display: grid; gap: 0; max-width: 26rem; }
+.flow-node { padding: .6rem var(--sp-2); background: var(--mck-navy); color: var(--on-navy); font-weight: 700; text-align: center; }
+.flow-node.alt { background: var(--mck-gray-fill); color: var(--text); border: 1.5px solid var(--mck-navy); }
+.flow-edge { display: flex; align-items: center; gap: .6rem; padding: .2rem 0 .2rem 45%; }
+.flow-arrow { width: 0; height: 0; border: .55rem solid transparent; border-top: .8rem solid var(--mck-gray); margin-left: -0.55rem; }
+.flow-edge-label { color: var(--text-dim); font-size: var(--fs-figure); font-weight: 700; }
+
+/* pyramid — 紺3階調・角丸なし・nowrap */
+.pyr3 { display: grid; gap: 3px; width: min(100%, 24rem); margin-inline: auto; justify-items: center; }
+.pyr3 .tier { display: grid; place-items: center; padding: .5rem 1rem; font-weight: 700; white-space: nowrap; }
+.pyr3 .t1 { width: 40%; min-width: max-content; background: var(--mck-navy); color: var(--on-navy); }
+.pyr3 .t2 { width: 70%; min-width: max-content; background: var(--mck-navy-mid); color: var(--on-navy); }
+.pyr3 .t3 { width: 100%; background: var(--mck-navy-light); color: #1a2c40; }
+
+/* stairs — 上昇階段・現在地 teal */
+.stairs { display: flex; align-items: flex-end; gap: 3px; }
+.stair { flex: 1; display: grid; place-items: center; padding: .4rem .3rem; background: var(--mck-gray-fill); color: var(--text); font-weight: 700; font-size: var(--fs-figure); text-align: center; }
+.stair.s1 { min-height: 3rem; } .stair.s2 { min-height: 4.4rem; } .stair.s3 { min-height: 5.8rem; }
+.stair.s4 { min-height: 7.2rem; } .stair.s5 { min-height: 8.6rem; }
+.stair.done { background: var(--mck-navy); color: var(--on-navy); }
+.stair.now { background: var(--mck-teal); color: #fff; }
+.stair .here { display: block; font-size: var(--fs-small); font-weight: 700; }
+
+/* logic-tree — fig-7 文法のエルボー接続（途切れ・はみ出しの構造的禁止）
+   スタブ幅 = インデント幅で必ず接触。スパインは最初の子の中心〜最後の子の中心だけを結ぶ */
+.lt { display: flex; align-items: center; max-width: 34rem; }
+.lt-node { padding: .5rem 1rem; font-weight: 700; }
+.lt-root { background: var(--mck-navy); color: var(--on-navy); text-align: center; }
+.lt-bhead { background: var(--mck-navy-mid); color: var(--on-navy); }
+.lt-leaf { border: 1.5px solid var(--mck-gray); color: var(--text); font-size: var(--fs-figure); font-weight: 400; padding: .3rem .8rem; }
+.lt-stub { flex: 0 0 1.5rem; border-top: 2px solid var(--mck-gray); align-self: center; }
+.lt-children { display: flex; flex-direction: column; gap: .7rem; }
+.lt-child { position: relative; padding-left: 1.5rem; display: flex; align-items: center; }
+.lt-child::before { content: ""; position: absolute; left: 0; top: 50%; width: 1.5rem; border-top: 2px solid var(--mck-gray); }
+.lt-child::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px solid var(--mck-gray); }
+.lt-child:first-child::after { top: 50%; }
+.lt-child:last-child::after { top: 0; bottom: 50%; }
+.lt-child:only-child::after { content: none; }
+
+/* waterfall — renderer-SVG（参照の完全再現: 軸・目盛・点線コネクタ・▲・塗り分け） */
+.wfsvg svg { display: block; width: 100%; height: auto; }
+.wfsvg .axis { stroke: var(--text); stroke-width: 1.5; }
+.wfsvg .tick-label, .wfsvg .x-label { font-size: 14px; fill: var(--text); font-family: inherit; }
+.wfsvg .unit-label { font-size: 13px; fill: var(--text-dim); font-family: inherit; }
+.wfsvg .connector { stroke: var(--mck-gray); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.wfsvg .bar-total { fill: var(--mck-navy); }
+.wfsvg .bar-plus { fill: var(--bg); stroke: var(--mck-navy); stroke-width: 1.5; }
+.wfsvg .bar-minus { fill: var(--mck-orange); }
+.wfsvg .bar-minus-soft { fill: var(--bg); stroke: var(--mck-orange); stroke-width: 1.5; }
+.wfsvg .val-on-navy { font-size: 17px; font-weight: 700; fill: #fff; font-family: inherit; }
+.wfsvg .val-plus { font-size: 17px; font-weight: 700; fill: var(--mck-navy); font-family: inherit; }
+.wfsvg .val-minus { font-size: 17px; font-weight: 700; fill: #fff; font-family: inherit; }
+.wfsvg .val-minus-soft { font-size: 17px; font-weight: 700; fill: var(--mck-orange); font-family: inherit; }
+.wfsvg .factor { font-size: 14px; font-weight: 700; fill: var(--text); font-family: inherit; }
+
+/* slope — 紺 + teal ハイライト、端点ラベル */
+.slp svg { display: block; width: 100%; height: auto; }
+.slp .axis { stroke: var(--rule); stroke-width: 1.5; }
+.slp line.series { stroke-width: 2.5; }
+.slp .dot { r: 4; }
+.slp text { font-size: 14px; fill: var(--text); font-family: inherit; }
+.slp .val { font-weight: 700; }
+
+/* bars — 横バー（参照1枚目再現: 紺 + 1本 teal + 端値） */
+.bars { display: grid; gap: .7rem; max-width: 34rem; }
+.bar-row { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--sp-2); align-items: center; }
+.bar-label { font-weight: 700; text-align: left; }
+.bar-track { display: flex; align-items: center; gap: .5rem; }
+.bar-fill { height: 1.6rem; background: var(--mck-navy); }
+.bar-fill.hl { background: var(--mck-teal); }
+.bar-val { font-weight: 700; white-space: nowrap; }
+
+/* kpi — リング円 + 大数字（22.17.00 の紺適用） */
+.kpi { display: flex; flex-wrap: wrap; gap: var(--sp-4); justify-content: center; }
+.kpi-item { display: grid; justify-items: center; gap: var(--sp-2); max-width: 12rem; }
+.kpi-ring { display: grid; place-items: center; width: 8.5rem; height: 8.5rem; border: 5px solid var(--mck-navy); border-radius: 50%; text-align: center; }
+.kpi-num { font-size: 2.1rem; font-weight: 700; color: var(--mck-navy); line-height: 1.1; }
+.kpi-num small { font-size: 1rem; color: var(--text-dim); }
+.kpi-cap { text-align: center; font-size: var(--fs-figure); color: var(--text); }
+
+/* evidence-map — 紺結論 + スパイン枝 + 線種=確度 */
+.em-map { max-width: 32rem; }
+.em-conclusion { padding: .7rem var(--sp-2); background: var(--mck-navy); color: var(--on-navy); font-weight: 700; }
+.em-body { position: relative; margin-left: 1.2rem; padding-top: .7rem; display: grid; gap: .7rem; }
+.em-body::before { content: ""; position: absolute; left: 0; top: 0; bottom: 1.05rem; border-left: 2px solid var(--rule); }
+.em-item { position: relative; margin-left: 1.6rem; padding: .4rem .8rem; border: 1.5px solid var(--rule); font-size: var(--fs-figure); }
+.em-item::before { content: ""; position: absolute; left: -1.6rem; top: 50%; width: 1.4rem; }
+.em-item.solid::before { border-top: 2px solid var(--mck-gray); }
+.em-item.dashed::before { border-top: 2px dashed var(--mck-gray); }
+.em-item.dotted::before { border-top: 2px dotted var(--mck-gray); }
+.em-cert { font-weight: 700; color: var(--text-dim); margin-right: .4rem; }
+
+@media (max-width: 42rem) {
+  .enum-row, .chv-row { grid-template-columns: 1fr; }
+  .chv-wrap { padding-left: 1.8rem; --chv-cx: 50%; }
+  .chv-rail { left: .3rem; width: calc(var(--chv-cx) - .3rem); }
+  .flow-edge { padding-left: 30%; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>McKinsey 流リスタイル候補 — 12 形式のデザインモック</h1>
+<p class="lead">確定済みの方針（固定紺パレット / 文中強調は1説明文1フレーズ / waterfall は renderer-SVG / canonical 10 + bars・kpi 昇格）を全形式に適用した見た目の候補。承認後に spec 化する。</p>
+
+<section>
+  <h2>① enumeration — 紺コンセプト箱 + 右説明 + 文中強調</h2>
+  <div class="fig">
+    <div class="enum">
+      <div class="enum-row">
+        <div class="enum-box">無料体験チラシ</div>
+        <p class="enum-desc">チラシに<span class="em">無料のフィットネス利用券</span>をつけて周辺世帯に配布する</p>
+      </div>
+      <div class="enum-row">
+        <div class="enum-box">無料トレーナー体験</div>
+        <p class="enum-desc">トレーナーの協力を得て、<span class="em">無料トレーナー体験</span>を希望者に提供する</p>
+      </div>
+      <div class="enum-row">
+        <div class="enum-box">会員の友人の<br>無料体験</div>
+        <p class="enum-desc">当フィットネス<span class="em">会員の友人のみを対象</span>にして無料体験キャンペーンを行う</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>② chevron — 下向き五角形 + 閉ループレール</h2>
+  <div class="fig">
+    <div class="chv-wrap">
+      <div class="chv-rail"></div>
+      <div class="chv-tail"></div>
+      <div class="chv">
+        <div class="chv-row">
+          <div class="chv-box">入会者数増加</div>
+          <p class="chv-desc">トレーナーの指導で体験満足度が上がり、<span class="em">入会者数が増える</span></p>
+        </div>
+        <div class="chv-row">
+          <div class="chv-box">入会後の<br>退会率減少</div>
+          <p class="chv-desc">トレーナーのきめ細やかな指導により、<span class="em">退会率が下がる</span></p>
+        </div>
+        <div class="chv-row">
+          <div class="chv-box">口コミ増加</div>
+          <p class="chv-desc">顧客満足度が上がり、<span class="em">新規顧客への口コミ効果</span>が期待できる</p>
+        </div>
+      </div>
+    </div>
+    <p class="fig-note">最終段からの閉ループはグレーの細レールで戻す（loop:true のときだけ表示）。</p>
+  </div>
+</section>
+
+<section>
+  <h2>③ matrix — 紺列ヘッダ + グレー行ラベル + 白抜き値セル</h2>
+  <div class="fig">
+    <div class="mx">
+      <div class="mx-corner"></div>
+      <div class="mx-colhead">東南アジア</div>
+      <div class="mx-colhead">アフリカ</div>
+      <div class="mx-rowhead">人口</div>
+      <div class="mx-cell">多</div>
+      <div class="mx-cell">少</div>
+      <div class="mx-rowhead">成長性</div>
+      <div class="mx-cell">高</div>
+      <div class="mx-cell">高</div>
+      <div class="mx-rowhead">競合度</div>
+      <div class="mx-cell">高</div>
+      <div class="mx-cell hl">低</div>
+    </div>
+    <p class="fig-note">推奨・選択セルだけ淡紺で強調（1 matrix に1箇所まで）。文字量の多い密な表は、現行の細横罫スタイルに紺見出しを適用した表記へ写像する。</p>
+  </div>
+</section>
+
+<section>
+  <h2>④ flow — 紺ノード + 矢印直近ラベル</h2>
+  <div class="fig">
+    <div class="flow">
+      <div class="flow-node">起案</div>
+      <div class="flow-edge"><span class="flow-arrow"></span><span class="flow-edge-label">提出</span></div>
+      <div class="flow-node alt">一次レビュー</div>
+      <div class="flow-edge"><span class="flow-arrow"></span><span class="flow-edge-label">合意</span></div>
+      <div class="flow-node">承認</div>
+    </div>
+    <p class="fig-note">遷移ラベルは矢印の真横。分岐は同型の細レールで表す。中間状態はアウトライン白抜きで区別。</p>
+  </div>
+</section>
+
+<section>
+  <h2>⑤ pyramid — 紺3階調 + nowrap 保証</h2>
+  <div class="fig">
+    <div class="pyr3">
+      <div class="tier t1">最優先事項</div>
+      <div class="tier t2">重要施策</div>
+      <div class="tier t3">基盤整備</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>⑥ stairs — 上昇階段 + 現在地 teal</h2>
+  <div class="fig">
+    <div class="stairs">
+      <div class="stair s1 done">未整備</div>
+      <div class="stair s2 done">部分導入</div>
+      <div class="stair s3 now">標準化<span class="here">← 現在地</span></div>
+      <div class="stair s4">最適化</div>
+      <div class="stair s5">自律運用</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>⑦ logic-tree — 紺 root + 細罫コネクタ + 白抜き leaf</h2>
+  <div class="fig">
+    <div class="lt">
+      <div class="lt-node lt-root">全体テーマ</div>
+      <div class="lt-stub"></div>
+      <div class="lt-children">
+        <div class="lt-child"><div class="lt-node lt-bhead">市場機会</div></div>
+        <div class="lt-child">
+          <div class="lt-node lt-bhead">実装負債</div>
+          <div class="lt-stub"></div>
+          <div class="lt-children">
+            <div class="lt-child"><div class="lt-node lt-leaf">レガシー連携の残債</div></div>
+          </div>
+        </div>
+        <div class="lt-child">
+          <div class="lt-node lt-bhead">運用体制</div>
+          <div class="lt-stub"></div>
+          <div class="lt-children">
+            <div class="lt-child"><div class="lt-node lt-leaf">オンコール体制</div></div>
+            <div class="lt-child"><div class="lt-node lt-leaf">権限委譲の遅れ</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>⑧ waterfall — renderer-SVG（軸・目盛・点線コネクタ・▲・塗り分け）</h2>
+  <div class="fig wfsvg">
+    <div class="fig-head">
+      <p class="fig-title">営業利益の変動（2005年対2009年）</p>
+      <p class="fig-unit">単位: 億円</p>
+    </div>
+    <svg viewBox="0 0 640 360" role="img" aria-label="営業利益は2005年の90億円から、価格改定+40、販促費削減+20、値引き▲50、原価上昇▲20を経て2009年に80億円へ減少した">
+      <text class="unit-label" x="28" y="20">(億円)</text>
+      <line class="axis" x1="70" y1="30" x2="70" y2="320"/>
+      <path d="M70,30 L65,42 L75,42 Z" fill="currentColor"/>
+      <line class="axis" x1="70" y1="320" x2="620" y2="320"/>
+      <text class="tick-label" x="62" y="325" text-anchor="end">0</text>
+      <text class="tick-label" x="62" y="232" text-anchor="end">50</text>
+      <text class="tick-label" x="62" y="138" text-anchor="end">100</text>
+      <text class="tick-label" x="62" y="45" text-anchor="end">150</text>
+      <line class="connector" x1="150" y1="152" x2="170" y2="152"/>
+      <line class="connector" x1="240" y1="77" x2="260" y2="77"/>
+      <line class="connector" x1="330" y1="40" x2="350" y2="40"/>
+      <line class="connector" x1="420" y1="133" x2="440" y2="133"/>
+      <line class="connector" x1="510" y1="171" x2="530" y2="171"/>
+      <rect class="bar-total" x="80" y="152" width="70" height="168"/>
+      <text class="val-on-navy" x="115" y="245" text-anchor="middle">90</text>
+      <rect class="bar-plus" x="170" y="77" width="70" height="75"/>
+      <text class="val-plus" x="205" y="121" text-anchor="middle">40</text>
+      <text class="factor" x="205" y="66" text-anchor="middle">価格改定</text>
+      <rect class="bar-plus" x="260" y="40" width="70" height="37"/>
+      <text class="val-plus" x="295" y="64" text-anchor="middle">20</text>
+      <text class="factor" x="295" y="30" text-anchor="middle">販促費削減</text>
+      <rect class="bar-minus" x="350" y="40" width="70" height="93"/>
+      <text class="val-minus" x="385" y="92" text-anchor="middle">▲50</text>
+      <text class="factor" x="385" y="152" text-anchor="middle">値引き</text>
+      <rect class="bar-minus-soft" x="440" y="133" width="70" height="38"/>
+      <text class="val-minus-soft" x="475" y="158" text-anchor="middle">▲20</text>
+      <text class="factor" x="475" y="190" text-anchor="middle">原価上昇</text>
+      <rect class="bar-total" x="530" y="171" width="70" height="149"/>
+      <text class="val-on-navy" x="565" y="252" text-anchor="middle">80</text>
+      <text class="x-label" x="115" y="342" text-anchor="middle">2005</text>
+      <text class="x-label" x="565" y="342" text-anchor="middle">2009</text>
+    </svg>
+    <p class="fig-note">期首・期末=紺、増加=白抜き紺枠、減少=橙（最重要因子は塗り、他はアウトライン）。負値は ▲ 表記。</p>
+  </div>
+</section>
+
+<section>
+  <h2>⑨ slope — 紺 + teal ハイライト + 端点ラベル</h2>
+  <div class="fig slp">
+    <div class="fig-head">
+      <p class="fig-title">月次契約の構成変化（2026Q1）</p>
+      <p class="fig-unit">単位: 件</p>
+    </div>
+    <svg viewBox="0 0 600 220" role="img" aria-label="売上は30件から40件へ増加、欠損は30件から6件へ減少した">
+      <line class="axis" x1="120" y1="20" x2="120" y2="190"/>
+      <line class="axis" x1="480" y1="20" x2="480" y2="190"/>
+      <line class="series" x1="120" y1="120" x2="480" y2="60" stroke="var(--mck-teal)"/>
+      <circle class="dot" cx="120" cy="120" fill="var(--mck-teal)"/>
+      <circle class="dot" cx="480" cy="60" fill="var(--mck-teal)"/>
+      <line class="series" x1="120" y1="122" x2="480" y2="168" stroke="var(--mck-navy)"/>
+      <circle class="dot" cx="120" cy="122" fill="var(--mck-navy)"/>
+      <circle class="dot" cx="480" cy="168" fill="var(--mck-navy)"/>
+      <text class="val" x="110" y="112" text-anchor="end" fill="var(--mck-teal)">30件</text>
+      <text class="val" x="490" y="58" text-anchor="start" fill="var(--mck-teal)">40件 売上</text>
+      <text class="val" x="110" y="140" text-anchor="end" fill="var(--mck-navy)">30件</text>
+      <text class="val" x="490" y="172" text-anchor="start" fill="var(--mck-navy)">6件 欠損</text>
+      <text x="120" y="210" text-anchor="middle">開始</text>
+      <text x="480" y="210" text-anchor="middle">終了</text>
+    </svg>
+    <p class="fig-note">系列名は線の終端に数値と結合して置く。注目系列だけ teal。</p>
+  </div>
+</section>
+
+<section>
+  <h2>⑩ evidence-map — 紺結論 + スパイン枝 + 線種=確度</h2>
+  <div class="fig">
+    <div class="em-map">
+      <div class="em-conclusion">クラウド移行を今四半期で開始すべき</div>
+      <div class="em-body">
+        <div class="em-item solid"><span class="em-cert">確認済み</span>運用コストが前年比18%増</div>
+        <div class="em-item dashed"><span class="em-cert">推論</span>同規模案件の移行期間は3〜4ヶ月</div>
+        <div class="em-item dotted"><span class="em-cert">未確認</span>監査要件の適用範囲</div>
+      </div>
+    </div>
+    <p class="fig-note">結論と根拠をスパインで物理的に接続する（浮遊線分の廃止）。線種=確度は維持。</p>
+  </div>
+</section>
+
+<section>
+  <h2>⑪ bars（昇格）— 横バー + 端値 + 1本ハイライト</h2>
+  <div class="fig">
+    <div class="fig-head">
+      <p class="fig-title">各国の女性役員割合（2021年）</p>
+      <p class="fig-unit">単位: %</p>
+    </div>
+    <div class="bars">
+      <div class="bar-row"><span class="bar-label">フランス</span><span class="bar-track"><span class="bar-fill" style="width:90.6%"></span><span class="bar-val">45.3%</span></span></div>
+      <div class="bar-row"><span class="bar-label">ノルウェー</span><span class="bar-track"><span class="bar-fill" style="width:83%"></span><span class="bar-val">41.5%</span></span></div>
+      <div class="bar-row"><span class="bar-label">アメリカ</span><span class="bar-track"><span class="bar-fill" style="width:59.4%"></span><span class="bar-val">29.7%</span></span></div>
+      <div class="bar-row"><span class="bar-label">韓国</span><span class="bar-track"><span class="bar-fill" style="width:17.4%"></span><span class="bar-val">8.7%</span></span></div>
+      <div class="bar-row"><span class="bar-label">日本</span><span class="bar-track"><span class="bar-fill hl" style="width:15%"></span><span class="bar-val">7.5%</span></span></div>
+    </div>
+    <p class="fig-note">既定は紺。主題の1本だけ teal（参照1枚目と同じ文法）。値は棒の右端に必ず併記。</p>
+  </div>
+</section>
+
+<section>
+  <h2>⑫ kpi（昇格）— リング円 + 大数字</h2>
+  <div class="fig">
+    <div class="kpi">
+      <div class="kpi-item">
+        <div class="kpi-ring"><span class="kpi-num">700<small>名〜</small></span></div>
+        <p class="kpi-cap">730名以上が参加</p>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-ring"><span class="kpi-num">4.5<small>ヶ月</small></span></div>
+        <p class="kpi-cap">プログラム期間</p>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-ring"><span class="kpi-num">88<small>%</small></span></div>
+        <p class="kpi-cap">本プログラムの満足度</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
