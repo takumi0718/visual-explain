@@ -22,8 +22,8 @@ def _esc(value: str) -> str:
 
 def _triangle_value_text(value_text: str, delta: Decimal) -> str:
     if delta < 0:
-        digits = re.sub(r"[^\d]", "", value_text)
-        return f"▲{digits}" if digits else f"▲{abs(delta)}"
+        body = re.sub(r"^[-−]+", "", value_text.strip())
+        return f"▲{body}" if body else f"▲{abs(delta)}"
     return value_text
 
 

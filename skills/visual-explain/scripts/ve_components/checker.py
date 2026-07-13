@@ -965,10 +965,11 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall v1 の DOM クラスが残っています"))
 
     g_blocks = re.findall(
-        r'<g\s+([^>]*data-ve-semantic-id="([^"]+)"[^>]*)>',
+        r'<g\s+([^>]*data-ve-semantic-id="([^"]+)"[^>]*)>(.*?)</g>',
         body,
+        re.DOTALL,
     )
-    g_ids = [sid for _, sid in g_blocks]
+    g_ids = [sid for _, sid, _ in g_blocks]
     if len(g_ids) != len(set(g_ids)):
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "waterfall の意味 ID が重複しています"))
     for sid in g_ids:
@@ -976,6 +977,24 @@ def _check_waterfall_artifact(body: str, parser: _DomSemanticParser) -> list[Dia
             diagnostics.append(Diagnostic(
                 ARTIFACT_SEMANTIC_MISMATCH,
                 f"waterfall の意味 ID '{sid}' は DOM に1回だけ現れる必要があります",
+            ))
+
+    for _attrs, sid, inner in g_blocks:
+        if not re.search(r'<rect\s+[^>]*\bve-wf-bar\b', inner):
+            continue
+        value_texts = re.findall(
+            r'<text\s+[^>]*\bve-wf-value-[^"\s]+[^>]*>([^<]*)</text>',
+            inner,
+        )
+        if len(value_texts) != 1:
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"waterfall 棒 '{sid}' は ve-wf-value-* テキストを1つだけ持つ必要があります",
+            ))
+        elif not value_texts[0].strip():
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                f"waterfall 棒 '{sid}' の値テキストが空です",
             ))
 
     for sid in parser.semantic_ids:

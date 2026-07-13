@@ -309,6 +309,19 @@ class WaterfallV2MarkupTest(unittest.TestCase):
         self.assertIn("▲20", markup)
         self.assertNotIn(">-50<", markup)
 
+    def test_waterfall_v2_triangle_preserves_decimal_in_value_text(self) -> None:
+        from ve_components.renderers.waterfall import render_waterfall
+
+        ir = validate_canonical_section(_base_ir(
+            start={"id": "st", "label": "開始", "value": 100, "valueText": "100"},
+            steps=[{"id": "s1", "label": "減", "delta": -50, "tone": "warning", "valueText": "-50.5"}],
+            end={"id": "en", "label": "終", "value": 50, "valueText": "50"},
+            axisTicks=["0", "50", "100"],
+        ))
+        markup = render_waterfall(CanonicalSection(ir=ir), WATERFALL_DEF).markup
+        self.assertIn("▲50.5", markup)
+        self.assertNotIn("▲505", markup)
+
     def test_waterfall_v2_only_largest_decrease_is_filled(self) -> None:
         markup = render_fixture("component-valid-waterfall").markup
         self.assertEqual(markup.count('class="ve-wf-bar ve-wf-minus"'), 1)
