@@ -90,16 +90,20 @@ _SPACING_PROP = re.compile(
     r"(?:^|[;{])\s*(margin|padding|gap|margin-[a-z]+|padding-[a-z]+|margin-block|margin-inline|padding-inline|padding-block|row-gap|column-gap)\s*:\s*([^;}]+)", re.M)
 _ALLOWED_VALUE = re.compile(
     r"^(0|var\(--space-[1-7]\)|auto|inherit)$")
+# 二層幅の張り出し（design spec 2026-07-13）だけを 8px グリッド監査の明示的例外とする。
+_BREAKOUT_MARGIN = "calc(-1 * min(10rem, (100vw - 60rem) / 2))"
 
 
 class SpacingGridAuditTest(unittest.TestCase):
     def _audit(self, css, label):
         violations = []
         for prop, value in _SPACING_PROP.findall(css):
-            parts = value.strip().split()
-            for part in parts:
+            value = value.strip()
+            if prop == "margin-inline" and value == _BREAKOUT_MARGIN:
+                continue
+            for part in value.split():
                 if not _ALLOWED_VALUE.match(part.strip()):
-                    violations.append(f"{label}: {prop}: {value.strip()}")
+                    violations.append(f"{label}: {prop}: {value}")
                     break
         return violations
 
@@ -156,6 +160,36 @@ class ColorDisciplineAuditTest(unittest.TestCase):
                     and "--accent:" not in body and "--positive:" not in body and "--warning:" not in body:
                 self.assertTrue(any(a in selector for a in allowed),
                                 f"意味色が判断状態以外のセレクタに使われています: {selector.strip()[:80]}")
+
+
+class ResponsiveLayoutTest(unittest.TestCase):
+    """design spec 2026-07-13: 流体ルートスケールと二層幅の骨格規則を固定する。"""
+
+    def test_fluid_root_type_scale(self):
+        self.assertIn(
+            "html { background: var(--bg); color: var(--text); "
+            "font-size: clamp(1rem, 0.7rem + 0.5vw, 1.25rem); }",
+            SKELETON)
+
+    def test_two_tier_breakout_rules(self):
+        gate = SKELETON.split("@media (min-width: 60rem) {", 1)
+        self.assertEqual(len(gate), 2, "60rem の media gate がありません")
+        block = gate[1].split("}\n\n", 1)[0]
+        self.assertIn(
+            ".figure:has(.flow, .matrix) { margin-inline: "
+            "calc(-1 * min(10rem, (100vw - 60rem) / 2)); }",
+            block)
+        self.assertIn(
+            'figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: '
+            "calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }",
+            block)
+
+    def test_ask_options_stack_on_mobile(self):
+        mobile = SKELETON.split("@media (max-width: 42rem) {", 1)[1]
+        self.assertIn(
+            ".ask-options [data-ask-option] { grid-template-columns: 1fr; "
+            "gap: var(--space-1); }",
+            mobile)
 
 
 if __name__ == "__main__":

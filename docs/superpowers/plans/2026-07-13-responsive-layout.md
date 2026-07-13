@@ -28,7 +28,7 @@
 - Modify: `skills/visual-explain/assets/skeleton.html` (3 edits inside `<style>`)
 - Modify: `skills/visual-explain/scripts/tests/test_skeleton_audit.py` (new test class + spacing-audit exception)
 - Modify: `skills/visual-explain/scripts/tests/tools/resplice.py` (docstring note only)
-- Regenerate: `skills/visual-explain/scripts/tests/*.html` (81 via resplice + 5 KEEP_AS_IS via textual edits; `compatibility-valid-fragment.html` untouched), `skills/visual-explain/examples/example-proposal.html`
+- Regenerate: `skills/visual-explain/scripts/tests/*.html` (80 via resplice + 6 KEEP_AS_IS via textual edits; `compatibility-valid-fragment.html` untouched), `skills/visual-explain/examples/example-proposal.html`
 
 **Interfaces:**
 - Consumes: current skeleton fixed CSS (anchors quoted verbatim below; verified present once each).
@@ -150,7 +150,7 @@ Expected: all passed.
 
 - [ ] **Step 8: Extend KEEP_AS_IS before running resplice (data-loss guard)**
 
-Two fixtures lack splice markers and would be DESTROYED by the current default glob: `bad-title-missing.html` (no TITLE markers — resplice would re-insert the skeleton's default title, erasing the fixture's purpose) and `compatibility-valid-fragment.html` (a 4-line fragment with no markers at all — resplice would replace it with the entire bare skeleton). In `tests/tools/resplice.py` replace:
+Three fixtures would be DESTROYED by the current default glob: `bad-title-missing.html` (no TITLE markers — resplice would re-insert the skeleton's default title, erasing the fixture's purpose), `compatibility-valid-fragment.html` (a 4-line fragment with no markers at all — resplice would replace it with the entire bare skeleton), and `component-bad-fixed-region.html` (its intentional divergence lives in fixed region 3 — the footer — outside the splice markers, so resplice would overwrite it with the skeleton's clean footer and erase the `fixed_region_mismatch` it exists to trigger). In `tests/tools/resplice.py` replace:
 
 ```python
 KEEP_AS_IS = {"bad-closing.html", "bad-system-closing.html", "bad-fixed-region.html", "bad-nesting.html"}
@@ -162,7 +162,8 @@ with:
 KEEP_AS_IS = {
     "bad-closing.html", "bad-system-closing.html", "bad-fixed-region.html", "bad-nesting.html",
     # マーカー欠落を検査する fixture と骨格を持たない断片。resplice すると内容が壊れる。
-    "bad-title-missing.html", "compatibility-valid-fragment.html",
+    # component-bad-fixed-region.html は固定領域3（footer）に故意相違を持ち、resplice すると消える。
+    "bad-title-missing.html", "compatibility-valid-fragment.html", "component-bad-fixed-region.html",
 }
 ```
 
@@ -172,11 +173,11 @@ KEEP_AS_IS = {
 python3 tests/tools/resplice.py
 python3 tests/tools/resplice.py ../examples/example-proposal.html
 ```
-Expected output: `resplice <name>.html` for 81 test fixtures plus `example-proposal.html`, and `skip` lines for the six KEEP_AS_IS names.
+Expected output: `resplice <name>.html` for 80 test fixtures plus `example-proposal.html`, and `skip` lines for the seven KEEP_AS_IS names.
 
-- [ ] **Step 10: Apply the same three edits textually to five KEEP_AS_IS fixtures**
+- [ ] **Step 10: Apply the same three edits textually to six KEEP_AS_IS fixtures**
 
-The four marker-broken fixtures plus `bad-title-missing.html` all embed the pre-change skeleton CSS byte-for-byte (verified: each anchor occurs exactly once per file). `compatibility-valid-fragment.html` carries no skeleton bytes and needs nothing. Run from `skills/visual-explain/scripts/`:
+The four marker-broken fixtures plus `bad-title-missing.html` and `component-bad-fixed-region.html` all embed the pre-change skeleton CSS byte-for-byte (verified: each anchor occurs exactly once per file). `compatibility-valid-fragment.html` carries no skeleton bytes and needs nothing. Run from `skills/visual-explain/scripts/`:
 
 ```bash
 python3 - <<'PY'
@@ -197,7 +198,7 @@ EDITS = [
 ]
 for name in ("bad-closing.html", "bad-system-closing.html",
              "bad-fixed-region.html", "bad-nesting.html",
-             "bad-title-missing.html"):
+             "bad-title-missing.html", "component-bad-fixed-region.html"):
     p = Path("tests") / name
     text = p.read_text("utf-8")
     for old, new in EDITS:
@@ -207,7 +208,7 @@ for name in ("bad-closing.html", "bad-system-closing.html",
     print("styled", name)
 PY
 ```
-Expected: `styled <name>` × 5, no AssertionError. (Edit order matters: the `.compare` edit runs before the 42rem-anchored edit, mirroring Step 4.)
+Expected: `styled <name>` × 6, no AssertionError. (Edit order matters: the `.compare` edit runs before the 42rem-anchored edit, mirroring Step 4.)
 
 - [ ] **Step 11: Document the manual-sync rule in resplice.py**
 
@@ -220,9 +221,9 @@ Extracts each fixture's TITLE, CONTENT, and controlled-slot bodies, then
 re-inserts them between the same markers of the new skeleton. Fixtures whose
 markers are intentionally broken (bad-closing 等、マーカー自体を検査する fixture)
 are listed in KEEP_AS_IS and skipped. 骨格の固定 CSS を変更したときは、
-KEEP_AS_IS のうち骨格 CSS を埋め込む5件（compatibility-valid-fragment.html 以外）にも
-同じ編集をテキスト置換で適用すること（マーカー破壊は保存し、固定 CSS だけを
-骨格と一致させる）。
+KEEP_AS_IS のうち骨格 CSS を埋め込む6件（compatibility-valid-fragment.html 以外）にも
+同じ編集をテキスト置換で適用すること（マーカー破壊や固定領域の故意相違は保存し、
+固定 CSS だけを骨格と一致させる）。
 """
 ```
 
