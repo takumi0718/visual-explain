@@ -4,7 +4,7 @@
 
 **Goal:** Make generated explainer HTML scale up optically on desktop (fluid 16→20px root, symmetric breakout for flow/matrix figures) while leaving mobile pixel-identical except one ask-options fix.
 
-**Architecture:** All CSS changes live in the skeleton's fixed `<style>` block (`assets/skeleton.html`). Because the checker byte-compares fixed regions against that file, every skeleton-embedding fixture is re-spliced; the four intentionally-broken `KEEP_AS_IS` fixtures get the same three CSS edits applied textually. The design spec is `docs/superpowers/specs/2026-07-13-responsive-layout-design.md`.
+**Architecture:** All CSS changes live in the skeleton's fixed `<style>` block (`assets/skeleton.html`). Because the checker byte-compares fixed regions against that file, every skeleton-embedding fixture is re-spliced; six of the seven `KEEP_AS_IS` fixtures (all except the skeleton-less `compatibility-valid-fragment.html`) get the same three CSS edits applied textually. The design spec is `docs/superpowers/specs/2026-07-13-responsive-layout-design.md`.
 
 **Tech Stack:** Plain CSS in a fixed HTML skeleton, Python stdlib checker/tests (pytest + unittest), `check.sh --selftest`.
 
