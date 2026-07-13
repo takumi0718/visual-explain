@@ -173,8 +173,6 @@ class PyramidPayload:
 class StairsStage:
     id: str
     label: str
-    note: str = ""
-    current: bool = False
 
 
 @dataclass(frozen=True)

@@ -879,7 +879,7 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
     if stage_count != sum('data-ve-semantic-id="' in attrs for attrs, _ in stage_blocks):
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                       "stairs 段に data-ve-semantic-id がありません"))
-    accent_count = 0
+    highlight_count = 0
     for index, (attrs, inner) in enumerate(stage_blocks):
         classes = _class_tokens_from_attr_string(attrs)
         position = index + 1
@@ -896,30 +896,37 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           f"stairs 段 '{sid}' に意味 ID がありません"))
         tread_tokens = {c for c in classes if c.startswith("ve-stairs-tread-")}
-        if tread_tokens and tread_tokens != {"ve-stairs-tread-accent"}:
+        if tread_tokens:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                          "stairs の tread クラスは ve-stairs-tread-accent のみ許可されます"))
-        if "ve-stairs-tread-accent" in classes:
-            accent_count += 1
-            note_spans = re.findall(
+                                          "stairs の tread クラスは廃止されました"))
+        if "ve-stairs-note" in inner:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "stairs の note クラスは廃止されました"))
+        state_tokens = frozenset(classes) & {"ve-stairs-done", "ve-dg-highlight", "ve-stairs-todo"}
+        if len(state_tokens) > 1:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          "stairs の段は done/highlight/todo のいずれか1つだけです"))
+        if "ve-dg-highlight" in classes:
+            highlight_count += 1
+            here_spans = re.findall(
                 r'<span\s+class="([^"]*)"[^>]*>(.*?)</span>',
                 inner,
                 re.DOTALL,
             )
-            note_texts = [
+            here_texts = [
                 _visible_text(content)
-                for cls, content in note_spans
-                if "ve-stairs-note" in frozenset(cls.split())
+                for cls, content in here_spans
+                if "ve-stairs-here" in frozenset(cls.split())
             ]
-            if not note_texts:
+            if not here_texts:
                 diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              "current 段のブロック内に ve-stairs-note がありません"))
-            elif not any(text for text in note_texts):
+                                              "highlight 段のブロック内に ve-stairs-here がありません"))
+            elif not any("← 現在地" in text for text in here_texts):
                 diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              "current 段の ve-stairs-note に可視テキストがありません"))
-    if accent_count > 1:
+                                              "highlight 段の ve-stairs-here に ← 現在地 がありません"))
+    if highlight_count > 1:
         diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                      "stairs の accent 段は最大1つです"))
+                                      "stairs の highlight 段は最大1つです"))
     return diagnostics
 
 

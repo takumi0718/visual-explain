@@ -436,7 +436,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ### stairs（成熟度階段）
 
-3〜5段（低い段から高い段）。`label` 14字以内、`note` 20字以内。`current: true` は最大1件で `note` 必須。現在地段のみ accent。高さは `ve-stairs-count-{3..5}` と `ve-stairs-index-{n}` の列挙クラスで割り当てる。
+3〜5段（低い段から高い段）。`label` 14字以内。`highlightId` で現在地段を指定する（省略可）。到達済み=紺、現在地=teal＋`← 現在地`、未到達=neutral。高さは `ve-stairs-count-{3..5}` と `ve-stairs-index-{n}` の列挙クラスで割り当てる。
 
 ```json
 {
@@ -448,16 +448,17 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       "ir": {
         "id": "sec-doc-stairs",
         "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging"]},
-        "selection": {"component": "stairs", "version": 1, "matchedCapabilities": ["maturity-staging"]},
+        "selection": {"component": "stairs", "version": 2, "matchedCapabilities": ["maturity-staging"]},
         "caption": "成熟度の5段階",
         "certainty": [{"id": "s-cert", "level": "confirmed", "statement": "5段は成熟度モデルに準拠。"}],
         "sources": [{"id": "s-src", "label": "成熟度モデル v1"}],
         "accessibility": {"label": "成熟度階段", "summary": "低い段から高い段へ5段の成熟度を示す。"},
         "stairs": {
+          "highlightId": "s-3",
           "stages": [
             {"id": "s-1", "label": "未整備"},
             {"id": "s-2", "label": "部分導入"},
-            {"id": "s-3", "label": "標準化", "current": true, "note": "ここにいる"},
+            {"id": "s-3", "label": "標準化"},
             {"id": "s-4", "label": "最適化"},
             {"id": "s-5", "label": "自律運用"}
           ]

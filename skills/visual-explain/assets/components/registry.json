@@ -246,7 +246,7 @@
     },
     {
       "id": "stairs",
-      "version": 1,
+      "version": 2,
       "relationshipKind": "staged-maturity",
       "capabilities": [
         "maturity-staging"
@@ -259,7 +259,8 @@
       ],
       "optionalInputs": [
         "certainty",
-        "sources"
+        "sources",
+        "highlightId"
       ],
       "behavior": "静的な階段形状で成熟度段階と現在地を描画する。",
       "slots": [
@@ -280,13 +281,13 @@
         "responsive-order",
         "stairs-structure"
       ],
-      "renderer": "stairs@1",
+      "renderer": "stairs@2",
       "assets": [
         {
           "id": "stairs.css",
           "slot": "styles",
           "path": "stairs.css",
-          "digest": "8d872ab77019b2d857985135879ed039a823fc2b8a82bcf656949775e533dcbe"
+          "digest": "c490a27d4fda79c63cfbb0a1595ece6589715d65947a788737482c464adfacc6"
         }
       ]
     },

@@ -228,7 +228,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
         self.assertIn(RENDERER_FAILURE, {d.code for d in ctx.exception.diagnostics})
 
     def test_non_allowlisted_component_cannot_declare_svg_root_ids(self) -> None:
-        stairs_def = REGISTRY.find("stairs", 1)
+        stairs_def = REGISTRY.find("stairs", 2)
         raw = json.loads((TESTS / "component-valid-stairs.json").read_text("utf-8"))
         ir = validate_canonical_section(raw["sections"][0]["ir"])
         section = CanonicalSection(ir=ir)

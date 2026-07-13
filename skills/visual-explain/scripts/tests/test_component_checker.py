@@ -333,12 +333,12 @@ class ArtifactSemanticTest(unittest.TestCase):
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
         self.assertIn("logic-tree の root-stem は1本である必要があります", messages)
 
-    def test_stairs_note_on_sibling_fails_block_local_check(self) -> None:
+    def test_stairs_here_on_sibling_fails_block_local_check(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-on-sibling.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
-                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+                      and "highlight 段のブロック内に ve-stairs-here がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
     def test_pyramid_face_order_html_fails(self) -> None:
@@ -384,27 +384,27 @@ class ArtifactSemanticTest(unittest.TestCase):
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
         self.assertIn("stairs の段 2 は ve-stairs-index-2 を1つだけ持つ必要があります", messages)
 
-    def test_stairs_empty_note_html_fails(self) -> None:
+    def test_stairs_empty_here_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-empty-note.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
-                      and "current 段の ve-stairs-note に可視テキストがありません" in d.message]
+                      and "highlight 段の ve-stairs-here に ← 現在地 がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
-    def test_stairs_accent_near_match_html_fails(self) -> None:
+    def test_stairs_legacy_tread_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-accent-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         messages = {d.message for d in diags if d.code == "artifact_semantic_mismatch"}
-        self.assertIn("stairs の tread クラスは ve-stairs-tread-accent のみ許可されます", messages)
+        self.assertIn("stairs の tread クラスは廃止されました", messages)
 
-    def test_stairs_note_near_match_html_fails(self) -> None:
+    def test_stairs_here_near_match_html_fails(self) -> None:
         from ve_components.checker import check_final_document
         doc = (TESTS / "component-bad-stairs-note-near-match.html").read_text("utf-8")
         diags = check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS)
         structural = [d for d in diags if d.code == "artifact_semantic_mismatch"
-                      and "current 段のブロック内に ve-stairs-note がありません" in d.message]
+                      and "highlight 段のブロック内に ve-stairs-here がありません" in d.message]
         self.assertEqual(len(structural), 1)
 
     def test_enumeration_missing_semantic_id_on_block_fails(self) -> None:

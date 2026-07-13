@@ -135,7 +135,7 @@ _CHEVRON_STEP_KEYS = {"id", "label", "title", "description", "descriptionEmphasi
 _PYRAMID_KEYS = {"tiers"}
 _PYRAMID_TIER_KEYS = {"id", "label", "sub"}
 _STAIRS_KEYS = {"stages", "highlightId"}
-_STAIRS_STAGE_KEYS = {"id", "label", "note", "current"}
+_STAIRS_STAGE_KEYS = {"id", "label"}
 _WATERFALL_KEYS = {"displayPrecision", "orientation", "start", "steps", "end", "title", "unitLabel"}
 _WATERFALL_ENDPOINT_KEYS = {"id", "label", "value", "valueText"}
 _WATERFALL_STEP_KEYS = {"id", "label", "delta", "valueText", "tone"}
@@ -892,7 +892,6 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
                 f"stages は3〜5件である必要があります (found {count})", path)
 
     stages: list[StairsStage] = []
-    current_count = 0
     for i, item in enumerate(stages_raw):
         p = f"{path}.stages[{i}]"
         if not isinstance(item, dict):
@@ -907,29 +906,9 @@ def _validate_stairs(raw: object, path: str, col: DiagnosticCollector) -> Stairs
             col.add(STAIRS_STRUCTURE_VIOLATION, "stage.label は空にできません", p)
         elif len(str(label)) > 14:
             col.add(STAIRS_STRUCTURE_VIOLATION, "label は14字以内です", p)
-        note = item.get("note", "")
-        current = item.get("current", False)
-        if not isinstance(current, bool):
-            col.add(INVALID_COMPONENT_PAYLOAD, "current は真偽値である必要があります", p)
-            current = False
-        if current:
-            current_count += 1
-            if not _nonblank_str(note):
-                col.add(STAIRS_STRUCTURE_VIOLATION,
-                        "current:true の stage には note が必須です", p)
-        if note is not None and note != "":
-            if not isinstance(note, str) or not note.strip():
-                col.add(STAIRS_STRUCTURE_VIOLATION, "note は空にできません", p)
-            elif len(note) > 20:
-                col.add(STAIRS_STRUCTURE_VIOLATION, "note は20字以内です", p)
         stages.append(StairsStage(
             id=sid, label=label if isinstance(label, str) else "",
-            note=note if isinstance(note, str) else "",
-            current=current,
         ))
-
-    if current_count > 1:
-        col.add(STAIRS_STRUCTURE_VIOLATION, "current:true は最大1件です", path)
 
     highlight_id = raw.get("highlightId")
     if highlight_id is not None and not _nonblank_str(highlight_id):
