@@ -903,7 +903,7 @@ def _check_stairs_artifact(body: str, parser: _DomSemanticParser) -> list[Diagno
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           "stairs の note クラスは廃止されました"))
         state_tokens = frozenset(classes) & {"ve-stairs-done", "ve-dg-highlight", "ve-stairs-todo"}
-        if len(state_tokens) > 1:
+        if len(state_tokens) != 1:
             diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
                                           "stairs の段は done/highlight/todo のいずれか1つだけです"))
         if "ve-dg-highlight" in classes:
