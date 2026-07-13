@@ -46,9 +46,7 @@ figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
   min-height: auto;
   padding: var(--space-2) 2.2rem var(--space-2) var(--space-2);
-  clip-path: polygon(1.9rem 0, calc(100% - 1.9rem) 0, 100% 50%, calc(100% - 1.9rem) 100%, 1.9rem 100%, 0 50%); }
-figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
-  margin-left: -1.9rem; }
+  clip-path: polygon(0 0, calc(100% - 1.9rem) 0, 100% 50%, calc(100% - 1.9rem) 100%, 0 100%); }
 figure[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
 figure[data-ve-component="chevron"] .ve-emphasis { display: block; margin-top: var(--space-1); font-size: var(--fs-small); font-weight: 700; }
 figure[data-ve-component="chevron"] .ve-chevron-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); list-style: disc; }
@@ -62,5 +60,4 @@ figure[data-ve-component="chevron"] .ve-chevron-notes li { margin: 0; }
   figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.9rem), 50% 100%, 0 calc(100% - 1.9rem));
     padding: var(--space-2) var(--space-2) 2.2rem; }
-  figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step { margin-left: 0; }
 }

@@ -394,23 +394,25 @@ class ChevronMarkupTest(unittest.TestCase):
         self.assertIn("border-top:", after_block)
         self.assertNotIn("border-bottom-color", after_block)
 
-    def test_horizontal_clip_path_has_right_tip_and_left_notch(self) -> None:
+    def test_horizontal_clip_path_is_flat_left_pentagon(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
         horiz_block = css.split(".ve-chevron-horizontal .ve-chv-box {")[1].split("}")[0]
         self.assertIn("clip-path: polygon(", horiz_block)
         self.assertIn("100% 50%", horiz_block)
-        self.assertIn("0 50%", horiz_block)
-        self.assertIn("1.9rem 0", horiz_block)
-        self.assertNotIn("1.9rem 100%, 0 50%", horiz_block.replace(" ", ""))
+        self.assertIn("0 0", horiz_block)
+        self.assertIn("0 100%", horiz_block)
+        self.assertNotIn("0 50%", horiz_block)
 
-    def test_narrow_screen_resets_horizontal_overlap_margin(self) -> None:
+    def test_horizontal_steps_have_no_overlap_margin(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
-        media_block = css.split("@media (max-width: 42rem)")[1]
-        self.assertIn(".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step", media_block)
-        reset_block = media_block.split(
-            ".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step"
-        )[1].split("}")[0]
-        self.assertIn("margin-left: 0", reset_block)
+        horiz_start = css.index(".ve-chevron-horizontal {")
+        horiz_end = css.index("@media (max-width: 42rem)")
+        horiz_block = css[horiz_start:horiz_end]
+        self.assertNotIn("margin-left: -", horiz_block)
+        self.assertNotIn(
+            ".ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step",
+            horiz_block,
+        )
 
     def test_loop_adds_visually_hidden_last_to_first_sentence(self) -> None:
         ir, result = render_fixture("component-valid-chevron-loop.json")
