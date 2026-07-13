@@ -1,7 +1,7 @@
 # Responsive Layout Design (Fluid Type Scale + Two-Tier Figure Width)
 
 **Date:** 2026-07-13
-**Status:** Approved design revised after three-perspective subagent review (CSS correctness, repo consistency, over-engineering audit) and one external AI review round; not yet implemented
+**Status:** Implemented on `feat/responsive-layout`; automated verification green (pytest 518, selftest 25); browser visual QA PASS (2026-07-13), including two user-directed matrix-table refinements (content-width, then column-width cap) verified in QA
 **Scope:** Skeleton fixed CSS (`assets/skeleton.html`), `references/design-system.md`, test fixtures, and one allowlist amendment in `scripts/tests/test_skeleton_audit.py`. No checker-logic, component-CSS, or generator changes.
 
 ## Goal
