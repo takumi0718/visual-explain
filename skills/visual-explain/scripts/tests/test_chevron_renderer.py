@@ -317,8 +317,16 @@ class ChevronMarkupTest(unittest.TestCase):
         _, result = render_fixture("component-valid-chevron.json")
         self.assertRegex(
             result.markup,
-            r've-chevron-concept[^>]*>.*?</div><p class="ve-chevron-description">',
+            r've-chevron-concept[^>]*>.*?</div><ul class="ve-chevron-description">',
         )
+
+    def test_description_uses_ul_li_list_semantics(self) -> None:
+        _, result = render_fixture("component-valid-chevron.json")
+        self.assertRegex(
+            result.markup,
+            r'<ul class="ve-chevron-description"><li>依頼を記録する</li><li>担当を割り当てる</li></ul>',
+        )
+        self.assertNotRegex(result.markup, r'<p class="ve-chevron-description">')
 
     def test_concept_emits_chv_box_class(self) -> None:
         _, result = render_fixture("component-valid-chevron.json")
@@ -390,8 +398,10 @@ class ChevronMarkupTest(unittest.TestCase):
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")
         horiz_block = css.split(".ve-chevron-horizontal .ve-chv-box {")[1].split("}")[0]
         self.assertIn("clip-path: polygon(", horiz_block)
-        self.assertIn("1.9rem 0", horiz_block)
+        self.assertIn("100% 50%", horiz_block)
         self.assertIn("0 50%", horiz_block)
+        self.assertIn("1.9rem 0", horiz_block)
+        self.assertNotIn("1.9rem 100%, 0 50%", horiz_block.replace(" ", ""))
 
     def test_narrow_screen_resets_horizontal_overlap_margin(self) -> None:
         css = (SKILL / "assets" / "components" / "chevron.css").read_text("utf-8")

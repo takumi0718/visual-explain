@@ -228,7 +228,7 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="chevron" data-ve-contract-version="2" data-ve-asset="chevron.css" data-ve-digest="7cb72de8ebf78a1d2bff814530b5ad1e8ccf26618ceeac46e310d07d4ebe03e0">figure[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+  <style data-ve-component="chevron" data-ve-contract-version="2" data-ve-asset="chevron.css" data-ve-digest="8bf5e480331a31ce2214c6e313165ecfbde236e1ae9ce5fdb9452b96b90048e1">figure[data-ve-component="chevron"] { display: block; min-width: 0; margin: var(--space-3) 0; }
 figure[data-ve-component="chevron"] .ve-chevron-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
 figure[data-ve-component="chevron"] .ve-chevron-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
 figure[data-ve-component="chevron"] .ve-chevron-body { position: relative; }
@@ -263,9 +263,11 @@ figure[data-ve-component="chevron"] .ve-chevron-number { display: inline-block; 
 figure[data-ve-component="chevron"] .ve-chevron-label,
 figure[data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
 figure[data-ve-component="chevron"] .ve-chevron-description {
+  margin: 0; padding: 0; list-style: none; }
+figure[data-ve-component="chevron"] .ve-chevron-description li {
   margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
-figure[data-ve-component="chevron"] .ve-chevron-description::before { content: "・"; }
-figure[data-ve-component="chevron"] .ve-chevron-description + .ve-chevron-description { margin-top: var(--space-1); }
+figure[data-ve-component="chevron"] .ve-chevron-description li::before { content: "・"; }
+figure[data-ve-component="chevron"] .ve-chevron-description li + li { margin-top: var(--space-1); }
 figure[data-ve-component="chevron"] .ve-chevron-horizontal {
   display: flex; flex-wrap: wrap; gap: 0; justify-content: center; }
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
@@ -274,7 +276,7 @@ figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
   min-height: auto;
   padding: var(--space-2) 2.2rem var(--space-2) var(--space-2);
-  clip-path: polygon(1.9rem 0, 100% 0, 100% 100%, 1.9rem 100%, 0 50%); }
+  clip-path: polygon(1.9rem 0, calc(100% - 1.9rem) 0, 100% 50%, calc(100% - 1.9rem) 100%, 1.9rem 100%, 0 50%); }
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
   margin-left: -1.9rem; }
 figure[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }
@@ -361,7 +363,7 @@ figure[data-ve-component="chevron"] .ve-chevron-notes li { margin: 0; }
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
     <section data-ve-section-kind="canonical" data-ve-component="chevron" data-ve-contract-version="2" data-ve-instance="sec-chevron-vertical" data-ve-fallback="static-content">
-<figure data-ve-component="chevron" role="group" aria-label="処理フローのチェブロン" aria-describedby="sec-chevron-vertical-summary"><figcaption id="sec-chevron-vertical-caption" class="ve-chevron-caption">処理フローの4段階</figcaption><p id="sec-chevron-vertical-summary" class="ve-chevron-summary">縦型の番号付き4段で線形順序を示す。</p><div class="ve-chevron-body"><ol class="ve-chevron-steps ve-chevron-centered ve-chevron-has-description"><li class="ve-chevron-step" data-ve-semantic-id="step-intake"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">1</span><span class="ve-chevron-title">受付</span></div><p class="ve-chevron-description">依頼を記録する</p><p class="ve-chevron-description">担当を割り当てる</p></li><li class="ve-chevron-step" data-ve-semantic-id="step-verify"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">2</span><span class="ve-chevron-title">検証</span></div><p class="ve-chevron-description">入力を確認する</p><p class="ve-chevron-description">不足を差し戻す</p></li><li class="ve-chevron-step" data-ve-semantic-id="step-execute"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">3</span><span class="ve-chevron-title">実行</span></div><p class="ve-chevron-description">手順に従い処理する</p><p class="ve-chevron-description">結果を保存する</p></li><li class="ve-chevron-step" data-ve-semantic-id="step-report"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">4</span><span class="ve-chevron-title">報告</span></div><p class="ve-chevron-description">完了を記録する</p><p class="ve-chevron-description">関係者へ通知する</p></li></ol></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-chevron"><strong>確認済み:</strong> 4段は運用手順書に準拠。</li><li data-ve-semantic-id="src-runbook"><strong>出典 運用手順書 v3</strong>（受付から報告まで。）</li></ul></figure>
+<figure data-ve-component="chevron" role="group" aria-label="処理フローのチェブロン" aria-describedby="sec-chevron-vertical-summary"><figcaption id="sec-chevron-vertical-caption" class="ve-chevron-caption">処理フローの4段階</figcaption><p id="sec-chevron-vertical-summary" class="ve-chevron-summary">縦型の番号付き4段で線形順序を示す。</p><div class="ve-chevron-body"><ol class="ve-chevron-steps ve-chevron-centered ve-chevron-has-description"><li class="ve-chevron-step" data-ve-semantic-id="step-intake"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">1</span><span class="ve-chevron-title">受付</span></div><ul class="ve-chevron-description"><li>依頼を記録する</li><li>担当を割り当てる</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-verify"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">2</span><span class="ve-chevron-title">検証</span></div><ul class="ve-chevron-description"><li>入力を確認する</li><li>不足を差し戻す</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-execute"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">3</span><span class="ve-chevron-title">実行</span></div><ul class="ve-chevron-description"><li>手順に従い処理する</li><li>結果を保存する</li></ul></li><li class="ve-chevron-step" data-ve-semantic-id="step-report"><div class="ve-chevron-concept ve-chv-box"><span class="ve-chevron-number" aria-hidden="true">4</span><span class="ve-chevron-title">報告</span></div><ul class="ve-chevron-description"><li>完了を記録する</li><li>関係者へ通知する</li></ul></li></ol></div><ul class="ve-chevron-notes"><li data-ve-semantic-id="cert-chevron"><strong>確認済み:</strong> 4段は運用手順書に準拠。</li><li data-ve-semantic-id="src-runbook"><strong>出典 運用手順書 v3</strong>（受付から報告まで。）</li></ul></figure>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->

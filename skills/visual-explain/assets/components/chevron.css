@@ -33,9 +33,11 @@ figure[data-ve-component="chevron"] .ve-chevron-number { display: inline-block; 
 figure[data-ve-component="chevron"] .ve-chevron-label,
 figure[data-ve-component="chevron"] .ve-chevron-title { display: block; font-weight: 800; }
 figure[data-ve-component="chevron"] .ve-chevron-description {
+  margin: 0; padding: 0; list-style: none; }
+figure[data-ve-component="chevron"] .ve-chevron-description li {
   margin: 0; padding-left: 1.1rem; text-indent: -1.1rem; }
-figure[data-ve-component="chevron"] .ve-chevron-description::before { content: "・"; }
-figure[data-ve-component="chevron"] .ve-chevron-description + .ve-chevron-description { margin-top: var(--space-1); }
+figure[data-ve-component="chevron"] .ve-chevron-description li::before { content: "・"; }
+figure[data-ve-component="chevron"] .ve-chevron-description li + li { margin-top: var(--space-1); }
 figure[data-ve-component="chevron"] .ve-chevron-horizontal {
   display: flex; flex-wrap: wrap; gap: 0; justify-content: center; }
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
@@ -44,7 +46,7 @@ figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step {
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box {
   min-height: auto;
   padding: var(--space-2) 2.2rem var(--space-2) var(--space-2);
-  clip-path: polygon(1.9rem 0, 100% 0, 100% 100%, 1.9rem 100%, 0 50%); }
+  clip-path: polygon(1.9rem 0, calc(100% - 1.9rem) 0, 100% 50%, calc(100% - 1.9rem) 100%, 1.9rem 100%, 0 50%); }
 figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step + .ve-chevron-step {
   margin-left: -1.9rem; }
 figure[data-ve-component="chevron"] .ve-takeaway-target { outline: 2px solid var(--dg-highlight); outline-offset: 2px; }

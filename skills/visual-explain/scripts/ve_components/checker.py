@@ -810,7 +810,6 @@ def _check_chevron_artifact(body: str, parser: _DomSemanticParser) -> list[Diagn
         outer="ve-chevron-step",
         concept="ve-chevron-concept",
         description="ve-chevron-description",
-        max_description_blocks=3,
     ))
     return diagnostics
 

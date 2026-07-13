@@ -27,17 +27,14 @@ def _desc_html(text: str, emphasis: str | None) -> str:
 
 def _description_html(lines: tuple[str, ...], emphasis: str | None) -> str:
     emphasis_used = False
-    parts: list[str] = []
+    items: list[str] = []
     for line in lines:
         line_emphasis: str | None = None
         if emphasis and not emphasis_used and emphasis in line:
             line_emphasis = emphasis
             emphasis_used = True
-        parts.append(
-            f'<p class="ve-chevron-description">'
-            f'{_desc_html(line, line_emphasis)}</p>'
-        )
-    return "".join(parts)
+        items.append(f"<li>{_desc_html(line, line_emphasis)}</li>")
+    return f'<ul class="ve-chevron-description">{"".join(items)}</ul>'
 
 
 def _step_endpoint_name(step, index: int) -> str:
