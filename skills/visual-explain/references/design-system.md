@@ -2,7 +2,7 @@
 
 固定骨格をそのまま使い、`TITLE:BEGIN` と `TITLE:END` の間には非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ、本文は `CONTENT:BEGIN` と `CONTENT:END` の間だけに入れよ。未解決プレースホルダーやタイトル内のマークアップは使わず、ほかの領域は変更しない。追加の CSS、JavaScript、外部アセット、座標計算を加えるな。情報の正確さを装飾より優先せよ。
 
-このスキルのビジュアル基準 v1 は3層で構成する。**構造層**（何を主張し、どの順で読ませるか）、**記法層**（同じ意味を同じ見た目で表す統一記法・注釈・ask）、**表層**（タイプスケール・グリッド・幅・面）である。以下はこの3層を生成時にどう満たすかの命令である。各規範の出典は `sources.md` を参照せよ。
+このスキルのビジュアル基準 v3 は3層で構成する。**構造層**（何を主張し、どの順で読ませるか）、**記法層**（同じ意味を同じ見た目で表す統一記法・注釈・ask）、**表層**（タイプスケール・グリッド・幅・面）である。以下はこの3層を生成時にどう満たすかの命令である。各規範の出典は `sources.md` を参照せよ。
 
 ## トークン
 
@@ -53,6 +53,25 @@
 - caption の位置は経路で決まる: コンポーネント経路の caption / summary / notes は `--w-narrative` を保ち本文エッジに揃える。張り出した legacy カードの figcaption はカードに追従し、カード境界を整列コンテキストとする
 
 密な表・flow は各自の横スクロールコンテナ内で溢れさせ、ページ全体を広げるな。カラム内で内容を中央寄せしない。二層幅の張り出しは本文カラムの中心軸に対する対称拡張であり、この規則の例外ではない。
+
+**図解専用トークン（10）— コンポーネント名前空間の内部だけで使う。文書レイヤーの判断状態色（`--accent` 等）とは分離する。図解構造色の既定は紺（`--dg-primary`）である。**
+
+| トークン | light | dark | 用途 |
+| --- | --- | --- | --- |
+| `--dg-primary` | `#1F4E79` | `#2E5A8F` | 構造の既定塗り（白抜き文字） |
+| `--dg-primary-mid` | `#2E6DA4` | `#3E77B4` | 第 2 階調（pyramid 中層・logic-tree 枝） |
+| `--dg-primary-light` | `#BDD7EE` | `#274664` | 第 3 階調・選択セルの淡強調 |
+| `--dg-highlight` | `#2E8B9A` | `#3FA3B4` | 現在地・注目（**1 図 1 箇所まで**） |
+| `--dg-negative` | `#C55A11` | `#E07B39` | 減少・リスク（waterfall 減少バー等） |
+| `--dg-neutral` | `#F2F2F2` | `#262b31` | 中立面（未到達段・行ラベル箱） |
+| `--dg-line` | `#7F7F7F` | `#9aa1ab` | レール・コネクタ・アウトライン |
+| `--dg-emphasis` | `#2E75B6` | `#6FA8DC` | 文中強調（説明文キーフレーズ専用） |
+| `--dg-on-primary` | `#ffffff` | `#f2f5f9` | 紺面上の文字 |
+| `--radius` | `.4rem` | 同左 | 骨格の UI 部品専用。**図解コンポーネント CSS は `--radius` を参照せず角丸なし**（矩形装飾の `border-radius` を書かない） |
+
+- **文中強調**: `<strong class="dg-em">`（描画は `--dg-emphasis`・700）。1 つの description につき最大 1 個。checker で超過を FAIL。
+- **ハイライト 1 箇所ルール**: `--dg-highlight`（teal）と matrix の淡強調セル（`ve-dg-highlight`）は 1 図につき 1 箇所まで。checker で強制。
+- **kpi リング円の例外**: `kpi@2` のリング円だけ `border-radius: 50%` を許可する。円形はリングの本質形状であり、矩形装飾角丸の禁止対象外である。
 
 ## Matrix / flow の色契約
 
@@ -110,7 +129,7 @@
 
 ## 確度と出典
 
-判断を変え得る主張には、対象の直近で次の3値のいずれかをテキストとして明記せよ。破線、色、アイコンだけに確度の意味を持たせるな。
+判断を変え得る主張には、対象の直近で次の3値のいずれかをテキストとして明記せよ。破線、色、アイコンだけに確度の意味を持たせるな。**図中チップもこの3語だけ**（「確定」「推定」等の別語彙は禁止。checker で固定）。
 
 - **確認済み**: 直接確認できる事実
 - **推論**: 確認済みの材料からの解釈
@@ -160,20 +179,20 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 - 1セクション1問いを守り、主張を1行、根拠を2〜3行の目安に抑えよ。概ね1画面に収まるかを目視確認せよ。
 - 二層幅の張り出しは幅の節の閉じた列挙にだけ適用する。新しい図種を張り出させるには、幅の節・骨格 CSS・`test_skeleton_audit.py` の監査例外を同時に改訂せよ。
 
-## コンポーネント資産の所有権（matrix / flow / enumeration / chevron）
+## コンポーネント資産の所有権（canonical 12 形式）
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron` は骨格とコンポーネントで所有権を分ける。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は骨格とコンポーネントで所有権を分ける。
 
 - **骨格**がグローバルトークン・固定領域・テーマ・固定 JavaScript を所有する。これらのバイトは1つも変更しない。
-- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]`、slope は `[data-ve-component="slope"]`、evidence-map は `[data-ve-component="evidence-map"]` を根に持つ規則だけを書き、骨格トークンを再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
+- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]`、slope は `[data-ve-component="slope"]`、evidence-map は `[data-ve-component="evidence-map"]`、bars は `[data-ve-component="bars"]`、kpi は `[data-ve-component="kpi"]` を根に持つ規則だけを書き、骨格トークン（`--dg-*` を含む）を再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
 - **二層幅のための閉じた例外**: 骨格は二層幅レイアウトに限り、コンポーネント名前空間セレクタ（`figure[data-ve-component="matrix"] .ve-matrix-scroll`）を対象にでき、その `max-width` を上書きできる。それ以外の名前空間規則は引き続きコンポーネントが所有する。
-- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
+- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
 - CSS は意味の可読性・既存トークン・名前空間・静的アクセシビリティ・レスポンシブ順序だけに限る。狭い画面では積み重ねてよいが、意味的な読み順を反転しない。美的レビューは本スライスの範囲外。
 - **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。二層幅の対称張り出しと、その張り出しコンテナ内で matrix の table を中心軸に中央揃えすることは、中央軸に対する対称配置であり、この規則とは独立である。
 - **コンセプトと説明を分離する**: enumeration / chevron は `label` または番号＋`title` だけを図形内に置く。description は縦型で右、横型で下の兄弟領域へ置き、全省略時は空領域を作らない。意味 ID はコンセプト＋説明の外側項目に置き、takeaway の可視枠はコンセプト図形だけに付ける。
-- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は行型6行（steps 1〜4）/横並び9列（steps 1〜7）、slope は最大5項目、evidence-map は根拠4件。超過は分割か縮退。
-- **waterfall の幾何は補助・valueText が主**: 累積オフセットは事前生成の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）で表現する。読者への数値伝達は必ず `valueText` で行い、幾何の量子化は情報を失わない補助である。
-- **renderer-svg ゲート（slope のみ）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@2"}` の canonical セクション内だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（`viewBox` 完全一致 `0 0 600 220`）。互換節経由の SVG 持込も拒否する。
+- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は期首・期末込み最大7本（`steps` 最大5件）、slope は最大5項目、evidence-map は根拠4件、bars は最大10行、kpi は最大5個（1行3個まで）。超過は分割か縮退。
+- **waterfall の幾何は renderer-SVG・valueText が主**: `waterfall@2` はレンダラが単一 SVG（`viewBox` 完全一致 `0 0 640 360`）を生成する。Y 座標は `displayPrecision` と `Decimal` 規約で算出し整数座標へ丸める。読者への数値伝達は必ず `valueText` で行い、負の delta は `▲` 表記を使う。旧 CSS 版の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）は廃止した。
+- **renderer-svg ゲート（slope / waterfall）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@2", "waterfall@2"}` の canonical セクション内だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（slope: `viewBox` 完全一致 `0 0 600 220`、waterfall: `0 0 640 360`）。互換節経由の SVG 持込も拒否する。
 - **信頼アセットは単一の fail-closed ゲート**として扱う。レジストリの ID/バージョン/ダイジェスト、レンダラ許可リスト、マニフェスト宣言、名前空間、スロット種別、CSP、外部参照なしをまとめて満たさない資産は拒否する。CSS を変更したら `shasum -a 256` で再計算し、`registry.json` のダイジェストをワイルドカードや初回信頼ではなく厳密な値で更新する。
 
 ## 新コンポーネントの拡張ゲート（10 手順）

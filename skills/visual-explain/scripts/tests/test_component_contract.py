@@ -336,6 +336,29 @@ class DocumentationConsistencyTest(unittest.TestCase):
                     self.assertIn(section.provenance.source, sources)
                     self.assertIn(section.provenance.reason, reasons)
 
+    def test_docs_have_canonical_examples_for_all_twelve_components(self) -> None:
+        text = Path("../references/patterns.md").read_text(encoding="utf-8")
+        for comp in [
+            "matrix",
+            "flow",
+            "enumeration",
+            "chevron",
+            "pyramid",
+            "stairs",
+            "logic-tree",
+            "waterfall",
+            "slope",
+            "evidence-map",
+            "bars",
+            "kpi",
+        ]:
+            self.assertIn(f'"component": "{comp}"', text, comp)
+
+    def test_design_system_documents_dg_tokens(self) -> None:
+        ds = Path("../references/design-system.md").read_text(encoding="utf-8")
+        self.assertIn("--dg-primary", ds)
+        self.assertIn("dg-em", ds)
+
 
 class FlowTopologyContractTest(unittest.TestCase):
     def test_backward_edge_rejected(self) -> None:

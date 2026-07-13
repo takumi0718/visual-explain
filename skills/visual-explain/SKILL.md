@@ -42,7 +42,7 @@ license: MIT
 1. **ゲート判定:** 上の 3 条件を確認する。NO なら通常のテキスト説明へ戻り、資料は作らない。
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
-4. **図フォーマットを選ぶ:** `flow`、`layers`、`compare`、`matrix`、`timeline`、`kpi`、`bars`、`terms`、`details` の固定ライブラリを既定にする。座標計算、独自 CSS、独自 JavaScript は追加しない。
+4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
 5. **構成する:** `assets/skeleton.html` を新しい資料へコピーし、`<!-- TITLE:BEGIN -->` と `<!-- TITLE:END -->` の間には非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ置く。本文は `<!-- CONTENT:BEGIN -->` と `<!-- CONTENT:END -->` の間だけを編集する。ほかの領域は1バイトも変更しない。結論先行、必要時の用語表、型ごとの本文、必須の末尾節を入れる。描画規則は [references/design-system.md](references/design-system.md) に従う。
 6. **機械チェックする:** `scripts/check.sh <絶対パス> --type <proposal|system|research>` を実行する。FAIL は修正して再実行し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
@@ -143,9 +143,9 @@ git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外
 - 許される推論には対象の直近で **推論** と明記する。
 - 因果・順序に確信がなければ、`matrix`、`terms`、または簡潔な文章へ縮退し、flow 図にしない。
 
-## カノニカルなコンポーネント（matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map）
+## カノニカルなコンポーネント（canonical 12 形式）
 
-二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree`、加算的ブリッジ（開始→増減→終了）は `waterfall`、同一単位の2時点比較は `slope`、結論と根拠の1段マッピングは `evidence-map` を、次の1つの意思決定列で使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止、waterfall bars/columns、slope の3点以上禁止、evidence-map の階層1段など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。
+二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree`、加算的ブリッジ（開始→増減→終了）は `waterfall`、同一単位の2時点比較は `slope`、結論と根拠の1段マッピングは `evidence-map`、単軸の定量比較・ランキングは `bars`、主要指標の強調（リング型）は `kpi` を、次の1つの意思決定列で使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止、waterfall vs bars、slope の3点以上禁止、evidence-map の階層1段、bars vs waterfall、kpi vs slope など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。
 
 enumeration / chevron ではコンセプト（`label` または番号＋必須`title`）だけを図形内に置き、任意の`description`は縦型で右、横型で下の説明欄へ分離する。description は全有/全無で、全省略時はコンセプトだけを表示する。
 
@@ -155,7 +155,7 @@ enumeration / chevron ではコンセプト（`label` または番号＋必須`t
 4. **一致ケイパビリティの理由を記録する** — `selection.matchedCapabilities` は宣言とレジストリの両方に存在する必要がある。
 5. **ビルドして検証する** — `python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>` で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書）を検証する。
 
-matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
+matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
 
 ## 弱モデル劣化と互換節
 
@@ -166,7 +166,7 @@ matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/eviden
 - canonical セクションと**共存**でき、同じ composer/flattener と最終検査に入る。
 - 制御された**コンテンツスロットにのみ**入り、style/script/link 注入、インライン実行、外部依存、固定領域マーカーを含められない。既存のコンテンツ規則と最終検査規則はそのまま適用され、`check.sh` を通過する。
 
-`layers`・`compare`・`timeline`・`kpi`・`bars`・`terms`・`details`・`stepper` は引き続き旧ルールの HTML マークアップとして互換節から始まる。互換は決して canonical 成功ではなく、provenance の `reason` で区別される。
+`layers`・`compare`・`timeline`・`terms`・`details`・`stepper` は引き続き旧ルールの HTML マークアップとして互換節から始まる。`bars` と `kpi` は canonical に昇格済みであり、通常経路は canonical IR である（legacy HTML 節は互換用）。互換は決して canonical 成功ではなく、provenance の `reason` で区別される。
 
 Attribution: visual-explainer (MIT) の固定図フォーマット、デザイン規則、目視確認の設計要素を参照した。
 Attribution: obra/superpowers 由来の提案ゲートと承認後ワークフローの設計要素を参照した。

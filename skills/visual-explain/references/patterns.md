@@ -174,7 +174,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 </ol>
 ```
 
-### kpi — 効果・指標
+### kpi — 効果・指標（legacy HTML・canonical 昇格済み）
+
+> **注記**: `kpi` は canonical `kpi@2` に昇格済みである。通常経路は末尾のカノニカル組み立て例を使え。以下は互換節用の legacy マークアップである。
 
 値、指標名、必要なら比較基準を近接させる。確定していない値を確定値として表示しない。
 
@@ -185,7 +187,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 </div>
 ```
 
-### bars — 定量比較
+### bars — 定量比較（legacy HTML・canonical 昇格済み）
+
+> **注記**: `bars` は canonical `bars@2` に昇格済みである。通常経路は末尾のカノニカル組み立て例を使え。以下は互換節用の legacy マークアップである。
 
 量の比較にだけ使う。横棒の長さは `--value` に百分率で宣言し、座標を計算しない。数値をテキストでも併記する。
 
@@ -245,9 +249,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
 
-## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / bars / kpi / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
@@ -260,6 +264,8 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **加算的ブリッジ（開始→増減→終了）** → `waterfall`（`additive-bridge` / `additive-bridging`）。v2 は単一の SVG ウォーターフォール（Y 軸・目盛・点線コネクタ・期首/期末塗り棒）。`title` / `unitLabel` / `axisTicks` は必須。`steps` は最大 5 件（期首・期末込みで最大 7 本）。
 - **2時点比較（同一単位の before/after）** → `slope`（`two-point-change` / `two-point-comparison`）。**3点以上の時系列は timeline か文章へ** — item は最大5件だが各 item は2値のみ。
 - **結論と根拠の1段マッピング** → `evidence-map`（`claim-support` / `claim-support-mapping`）。**根拠の根拠は図を分割** — 階層は1段のみ。
+- **単軸の定量比較・ランキング** → `bars`（`quantitative-comparison` / `single-axis-quantity`）。**時系列や加算的ブリッジは waterfall / slope へ** — 最大10行、主題の1本だけ teal ハイライト。
+- **主要指標の強調（リング型）** → `kpi`（`headline-metrics` / `metric-highlight`）。**複数系列の時系列比較は slope へ** — 最大5個（1行3個まで）。
 
 ### matrix（二軸分類・交差比較）
 
@@ -504,7 +510,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ### waterfall（加算的ブリッジ）
 
-`displayPrecision`・`title`・`unitLabel`・`axisTicks` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。`steps` は 1〜5 件（期首・期末込みで最大 7 本）。`axisTicks` の各値は 0..v_max の数値文字列であること。
+`displayPrecision`・`title`・`unitLabel`・`axisTicks` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。`steps` は 1〜5 件（期首・期末込みで最大 7 本）。`axisTicks` の各値は 0..v_max の数値文字列であること。v2 は renderer-SVG（Y 軸・目盛・点線コネクタ・期首/期末塗り棒）で、幾何は整数座標へ丸める。
 
 ```json
 {
@@ -591,6 +597,66 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
         "evidence": [
           {"id": "em-e1", "label": "コスト増加", "certaintyRef": "em-cert", "sourceRef": "em-src"},
           {"id": "em-e2", "label": "期間見積", "certaintyRef": "em-inf"}
+        ]
+      }
+    }
+  }]
+}
+```
+
+### bars（単軸定量比較）
+
+`title`・`unitLabel` は必須。`items` は 1〜10 件。`highlightId` で主題の1本だけ teal にできる（省略可）。`value` は数値文字列、`valueText` は表示用。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-bars", "title": "棒グラフ比較", "summary": "2系列の定量比較を示す。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-bars",
+      "relationship": {"kind": "quantitative-comparison", "capabilities": ["single-axis-quantity", "ranked-comparison"]},
+      "selection": {"component": "bars", "version": 2, "matchedCapabilities": ["single-axis-quantity", "ranked-comparison"]},
+      "caption": "日本の女性役員割合が最も低い",
+      "certainty": [{"id": "b-cert", "level": "confirmed", "statement": "公開統計に基づく。"}],
+      "sources": [{"id": "b-src", "label": "役員統計 2021"}],
+      "accessibility": {"label": "棒グラフ", "summary": "各国の女性役員割合を横棒で比較する。"},
+      "bars": {
+        "title": "各国の女性役員割合（2021年）",
+        "unitLabel": "%",
+        "highlightId": "b2",
+        "items": [
+          {"id": "b1", "label": "フランス", "value": "45.3", "valueText": "45.3%"},
+          {"id": "b2", "label": "日本", "value": "7.5", "valueText": "7.5%"}
+        ]
+      }
+    }
+  }]
+}
+```
+
+### kpi（主要指標・リング型）
+
+`items` は 1〜5 件（1行3個まで）。`value`・`unit`・`caption` を各 item に置く。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-kpi", "title": "KPI 指標", "summary": "リング型の主要指標を示す。"},
+  "sections": [{
+    "kind": "canonical",
+    "ir": {
+      "id": "sec-doc-kpi",
+      "relationship": {"kind": "headline-metrics", "capabilities": ["metric-highlight"]},
+      "selection": {"component": "kpi", "version": 2, "matchedCapabilities": ["metric-highlight"]},
+      "caption": "プログラム満足度の主要指標",
+      "certainty": [{"id": "k-cert", "level": "confirmed", "statement": "アンケート集計に基づく。"}],
+      "sources": [{"id": "k-src", "label": "満足度調査 2024"}],
+      "accessibility": {"label": "KPI 指標", "summary": "満足度をリング型の数値で示す。"},
+      "kpi": {
+        "items": [
+          {"id": "k1", "value": "88", "unit": "%", "caption": "本プログラムの満足度"}
         ]
       }
     }
