@@ -78,6 +78,7 @@ BARS_WIDTH_CLASSES = "bars-width-classes"
 
 # S7 — kpi structure codes.
 KPI_ITEM_LIMIT = "kpi-item-limit"
+KPI_STRUCTURE_VIOLATION = "kpi_structure_violation"
 
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
@@ -136,6 +137,7 @@ ALL_CODES = frozenset({
     BARS_ITEM_LIMIT,
     BARS_WIDTH_CLASSES,
     KPI_ITEM_LIMIT,
+    KPI_STRUCTURE_VIOLATION,
     NOTATION_EMPHASIS_LIMIT,
     NOTATION_HIGHLIGHT_LIMIT,
     NOTATION_CERTAINTY_VOCABULARY,

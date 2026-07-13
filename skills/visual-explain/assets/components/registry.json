@@ -573,7 +573,8 @@
         "escaping",
         "no-external-reference",
         "responsive-order",
-        "kpi-item-limit"
+        "kpi-item-limit",
+        "kpi-structure"
       ],
       "renderer": "kpi@2",
       "assets": [

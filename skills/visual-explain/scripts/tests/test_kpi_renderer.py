@@ -5,7 +5,7 @@ import json
 import unittest
 from pathlib import Path
 
-from ve_components.diagnostics import KPI_ITEM_LIMIT, ContractError
+from ve_components.diagnostics import KPI_ITEM_LIMIT, KPI_STRUCTURE_VIOLATION, ContractError
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry
 from ve_components.validation import validate_canonical_section
@@ -68,9 +68,54 @@ class KpiCheckerTest(unittest.TestCase):
 
     def test_kpi_item_limit_diagnostic_is_registered(self) -> None:
         from ve_components.diagnostics import ALL_CODES
+        from ve_components.registry import KNOWN_CHECKER_RULES
 
         self.assertEqual(KPI_ITEM_LIMIT, "kpi-item-limit")
         self.assertIn(KPI_ITEM_LIMIT, ALL_CODES)
+        self.assertIn(KPI_ITEM_LIMIT, KNOWN_CHECKER_RULES)
+
+    def test_kpi_structure_violation_diagnostic_is_registered(self) -> None:
+        from ve_components.diagnostics import ALL_CODES
+        from ve_components.registry import KNOWN_CHECKER_RULES
+
+        self.assertEqual(KPI_STRUCTURE_VIOLATION, "kpi_structure_violation")
+        self.assertIn(KPI_STRUCTURE_VIOLATION, ALL_CODES)
+        self.assertIn("kpi-structure", KNOWN_CHECKER_RULES)
+
+    def test_kpi_artifact_ignores_small_tags_outside_ve_kpi_num(self) -> None:
+        from ve_components.checker import _check_kpi_artifact, _parse_dom
+
+        body = (
+            '<figure data-ve-component="kpi">'
+            '<figcaption class="ve-kpi-caption">注記<small>補足</small></figcaption>'
+            '<p class="ve-kpi-summary">概要<small>詳細</small></p>'
+            '<div class="ve-kpi-list">'
+            '<div class="ve-kpi-item" data-ve-semantic-id="k1">'
+            '<div class="ve-kpi-ring"><span class="ve-kpi-num">88<small>%</small></span></div>'
+            '<p class="ve-kpi-cap">満足度</p></div></div>'
+            '<ul class="ve-kpi-notes"><li data-ve-semantic-id="cert">x</li></ul>'
+            '</figure>'
+        )
+        codes = {d.code for d in _check_kpi_artifact(body, _parse_dom(body))}
+        self.assertNotIn(KPI_STRUCTURE_VIOLATION, codes)
+        self.assertNotIn(KPI_ITEM_LIMIT, codes)
+
+    def test_kpi_missing_ring_emits_structure_violation(self) -> None:
+        from ve_components.checker import _check_kpi_artifact, _parse_dom
+
+        body = (
+            '<figure data-ve-component="kpi">'
+            '<figcaption class="ve-kpi-caption">caption</figcaption>'
+            '<div class="ve-kpi-list">'
+            '<div class="ve-kpi-item" data-ve-semantic-id="k1">'
+            '<span class="ve-kpi-num">88<small>%</small></span>'
+            '<p class="ve-kpi-cap">満足度</p></div></div>'
+            '<ul class="ve-kpi-notes"><li data-ve-semantic-id="cert">x</li></ul>'
+            '</figure>'
+        )
+        codes = {d.code for d in _check_kpi_artifact(body, _parse_dom(body))}
+        self.assertIn(KPI_STRUCTURE_VIOLATION, codes)
+        self.assertNotIn(KPI_ITEM_LIMIT, codes)
 
     def test_kpi_structure_bad_fixture_emits_item_limit_code(self) -> None:
         from ve_components.checker import check_final_document

@@ -31,6 +31,7 @@ from .diagnostics import (
     SLOPE_STRUCTURE_VIOLATION,
     BARS_WIDTH_CLASSES,
     KPI_ITEM_LIMIT,
+    KPI_STRUCTURE_VIOLATION,
     Diagnostic,
 )
 from .validation import VOCABULARY
@@ -1488,18 +1489,19 @@ def _check_kpi_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnosti
         ring_count = len(re.findall(r'class="ve-kpi-ring"', body))
         num_count = len(re.findall(r'class="ve-kpi-num"', body))
         cap_count = len(re.findall(r'class="ve-kpi-cap"', body))
-        small_count = body.count("<small>")
+        num_blocks = re.findall(r'<span[^>]*\bve-kpi-num\b[^>]*>.*?</span>', body, re.DOTALL)
+        small_in_num_count = sum(1 for block in num_blocks if "<small>" in block)
         semantic_count = len(re.findall(r'class="ve-kpi-item"[^>]*data-ve-semantic-id="', body))
         if ring_count != item_count:
-            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に ve-kpi-ring がありません"))
+            diagnostics.append(Diagnostic(KPI_STRUCTURE_VIOLATION, "kpi 項目に ve-kpi-ring がありません"))
         if num_count != item_count:
-            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に ve-kpi-num がありません"))
-        if small_count != item_count:
-            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に単位 small がありません"))
+            diagnostics.append(Diagnostic(KPI_STRUCTURE_VIOLATION, "kpi 項目に ve-kpi-num がありません"))
+        if small_in_num_count != item_count:
+            diagnostics.append(Diagnostic(KPI_STRUCTURE_VIOLATION, "kpi 項目に単位 small がありません"))
         if cap_count != item_count:
-            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に ve-kpi-cap がありません"))
+            diagnostics.append(Diagnostic(KPI_STRUCTURE_VIOLATION, "kpi 項目に ve-kpi-cap がありません"))
         if semantic_count != item_count:
-            diagnostics.append(Diagnostic(KPI_ITEM_LIMIT, "kpi 項目に data-ve-semantic-id がありません"))
+            diagnostics.append(Diagnostic(KPI_STRUCTURE_VIOLATION, "kpi 項目に data-ve-semantic-id がありません"))
     return diagnostics
 
 
