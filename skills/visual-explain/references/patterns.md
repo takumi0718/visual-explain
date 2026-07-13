@@ -251,7 +251,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / bars / kpi / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は canonical IR から生成する。IR には HTML/CSS/JavaScript/座標を書かない。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は canonical IR（**contractVersion 2 / @2**）から生成する。以下の組み立て例はすべて `selection.version: 2` を宣言する。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
@@ -267,7 +267,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **単軸の定量比較・ランキング** → `bars`（`quantitative-comparison` / `single-axis-quantity`）。**時系列や加算的ブリッジは waterfall / slope へ** — 最大10行、主題の1本だけ teal ハイライト。
 - **主要指標の強調（リング型）** → `kpi`（`headline-metrics` / `metric-highlight`）。**複数系列の時系列比較は slope へ** — 最大5個（1行3個まで）。
 
-### matrix（二軸分類・交差比較）
+### matrix（二軸分類・交差比較）@2
 
 ```json
 {
@@ -301,7 +301,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### flow（順序・有向遷移・分岐）
+### flow（順序・有向遷移・分岐）@2
 
 前向き・fan 3以下・レール3以下・行予算28以下を守る。超える構造は受理されないため、matrix か文章へ縮退する。
 
@@ -335,9 +335,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### enumeration（並列列挙）
+### enumeration（並列列挙）@2
 
-2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、全 item に `title` が必要。`description` は任意補足で、全 item で省略するか全 item で指定する（歯抜け不可）。list（縦）は説明をコンセプトの右、columns（横）は下に置く。
+2〜6項目（`presentation: "columns"` は2〜4）。`blockContent: "number"` では番号はレンダラが採番し、全 item に `title` が必要。`description` は任意補足で、全 item で省略するか全 item で指定する（歯抜け不可）。`descriptionEmphasis` で文中強調（`dg-em`）対象を1フレーズ指定できる（1 item につき最大1個）。list（縦）は説明をコンセプトの右、columns（横）は下に置く。
 
 ```json
 {
@@ -356,7 +356,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
         "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
         "enumeration": {
           "items": [
-            {"id": "e-a", "title": "権限モデル", "description": ["役割ごとの操作範囲を見直す"]},
+            {"id": "e-a", "title": "福利厚生", "description": ["従業員向けに無料のフィットネス利用券を配布する"], "descriptionEmphasis": "無料のフィットネス利用券"},
             {"id": "e-b", "title": "監査ログ", "description": ["必要な保持期間を決める"]},
             {"id": "e-c", "title": "通知チャネル", "description": ["通知経路を統合する"]}
           ],
@@ -369,7 +369,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### chevron（線形順序）
+### chevron（線形順序）@2
 
 2〜6段（`orientation: "horizontal"` は3〜6段）。`blockContent: "number"` では番号をレンダラが採番し、全 step に `title` が必要。`description` は任意補足で全有/全無。縦型は説明をコンセプトの右、横型は下に置く。`loop: true` は縦型のみで `closed-loop` capability と併用し、レールはコンセプト列だけに沿わせる。縦型 `description` は1〜3行・各40字以内、横型は1〜2行・各30字以内。
 
@@ -407,7 +407,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 横型 number モードも番号＋`title`を図形内に置き、説明は下へ分離する。全 step から`description`を省略した場合は、空の説明欄を生成せずコンセプトだけを表示する。
 
-### pyramid（優先階層）
+### pyramid（優先階層）@2
 
 3〜4層（上から下＝頂点から基盤）。`label` 12字以内、`sub` 30字以内。頂点層のみ強調面。幅は `ve-pyramid-count-{3,4}` と `ve-pyramid-index-{n}` の列挙クラスで割り当てる。
 
@@ -440,7 +440,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### stairs（成熟度階段）
+### stairs（成熟度階段）@2
 
 3〜5段（低い段から高い段）。`label` 14字以内。`highlightId` で現在地段を指定する（省略可）。到達済み=紺、現在地=teal＋`← 現在地`、未到達=neutral。高さは `ve-stairs-count-{3..5}` と `ve-stairs-index-{n}` の列挙クラスで割り当てる。
 
@@ -475,7 +475,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### logic-tree（構成の分解）
+### logic-tree（構成の分解）@2
 
 2〜4枝。`root.label` 20字以内、`branch.label` 16字以内、`leaf.text` 40字以内。各枝の leaf は0〜2件。深さは root → branch → leaf の2段固定。接続線はレンダラ所有（grid＋境界線、`data-ve-from/to` 禁止）。狭い画面では root 上・枝下の縦積み（DOM 順序は root が先）。
 
@@ -508,7 +508,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### waterfall（加算的ブリッジ）
+### waterfall（加算的ブリッジ）@2
 
 `displayPrecision`・`title`・`unitLabel`・`axisTicks` は必須。数値は `int | Decimal` のみ（`build_explainer.py` は `parse_float=Decimal`）。`valueText` は不透明な表示テキストで、`value`/`delta` との照合はしない。`steps` は 1〜5 件（期首・期末込みで最大 7 本）。`axisTicks` の各値は 0..v_max の数値文字列であること。v2 は renderer-SVG（Y 軸・目盛・点線コネクタ・期首/期末塗り棒）で、幾何は整数座標へ丸める。
 
@@ -543,8 +543,9 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### slope（2時点比較）
+### slope（2時点比較）@2
 
+`title`・`unitLabel` は必須。`highlightId` で注目系列を1本指定できる（省略可）。
 ```json
 {
   "schemaVersion": 1,
@@ -563,6 +564,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
         "title": "主要指標",
         "axes": {"fromLabel": "開始", "toLabel": "終了"},
         "unitLabel": "件",
+        "highlightId": "sl-1",
         "items": [{
           "id": "sl-1", "label": "売上", "fromValue": 10, "toValue": 40,
           "fromValueText": "10件", "toValueText": "40件", "tone": "positive"
@@ -573,7 +575,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### evidence-map（論拠地図）
+### evidence-map（論拠地図）@2
 
 ```json
 {
@@ -604,7 +606,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### bars（単軸定量比較）
+### bars（単軸定量比較）@2
 
 `title`・`unitLabel` は必須。`items` は 1〜10 件。`highlightId` で主題の1本だけ teal にできる（省略可）。`value` は数値文字列、`valueText` は表示用。
 
@@ -636,7 +638,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 }
 ```
 
-### kpi（主要指標・リング型）
+### kpi（主要指標・リング型）@2
 
 `items` は 1〜5 件（1行3個まで）。`value`・`unit`・`caption` を各 item に置く。
 

@@ -359,6 +359,51 @@ class DocumentationConsistencyTest(unittest.TestCase):
         self.assertIn("--dg-primary", ds)
         self.assertIn("dg-em", ds)
 
+    _TWELVE_COMPONENTS = (
+        "matrix",
+        "flow",
+        "enumeration",
+        "chevron",
+        "pyramid",
+        "stairs",
+        "logic-tree",
+        "waterfall",
+        "slope",
+        "evidence-map",
+        "bars",
+        "kpi",
+    )
+
+    def test_patterns_canonical_assembly_blocks_declare_version_two(self) -> None:
+        seen: set[str] = set()
+        for raw in self._assembly_blocks("patterns.md"):
+            for section in raw.get("sections", []):
+                if section.get("kind") != "canonical":
+                    continue
+                selection = section["ir"]["selection"]
+                comp = selection["component"]
+                self.assertEqual(selection["version"], 2, comp)
+                seen.add(comp)
+        self.assertEqual(seen, set(self._TWELVE_COMPONENTS))
+
+    def test_patterns_canonical_section_headers_mark_at2(self) -> None:
+        text = Path("../references/patterns.md").read_text(encoding="utf-8")
+        for header in (
+            "### matrix（二軸分類・交差比較）@2",
+            "### flow（順序・有向遷移・分岐）@2",
+            "### enumeration（並列列挙）@2",
+            "### chevron（線形順序）@2",
+            "### pyramid（優先階層）@2",
+            "### stairs（成熟度階段）@2",
+            "### logic-tree（構成の分解）@2",
+            "### waterfall（加算的ブリッジ）@2",
+            "### slope（2時点比較）@2",
+            "### evidence-map（論拠地図）@2",
+            "### bars（単軸定量比較）@2",
+            "### kpi（主要指標・リング型）@2",
+        ):
+            self.assertIn(header, text, header)
+
 
 class FlowTopologyContractTest(unittest.TestCase):
     def test_backward_edge_rejected(self) -> None:
