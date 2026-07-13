@@ -123,7 +123,7 @@ The single-width principle is amended honestly rather than silently diverging:
 
 ## Trade-offs and Risks
 
-- **Sparse legacy flows widen too.** A figure-wrapped 2–3 node legacy flow stretches across the widened card (flow nodes flex-grow). Sparse matrix stretching was eliminated by the content-width table rule above; the flow case remains accepted pending visual QA, with the opt-in `data-wide` attribute as the fallback (explicitly out of scope for this change).
+- **Sparse legacy flows widen too.** A figure-wrapped 2–3 node legacy flow stretches across the widened card (flow nodes flex-grow). Sparse matrix stretching was eliminated by the column-width table cap above; the flow case remains accepted pending visual QA, with the opt-in `data-wide` attribute as the fallback (explicitly out of scope for this change).
 - **`:has()` dependency (legacy route only)** degrades to the current narrative width on old browsers; no content is lost. The component-route rule is kept in a separate selector list precisely so this degradation cannot spread to it.
 - **Cross-boundary `max-width` override** slightly blurs skeleton/component ownership; accepted as a documented, closed exception in preference to editing component CSS and invalidating registry hashes.
 - **Breakpoint inconsistency (skeleton 42rem vs components 40rem)** predates this change and is left as-is; unifying it would require touching all component assets and registry hashes for no user-visible gain.
