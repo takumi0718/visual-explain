@@ -64,7 +64,7 @@ Two **separate** rules (they must not share one selector list: an unsupported `:
     margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2));
     max-width: none;
   }
-  .figure .matrix table, figure[data-ve-component="matrix"] table { width: auto; margin-inline: auto; }
+  .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
 }
 ```
 
@@ -73,7 +73,7 @@ Two **separate** rules (they must not share one selector list: an unsupported `:
 - Total widened width is `45rem + min(20rem, 100vw − 60rem)` ≤ `100vw − 15rem`, so no page-level horizontal overflow can occur even with classic (always-visible) scrollbars.
 - **Legacy route:** the whole `.figure` surface card widens, because its own `overflow: auto` would clip a widened child. The figcaption sits inside the card and moves with it; the card boundary provides its own alignment context. Browsers without `:has()` keep the figure at narrative width — a fail-safe degradation.
 - **Component route:** only the `.ve-matrix-scroll` container widens. `max-width: none` is required because the component sheet declares `max-width: 100%`, which would otherwise re-clamp the width and turn the negative margins into a leftward shift instead of a symmetric widening. The skeleton selector (specificity 0,2,1) deliberately overrides the component's declaration (0,2,0); this cross-boundary override is documented in the ownership amendment below. Captions, summaries, and notes keep `max-width: var(--w-narrative)` and stay flush with the body-text edge.
-- **Matrix tables are content-width inside the breakout** (user decision after QA review of the sparse 2×2 case): within the 60rem gate, `.figure .matrix table` and `figure[data-ve-component="matrix"] table` get `width: auto; margin-inline: auto`, so a sparse table sizes to its content (respecting the component `min-width` floors) and centers on the column axis instead of stretching to ≈1300px. A dense table wider than the container still overflows into its scroll container. Known cosmetic consequence: for sparse tables the width snaps from full-column to content-width when crossing the 960px gate; judged in QA item 4.
+- **Matrix tables cap at column width inside the breakout** (user decision, refined after browser QA): within the 60rem gate, `.figure .matrix table` and `figure[data-ve-component="matrix"] table` get `width: min(var(--w-narrative), 100%); margin-inline: auto`, so a sparse table stretches to exactly the narrative column width (edges flush with body text, centered on the axis) instead of the ≈1300px container, while a table whose content needs more grows symmetrically beyond and overflows into its scroll container. The `100%` term keeps the rule continuous at the 960px gate on both routes (the legacy card's padding makes its container narrower than `--w-narrative` near the gate), eliminating the width snap previously documented here.
 Effective figure widths with both mechanisms active: ≈1160px on a 1440px screen, ≈1300px on a 1920px screen.
 
 ### Mechanism 3 — mobile hardening
@@ -117,7 +117,7 @@ The single-width principle is amended honestly rather than silently diverging:
 3. Resize continuously from 900px to 1920px and confirm eligible figures widen smoothly from the 960px knee with no discontinuous jump.
 4. With classic (always-visible) scrollbars forced, confirm no page-level horizontal scrollbar appears at any width ≥ 960px.
 5. Confirm component-route matrix captions stay flush with the body-text edge while the scroll canvas widens.
-6. Inspect a sparse component matrix (2×2) at 1920px: its table stays content-width (≥ the component's `min-width` floor) and centered on the column axis; it must NOT stretch to the widened container. Also resize across 960px and judge the sparse table's width snap acceptable.
+6. Inspect a sparse component matrix (2×2) at 1920px: its table is exactly the narrative column width, edges flush with the body text, centered on the axis — not stretched to the widened container and not narrower than the column. Resize across 960px: table width changes continuously, no snap.
 7. Check browser zoom at 200% and 400% on a 1280px window: content reflows without page-level horizontal scrolling and text scales as expected.
 8. This QA pass may be combined with the still-open browser visual QA for the enumeration/chevron description-layout change.
 
