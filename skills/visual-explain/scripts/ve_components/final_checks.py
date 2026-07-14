@@ -63,4 +63,8 @@ def check_manifest_to_dom(content: str, slots: dict[str, str], expected) -> list
                 or f'data-ve-compat-reason="{record.reason}"' not in content):
             diagnostics.append(Diagnostic(MISSING_PROVENANCE,
                                           f"compatibility '{record.instance_id}' の provenance が最終DOMにありません"))
+    for record in expected.narrative:
+        if f'data-ve-instance="{record.instance_id}"' not in content:
+            diagnostics.append(Diagnostic(MISSING_PROVENANCE,
+                                          f"narrative '{record.instance_id}' が最終DOMにありません"))
     return diagnostics

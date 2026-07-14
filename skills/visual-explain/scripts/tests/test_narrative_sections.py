@@ -1,18 +1,21 @@
 import json
+import subprocess
+import tempfile
 from pathlib import Path
-from unittest import mock
 
 import pytest
 
-import build_explainer
 from build_explainer import build_document
 from ve_components.assembly import (
     compose_sections,
     process_canonical_section,
+    process_compatibility_section,
     process_narrative_section,
 )
+from ve_components.checker import check_final_document, validate_final_provenance
 from ve_components.diagnostics import ContractError
-from ve_components.model import NarrativeSection
+from ve_components.flatten import flatten_document
+from ve_components.model import CanonicalSection, NarrativeSection
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
 from ve_components.validation import validate_assembly
@@ -23,6 +26,7 @@ SKELETON = (SKILL_DIR / "assets" / "skeleton.html").read_text("utf-8")
 COMPONENTS_DIR = SKILL_DIR / "assets" / "components"
 REGISTRY = load_registry(COMPONENTS_DIR / "registry.json")
 TESTS_DIR = SKILL_DIR / "scripts" / "tests"
+CHECK = SKILL_DIR / "scripts" / "check.sh"
 
 BASE = {"schemaVersion": 1,
         "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。"}}
@@ -90,12 +94,7 @@ def _mixed_narrative_assembly():
 
 def test_build_document_orders_narrative_and_canonical_sections():
     raw = _mixed_narrative_assembly()
-    # The final checker (Task 3) does not yet recognize the narrative
-    # section-kind at the provenance layer; bypass just that gate here so this
-    # test isolates build_document's own composition/dispatch route (this
-    # task's scope) rather than Task 3's not-yet-built work.
-    with mock.patch.object(build_explainer, "check_final_document", return_value=[]):
-        doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
     i_first = doc.index('data-ve-instance="sec-first-screen"')
     i_canonical = doc.index('data-ve-instance="sec-enum-list"')
     i_closing = doc.index('data-ve-instance="sec-closing"')
@@ -113,3 +112,61 @@ def test_compose_sections_rejects_duplicate_id_across_narrative_and_canonical():
     with pytest.raises(ContractError) as exc:
         compose_sections([rendered, narrative])
     assert "duplicate_section_id" in exc.value.codes
+
+
+def test_final_provenance_accepts_narrative_with_instance():
+    content = ('<section data-ve-section-kind="narrative"'
+               ' data-ve-instance="sec-intro"><h1>結論</h1></section>')
+    assert validate_final_provenance(content) == []
+
+
+def test_final_provenance_rejects_narrative_without_instance():
+    content = '<section data-ve-section-kind="narrative"><h1>結論</h1></section>'
+    diags = validate_final_provenance(content)
+    assert any(d.code == "missing_provenance" for d in diags)
+
+
+def _build_composition_and_document(raw):
+    # Mirrors build_document's own dispatch/compose/flatten steps, but keeps
+    # the intermediate CompositionResult around so the test can pass it as
+    # ``expected`` to check_final_document directly (build_document only
+    # returns the final HTML string).
+    request = validate_assembly(raw)
+    items = []
+    for section in request.sections:
+        if isinstance(section, CanonicalSection):
+            items.append(process_canonical_section(section, REGISTRY, TRUSTED_RENDERERS))
+        elif isinstance(section, NarrativeSection):
+            items.append(process_narrative_section(section))
+        else:
+            items.append(process_compatibility_section(section))
+    composition = compose_sections(items)
+    document = flatten_document(composition, SKELETON, COMPONENTS_DIR, request.document.title)
+    return composition, document
+
+
+def test_manifest_to_dom_flags_narrative_section_removed_from_final_dom():
+    raw = json.loads((TESTS_DIR / "component-valid-narrative-mixed.json").read_text("utf-8"))
+    composition, document = _build_composition_and_document(raw)
+    # Sanity: the untouched build passes the full four-layer checker.
+    assert check_final_document(document, SKELETON, REGISTRY, expected=composition,
+                                 components_dir=COMPONENTS_DIR) == []
+    removed = composition.narrative[-1]
+    mutated = document.replace(removed.markup, "")
+    assert mutated != document
+    diags = check_final_document(mutated, SKELETON, REGISTRY, expected=composition,
+                                  components_dir=COMPONENTS_DIR)
+    assert any(d.code == "missing_provenance" for d in diags)
+
+
+def test_narrative_mixed_fixture_passes_check_sh():
+    raw = json.loads((TESTS_DIR / "component-valid-narrative-mixed.json").read_text("utf-8"))
+    document = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    out = Path(tempfile.gettempdir()) / "ve-narrative-mixed-doc.html"
+    out.write_text(document, "utf-8")
+    try:
+        proc = subprocess.run(["bash", str(CHECK), str(out)], capture_output=True, text=True)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "PASS" in proc.stdout + proc.stderr
+    finally:
+        out.unlink(missing_ok=True)

@@ -166,6 +166,7 @@ def _expected(manifest):
     class Expected:
         manifests = (manifest,)
         compatibility = ()
+        narrative = ()
     return Expected()
 
 
