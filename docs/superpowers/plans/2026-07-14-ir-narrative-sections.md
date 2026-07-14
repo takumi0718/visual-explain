@@ -413,13 +413,13 @@ git commit -m "docs(ve): make IR build the sole primary authoring route; demote 
 | --- | --- |
 | `.first-screen`（結論 + あなたが決めること + 条件2件） | narrative（markup は原文どおり） |
 | `current-problem`（散文 + certainty + source-note） | narrative（原文どおり） |
-| `approval-map` の `.layers` 図 | canonical `flow@2`。nodes = contract-exception / price-change / billing-calculation / notification-audience / joint-approval / limited-release / rollback-condition（label は原文どおり）。groups = 根拠 / 顧客影響 / 共同承認 / 公開と保護（lane と同じ割当）。edges = 原 `data-connect` の 6 本 + `limited-release -> rollback-condition`（relation `directed-transition`、label「監視」。孤立ノード回避のための架空シナリオへの追記であり、コミットメッセージに明記する）。caption / certainty / sources / accessibility は原文の周辺記述から埋める |
+| `approval-map` の `.layers` 図 | compatibility（markup 原文どおり、provenance = `legacy-html-insertion` / `unmigrated-format` / `layers`）。**実行時決定（2026-07-14 ユーザー承認）**: 原図は `契約例外` と `料金改定案` の二起点 DAG で、単一起点制約の `flow@2` へは因果の捏造なしに変換できないため、原文完全保持を優先して compat 維持とする。当初計画の rollback-condition への辺追加も不要となり撤回 |
 | `approval-map` の見出しと前後の散文 | narrative（図の前後で分割してよい。読み順維持） |
 | `before-after` の `.compare` | compatibility（markup 原文どおり、provenance = `legacy-html-insertion` / `unmigrated-format` / `compare`）。見出しと散文は narrative |
 | `alternatives` の `.matrix` テーブル | canonical `matrix@2`（rows / columns / cells へ原文の全セル文言を移す）。見出しと散文は narrative |
 | `.closing-section`（リスクと弱い前提 / 不確かな点、`.ask` ブロック含む） | narrative（原文どおり） |
 
-可視テキストは全て原文どおり保持する（唯一の例外は上記 rollback-condition への辺追加）。canonical 化で機械が生成する枠（figcaption / notes）と原文の重複が出る場合は、narrative 側から重複文を落とす方を選ぶ。
+可視テキストは全て原文どおり保持する（例外なし）。canonical 化で機械が生成する枠（figcaption / notes）と原文の重複が出る場合は、narrative 側から重複文を落とす方を選ぶ。
 
 - [ ] **Step 2: ビルドして example を置換**
 
@@ -444,7 +444,7 @@ Expected: PASS / 全緑。加えて生成 HTML をブラウザで開き、第一
 
 ```bash
 git add skills/visual-explain/examples/
-git commit -m "feat(ve): regenerate example-proposal from assembly IR (adds rollback monitoring edge to fictional flow)"
+git commit -m "feat(ve): regenerate example-proposal from assembly IR (approval-map stays compatibility per two-source DAG decision)"
 ```
 
 ---
