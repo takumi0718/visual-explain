@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 
 from ve_components.diagnostics import ContractError
+from ve_components.model import NarrativeSection
 from ve_components.validation import validate_assembly, validate_canonical_section
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -332,6 +333,9 @@ class DocumentationConsistencyTest(unittest.TestCase):
                     self.assertEqual(ir.selection.version, components[ir.selection.component]["contractVersion"])
                     self.assertEqual(ir.relationship.kind, components[ir.selection.component]["relationshipKind"])
                     self.assertTrue(set(ir.relationship.capabilities) <= all_caps)
+                elif isinstance(section, NarrativeSection):
+                    # narrative sections carry no provenance/vocabulary tokens to check.
+                    continue
                 else:
                     self.assertIn(section.provenance.source, sources)
                     self.assertIn(section.provenance.reason, reasons)

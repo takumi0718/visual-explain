@@ -18,6 +18,9 @@ MISSING_REQUIRED_SLOT = "missing_required_slot"
 FORBIDDEN_AUTHORING_FIELD = "forbidden_authoring_field"
 INVALID_COMPATIBILITY_PROVENANCE = "invalid_compatibility_provenance"
 
+# Narrative section codes.
+INVALID_NARRATIVE_SECTION = "invalid_narrative_section"
+
 # Task 2 — selection codes.
 NO_MATCHING_COMPONENT = "no_matching_component"
 SELECTION_OUTSIDE_CANDIDATE_SET = "selection_outside_candidate_set"
@@ -101,6 +104,7 @@ ALL_CODES = frozenset({
     MISSING_REQUIRED_SLOT,
     FORBIDDEN_AUTHORING_FIELD,
     INVALID_COMPATIBILITY_PROVENANCE,
+    INVALID_NARRATIVE_SECTION,
     NO_MATCHING_COMPONENT,
     SELECTION_OUTSIDE_CANDIDATE_SET,
     SELECTION_REASON_MISMATCH,

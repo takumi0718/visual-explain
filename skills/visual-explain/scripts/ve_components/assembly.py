@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 from .checker import extract_flow_dom, validate_content_markup, RENDERER_SVG_ALLOWLIST
 from .diagnostics import DUPLICATE_SECTION_ID, RENDERER_FAILURE, ContractError, Diagnostic
-from .model import CanonicalSection, CompatibilitySection, RenderManifest
+from .model import CanonicalSection, CompatibilitySection, NarrativeSection, RenderManifest
 from .registry import (
     AssetDefinition,
     Registry,
@@ -50,12 +50,19 @@ class WrappedCompatibility:
 
 
 @dataclass(frozen=True)
+class WrappedNarrative:
+    instance_id: str
+    markup: str
+
+
+@dataclass(frozen=True)
 class CompositionResult:
     sections_markup: tuple[str, ...]
     style_assets: tuple[AssetRef, ...]
     script_assets: tuple[AssetRef, ...]
     manifests: tuple[RenderManifest, ...]
     compatibility: tuple[WrappedCompatibility, ...]
+    narrative: tuple[WrappedNarrative, ...]
 
 
 def _attr(value: str) -> str:
@@ -197,6 +204,17 @@ def process_compatibility_section(section: CompatibilitySection) -> WrappedCompa
     )
 
 
+def process_narrative_section(section: NarrativeSection) -> WrappedNarrative:
+    diagnostics = validate_content_markup(section.markup)
+    if diagnostics:
+        raise ContractError(diagnostics)
+    wrapper = (
+        f'<section data-ve-section-kind="narrative"'
+        f' data-ve-instance="{_attr(section.id)}">\n{section.markup}\n</section>'
+    )
+    return WrappedNarrative(instance_id=section.id, markup=wrapper)
+
+
 def compose_sections(items) -> CompositionResult:
     """Order-preserving composition with asset deduplication only."""
     markup: list[str] = []
@@ -204,6 +222,7 @@ def compose_sections(items) -> CompositionResult:
     script_assets: list[AssetRef] = []
     manifests: list[RenderManifest] = []
     compatibility: list[WrappedCompatibility] = []
+    narrative: list[WrappedNarrative] = []
     seen_instances: set[str] = set()
     seen_styles: set[tuple] = set()
     seen_scripts: set[tuple] = set()
@@ -224,10 +243,14 @@ def compose_sections(items) -> CompositionResult:
                 if key not in seen_scripts:
                     seen_scripts.add(key)
                     script_assets.append(ref)
-        else:
+        elif isinstance(item, WrappedCompatibility):
             compatibility.append(item)
+        elif isinstance(item, WrappedNarrative):
+            narrative.append(item)
+        else:
+            raise TypeError(f"compose_sections: unrecognized item type {type(item).__name__}")
     return CompositionResult(
         sections_markup=tuple(markup), style_assets=tuple(style_assets),
         script_assets=tuple(script_assets), manifests=tuple(manifests),
-        compatibility=tuple(compatibility),
+        compatibility=tuple(compatibility), narrative=tuple(narrative),
     )

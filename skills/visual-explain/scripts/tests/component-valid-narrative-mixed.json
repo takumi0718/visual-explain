@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "narrative-mixed-demo",
+    "title": "narrative混在: 3施策の同時実施",
+    "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。"
+  },
+  "sections": [
+    {
+      "kind": "narrative",
+      "id": "sec-first-screen",
+      "markup": "<section class=\"first-screen\"><h1>3つの並列施策を同時に進める</h1><p class=\"subtitle decision\"><strong>あなたが決めること:</strong> 福利厚生・監査ログ・通知チャネルの3施策を同時に進めるか、優先順位をつけて順に進めるか決めます。</p></section>"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-enum-list",
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": ["parallel-itemization"]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 2,
+          "matchedCapabilities": ["parallel-itemization"]
+        },
+        "caption": "検討対象の並列項目",
+        "certainty": [
+          {"id": "cert-enum-confirmed", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}
+        ],
+        "sources": [
+          {"id": "src-notes", "label": "議事録 2026-06", "detail": "並列検討の記録。"}
+        ],
+        "accessibility": {
+          "label": "並列項目の列挙",
+          "summary": "番号付きの縦リストで3項目を並列に示す。"
+        },
+        "enumeration": {
+          "items": [
+            {
+              "id": "item-a",
+              "title": "福利厚生",
+              "description": ["従業員向けに無料のフィットネス利用券を配布する"],
+              "descriptionEmphasis": "無料のフィットネス利用券"
+            },
+            {"id": "item-b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]},
+            {"id": "item-c", "title": "通知チャネル", "description": ["通知経路を一つに統合する"]}
+          ],
+          "presentation": "list",
+          "blockContent": "number"
+        }
+      }
+    },
+    {
+      "kind": "compatibility",
+      "id": "sec-mixed-legacy",
+      "markup": "<div class=\"layers\" aria-label=\"レイヤ構成\"><div class=\"lane\"><span class=\"lane-label\">入力</span><div class=\"lane-nodes\"><div class=\"flow-node\">受付</div></div></div><div class=\"lane\"><span class=\"lane-label\">処理</span><div class=\"lane-nodes\"><div class=\"flow-node\">検証</div></div></div></div>",
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "unmigrated-format",
+        "format": "layers"
+      }
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-closing",
+      "markup": "<section class=\"closing-section\"><h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p></section>"
+    }
+  ]
+}

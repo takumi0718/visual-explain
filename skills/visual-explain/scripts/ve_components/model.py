@@ -428,10 +428,16 @@ class CompatibilitySection:
 
 
 @dataclass(frozen=True)
+class NarrativeSection:
+    id: str
+    markup: str
+
+
+@dataclass(frozen=True)
 class AssemblyRequest:
     schema_version: int
     document: DocumentMetadata
-    sections: tuple[object, ...]  # CanonicalSection | CompatibilitySection, order preserved
+    sections: tuple[object, ...]  # CanonicalSection | NarrativeSection | CompatibilitySection, order preserved
 
 
 # ---------------------------------------------------------------------------

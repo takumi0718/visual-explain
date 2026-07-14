@@ -21,6 +21,7 @@ from .diagnostics import (
     INVALID_COMPONENT_PAYLOAD,
     INVALID_FLOW_EDGE,
     INVALID_MATRIX_REFERENCE,
+    INVALID_NARRATIVE_SECTION,
     INVALID_RELATIONSHIP_DECLARATION,
     LOGIC_TREE_STRUCTURE_VIOLATION,
     MATRIX_CONCEPT_LENGTH,
@@ -66,6 +67,7 @@ from .model import (
     EvidenceConclusion,
     EvidenceItem,
     EvidenceMapPayload,
+    NarrativeSection,
     SlopeAxes,
     SlopeItem,
     SlopePayload,
@@ -167,6 +169,7 @@ _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
 _PROVENANCE_KEYS = {"source", "reason", "format"}
 _CANONICAL_SECTION_KEYS = {"kind", "ir"}
+_NARRATIVE_SECTION_KEYS = {"kind", "id", "markup"}
 
 
 def _is_int(value: object) -> bool:
@@ -1985,10 +1988,33 @@ def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids
             col.add(DUPLICATE_SEMANTIC_ID, f"section id '{ir.id}' が重複しています", path)
         seen_ids.add(ir.id)
         return CanonicalSection(ir=ir)
+    if kind == "narrative":
+        return _validate_narrative_section(raw, path, col, seen_ids)
     if kind == "compatibility":
         return _validate_compatibility_section(raw, path, col, seen_ids)
     col.add(INVALID_COMPONENT_PAYLOAD, f"未知の section.kind '{kind}'", path)
     return None
+
+
+def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
+    # Narrative accepts only id and markup. Provenance, relationship, selection,
+    # or asset fields are authoring violations.
+    before = len(col.diagnostics)
+    for key in raw:
+        if key not in _NARRATIVE_SECTION_KEYS:
+            col.add(INVALID_NARRATIVE_SECTION, f"narrative に不正なフィールド '{key}'", path)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_NARRATIVE_SECTION, "narrative.id は空にできません", path)
+    if not _nonblank_str(raw.get("markup")):
+        col.add(INVALID_NARRATIVE_SECTION, "narrative.markup は空にできません", path)
+    if len(col.diagnostics) > before:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return NarrativeSection(id=sid, markup=raw["markup"])
 
 
 def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):

@@ -470,6 +470,9 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
             reason = _ATTR_RE("data-ve-compat-reason").search(attrs)
             if src is None or src.group(1) not in _COMPAT_SOURCES or reason is None or reason.group(1) not in _COMPAT_REASONS:
                 diagnostics.append(Diagnostic(MISSING_PROVENANCE, "compatibility セクションに正しい provenance がありません"))
+        elif kind == "narrative":
+            if not _ATTR_RE("data-ve-instance").search(attrs):
+                diagnostics.append(Diagnostic(MISSING_PROVENANCE, "narrative セクションに instance がありません"))
         else:
             diagnostics.append(Diagnostic(MISSING_PROVENANCE, f"未知の section-kind '{kind}'"))
     return diagnostics

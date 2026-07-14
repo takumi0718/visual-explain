@@ -43,8 +43,8 @@ license: MIT
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
 4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
-5. **構成する:** `assets/skeleton.html` を新しい資料へコピーし、`<!-- TITLE:BEGIN -->` と `<!-- TITLE:END -->` の間には非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ置く。本文は `<!-- CONTENT:BEGIN -->` と `<!-- CONTENT:END -->` の間だけを編集する。ほかの領域は1バイトも変更しない。結論先行、必要時の用語表、型ごとの本文、必須の末尾節を入れる。描画規則は [references/design-system.md](references/design-system.md) に従う。
-6. **機械チェックする:** `scripts/check.sh <絶対パス> --type <proposal|system|research>` を実行する。FAIL は修正して再実行し、成功するまで次へ進まない。
+5. **構成する:** assembly IR（JSON）を書く。`document`（id / title / summary）と `sections[]` に、散文（第一画面、主張と根拠、末尾節）は `kind: "narrative"`、図は `kind: "canonical"` を読み順で置き、`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し・段落・リスト・`details`・`.ask` など。`style` / `script` / `meta` / `iframe` / `form` / `link` / `base` / `object` / `embed`、インライン `style` 属性、`on*` イベント属性、外部 URL は禁止）で、結論先行、必要時の用語表、型ごとの本文、必須の末尾節を入れる。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
+6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
 8. **保存する:** 下の保存規約に従い、衝突を避けて資料を保存する。
 9. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
@@ -153,7 +153,7 @@ enumeration / chevron ではコンセプト（`label` または番号＋必須`t
 2. **レジストリで発見する** — 宣言した関係とケイパビリティで候補を絞る（集合包含のみ、ランキングなし）。
 3. **決定的な候補から明示選択する** — `selection.component` と `version` を候補集合から明示的に選ぶ。
 4. **一致ケイパビリティの理由を記録する** — `selection.matchedCapabilities` は宣言とレジストリの両方に存在する必要がある。
-5. **ビルドして検証する** — `python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>` で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書）を検証する。
+5. **ビルドして検証する** — 散文は同じ assembly 内に `kind: "narrative"` セクションとして共存させる。`python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>`（`--type` 不要、経路自動検出）で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書）を検証する。
 
 matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
 
@@ -167,6 +167,8 @@ matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/eviden
 - 制御された**コンテンツスロットにのみ**入り、style/script/link 注入、インライン実行、外部依存、固定領域マーカーを含められない。既存のコンテンツ規則と最終検査規則はそのまま適用され、`check.sh` を通過する。
 
 `layers`・`compare`・`timeline`・`terms`・`details`・`stepper` は引き続き旧ルールの HTML マークアップとして互換節から始まる。`bars` と `kpi` は canonical に昇格済みであり、通常経路は canonical IR である（legacy HTML 節は互換用）。互換は決して canonical 成功ではなく、provenance の `reason` で区別される。
+
+skeleton 直編集（`assets/skeleton.html` をコピーして CONTENT を手書きする方式）は正規経路ではない。`build_explainer.py` を実行できない環境での最終手段としてだけ許され、その場合も `scripts/check.sh <絶対パス> --type <proposal|system|research>` を通し、資料が canonical 成功ではないことを利用者に報告する。同梱の `examples/example-proposal.html` は `examples/example-proposal.assembly.json` からの IR ビルド生成物であり、直編集の見本ではない。
 
 Attribution: visual-explainer (MIT) の固定図フォーマット、デザイン規則、目視確認の設計要素を参照した。
 Attribution: obra/superpowers 由来の提案ゲートと承認後ワークフローの設計要素を参照した。
