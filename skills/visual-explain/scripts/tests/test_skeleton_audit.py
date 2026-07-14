@@ -212,6 +212,21 @@ class ResponsiveLayoutTest(unittest.TestCase):
         # 張り出しの適格列挙は2ルールで閉じる（値の再利用による黙った拡張を拒否する）
         self.assertEqual(SKELETON.count(_BREAKOUT_MARGIN), 2)
 
+    def test_component_css_must_not_fight_breakout(self):
+        # component CSS は skeleton の後に注入され同点なら後勝ちするため、
+        # 二層幅の張り出しが設定するプロパティ（scroll の max-width、table の
+        # 幅キャップと中央寄せ）を弱い値で再宣言すると張り出しが壊れる。
+        matrix_css = COMPONENT_CSS[0]
+        scroll_rule = re.search(
+            r'figure\[data-ve-component="matrix"\] \.ve-matrix-scroll \{([^}]*)\}',
+            matrix_css).group(1)
+        self.assertNotIn("max-width", scroll_rule)
+        table_rule = re.search(
+            r'figure\[data-ve-component="matrix"\] table \{([^}]*)\}',
+            matrix_css).group(1)
+        self.assertIn("width: min(var(--w-narrative), 100%)", table_rule)
+        self.assertIn("margin-inline: auto", table_rule)
+
     def test_ask_options_stack_on_mobile(self):
         mobile = SKELETON.split("@media (max-width: 42rem) {", 1)[1]
         self.assertIn(
