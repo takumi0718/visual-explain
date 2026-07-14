@@ -723,7 +723,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 
 ### narrative + mixed（narrative ＋ canonical ＋ compatibility 三種混在）
 
-`kind: "narrative"` は第一画面や末尾節などの散文を id + markup だけで宣言する（`provenance` を持たない。持たせると `invalid_narrative_section` で拒否される）。markup は限定 HTML（見出し・段落・リスト・`details`・`.ask` など）で、`style` / `script` / `meta` / `iframe` / `form` は禁止される。1つの assembly の中で narrative・canonical・compatibility を読み順で並べられる。
+`kind: "narrative"` は第一画面や末尾節などの散文を id + markup だけで宣言する（`provenance` を持たない。持たせると `invalid_narrative_section` で拒否される）。markup は限定 HTML（見出し・段落・リスト・`details`・`.ask` など）で、`style` / `script` / `meta` / `iframe` / `form` / `link` / `base` / `object` / `embed`、インライン `style` 属性、`on*` イベント属性、外部 URL は禁止される。1つの assembly の中で narrative・canonical・compatibility を読み順で並べられる。
 
 ```json
 {
