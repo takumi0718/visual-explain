@@ -21,7 +21,8 @@
         "certainty",
         "sources",
         "presentation",
-        "highlightId"
+        "highlightId",
+        "showColumnHeaders"
       ],
       "behavior": "静的な意味づけされた表または概念グリッドを描画する。",
       "slots": [

@@ -85,6 +85,7 @@ class MatrixPayload:
     cells: tuple[MatrixCell, ...]
     highlight_id: Optional[str] = None
     presentation: str = "dense"
+    show_column_headers: bool = True
 
 
 @dataclass(frozen=True)

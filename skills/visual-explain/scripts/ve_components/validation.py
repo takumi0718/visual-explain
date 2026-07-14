@@ -132,7 +132,7 @@ _SOURCE_KEYS = {"id", "label", "detail"}
 _ACCESSIBILITY_KEYS = {"label", "summary"}
 _AXIS_KEYS = {"id", "label"}
 _CELL_KEYS = {"id", "rowId", "columnId", "content", "certaintyRef", "sourceRef"}
-_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId", "presentation"}
+_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId", "presentation", "showColumnHeaders"}
 _FLOW_KEYS = {"nodes", "edges", "groups", "startId", "readingOrder"}
 _NODE_KEYS = {"id", "label", "group"}
 _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
@@ -635,10 +635,18 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
                     f"concept セルの content は6文字以下である必要があります (found {len(cell.content)})",
                     f"{path}.cells[{i}].content",
                 )
+    show_column_headers = raw.get("showColumnHeaders", True)
+    if not isinstance(show_column_headers, bool):
+        col.add(INVALID_COMPONENT_PAYLOAD, "showColumnHeaders は真偽値である必要があります", path)
+        show_column_headers = True
+    if presentation == "concept" and show_column_headers is False:
+        col.add(INVALID_COMPONENT_PAYLOAD, "showColumnHeaders=false は dense モードでのみ有効です", path)
+        show_column_headers = True
     return MatrixPayload(
         rows=rows, columns=columns, cells=tuple(cells),
         highlight_id=highlight_id if isinstance(highlight_id, str) else None,
         presentation=presentation,
+        show_column_headers=show_column_headers,
     )
 
 

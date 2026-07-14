@@ -214,5 +214,25 @@ class MatrixBulletCellTest(unittest.TestCase):
             validate_canonical_section(raw["sections"][0]["ir"])
 
 
+class MatrixHeaderlessTest(unittest.TestCase):
+    def test_headerless_dense_omits_thead(self) -> None:
+        markup = render_fixture("component-valid-matrix-headerless").markup
+        self.assertNotIn("<thead>", markup)
+        self.assertNotIn("ve-matrix-corner", markup)
+        # 行見出しと本文セルは残る
+        self.assertIn('scope="row"', markup)
+        self.assertIn("ve-matrix-bullets", markup)
+
+    def test_headed_matrix_still_has_thead(self) -> None:
+        markup = render_fixture().markup
+        self.assertIn("<thead>", markup)
+
+    def test_headerless_concept_is_rejected(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix-concept.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["showColumnHeaders"] = False
+        with self.assertRaises(ContractError):
+            validate_canonical_section(raw["sections"][0]["ir"])
+
+
 if __name__ == "__main__":
     unittest.main()
