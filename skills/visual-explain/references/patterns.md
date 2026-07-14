@@ -1,6 +1,6 @@
 # 構成と図フォーマットの契約
 
-この資料では、固定骨格の `TITLE:BEGIN` と `TITLE:END` の間に非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ置き、本文は `CONTENT:BEGIN` と `CONTENT:END` の間だけを編集する。`{{...}}` の未解決プレースホルダーやタイトル内のマークアップは使わない。ほかの領域は1バイトも変更しない。図はここにある HTML 契約どおりに埋め、座標、独自 CSS、独自 JavaScript を追加しない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
+この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（provenance 必須）の section として一つの assembly に読み順で並べる。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
 ## 共通契約
 
@@ -716,6 +716,56 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
           "startId": "fl-a"
         }
       }
+    }
+  ]
+}
+```
+
+### narrative + mixed（narrative ＋ canonical ＋ compatibility 三種混在）
+
+`kind: "narrative"` は第一画面や末尾節などの散文を id + markup だけで宣言する（`provenance` を持たない。持たせると `invalid_narrative_section` で拒否される）。markup は限定 HTML（見出し・段落・リスト・`details`・`.ask` など）で、`style` / `script` / `meta` / `iframe` / `form` は禁止される。1つの assembly の中で narrative・canonical・compatibility を読み順で並べられる。
+
+```json
+{
+  "schemaVersion": 1,
+  "document": {"id": "doc-narrative-mixed", "title": "3施策の同時実施判断", "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。"},
+  "sections": [
+    {
+      "kind": "narrative",
+      "id": "sec-narr-first-screen",
+      "markup": "<section class=\"first-screen\"><h1>3つの並列施策を同時に進める</h1><p class=\"subtitle decision\"><strong>あなたが決めること:</strong> 福利厚生・監査ログ・通知チャネルの3施策を同時に進めるか、優先順位をつけて順に進めるか決めます。</p></section>"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-narr-enum",
+        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
+        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
+        "caption": "検討対象の並列項目",
+        "certainty": [{"id": "narr-e-cert", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}],
+        "sources": [{"id": "narr-e-src", "label": "議事録 2026-06"}],
+        "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
+        "enumeration": {
+          "items": [
+            {"id": "narr-item-a", "title": "福利厚生", "description": ["従業員向けに無料のフィットネス利用券を配布する"], "descriptionEmphasis": "無料のフィットネス利用券"},
+            {"id": "narr-item-b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]},
+            {"id": "narr-item-c", "title": "通知チャネル", "description": ["通知経路を一つに統合する"]}
+          ],
+          "presentation": "list",
+          "blockContent": "number"
+        }
+      }
+    },
+    {
+      "kind": "compatibility",
+      "id": "sec-narr-legacy",
+      "markup": "<div class=\"layers\" aria-label=\"レイヤ構成\"><div class=\"lane\"><span class=\"lane-label\">入力</span><div class=\"lane-nodes\"><div class=\"flow-node\">受付</div></div></div><div class=\"lane\"><span class=\"lane-label\">処理</span><div class=\"lane-nodes\"><div class=\"flow-node\">検証</div></div></div></div>",
+      "provenance": {"source": "legacy-html-insertion", "reason": "unmigrated-format", "format": "layers"}
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-narr-closing",
+      "markup": "<section class=\"closing-section\"><h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p></section>"
     }
   ]
 }
