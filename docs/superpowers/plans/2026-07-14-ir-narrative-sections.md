@@ -416,7 +416,7 @@ git commit -m "docs(ve): make IR build the sole primary authoring route; demote 
 | `approval-map` の `.layers` 図 | compatibility（markup 原文どおり、provenance = `legacy-html-insertion` / `unmigrated-format` / `layers`）。**実行時決定（2026-07-14 ユーザー承認）**: 原図は `契約例外` と `料金改定案` の二起点 DAG で、単一起点制約の `flow@2` へは因果の捏造なしに変換できないため、原文完全保持を優先して compat 維持とする。当初計画の rollback-condition への辺追加も不要となり撤回 |
 | `approval-map` の見出しと前後の散文 | narrative（図の前後で分割してよい。読み順維持） |
 | `before-after` の `.compare` | compatibility（markup 原文どおり、provenance = `legacy-html-insertion` / `unmigrated-format` / `compare`）。見出しと散文は narrative |
-| `alternatives` の `.matrix` テーブル | canonical `matrix@2`（rows / columns / cells へ原文の全セル文言を移す）。見出しと散文は narrative |
+| `alternatives` の `.matrix` テーブル | canonical `matrix@2`（rows / columns / cells へ原文の全セル文言を移す）。見出しと散文は narrative。**実行時決定（2026-07-14 ユーザー承認）**: 元の表の隅ヘッダ「案」は matrix@2 契約に行軸ラベルのスロットがなく構造的に落ちる。行軸の意味は matrix@2 の構造と機械生成 accessibility summary（「行が案、…」）が保持するため、サンクション済み例外として許容し PR に明記する |
 | `.closing-section`（リスクと弱い前提 / 不確かな点、`.ask` ブロック含む） | narrative（原文どおり） |
 
 可視テキストは全て原文どおり保持する（例外なし）。canonical 化で機械が生成する枠（figcaption / notes）と原文の重複が出る場合は、narrative 側から重複文を落とす方を選ぶ。
