@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "example-proposal",
+    "title": "顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。",
+    "summary": "未確認の契約例外を含む料金改定を、承認地図で照合し限定対象で段階公開するかを判断するための説明用シナリオ。"
+  },
+  "sections": [
+    {
+      "kind": "narrative",
+      "id": "sec-first-screen",
+      "markup": "<section class=\"first-screen\" aria-label=\"最初に伝えること\">\n  <h1>顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。</h1>\n  <p class=\"subtitle decision\"><strong>あなたが決めること:</strong> 未確認の契約例外を含む料金改定を、限定対象で開始するか決めます。</p>\n  <ul class=\"conditions\"><li>契約根拠・請求計算・告知対象が同じ顧客群を指していること</li><li>撤回条件と承認責任者を公開前に合意できること</li></ul>\n</section>"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-current-problem",
+      "markup": "<section aria-labelledby=\"current-problem\">\n  <h1 id=\"current-problem\">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h1>\n  <p class=\"claim\">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class=\"certainty unverified\">未確認</span></p>\n  <p class=\"evidence\">これは正規見本のための想定です。実在する料金改定の状況を示すものではありません。</p>\n  <details class=\"source-note\"><summary>出所</summary><p>この canonical proposal example の説明用シナリオ。外部の顧客、契約、請求データは使用していません。</p></details>\n</section>"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-approval-map-intro",
+      "markup": "<section aria-labelledby=\"approval-map\">\n  <h2 id=\"approval-map\">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>\n  <p class=\"claim\">承認者は、根拠と顧客影響を共同承認で照合し、限定対象で公開します。<span class=\"certainty inferred\">推論</span></p>\n</section>"
+    },
+    {
+      "kind": "compatibility",
+      "id": "sec-approval-map",
+      "markup": "<figure class=\"figure\">\n        <div class=\"layers\" data-connect=\"contract-exception->billing-calculation, price-change->billing-calculation, price-change->notification-audience, billing-calculation->joint-approval, notification-audience->joint-approval, joint-approval->limited-release\">\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">根拠</p>\n            <div class=\"lane-nodes\">\n              <div class=\"flow-node\" id=\"contract-exception\">契約例外</div>\n              <div class=\"flow-node\" id=\"price-change\">料金改定案</div>\n            </div>\n          </section>\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">顧客影響</p>\n            <div class=\"lane-nodes\">\n              <div class=\"flow-node\" id=\"billing-calculation\">請求計算と対象顧客</div>\n              <div class=\"flow-node\" id=\"notification-audience\">告知対象と文面</div>\n            </div>\n          </section>\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">共同承認</p>\n            <div class=\"lane-nodes\"><div class=\"flow-node\" id=\"joint-approval\">法務・請求・顧客対応が例外、価格、顧客群を照合</div></div>\n          </section>\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">公開と保護</p>\n            <div class=\"lane-nodes\">\n              <div class=\"flow-node\" id=\"limited-release\">限定対象で公開</div>\n              <div class=\"flow-node\" id=\"rollback-condition\">撤回条件を監視</div>\n            </div>\n          </section>\n        </div>\n        <figcaption>根拠・顧客影響・承認・撤回を一つの経路でたどれるため、部門をまたぐ不整合に気づける。</figcaption>\n      </figure>",
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "unmigrated-format",
+        "format": "layers"
+      }
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-approval-map-evidence",
+      "markup": "<p class=\"evidence\">文章だけでは、どの根拠がどの顧客影響と承認・撤回に接続するかを追いにくいため、この見本では関係を図にしています。</p>"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-before-after-intro",
+      "markup": "<section aria-labelledby=\"before-after\">\n  <h2 id=\"before-after\">判断材料を部門ごとに分けたままにせず、同じ顧客群を一つの経路で照合する</h2>\n  <p class=\"claim\">比較するのは資料の見た目ではなく、公開判断で失われる関係です。</p>\n</section>"
+    },
+    {
+      "kind": "compatibility",
+      "id": "sec-before-after-compare",
+      "markup": "<div class=\"compare\">\n  <section class=\"compare-frame\">\n    <h3>Before: 部門別の確認</h3>\n    <p>法務は契約例外、請求は計算、顧客対応は告知を個別に確認します。</p>\n    <p>承認者は、例外が誰の請求と通知に影響するかを資料間でつなぎ直します。</p>\n  </section>\n  <section class=\"compare-frame\">\n    <h3>After: 共同の承認地図</h3>\n    <p>同じ顧客群に対する根拠、計算、通知、撤回条件を一つの経路で照合します。</p>\n    <p>開始前に責任者と限定対象を明示し、問題時は撤回条件へ戻れます。</p>\n  </section>\n</div>",
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "unmigrated-format",
+        "format": "compare"
+      }
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-alternatives-intro",
+      "markup": "<section aria-labelledby=\"alternatives\">\n  <h2 id=\"alternatives\">限定対象の段階公開だけが、影響確認の機会を残しつつ料金改定を進められる</h2>\n</section>"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-alternatives",
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "caption": "一斉公開は影響が広く、保留は目的を達せず、限定公開だけが影響確認の機会を残す。",
+        "certainty": [
+          {
+            "id": "cert-alternatives",
+            "level": "inferred",
+            "statement": "全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-alternatives",
+            "label": "説明用シナリオ",
+            "detail": "外部の顧客・契約・請求データを用いない canonical proposal example の想定。"
+          }
+        ],
+        "accessibility": {
+          "label": "案の比較",
+          "summary": "行が案、列が主な利点と主なトレードオフの比較表。"
+        },
+        "matrix": {
+          "presentation": "dense",
+          "highlightId": "cell-proposal-benefit",
+          "rows": [
+            {
+              "id": "opt-all",
+              "label": "全顧客へ一斉公開"
+            },
+            {
+              "id": "opt-hold",
+              "label": "変更を保留"
+            },
+            {
+              "id": "opt-proposal",
+              "label": "提案: 限定対象で段階公開"
+            }
+          ],
+          "columns": [
+            {
+              "id": "col-benefit",
+              "label": "主な利点"
+            },
+            {
+              "id": "col-tradeoff",
+              "label": "主なトレードオフ"
+            }
+          ],
+          "cells": [
+            {
+              "id": "cell-all-benefit",
+              "rowId": "opt-all",
+              "columnId": "col-benefit",
+              "content": "対象を分けずに早く反映できる"
+            },
+            {
+              "id": "cell-all-tradeoff",
+              "rowId": "opt-all",
+              "columnId": "col-tradeoff",
+              "content": "例外や計算誤りの影響範囲も最初から広い"
+            },
+            {
+              "id": "cell-hold-benefit",
+              "rowId": "opt-hold",
+              "columnId": "col-benefit",
+              "content": "新しい請求影響を発生させない"
+            },
+            {
+              "id": "cell-hold-tradeoff",
+              "rowId": "opt-hold",
+              "columnId": "col-tradeoff",
+              "content": "料金改定の目的を達成できず、判断材料も増えない"
+            },
+            {
+              "id": "cell-proposal-benefit",
+              "rowId": "opt-proposal",
+              "columnId": "col-benefit",
+              "content": "照合した顧客群で影響と撤回条件を確かめられる"
+            },
+            {
+              "id": "cell-proposal-tradeoff",
+              "rowId": "opt-proposal",
+              "columnId": "col-tradeoff",
+              "content": "対象選定、承認、顧客対応を追加で運用する必要がある"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-closing",
+      "markup": "<section class=\"closing-section\" aria-label=\"判断材料\">\n  <h2>リスクと弱い前提</h2>\n  <p>限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。</p>\n  <div class=\"ask\" data-ask=\"hypothesis\">\n    <p class=\"ask-kind\">検証待ちの仮説</p>\n    <p class=\"ask-claim\">承認地図での照合は、部門別の確認より前に例外と顧客影響の不整合を見つけられる <span class=\"certainty inferred\">推論</span></p>\n    <p class=\"ask-verify\">検証方法: 限定対象の1グループで承認地図の照合と従来の部門別確認を並行し、見つかる不整合の件数と発見時点を比べる</p>\n  </div>\n\n  <h2>不確かな点</h2>\n  <p>実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。開始判断の前に、それぞれの担当者と確認が必要です。<span class=\"certainty unverified\">未確認</span></p>\n\n  <div class=\"ask\" data-ask=\"decision\">\n    <p class=\"ask-kind\">判断してください</p>\n    <p class=\"ask-question\">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>\n    <ul class=\"ask-options\">\n      <li data-ask-option data-ask-default><span>限定対象で段階公開する</span><span class=\"ask-tradeoff\">対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li>\n      <li data-ask-option><span>全顧客へ一斉公開する</span><span class=\"ask-tradeoff\">例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>\n    </ul>\n  </div>\n</section>"
+    }
+  ]
+}
