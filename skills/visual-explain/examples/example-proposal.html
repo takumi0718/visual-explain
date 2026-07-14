@@ -228,7 +228,7 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="matrix" data-ve-contract-version="2" data-ve-asset="matrix.css" data-ve-digest="77e9376ebf8103ac15e7c669e284032f64e9bf09336c35d2183243304582d025">figure[data-ve-component="matrix"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+  <style data-ve-component="matrix" data-ve-contract-version="2" data-ve-asset="matrix.css" data-ve-digest="a7999db2b3c053e6b6a8950f4777eb7c48b08dbfe70999f35e64f97fd6729448">figure[data-ve-component="matrix"] { display: block; min-width: 0; margin: var(--space-3) 0; }
 figure[data-ve-component="matrix"] .ve-matrix-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
 figure[data-ve-component="matrix"] .ve-matrix-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
 figure[data-ve-component="matrix"] .ve-matrix-scroll { overflow-x: auto; }
@@ -249,7 +249,9 @@ figure[data-ve-component="matrix"] .ve-mx-cell {
 figure[data-ve-component="matrix"] .ve-mx-cell.ve-dg-highlight { background: var(--dg-primary-light); }
 figure[data-ve-component="matrix"] .ve-matrix-scroll th {
   color: var(--text); font-weight: 800; text-align: left;
-  border-bottom: 1.5px solid var(--border-strong); padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+  padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="col"] { border-bottom: 1.5px solid var(--border-strong); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { border-bottom: 1px solid var(--border); vertical-align: top; }
 figure[data-ve-component="matrix"] .ve-matrix-scroll td {
   border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
 figure[data-ve-component="matrix"] .ve-matrix-corner { background: transparent; border: 0; }

@@ -19,7 +19,9 @@ figure[data-ve-component="matrix"] .ve-mx-cell {
 figure[data-ve-component="matrix"] .ve-mx-cell.ve-dg-highlight { background: var(--dg-primary-light); }
 figure[data-ve-component="matrix"] .ve-matrix-scroll th {
   color: var(--text); font-weight: 800; text-align: left;
-  border-bottom: 1.5px solid var(--border-strong); padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+  padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="col"] { border-bottom: 1.5px solid var(--border-strong); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { border-bottom: 1px solid var(--border); vertical-align: top; }
 figure[data-ve-component="matrix"] .ve-matrix-scroll td {
   border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
 figure[data-ve-component="matrix"] .ve-matrix-corner { background: transparent; border: 0; }
