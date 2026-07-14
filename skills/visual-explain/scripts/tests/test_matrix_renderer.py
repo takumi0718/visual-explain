@@ -185,5 +185,34 @@ class MatrixBorderTest(unittest.TestCase):
         self.assertNotRegex(css, r'\.ve-matrix-scroll th \{[^}]*border-bottom:\s*1\.5px')
 
 
+class MatrixBulletCellTest(unittest.TestCase):
+    def test_dense_cell_renders_bullet_list_for_array_content(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["一つ目", "二つ目"]
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
+        self.assertIn('class="ve-matrix-bullets"', markup)
+        self.assertIn("<li>一つ目</li>", markup)
+        self.assertIn("<li>二つ目</li>", markup)
+
+    def test_dense_cell_string_content_stays_plain(self) -> None:
+        markup = render_fixture().markup  # 既定フィクスチャは全て文字列
+        self.assertNotIn("ve-matrix-bullets", markup)
+
+    def test_array_cell_content_is_escaped(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["a<b>&\"x\""]
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
+        self.assertNotIn("a<b>", markup)
+        self.assertIn("a&lt;b&gt;", markup)
+
+    def test_concept_rejects_array_content(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix-concept.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["a", "b"]
+        with self.assertRaises(ContractError):
+            validate_canonical_section(raw["sections"][0]["ir"])
+
+
 if __name__ == "__main__":
     unittest.main()

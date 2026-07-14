@@ -20,6 +20,13 @@ def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
+def _cell_content_html(content) -> str:
+    if isinstance(content, (list, tuple)):
+        items = "".join(f'<li>{_esc(line)}</li>' for line in content)
+        return f'<ul class="ve-matrix-bullets">{items}</ul>'
+    return _esc(content)
+
+
 def _cell_refs_html(cell, cert_by_id, src_by_id) -> str:
     refs = []
     if cell.certainty_ref and cell.certainty_ref in cert_by_id:
@@ -66,7 +73,7 @@ def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, em
             )
             cells.append(
                 f'<td{cls_attr} data-ve-semantic-id="{_esc(cell.id)}" data-ve-row-id="{_esc(row.id)}"'
-                f' data-ve-column-id="{_esc(col.id)}"{takeaway_attr}>{_esc(cell.content)}'
+                f' data-ve-column-id="{_esc(col.id)}"{takeaway_attr}>{_cell_content_html(cell.content)}'
                 f'{emphasis_html}{refs_html}</td>'
             )
         body_rows.append("<tr>" + "".join(cells) + "</tr>")

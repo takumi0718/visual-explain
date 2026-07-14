@@ -73,7 +73,7 @@ class MatrixCell:
     id: str
     row_id: str
     column_id: str
-    content: str
+    content: str | tuple[str, ...]
     certainty_ref: Optional[str] = None
     source_ref: Optional[str] = None
 
