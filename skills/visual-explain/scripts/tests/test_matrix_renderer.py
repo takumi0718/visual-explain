@@ -183,6 +183,11 @@ class MatrixBorderTest(unittest.TestCase):
         )
         # 汎用 th ルールは全 th に太罫を当てない
         self.assertNotRegex(css, r'\.ve-matrix-scroll th \{[^}]*border-bottom:\s*1\.5px')
+        # 表頭の下罫は左端のコーナーセルも含めて太罫で連続する（td の細罫より高詳細度で上書き）
+        self.assertRegex(
+            css,
+            r'\.ve-matrix-scroll \.ve-matrix-corner[^}]*border-bottom:\s*1\.5px solid var\(--border-strong\)',
+        )
 
 
 class MatrixBulletCellTest(unittest.TestCase):
