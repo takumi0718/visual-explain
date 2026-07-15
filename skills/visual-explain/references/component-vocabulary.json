@@ -5,7 +5,8 @@
     "matrix": {
       "contractVersion": 2,
       "relationshipKind": "two-axis",
-      "capabilities": ["two-axis-classification", "intersection-comparison"]
+      "capabilities": ["two-axis-classification", "intersection-comparison"],
+      "optionalInputs": ["certainty", "sources", "presentation", "highlightId", "showColumnHeaders"]
     },
     "flow": {
       "contractVersion": 2,
