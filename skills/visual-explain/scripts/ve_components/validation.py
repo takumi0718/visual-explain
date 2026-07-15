@@ -132,7 +132,7 @@ _SOURCE_KEYS = {"id", "label", "detail"}
 _ACCESSIBILITY_KEYS = {"label", "summary"}
 _AXIS_KEYS = {"id", "label"}
 _CELL_KEYS = {"id", "rowId", "columnId", "content", "certaintyRef", "sourceRef"}
-_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId", "presentation"}
+_MATRIX_KEYS = {"rows", "columns", "cells", "highlightId", "presentation", "showColumnHeaders"}
 _FLOW_KEYS = {"nodes", "edges", "groups", "startId", "readingOrder"}
 _NODE_KEYS = {"id", "label", "group"}
 _EDGE_KEYS = {"id", "from", "to", "relation", "label"}
@@ -584,8 +584,16 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
             continue
         _check_keys(item, _CELL_KEYS, p, col)
         cid, rid, colid = item.get("id"), item.get("rowId"), item.get("columnId")
-        if not _nonblank_str(item.get("content")):
+        content_raw = item.get("content")
+        if isinstance(content_raw, list):
+            if not content_raw or not all(_nonblank_str(x) for x in content_raw):
+                col.add(INVALID_COMPONENT_PAYLOAD, "cell.content の配列要素は空にできません", p)
+            content_val: object = tuple(x for x in content_raw if isinstance(x, str))
+        elif _nonblank_str(content_raw):
+            content_val = content_raw
+        else:
             col.add(INVALID_COMPONENT_PAYLOAD, "cell.content は空にできません", p)
+            content_val = content_raw
         if rid not in row_ids:
             col.add(INVALID_MATRIX_REFERENCE, f"cell.rowId '{rid}' が存在しません", p)
         if colid not in col_ids:
@@ -596,7 +604,7 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
                 col.add(INVALID_MATRIX_REFERENCE, f"交差 ({rid},{colid}) が重複しています", p)
             seen_intersections.add(key)
         cells.append(MatrixCell(
-            id=cid, row_id=rid, column_id=colid, content=item.get("content"),
+            id=cid, row_id=rid, column_id=colid, content=content_val,
             certainty_ref=item.get("certaintyRef"), source_ref=item.get("sourceRef"),
         ))
     highlight_id = raw.get("highlightId")
@@ -614,16 +622,31 @@ def _validate_matrix(raw: object, path: str, col: DiagnosticCollector) -> Matrix
         if ncol < 2 or ncol > 4:
             col.add(INVALID_COMPONENT_PAYLOAD, f"concept では columns は2〜4件である必要があります (found {ncol})", path)
         for i, cell in enumerate(cells):
+            if not isinstance(cell.content, str):
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    "concept セルの content は文字列である必要があります",
+                    f"{path}.cells[{i}].content",
+                )
+                continue
             if len(cell.content) >= 7:
                 col.add(
                     MATRIX_CONCEPT_LENGTH,
                     f"concept セルの content は6文字以下である必要があります (found {len(cell.content)})",
                     f"{path}.cells[{i}].content",
                 )
+    show_column_headers = raw.get("showColumnHeaders", True)
+    if not isinstance(show_column_headers, bool):
+        col.add(INVALID_COMPONENT_PAYLOAD, "showColumnHeaders は真偽値である必要があります", path)
+        show_column_headers = True
+    if presentation == "concept" and show_column_headers is False:
+        col.add(INVALID_COMPONENT_PAYLOAD, "showColumnHeaders=false は dense モードでのみ有効です", path)
+        show_column_headers = True
     return MatrixPayload(
         rows=rows, columns=columns, cells=tuple(cells),
         highlight_id=highlight_id if isinstance(highlight_id, str) else None,
         presentation=presentation,
+        show_column_headers=show_column_headers,
     )
 
 

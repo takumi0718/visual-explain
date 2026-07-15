@@ -267,6 +267,8 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **単軸の定量比較・ランキング** → `bars`（`quantitative-comparison` / `single-axis-quantity`）。**時系列や加算的ブリッジは waterfall / slope へ** — 最大10行、主題の1本だけ teal ハイライト。
 - **主要指標の強調（リング型）** → `kpi`（`headline-metrics` / `metric-highlight`）。**複数系列の時系列比較は slope へ** — 最大5個（1行3個まで）。
 
+各項目が「1つの内容」なら enumeration（順序なし）/ chevron（順序あり）。各項目が**複数の並列箇条書き**を持つなら、**見出しなしマトリックス**（`matrix@2`, `presentation: "dense"`, `showColumnHeaders: false`, セル `content` を配列）を使う。enumeration/chevron は紺色の図形の右に1内容のみを想定しており、1項目に複数内容を置くとレイアウトが崩れる。
+
 ### matrix（二軸分類・交差比較）@2
 
 ```json
@@ -297,6 +299,20 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
         }
       }
     }
+  ]
+}
+```
+
+1項目に複数の並列箇条書きを持つ場合は、`showColumnHeaders: false` で列見出し行を消し、セル `content` を配列にする。太字の行見出し＋`・`付きの複数箇条書きで描画される（`matrix` ペイロード抜粋）:
+
+```json
+"matrix": {
+  "showColumnHeaders": false,
+  "rows": [{"id": "r1", "label": "戦略・ビジョン"}],
+  "columns": [{"id": "c1", "label": "論点"}],
+  "cells": [
+    {"id": "cell1", "rowId": "r1", "columnId": "c1",
+     "content": ["国としての戦略的目標・ビジョンの設定", "各自治体・医療機関・支援企業等の明確な役割・目標設定"]}
   ]
 }
 ```

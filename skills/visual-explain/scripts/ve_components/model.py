@@ -73,7 +73,7 @@ class MatrixCell:
     id: str
     row_id: str
     column_id: str
-    content: str
+    content: str | tuple[str, ...]
     certainty_ref: Optional[str] = None
     source_ref: Optional[str] = None
 
@@ -85,6 +85,7 @@ class MatrixPayload:
     cells: tuple[MatrixCell, ...]
     highlight_id: Optional[str] = None
     presentation: str = "dense"
+    show_column_headers: bool = True
 
 
 @dataclass(frozen=True)

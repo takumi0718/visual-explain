@@ -20,6 +20,13 @@ def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
+def _cell_content_html(content) -> str:
+    if isinstance(content, (list, tuple)):
+        items = "".join(f'<li>{_esc(line)}</li>' for line in content)
+        return f'<ul class="ve-matrix-bullets">{items}</ul>'
+    return _esc(content)
+
+
 def _cell_refs_html(cell, cert_by_id, src_by_id) -> str:
     refs = []
     if cell.certainty_ref and cell.certainty_ref in cert_by_id:
@@ -36,7 +43,7 @@ def _cell_refs_html(cell, cert_by_id, src_by_id) -> str:
     return f'<span class="ve-matrix-refs">{"".join(refs)}</span>' if refs else ""
 
 
-def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id):
+def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id, show_column_headers):
     head_cells = "".join(
         f'<th scope="col" data-ve-semantic-id="{_esc(col.id)}">{_esc(col.label)}</th>'
         for col in matrix.columns
@@ -66,14 +73,35 @@ def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, em
             )
             cells.append(
                 f'<td{cls_attr} data-ve-semantic-id="{_esc(cell.id)}" data-ve-row-id="{_esc(row.id)}"'
-                f' data-ve-column-id="{_esc(col.id)}"{takeaway_attr}>{_esc(cell.content)}'
+                f' data-ve-column-id="{_esc(col.id)}"{takeaway_attr}>{_cell_content_html(cell.content)}'
                 f'{emphasis_html}{refs_html}</td>'
             )
         body_rows.append("<tr>" + "".join(cells) + "</tr>")
+    thead = (
+        f'<thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td>{head_cells}</tr></thead>'
+        if show_column_headers else ""
+    )
+    # Headers are visually and structurally omitted, but each cell's
+    # data-ve-column-id still references a column semantic ID; keep that ID
+    # traceable in the DOM (artifact-semantics + manifest-to-DOM checks) via
+    # a screen-reader-only list, the same pattern used for concept mode's
+    # hidden relations list.
+    hidden_columns = (
+        ""
+        if show_column_headers
+        else (
+            '<ul class="ve-matrix-col-labels visually-hidden">'
+            + "".join(
+                f'<li data-ve-semantic-id="{_esc(col.id)}">{_esc(col.label)}</li>'
+                for col in matrix.columns
+            )
+            + "</ul>"
+        )
+    )
     return (
         f'<div class="ve-matrix-scroll">'
-        f'<table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td>{head_cells}</tr></thead>'
-        f'<tbody>{"".join(body_rows)}</tbody></table></div>'
+        f'<table>{thead}'
+        f'<tbody>{"".join(body_rows)}</tbody></table>{hidden_columns}</div>'
     )
 
 
@@ -147,6 +175,7 @@ def render_matrix(section: CanonicalSection, definition) -> RenderResult:
     else:
         body = _render_dense_table(
             matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id,
+            matrix.show_column_headers,
         )
 
     notes = []

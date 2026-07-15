@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "matrix-headerless-demo",
+    "title": "見出しなしマトリックスの例",
+    "summary": "各領域に複数の並列箇条書きを置く見出しなしマトリックス。"
+  },
+  "sections": [
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-headerless-matrix",
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": ["two-axis-classification", "intersection-comparison"]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 2,
+          "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]
+        },
+        "caption": "領域ごとの論点",
+        "certainty": [
+          {"id": "cert-confirmed", "level": "confirmed", "statement": "各領域の論点は現行資料で確認済み。"}
+        ],
+        "sources": [
+          {"id": "src-review", "label": "レビュー資料 2026", "detail": "2026年上期のレビューまとめ。"}
+        ],
+        "accessibility": {
+          "label": "領域ごとの論点一覧",
+          "summary": "各行が領域を表し、セルに複数の論点を並列に列挙する見出しなしの表。"
+        },
+        "matrix": {
+          "showColumnHeaders": false,
+          "rows": [
+            {"id": "row-strategy", "label": "戦略・ビジョン"},
+            {"id": "row-marketing", "label": "マーケティング"}
+          ],
+          "columns": [
+            {"id": "col-points", "label": "論点"}
+          ],
+          "cells": [
+            {"id": "cell-strategy", "rowId": "row-strategy", "columnId": "col-points", "content": ["国としての戦略的目標・ビジョンの設定", "各自治体・医療機関・支援企業等の明確な役割・目標設定"]},
+            {"id": "cell-marketing", "rowId": "row-marketing", "columnId": "col-points", "content": ["医療渡航先としての知名度・認知度の向上", "患者から選ばれるための情報提供の充実"]}
+          ]
+        }
+      }
+    }
+  ]
+}

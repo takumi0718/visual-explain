@@ -165,5 +165,79 @@ class MatrixBuildTest(unittest.TestCase):
             out.unlink(missing_ok=True)
 
 
+class MatrixBorderTest(unittest.TestCase):
+    def _css(self) -> str:
+        return (SKILL / "assets" / "components" / "matrix.css").read_text("utf-8")
+
+    def test_only_column_header_has_strong_bottom_rule(self) -> None:
+        css = self._css()
+        self.assertIn('th[scope="col"]', css)
+        self.assertIn('th[scope="row"]', css)
+        # 列見出しは太罫（--border-strong）を維持
+        self.assertRegex(
+            css, r'th\[scope="col"\][^}]*border-bottom:\s*1\.5px solid var\(--border-strong\)'
+        )
+        # 行見出しは本文セルと同じ細罫（--border）に変更
+        self.assertRegex(
+            css, r'th\[scope="row"\][^}]*border-bottom:\s*1px solid var\(--border\)'
+        )
+        # 汎用 th ルールは全 th に太罫を当てない
+        self.assertNotRegex(css, r'\.ve-matrix-scroll th \{[^}]*border-bottom:\s*1\.5px')
+        # 表頭の下罫は左端のコーナーセルも含めて太罫で連続する（td の細罫より高詳細度で上書き）
+        self.assertRegex(
+            css,
+            r'\.ve-matrix-scroll \.ve-matrix-corner[^}]*border-bottom:\s*1\.5px solid var\(--border-strong\)',
+        )
+
+
+class MatrixBulletCellTest(unittest.TestCase):
+    def test_dense_cell_renders_bullet_list_for_array_content(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["一つ目", "二つ目"]
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
+        self.assertIn('class="ve-matrix-bullets"', markup)
+        self.assertIn("<li>一つ目</li>", markup)
+        self.assertIn("<li>二つ目</li>", markup)
+
+    def test_dense_cell_string_content_stays_plain(self) -> None:
+        markup = render_fixture().markup  # 既定フィクスチャは全て文字列
+        self.assertNotIn("ve-matrix-bullets", markup)
+
+    def test_array_cell_content_is_escaped(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["a<b>&\"x\""]
+        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
+        self.assertNotIn("a<b>", markup)
+        self.assertIn("a&lt;b&gt;", markup)
+
+    def test_concept_rejects_array_content(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix-concept.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["a", "b"]
+        with self.assertRaises(ContractError):
+            validate_canonical_section(raw["sections"][0]["ir"])
+
+
+class MatrixHeaderlessTest(unittest.TestCase):
+    def test_headerless_dense_omits_thead(self) -> None:
+        markup = render_fixture("component-valid-matrix-headerless").markup
+        self.assertNotIn("<thead>", markup)
+        self.assertNotIn("ve-matrix-corner", markup)
+        # 行見出しと本文セルは残る
+        self.assertIn('scope="row"', markup)
+        self.assertIn("ve-matrix-bullets", markup)
+
+    def test_headed_matrix_still_has_thead(self) -> None:
+        markup = render_fixture().markup
+        self.assertIn("<thead>", markup)
+
+    def test_headerless_concept_is_rejected(self) -> None:
+        raw = json.loads((TESTS / "component-valid-matrix-concept.json").read_text("utf-8"))
+        raw["sections"][0]["ir"]["matrix"]["showColumnHeaders"] = False
+        with self.assertRaises(ContractError):
+            validate_canonical_section(raw["sections"][0]["ir"])
+
+
 if __name__ == "__main__":
     unittest.main()

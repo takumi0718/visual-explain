@@ -78,6 +78,8 @@
 意思決定の matrix と flow では、弱いモデルも次の部品だけを組み合わせる。独自 CSS、自由 SVG、色の直書きを足さない。
 
 - 表の見出しは `matrix-label`、内容セルは `matrix-cell` を使う。縦罫線は使わず、細い横罫線だけで行を区切り、見出しだけを強くする。
+- dense マトリックスの横罫線は二層: 表頭（列見出し）の下だけ太罫（`--border-strong`）、行見出し・行区切りは細罫（`--border`）。
+- `matrixPayload.showColumnHeaders: false`（dense のみ）で列見出し行を消した見出しなしマトリックスを作れる。各セルは `content` を配列にすると `・`付きの複数箇条書きになる。「1項目に複数の並列箇条書き」を置く用途で用いる。
 - 比較対象の行またはカードは `option-card` を使う。matrix の選択案だけに `data-tone="accent"` を付け、淡い背景だけで強調する。選択案でも文字色、罫線色、枠色は変えない。
 - flow のノードは `flow-node`、責務の行は `lane` を使う。
 - `data-tone="accent|positive|warning|muted"` は部品と組み合わせてのみ使う。`accent` は選択、`positive` は推奨、`warning` は注意、`muted` は補助情報を表す。色だけで意味を完結させず、本文にも選択・推奨・注意の理由を書く。

@@ -19,10 +19,16 @@ figure[data-ve-component="matrix"] .ve-mx-cell {
 figure[data-ve-component="matrix"] .ve-mx-cell.ve-dg-highlight { background: var(--dg-primary-light); }
 figure[data-ve-component="matrix"] .ve-matrix-scroll th {
   color: var(--text); font-weight: 800; text-align: left;
-  border-bottom: 1.5px solid var(--border-strong); padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+  padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="col"] { border-bottom: 1.5px solid var(--border-strong); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { border-bottom: 1px solid var(--border); vertical-align: top; }
 figure[data-ve-component="matrix"] .ve-matrix-scroll td {
   border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
-figure[data-ve-component="matrix"] .ve-matrix-corner { background: transparent; border: 0; }
+figure[data-ve-component="matrix"] .ve-matrix-bullets { margin: 0; padding: 0; list-style: none; }
+figure[data-ve-component="matrix"] .ve-matrix-bullets li { margin: 0; padding-left: var(--space-2); text-indent: calc(-1 * var(--space-2)); }
+figure[data-ve-component="matrix"] .ve-matrix-bullets li::before { content: "・"; }
+figure[data-ve-component="matrix"] .ve-matrix-bullets li + li { margin-top: var(--space-1); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll .ve-matrix-corner { background: transparent; border: 0; border-bottom: 1.5px solid var(--border-strong); }
 figure[data-ve-component="matrix"] .ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
 figure[data-ve-component="matrix"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
 figure[data-ve-component="matrix"] .ve-matrix-refs { display: block; margin-top: var(--space-1); }
