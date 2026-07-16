@@ -139,3 +139,27 @@ def test_headingless_narrative_excluded_from_toc_entries():
     assert 'href="#sec-d"' in doc
     assert 'href="#sec-closing"' in doc
     assert 'data-ve-instance="sec-plain"' in doc
+
+
+def test_build_toc_avoids_occupied_instance_id():
+    entries = tuple(TocEntry(f"sec-{i}", f"見出し{i}") for i in range(5))
+    toc = build_toc(entries, occupied_ids=frozenset({"sec-toc", "sec-toc-2"}))
+    assert toc is not None
+    assert toc.instance_id not in {"sec-toc", "sec-toc-2"}
+    assert toc.instance_id.startswith("sec-toc")
+
+
+def test_build_document_succeeds_when_user_section_id_is_sec_toc():
+    # User may legitimately use id="sec-toc"; TOC must not collide on compose.
+    raw = _assembly(
+        _narr("sec-toc", "論点TOC"),
+        _narr("sec-a", "論点A"),
+        _narr("sec-b", "論点B"),
+        _narr("sec-c", "論点C"),
+    )
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+
+    assert 'data-ve-section-kind="toc"' in doc
+    assert 'data-ve-instance="sec-toc"' in doc
+    assert 'href="#sec-toc"' in doc
+    assert ">論点TOC<" in doc

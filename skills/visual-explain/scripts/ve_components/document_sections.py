@@ -22,7 +22,7 @@ _VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
 })
-_TOC_INSTANCE_ID = "sec-toc"
+_TOC_INSTANCE_ID_PREFIX = "sec-toc"
 _TOC_MIN_ENTRIES = 5
 
 _SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
@@ -96,7 +96,23 @@ def extract_first_h2_h3(markup: str) -> str | None:
     return parser.result
 
 
-def build_toc(entries: tuple[TocEntry, ...]) -> WrappedDocumentSection | None:
+def allocate_toc_instance_id(occupied_ids: frozenset[str] | set[str]) -> str:
+    """Pick a compose-only TOC instance id that does not collide with section ids."""
+    if _TOC_INSTANCE_ID_PREFIX not in occupied_ids:
+        return _TOC_INSTANCE_ID_PREFIX
+    n = 2
+    while True:
+        candidate = f"{_TOC_INSTANCE_ID_PREFIX}-{n}"
+        if candidate not in occupied_ids:
+            return candidate
+        n += 1
+
+
+def build_toc(
+    entries: tuple[TocEntry, ...],
+    *,
+    occupied_ids: frozenset[str] | set[str] = frozenset(),
+) -> WrappedDocumentSection | None:
     """Build a flat TOC section when there are at least five headed body sections."""
     if len(entries) < _TOC_MIN_ENTRIES:
         return None
@@ -109,7 +125,10 @@ def build_toc(entries: tuple[TocEntry, ...]) -> WrappedDocumentSection | None:
         f'<nav aria-label="目次"><ol>{items}</ol></nav>\n'
         f"</section>"
     )
-    return WrappedDocumentSection(instance_id=_TOC_INSTANCE_ID, markup=markup)
+    return WrappedDocumentSection(
+        instance_id=allocate_toc_instance_id(occupied_ids),
+        markup=markup,
+    )
 
 
 def render_first_screen(section: FirstScreenSection, document: DocumentMetadata) -> WrappedDocumentSection:

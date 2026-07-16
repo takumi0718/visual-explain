@@ -70,6 +70,13 @@ class BuildResult:
     output_path: Path | None
 
 
+def _section_instance_id(section) -> str:
+    """Compose instance id for any validated section kind."""
+    if isinstance(section, CanonicalSection):
+        return section.ir.id
+    return section.id
+
+
 def _collect_toc_entries(sections) -> tuple[TocEntry, ...]:
     """Headed body sections only: narrative first h2/h3, and closing (first block)."""
     entries: list[TocEntry] = []
@@ -87,7 +94,8 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
                    components_dir: Path) -> CompositionResult | str:
     """Validate, compose, flatten, and finally check. Raises on any failure."""
     request = validate_assembly(raw_assembly)
-    toc = build_toc(_collect_toc_entries(request.sections))
+    occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
+    toc = build_toc(_collect_toc_entries(request.sections), occupied_ids=occupied_ids)
     include_narrative_ids = toc is not None
     items = []
     for section in request.sections:
