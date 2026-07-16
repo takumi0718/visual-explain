@@ -67,6 +67,7 @@ from .model import (
     EvidenceConclusion,
     EvidenceItem,
     EvidenceMapPayload,
+    FirstScreenSection,
     NarrativeSection,
     SlopeAxes,
     SlopeItem,
@@ -172,6 +173,8 @@ _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
 _PROVENANCE_KEYS = {"source", "reason", "format"}
 _CANONICAL_SECTION_KEYS = {"kind", "ir"}
 _NARRATIVE_SECTION_KEYS = {"kind", "id", "markup"}
+_FIRST_SCREEN_SECTION_KEYS = {"kind", "id", "decision", "conditions"}
+_SENTENCE_TERMINATORS = frozenset("。！？!?")
 
 
 def _is_int(value: object) -> bool:
@@ -180,6 +183,13 @@ def _is_int(value: object) -> bool:
 
 def _nonblank_str(value: object) -> bool:
     return isinstance(value, str) and value.strip() != ""
+
+
+def _is_single_sentence(value: str) -> bool:
+    """True iff value ends with a sentence terminator and contains exactly one."""
+    if not value or value[-1] not in _SENTENCE_TERMINATORS:
+        return False
+    return sum(1 for ch in value if ch in _SENTENCE_TERMINATORS) == 1
 
 
 def _check_keys(obj: dict, allowed: set[str], path: str, col: DiagnosticCollector,
@@ -2023,10 +2033,45 @@ def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids
         return CanonicalSection(ir=ir)
     if kind == "narrative":
         return _validate_narrative_section(raw, path, col, seen_ids)
+    if kind == "first-screen":
+        return _validate_first_screen_section(raw, path, col, seen_ids)
     if kind == "compatibility":
         return _validate_compatibility_section(raw, path, col, seen_ids)
     col.add(INVALID_COMPONENT_PAYLOAD, f"未知の section.kind '{kind}'", path)
     return None
+
+
+def _validate_first_screen_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
+    before = len(col.diagnostics)
+    _check_keys(raw, _FIRST_SCREEN_SECTION_KEYS, path, col)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.id は空にできません", path)
+    decision = raw.get("decision")
+    if not _nonblank_str(decision):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.decision は空にできません", path)
+    elif isinstance(decision, str) and not _is_single_sentence(decision):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "first-screen.decision は1文（末尾の 。！？!? がちょうど1個）である必要があります", path)
+    conditions_raw = raw.get("conditions", [])
+    conditions: tuple[str, ...] = ()
+    if conditions_raw is None:
+        conditions_raw = []
+    if not isinstance(conditions_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は文字列配列である必要があります", path)
+    elif len(conditions_raw) > 2:
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は最大2件です", path)
+    elif not all(isinstance(c, str) and c.strip() != "" for c in conditions_raw):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions の各要素は非空文字列である必要があります", path)
+    else:
+        conditions = tuple(conditions_raw)
+    if len(col.diagnostics) > before:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return FirstScreenSection(id=sid, decision=decision, conditions=conditions)
 
 
 def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):

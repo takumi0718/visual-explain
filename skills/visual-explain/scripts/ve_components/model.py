@@ -437,6 +437,13 @@ class NarrativeSection:
 
 
 @dataclass(frozen=True)
+class FirstScreenSection:
+    id: str
+    decision: str          # proposal: 判断文 / system・research: この資料が答える問い（1 文）
+    conditions: tuple[str, ...] = ()   # 最大 2 件
+
+
+@dataclass(frozen=True)
 class AssemblyRequest:
     schema_version: int
     document: DocumentMetadata

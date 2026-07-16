@@ -30,8 +30,9 @@ from ve_components.assembly import (  # noqa: E402
 )
 from ve_components.checker import check_final_document  # noqa: E402
 from ve_components.diagnostics import ContractError, Diagnostic, FINAL_CHECK_FAILURE  # noqa: E402
+from ve_components.document_sections import render_first_screen  # noqa: E402
 from ve_components.flatten import flatten_document  # noqa: E402
-from ve_components.model import CanonicalSection, NarrativeSection  # noqa: E402
+from ve_components.model import CanonicalSection, FirstScreenSection, NarrativeSection  # noqa: E402
 from ve_components.registry import Registry, load_registry  # noqa: E402
 from ve_components.renderers import TRUSTED_RENDERERS  # noqa: E402
 from ve_components.validation import validate_assembly  # noqa: E402
@@ -66,6 +67,8 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
             items.append(process_canonical_section(section, registry, renderers))
         elif isinstance(section, NarrativeSection):
             items.append(process_narrative_section(section))
+        elif isinstance(section, FirstScreenSection):
+            items.append(render_first_screen(section, request.document))
         else:
             items.append(process_compatibility_section(section))
     composition = compose_sections(items)
