@@ -68,6 +68,8 @@ from .model import (
     EvidenceItem,
     EvidenceMapPayload,
     FirstScreenSection,
+    ClosingBlock,
+    ClosingSection,
     NarrativeSection,
     SlopeAxes,
     SlopeItem,
@@ -174,6 +176,13 @@ _PROVENANCE_KEYS = {"source", "reason", "format"}
 _CANONICAL_SECTION_KEYS = {"kind", "ir"}
 _NARRATIVE_SECTION_KEYS = {"kind", "id", "markup"}
 _FIRST_SCREEN_SECTION_KEYS = {"kind", "id", "decision", "conditions"}
+_CLOSING_SECTION_KEYS = {"kind", "id", "blocks"}
+_CLOSING_BLOCK_KEYS = {"heading", "items"}
+_CLOSING_REQUIRED = {
+    "proposal": ("リスクと弱い前提", "不確かな点"),
+    "system": ("限界・確度",),
+    "research": ("限界・反証・確度",),
+}
 _SENTENCE_TERMINATORS = frozenset("。！？!?")
 
 
@@ -1989,9 +1998,10 @@ def validate_assembly(raw: object) -> AssemblyRequest:
         col.add(MISSING_REQUIRED_SLOT, "sections は非空の配列である必要があります", "assembly")
         sections_raw = []
     seen_section_ids: set[str] = set()
+    doc_type = document.type if document is not None else ""
     for i, item in enumerate(sections_raw):
         p = f"assembly.sections[{i}]"
-        section = _validate_section(item, p, col, seen_section_ids)
+        section = _validate_section(item, p, col, seen_section_ids, doc_type)
         if section is not None:
             sections.append(section)
     col.raise_if_any()
@@ -2017,7 +2027,8 @@ def _validate_document(raw: object, path: str, col: DiagnosticCollector) -> Docu
                             type=raw.get("type", ""), profile=raw.get("profile", ""))
 
 
-def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids: set[str]) -> object | None:
+def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids: set[str],
+                      document_type: str = "") -> object | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "section はオブジェクトである必要があります", path)
         return None
@@ -2035,10 +2046,58 @@ def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids
         return _validate_narrative_section(raw, path, col, seen_ids)
     if kind == "first-screen":
         return _validate_first_screen_section(raw, path, col, seen_ids)
+    if kind == "closing":
+        return _validate_closing_section(raw, path, col, seen_ids, document_type)
     if kind == "compatibility":
         return _validate_compatibility_section(raw, path, col, seen_ids)
     col.add(INVALID_COMPONENT_PAYLOAD, f"未知の section.kind '{kind}'", path)
     return None
+
+
+def _validate_closing_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str],
+                              document_type: str):
+    before = len(col.diagnostics)
+    _check_keys(raw, _CLOSING_SECTION_KEYS, path, col)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "closing.id は空にできません", path)
+    blocks_raw = raw.get("blocks")
+    blocks: list[ClosingBlock] = []
+    if not isinstance(blocks_raw, list) or len(blocks_raw) == 0:
+        col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks は非空の配列である必要があります", path)
+    else:
+        for i, block in enumerate(blocks_raw):
+            bp = f"{path}.blocks[{i}]"
+            if not isinstance(block, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks の各要素はオブジェクトである必要があります", bp)
+                continue
+            _check_keys(block, _CLOSING_BLOCK_KEYS, bp, col)
+            heading = block.get("heading")
+            if not _nonblank_str(heading):
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks[].heading は空にできません", bp)
+            items_raw = block.get("items")
+            if not isinstance(items_raw, list):
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks[].items は文字列配列である必要があります", bp)
+            elif len(items_raw) == 0:
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks[].items は空にできません", bp)
+            elif not all(isinstance(item, str) and item.strip() != "" for item in items_raw):
+                col.add(INVALID_COMPONENT_PAYLOAD,
+                        "closing.blocks[].items の各要素は非空文字列である必要があります", bp)
+            elif _nonblank_str(heading):
+                blocks.append(ClosingBlock(heading=heading, items=tuple(items_raw)))
+    required = _CLOSING_REQUIRED.get(document_type, ())
+    present = {b.heading for b in blocks}
+    for heading in required:
+        if heading not in present:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"closing に必須見出し '{heading}' がありません（document.type={document_type}）", path)
+    if len(col.diagnostics) > before:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return ClosingSection(id=sid, blocks=tuple(blocks))
 
 
 def _validate_first_screen_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):

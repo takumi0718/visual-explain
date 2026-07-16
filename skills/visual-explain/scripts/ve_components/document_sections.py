@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 from dataclasses import dataclass
 
-from .model import DocumentMetadata, FirstScreenSection
+from .model import ClosingSection, DocumentMetadata, FirstScreenSection
 
 _SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
                    "research": "この資料が答える問い"}
@@ -40,5 +40,20 @@ def render_first_screen(section: FirstScreenSection, document: DocumentMetadata)
         f'  <p class="subtitle decision"><strong>{label}:</strong> {_esc(section.decision)}</p>\n'
         f'  <p class="subtitle">{_esc(document.summary)}</p>{conditions}\n'
         f'</section>\n</section>'
+    )
+    return WrappedDocumentSection(instance_id=section.id, markup=markup)
+
+
+def render_closing(section: ClosingSection) -> WrappedDocumentSection:
+    parts: list[str] = []
+    for block in section.blocks:
+        items = "".join(f"<li>{_esc(item)}</li>" for item in block.items)
+        parts.append(f"  <h2>{_esc(block.heading)}</h2>\n  <ul>{items}</ul>")
+    body = "\n".join(parts)
+    markup = (
+        f'<section data-ve-section-kind="closing" id="{_esc(section.id)}">\n'
+        f'<section class="closing-section" aria-label="判断材料">\n'
+        f"{body}\n"
+        f"</section>\n</section>"
     )
     return WrappedDocumentSection(instance_id=section.id, markup=markup)

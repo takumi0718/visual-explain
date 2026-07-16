@@ -444,6 +444,18 @@ class FirstScreenSection:
 
 
 @dataclass(frozen=True)
+class ClosingBlock:
+    heading: str
+    items: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ClosingSection:
+    id: str
+    blocks: tuple[ClosingBlock, ...]
+
+
+@dataclass(frozen=True)
 class AssemblyRequest:
     schema_version: int
     document: DocumentMetadata
