@@ -1997,9 +1997,11 @@ def _validate_document(raw: object, path: str, col: DiagnosticCollector) -> Docu
     for slot in ("id", "title", "summary"):
         if not _nonblank_str(raw.get(slot)):
             col.add(MISSING_REQUIRED_SLOT, f"document.{slot} は空にできません", path)
-    if raw.get("type") not in _DOCUMENT_TYPES:
+    type_val = raw.get("type")
+    if not isinstance(type_val, str) or type_val not in _DOCUMENT_TYPES:
         col.add(MISSING_REQUIRED_SLOT, "document.type は proposal / system / research のいずれかが必要です", path)
-    if raw.get("profile") not in _DOCUMENT_PROFILES:
+    profile_val = raw.get("profile")
+    if not isinstance(profile_val, str) or profile_val not in _DOCUMENT_PROFILES:
         col.add(MISSING_REQUIRED_SLOT, "document.profile は strict / extended のいずれかが必要です", path)
     return DocumentMetadata(id=raw.get("id", ""), title=raw.get("title", ""), summary=raw.get("summary", ""),
                             type=raw.get("type", ""), profile=raw.get("profile", ""))

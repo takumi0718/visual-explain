@@ -39,3 +39,23 @@ class DocumentMetadataTest(unittest.TestCase):
     def test_unknown_profile_rejected(self) -> None:
         with self.assertRaises(ContractError):
             validate_assembly(_doc(profile="rich"))
+
+    def test_non_string_type_array_rejected(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(_doc(type=["proposal"]))
+        self.assertTrue(any("document.type" in str(d) for d in ctx.exception.diagnostics))
+
+    def test_non_string_type_object_rejected(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(_doc(type={"value": "proposal"}))
+        self.assertTrue(any("document.type" in str(d) for d in ctx.exception.diagnostics))
+
+    def test_non_string_profile_array_rejected(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(_doc(profile=["strict"]))
+        self.assertTrue(any("document.profile" in str(d) for d in ctx.exception.diagnostics))
+
+    def test_non_string_profile_object_rejected(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(_doc(profile={"value": "strict"}))
+        self.assertTrue(any("document.profile" in str(d) for d in ctx.exception.diagnostics))

@@ -21,13 +21,11 @@
     "document": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "title", "summary", "type", "profile"],
+      "required": ["id", "title", "summary"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "title": {"type": "string", "minLength": 1},
-        "summary": {"type": "string", "minLength": 1},
-        "type": {"enum": ["proposal", "system", "research"]},
-        "profile": {"enum": ["strict", "extended"]}
+        "summary": {"type": "string", "minLength": 1}
       }
     },
     "section": {
