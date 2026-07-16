@@ -2,11 +2,20 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
+from build_explainer import build_document
 from ve_components.diagnostics import ContractError
 from ve_components.document_sections import render_closing
 from ve_components.model import ClosingBlock, ClosingSection
+from ve_components.registry import load_registry
+from ve_components.renderers import TRUSTED_RENDERERS
 from ve_components.validation import validate_assembly
+
+SKILL_DIR = Path(__file__).resolve().parents[2]
+SKELETON = (SKILL_DIR / "assets" / "skeleton.html").read_text("utf-8")
+COMPONENTS_DIR = SKILL_DIR / "assets" / "components"
+REGISTRY = load_registry(COMPONENTS_DIR / "registry.json")
 
 
 def _assembly(*, type: str = "proposal", closing_blocks: list | None = None) -> dict:
@@ -87,3 +96,19 @@ class ClosingSectionTest(unittest.TestCase):
         req = validate_assembly(ok)
         self.assertIsInstance(req.sections[0], ClosingSection)
         self.assertEqual(req.sections[0].blocks[0].heading, "限界・反証・確度")
+
+    def test_build_document_includes_closing(self) -> None:
+        html = build_document(
+            _assembly(),
+            REGISTRY,
+            TRUSTED_RENDERERS,
+            SKELETON,
+            COMPONENTS_DIR,
+        )
+        self.assertIn('data-ve-section-kind="closing"', html)
+        self.assertIn('id="sec-closing"', html)
+        self.assertIn('<section class="closing-section" aria-label="判断材料">', html)
+        self.assertIn("<h2>リスクと弱い前提</h2>", html)
+        self.assertIn("<h2>不確かな点</h2>", html)
+        self.assertIn("<li>前提Aが弱い</li>", html)
+        self.assertIn("<li>未確認の利用状況</li>", html)
