@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad", "title": "bad", "summary": "bad"},
+  "document": {"id": "bad", "title": "bad", "summary": "bad", "type": "system", "profile": "strict"},
   "sections": [{
     "kind": "canonical",
     "ir": {

@@ -3,7 +3,9 @@
   "document": {
     "id": "logic-tree-bad-depth",
     "title": "深さ違反",
-    "summary": "葉にleavesを持つ不正IR。"
+    "summary": "葉にleavesを持つ不正IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

@@ -3,7 +3,9 @@
   "document": {
     "id": "chevron-loop-demo",
     "title": "閉ループの改善サイクル",
-    "summary": "縦型ラベルチェブロンで計測→評価→改善の循環を示す。"
+    "summary": "縦型ラベルチェブロンで計測→評価→改善の循環を示す。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

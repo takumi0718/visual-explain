@@ -3,7 +3,9 @@
   "document": {
     "id": "matrix-concept-bad",
     "title": "概念マトリクス違反",
-    "summary": "concept セルが長すぎる例。"
+    "summary": "concept セルが長すぎる例。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

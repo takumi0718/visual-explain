@@ -3,7 +3,9 @@
   "document": {
     "id": "enumeration-columns",
     "title": "横並びラベル列挙",
-    "summary": "columns 表示でラベル付き並列項目を示す資料。"
+    "summary": "columns 表示でラベル付き並列項目を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

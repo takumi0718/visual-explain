@@ -3,7 +3,9 @@
   "document": {
     "id": "logic-tree-bad-many",
     "title": "枝過多",
-    "summary": "枝5件の不正IR。"
+    "summary": "枝5件の不正IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

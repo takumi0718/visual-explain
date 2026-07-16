@@ -3,7 +3,9 @@
   "document": {
     "id": "waterfall-v2-demo",
     "title": "ウォーターフォール（SVG）",
-    "summary": "期首から増減を経て期末へつなぐ SVG ブリッジ。"
+    "summary": "期首から増減を経て期末へつなぐ SVG ブリッジ。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

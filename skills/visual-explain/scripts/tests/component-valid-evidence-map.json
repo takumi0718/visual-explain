@@ -3,7 +3,9 @@
   "document": {
     "id": "evidence-map-demo",
     "title": "論拠地図",
-    "summary": "結論と根拠の対応を示す資料。"
+    "summary": "結論と根拠の対応を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

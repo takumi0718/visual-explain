@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-enum-emphasis",
     "title": "不正な descriptionEmphasis",
-    "summary": "descriptionEmphasis が description の部分文字列でない列挙。"
+    "summary": "descriptionEmphasis が description の部分文字列でない列挙。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

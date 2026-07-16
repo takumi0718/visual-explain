@@ -3,7 +3,9 @@
   "document": {
     "id": "narrative-mixed-demo",
     "title": "narrative混在: 3施策の同時実施",
-    "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。"
+    "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

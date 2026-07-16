@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-chevron-loop-h",
     "title": "loop+horizontal 禁止",
-    "summary": "loop:true と horizontal の組み合わせは不正。"
+    "summary": "loop:true と horizontal の組み合わせは不正。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

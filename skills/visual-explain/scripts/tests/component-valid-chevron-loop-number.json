@@ -3,7 +3,9 @@
   "document": {
     "id": "chevron-loop-number-demo",
     "title": "番号モードの閉ループ",
-    "summary": "縦型番号チェブロンでタイトル付き3段の循環を示す。"
+    "summary": "縦型番号チェブロンでタイトル付き3段の循環を示す。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

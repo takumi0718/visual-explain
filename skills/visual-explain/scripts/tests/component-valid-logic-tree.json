@@ -3,7 +3,9 @@
   "document": {
     "id": "logic-tree-demo",
     "title": "構成の分解",
-    "summary": "3枝のロジックツリーで全体テーマを分解して示す資料。"
+    "summary": "3枝のロジックツリーで全体テーマを分解して示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

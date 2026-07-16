@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-chevron-empty",
     "title": "コンセプトタイトル欠落",
-    "summary": "number モードで title 欠落の step がある。"
+    "summary": "number モードで title 欠落の step がある。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

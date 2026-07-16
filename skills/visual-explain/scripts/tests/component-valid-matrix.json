@@ -3,7 +3,9 @@
   "document": {
     "id": "matrix-demo",
     "title": "権限モデルの二軸整理",
-    "summary": "役割と操作の交差で許可範囲を判断するための資料。"
+    "summary": "役割と操作の交差で許可範囲を判断するための資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

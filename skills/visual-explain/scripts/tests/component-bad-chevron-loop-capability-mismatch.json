@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-chevron-cap",
     "title": "loop/capability 不整合",
-    "summary": "loop:true なのに closed-loop capability がない。"
+    "summary": "loop:true なのに closed-loop capability がない。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

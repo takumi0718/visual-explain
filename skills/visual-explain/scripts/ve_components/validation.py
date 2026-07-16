@@ -164,7 +164,9 @@ _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
 _EVIDENCE_CONCLUSION_KEYS = {"id", "label"}
 _EVIDENCE_ITEM_KEYS = {"id", "label", "certaintyRef", "sourceRef"}
 _SLOPE_TONES = frozenset({"positive", "warning", "neutral"})
-_DOCUMENT_KEYS = {"id", "title", "summary"}
+_DOCUMENT_KEYS = {"id", "title", "summary", "type", "profile"}
+_DOCUMENT_TYPES = frozenset({"proposal", "system", "research"})
+_DOCUMENT_PROFILES = frozenset({"strict", "extended"})
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
 _PROVENANCE_KEYS = {"source", "reason", "format"}
@@ -1972,7 +1974,8 @@ def validate_assembly(raw: object) -> AssemblyRequest:
     document = _validate_document(raw.get("document"), "assembly.document", col)
     sections_raw = raw.get("sections")
     sections: list[object] = []
-    if not isinstance(sections_raw, list) or not sections_raw:
+    # Empty sections allowed until Task 5 replaces this with structure invariants.
+    if not isinstance(sections_raw, list):
         col.add(MISSING_REQUIRED_SLOT, "sections は非空の配列である必要があります", "assembly")
         sections_raw = []
     seen_section_ids: set[str] = set()
@@ -1994,7 +1997,12 @@ def _validate_document(raw: object, path: str, col: DiagnosticCollector) -> Docu
     for slot in ("id", "title", "summary"):
         if not _nonblank_str(raw.get(slot)):
             col.add(MISSING_REQUIRED_SLOT, f"document.{slot} は空にできません", path)
-    return DocumentMetadata(id=raw.get("id", ""), title=raw.get("title", ""), summary=raw.get("summary", ""))
+    if raw.get("type") not in _DOCUMENT_TYPES:
+        col.add(MISSING_REQUIRED_SLOT, "document.type は proposal / system / research のいずれかが必要です", path)
+    if raw.get("profile") not in _DOCUMENT_PROFILES:
+        col.add(MISSING_REQUIRED_SLOT, "document.profile は strict / extended のいずれかが必要です", path)
+    return DocumentMetadata(id=raw.get("id", ""), title=raw.get("title", ""), summary=raw.get("summary", ""),
+                            type=raw.get("type", ""), profile=raw.get("profile", ""))
 
 
 def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids: set[str]) -> object | None:

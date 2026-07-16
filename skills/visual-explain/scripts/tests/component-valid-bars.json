@@ -3,7 +3,9 @@
   "document": {
     "id": "bars-demo",
     "title": "棒グラフ比較",
-    "summary": "2系列の定量比較を示す棒グラフ。"
+    "summary": "2系列の定量比較を示す棒グラフ。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

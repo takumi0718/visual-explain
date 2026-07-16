@@ -3,7 +3,9 @@
   "document": {
     "id": "chevron-horizontal-demo",
     "title": "横型チェブロンの工程",
-    "summary": "横型番号チェブロンで4工程の線形順序を示す。"
+    "summary": "横型番号チェブロンで4工程の線形順序を示す。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

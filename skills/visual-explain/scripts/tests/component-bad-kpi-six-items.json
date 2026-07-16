@@ -3,7 +3,9 @@
   "document": {
     "id": "kpi-bad-items",
     "title": "KPI 上限超過",
-    "summary": "items が6件の不正 IR。"
+    "summary": "items が6件の不正 IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

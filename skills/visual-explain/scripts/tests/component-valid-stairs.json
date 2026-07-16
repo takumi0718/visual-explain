@@ -3,7 +3,9 @@
   "document": {
     "id": "stairs-demo",
     "title": "成熟度の階段",
-    "summary": "5段の階段で成熟度と現在地を示す資料。"
+    "summary": "5段の階段で成熟度と現在地を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

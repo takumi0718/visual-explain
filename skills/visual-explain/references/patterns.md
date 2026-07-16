@@ -274,7 +274,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-matrix", "title": "権限モデルの二軸整理", "summary": "役割と操作の交差で許可範囲を判断する。"},
+  "document": {"id": "doc-matrix", "title": "権限モデルの二軸整理", "summary": "役割と操作の交差で許可範囲を判断する。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -324,7 +324,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-flow", "title": "レビュー承認の流れ", "summary": "承認に至る順序と分岐を判断する。"},
+  "document": {"id": "doc-flow", "title": "レビュー承認の流れ", "summary": "承認に至る順序と分岐を判断する。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -358,7 +358,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-enum", "title": "並列項目の列挙", "summary": "順序を持たない並列関係を示す。"},
+  "document": {"id": "doc-enum", "title": "並列項目の列挙", "summary": "順序を持たない並列関係を示す。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -392,7 +392,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-chevron", "title": "処理フローの4段階", "summary": "縦型チェブロンで線形順序を示す。"},
+  "document": {"id": "doc-chevron", "title": "処理フローの4段階", "summary": "縦型チェブロンで線形順序を示す。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -430,7 +430,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-pyramid", "title": "優先度の階層", "summary": "上ほど重要な4層を示す。"},
+  "document": {"id": "doc-pyramid", "title": "優先度の階層", "summary": "上ほど重要な4層を示す。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -463,7 +463,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-stairs", "title": "成熟度の階段", "summary": "5段で成熟度と現在地を示す。"},
+  "document": {"id": "doc-stairs", "title": "成熟度の階段", "summary": "5段で成熟度と現在地を示す。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -498,7 +498,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-logic-tree", "title": "構成の分解", "summary": "3枝で全体テーマを分解する。"},
+  "document": {"id": "doc-logic-tree", "title": "構成の分解", "summary": "3枝で全体テーマを分解する。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -531,7 +531,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-waterfall", "title": "利益ブリッジ", "summary": "期首から増減を経て期末へ。"},
+  "document": {"id": "doc-waterfall", "title": "利益ブリッジ", "summary": "期首から増減を経て期末へ。", "type": "system", "profile": "strict"},
   "sections": [{
     "kind": "canonical",
     "ir": {
@@ -565,7 +565,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-slope", "title": "2時点比較", "summary": "同一単位で開始と終了を比較する。"},
+  "document": {"id": "doc-slope", "title": "2時点比較", "summary": "同一単位で開始と終了を比較する。", "type": "system", "profile": "strict"},
   "sections": [{
     "kind": "canonical",
     "ir": {
@@ -596,7 +596,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-em", "title": "論拠地図", "summary": "結論と根拠の対応。"},
+  "document": {"id": "doc-em", "title": "論拠地図", "summary": "結論と根拠の対応。", "type": "system", "profile": "strict"},
   "sections": [{
     "kind": "canonical",
     "ir": {
@@ -629,7 +629,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-bars", "title": "棒グラフ比較", "summary": "2系列の定量比較を示す。"},
+  "document": {"id": "doc-bars", "title": "棒グラフ比較", "summary": "2系列の定量比較を示す。", "type": "system", "profile": "strict"},
   "sections": [{
     "kind": "canonical",
     "ir": {
@@ -661,7 +661,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-kpi", "title": "KPI 指標", "summary": "リング型の主要指標を示す。"},
+  "document": {"id": "doc-kpi", "title": "KPI 指標", "summary": "リング型の主要指標を示す。", "type": "system", "profile": "strict"},
   "sections": [{
     "kind": "canonical",
     "ir": {
@@ -689,7 +689,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-mixed", "title": "混在資料", "summary": "canonical と互換を並べる。"},
+  "document": {"id": "doc-mixed", "title": "混在資料", "summary": "canonical と互換を並べる。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "canonical",
@@ -744,7 +744,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-narrative-mixed", "title": "3施策の同時実施判断", "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。"},
+  "document": {"id": "doc-narrative-mixed", "title": "3施策の同時実施判断", "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。", "type": "system", "profile": "strict"},
   "sections": [
     {
       "kind": "narrative",

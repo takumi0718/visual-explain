@@ -3,7 +3,9 @@
   "document": {
     "id": "pyramid-demo",
     "title": "優先度の階層",
-    "summary": "4層のピラミッドで優先構造を示す資料。"
+    "summary": "4層のピラミッドで優先構造を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

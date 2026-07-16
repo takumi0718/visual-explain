@@ -3,7 +3,9 @@
   "document": {
     "id": "waterfall-columns-demo",
     "title": "ウォーターフォール（横並び）",
-    "summary": "5段の縦棒ブリッジを横スクロールで表示。"
+    "summary": "5段の縦棒ブリッジを横スクロールで表示。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

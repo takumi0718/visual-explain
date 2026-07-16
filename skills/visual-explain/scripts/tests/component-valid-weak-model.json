@@ -3,7 +3,9 @@
   "document": {
     "id": "weak-model-demo",
     "title": "弱モデル互換のマトリクス",
-    "summary": "弱いモデルがカノニカル生成に自信を持てないとき、明示的な互換マークアップで劣化提供する。"
+    "summary": "弱いモデルがカノニカル生成に自信を持てないとき、明示的な互換マークアップで劣化提供する。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

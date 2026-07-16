@@ -3,7 +3,9 @@
   "document": {
     "id": "weak-model-bad-style",
     "title": "弱モデル互換にCSS混入",
-    "summary": "互換マークアップに任意のCSSを含めた不正例。"
+    "summary": "互換マークアップに任意のCSSを含めた不正例。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

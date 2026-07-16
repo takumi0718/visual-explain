@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-enum-many",
     "title": "項目過多",
-    "summary": "7項目の列挙。"
+    "summary": "7項目の列挙。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

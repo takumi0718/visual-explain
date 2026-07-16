@@ -3,7 +3,9 @@
   "document": {
     "id": "branching-flow-demo",
     "title": "変更リスクで分かれるリリース承認フロー",
-    "summary": "変更のリスク判定で承認経路が分かれ、低リスクは審査を飛ばして反映される流れを判断する資料。"
+    "summary": "変更のリスク判定で承認経路が分かれ、低リスクは審査を飛ばして反映される流れを判断する資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-chevron-missing-title-h",
     "title": "横型番号チェブロンのタイトル欠落",
-    "summary": "number モードでは horizontal でも全 step に title が必要。"
+    "summary": "number モードでは horizontal でも全 step に title が必要。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

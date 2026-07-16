@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-enum-label",
     "title": "ラベル欠落",
-    "summary": "label モードで label が無い列挙。"
+    "summary": "label モードで label が無い列挙。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

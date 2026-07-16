@@ -3,7 +3,9 @@
   "document": {
     "id": "bars-bad-items",
     "title": "棒グラフ上限超過",
-    "summary": "items が11件の不正 IR。"
+    "summary": "items が11件の不正 IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

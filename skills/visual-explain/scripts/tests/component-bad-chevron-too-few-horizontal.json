@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-chevron-few-h",
     "title": "横型は3段未満禁止",
-    "summary": "horizontal は steps 3〜6 件が必要。"
+    "summary": "horizontal は steps 3〜6 件が必要。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

@@ -22,6 +22,8 @@ class DocumentMetadata:
     id: str
     title: str
     summary: str
+    type: str
+    profile: str
 
 
 @dataclass(frozen=True)

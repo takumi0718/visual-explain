@@ -3,7 +3,9 @@
   "document": {
     "id": "enumeration-demo",
     "title": "並列項目の列挙",
-    "summary": "順序を持たない並列関係を列挙型で示す資料。"
+    "summary": "順序を持たない並列関係を列挙型で示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

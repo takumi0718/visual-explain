@@ -3,7 +3,9 @@
   "document": {
     "id": "slope-demo",
     "title": "2時点比較スロープ",
-    "summary": "増加・減少・横ばいの3系列を示すスロープ図。"
+    "summary": "増加・減少・横ばいの3系列を示すスロープ図。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

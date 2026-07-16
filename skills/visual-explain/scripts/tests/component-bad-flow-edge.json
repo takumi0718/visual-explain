@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-flow-edge",
     "title": "レビュー承認の流れ",
-    "summary": "提案が承認に至るまでの順序と分岐を判断するための資料。"
+    "summary": "提案が承認に至るまでの順序と分岐を判断するための資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

@@ -29,7 +29,8 @@ TESTS_DIR = SKILL_DIR / "scripts" / "tests"
 CHECK = SKILL_DIR / "scripts" / "check.sh"
 
 BASE = {"schemaVersion": 1,
-        "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。"}}
+        "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。",
+                     "type": "system", "profile": "strict"}}
 
 NARR = {"kind": "narrative", "id": "sec-intro",
         "markup": '<section class="first-screen"><h1>結論を先に示す</h1></section>'}

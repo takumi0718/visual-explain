@@ -3,7 +3,9 @@
   "document": {
     "id": "weak-model-bad-script",
     "title": "弱モデル互換にJS混入",
-    "summary": "互換マークアップに任意のJavaScriptを含めた不正例。"
+    "summary": "互換マークアップに任意のJavaScriptを含めた不正例。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

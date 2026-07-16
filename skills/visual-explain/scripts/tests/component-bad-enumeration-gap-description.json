@@ -3,7 +3,9 @@
   "document": {
     "id": "bad-enum-gap",
     "title": "不正な description 歯抜け",
-    "summary": "一部 item だけ description がある列挙。"
+    "summary": "一部 item だけ description がある列挙。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

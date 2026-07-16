@@ -3,7 +3,9 @@
   "document": {
     "id": "matrix-concept-demo",
     "title": "概念マトリクス",
-    "summary": "短いラベルで交差を比較する概念型マトリクス。"
+    "summary": "短いラベルで交差を比較する概念型マトリクス。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

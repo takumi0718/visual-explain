@@ -3,7 +3,9 @@
   "document": {
     "id": "waterfall-decimal-demo",
     "title": "Decimal displayPrecision 検証",
-    "summary": "build_explainer.main が 0.1 を Decimal として受理する fixture。"
+    "summary": "build_explainer.main が 0.1 を Decimal として受理する fixture。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

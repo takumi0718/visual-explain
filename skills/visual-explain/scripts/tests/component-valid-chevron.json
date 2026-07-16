@@ -3,7 +3,9 @@
   "document": {
     "id": "chevron-demo",
     "title": "線形順序のチェブロン",
-    "summary": "縦型チェブロンで4段の処理順序を示す資料。"
+    "summary": "縦型チェブロンで4段の処理順序を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

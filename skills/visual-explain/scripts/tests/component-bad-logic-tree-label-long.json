@@ -3,7 +3,9 @@
   "document": {
     "id": "logic-tree-bad-label",
     "title": "ラベル過長",
-    "summary": "rootラベル21字の不正IR。"
+    "summary": "rootラベル21字の不正IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

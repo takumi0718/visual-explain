@@ -3,7 +3,9 @@
   "document": {
     "id": "kpi-demo",
     "title": "KPI 指標",
-    "summary": "リング型の主要指標を示す KPI。"
+    "summary": "リング型の主要指標を示す KPI。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

@@ -3,7 +3,9 @@
   "document": {
     "id": "matrix-headerless-demo",
     "title": "見出しなしマトリックスの例",
-    "summary": "各領域に複数の並列箇条書きを置く見出しなしマトリックス。"
+    "summary": "各領域に複数の並列箇条書きを置く見出しなしマトリックス。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {

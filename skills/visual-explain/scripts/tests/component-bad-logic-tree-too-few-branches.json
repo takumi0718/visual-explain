@@ -3,7 +3,9 @@
   "document": {
     "id": "logic-tree-bad-few",
     "title": "枝不足",
-    "summary": "枝1件の不正IR。"
+    "summary": "枝1件の不正IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
     {
