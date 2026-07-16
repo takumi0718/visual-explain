@@ -34,6 +34,7 @@ def _assembly(*, type: str = "proposal", closing_blocks: list | None = None) -> 
             "profile": "strict",
         },
         "sections": [
+            {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"},
             {"kind": "closing", "id": "sec-closing", "blocks": closing_blocks},
         ],
     }
@@ -94,8 +95,8 @@ class ClosingSectionTest(unittest.TestCase):
             closing_blocks=[{"heading": "限界・反証・確度", "items": ["推論を含む"]}],
         )
         req = validate_assembly(ok)
-        self.assertIsInstance(req.sections[0], ClosingSection)
-        self.assertEqual(req.sections[0].blocks[0].heading, "限界・反証・確度")
+        closing = next(s for s in req.sections if isinstance(s, ClosingSection))
+        self.assertEqual(closing.blocks[0].heading, "限界・反証・確度")
 
     def test_build_document_includes_closing(self) -> None:
         html = build_document(

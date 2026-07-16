@@ -9,29 +9,79 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-bad-emphasis",
-        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": [
+            "parallel-itemization"
+          ]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 2,
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
+        },
         "caption": "強調不一致",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "列挙", "summary": "不正 fixture。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト用。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "列挙",
+          "summary": "不正 fixture。"
+        },
         "enumeration": {
           "items": [
             {
               "id": "a",
               "title": "福利厚生",
-              "description": ["従業員向けに無料のフィットネス利用券を配布する"],
+              "description": [
+                "従業員向けに無料のフィットネス利用券を配布する"
+              ],
               "descriptionEmphasis": "存在しない強調語"
             },
-            {"id": "b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]}
+            {
+              "id": "b",
+              "title": "監査ログ",
+              "description": [
+                "必要な保持期間を決定する"
+              ]
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

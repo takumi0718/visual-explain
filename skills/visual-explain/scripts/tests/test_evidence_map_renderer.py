@@ -1,6 +1,7 @@
 """S6 tests: evidence-map validation and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import re
 import unittest
@@ -68,7 +69,7 @@ def render_fixture(name: str):
 
     path = TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
     raw = json.loads(path.read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     result = render_evidence_map(CanonicalSection(ir=ir), EM_DEF)
     return SimpleNamespace(ir=ir, result=result, markup=result.markup)
 
@@ -77,19 +78,19 @@ class EvidenceMapValidationTest(unittest.TestCase):
     def test_rejects_unresolved_certainty_ref(self) -> None:
         raw = json.loads((TESTS / "component-bad-evidence-map-unresolved-certainty.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(EVIDENCE_MAP_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_rejects_unresolved_source_ref(self) -> None:
         raw = json.loads((TESTS / "component-bad-evidence-map-unresolved-source.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(EVIDENCE_MAP_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_rejects_too_many_evidence(self) -> None:
         raw = json.loads((TESTS / "component-bad-evidence-map-too-many-evidence.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(EVIDENCE_MAP_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_rejects_one_evidence(self) -> None:

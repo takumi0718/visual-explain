@@ -34,7 +34,7 @@ from .diagnostics import (
     KPI_STRUCTURE_VIOLATION,
     Diagnostic,
 )
-from .validation import VOCABULARY
+from .validation import VOCABULARY, scan_author_markup_bans
 
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
 _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
@@ -182,13 +182,39 @@ class _ContentSafetyParser(HTMLParser):
             self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, "content スロット内に制御マーカーを入れ子にできません"))
 
 
-def validate_content_markup(content_markup: str) -> list[Diagnostic]:
+def validate_content_markup(
+    content_markup: str,
+    *,
+    section_kind: str | None = None,
+) -> list[Diagnostic]:
     """Reject style/script/link/base/iframe/object/embed, inline style, on* attrs,
-    executable/external URLs, and nested controlled markers in content markup."""
+    executable/external URLs, and nested controlled markers in content markup.
+
+    When ``section_kind`` is ``\"narrative\"`` or ``\"compatibility\"``, also reject
+    author-markup bans (h1/title; reserved class/data for narrative only). Final
+    document content must call this with ``section_kind=None`` so rendered
+    wrappers (first-screen / ask / data-ve-*) are not false-positive rejected.
+    """
     parser = _ContentSafetyParser()
     parser.feed(content_markup)
     parser.close()
     diagnostics = list(parser.diagnostics)
+    if section_kind == "narrative":
+        for code, message in scan_author_markup_bans(
+            content_markup,
+            section_label="narrative",
+            forbid_reserved=True,
+            code=FORBIDDEN_CONTENT_MARKUP,
+        ):
+            diagnostics.append(Diagnostic(code, message))
+    elif section_kind == "compatibility":
+        for code, message in scan_author_markup_bans(
+            content_markup,
+            section_label="compatibility",
+            forbid_reserved=False,
+            code=FORBIDDEN_CONTENT_MARKUP,
+        ):
+            diagnostics.append(Diagnostic(code, message))
     diagnostics.extend(validate_ask_blocks(content_markup))
     return diagnostics
 

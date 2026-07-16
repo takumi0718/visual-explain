@@ -9,30 +9,74 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-lt-label",
         "relationship": {
           "kind": "hierarchical-decomposition",
-          "capabilities": ["mece-decomposition"]
+          "capabilities": [
+            "mece-decomposition"
+          ]
         },
         "selection": {
           "component": "logic-tree",
           "version": 2,
-          "matchedCapabilities": ["mece-decomposition"]
+          "matchedCapabilities": [
+            "mece-decomposition"
+          ]
         },
         "caption": "ラベル過長",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "ロジックツリー", "summary": "rootラベルが21字。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "ロジックツリー",
+          "summary": "rootラベルが21字。"
+        },
         "logic-tree": {
-          "root": {"id": "root-topic", "label": "あああああああああああああああああああああ"},
+          "root": {
+            "id": "root-topic",
+            "label": "あああああああああああああああああああああ"
+          },
           "branches": [
-            {"id": "branch-a", "label": "枝A"},
-            {"id": "branch-b", "label": "枝B"}
+            {
+              "id": "branch-a",
+              "label": "枝A"
+            },
+            {
+              "id": "branch-b",
+              "label": "枝B"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

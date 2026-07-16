@@ -9,24 +9,43 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-headerless-matrix",
         "relationship": {
           "kind": "two-axis",
-          "capabilities": ["two-axis-classification", "intersection-comparison"]
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
         },
         "selection": {
           "component": "matrix",
           "version": 2,
-          "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
         },
         "caption": "領域ごとの論点",
         "certainty": [
-          {"id": "cert-confirmed", "level": "confirmed", "statement": "各領域の論点は現行資料で確認済み。"}
+          {
+            "id": "cert-confirmed",
+            "level": "confirmed",
+            "statement": "各領域の論点は現行資料で確認済み。"
+          }
         ],
         "sources": [
-          {"id": "src-review", "label": "レビュー資料 2026", "detail": "2026年上期のレビューまとめ。"}
+          {
+            "id": "src-review",
+            "label": "レビュー資料 2026",
+            "detail": "2026年上期のレビューまとめ。"
+          }
         ],
         "accessibility": {
           "label": "領域ごとの論点一覧",
@@ -35,18 +54,55 @@
         "matrix": {
           "showColumnHeaders": false,
           "rows": [
-            {"id": "row-strategy", "label": "戦略・ビジョン"},
-            {"id": "row-marketing", "label": "マーケティング"}
+            {
+              "id": "row-strategy",
+              "label": "戦略・ビジョン"
+            },
+            {
+              "id": "row-marketing",
+              "label": "マーケティング"
+            }
           ],
           "columns": [
-            {"id": "col-points", "label": "論点"}
+            {
+              "id": "col-points",
+              "label": "論点"
+            }
           ],
           "cells": [
-            {"id": "cell-strategy", "rowId": "row-strategy", "columnId": "col-points", "content": ["国としての戦略的目標・ビジョンの設定", "各自治体・医療機関・支援企業等の明確な役割・目標設定"]},
-            {"id": "cell-marketing", "rowId": "row-marketing", "columnId": "col-points", "content": ["医療渡航先としての知名度・認知度の向上", "患者から選ばれるための情報提供の充実"]}
+            {
+              "id": "cell-strategy",
+              "rowId": "row-strategy",
+              "columnId": "col-points",
+              "content": [
+                "国としての戦略的目標・ビジョンの設定",
+                "各自治体・医療機関・支援企業等の明確な役割・目標設定"
+              ]
+            },
+            {
+              "id": "cell-marketing",
+              "rowId": "row-marketing",
+              "columnId": "col-points",
+              "content": [
+                "医療渡航先としての知名度・認知度の向上",
+                "患者から選ばれるための情報提供の充実"
+              ]
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

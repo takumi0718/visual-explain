@@ -9,24 +9,41 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-chevron-horizontal",
         "relationship": {
           "kind": "ordered-sequence",
-          "capabilities": ["linear-sequence"]
+          "capabilities": [
+            "linear-sequence"
+          ]
         },
         "selection": {
           "component": "chevron",
           "version": 2,
-          "matchedCapabilities": ["linear-sequence"]
+          "matchedCapabilities": [
+            "linear-sequence"
+          ]
         },
         "caption": "横型の4工程",
         "certainty": [
-          {"id": "cert-h", "level": "confirmed", "statement": "工程順は固定。"}
+          {
+            "id": "cert-h",
+            "level": "confirmed",
+            "statement": "工程順は固定。"
+          }
         ],
         "sources": [
-          {"id": "src-h", "label": "工程定義", "detail": "左から右への順序。"}
+          {
+            "id": "src-h",
+            "label": "工程定義",
+            "detail": "左から右への順序。"
+          }
         ],
         "accessibility": {
           "label": "横型チェブロン",
@@ -34,16 +51,52 @@
         },
         "chevron": {
           "steps": [
-            {"id": "h1", "title": "要件確定", "description": ["要件を確定する"]},
-            {"id": "h2", "title": "設計確認", "description": ["設計をレビューする"]},
-            {"id": "h3", "title": "実装", "description": ["実装を完了する"]},
-            {"id": "h4", "title": "検証", "description": ["検証を通過する"]}
+            {
+              "id": "h1",
+              "title": "要件確定",
+              "description": [
+                "要件を確定する"
+              ]
+            },
+            {
+              "id": "h2",
+              "title": "設計確認",
+              "description": [
+                "設計をレビューする"
+              ]
+            },
+            {
+              "id": "h3",
+              "title": "実装",
+              "description": [
+                "実装を完了する"
+              ]
+            },
+            {
+              "id": "h4",
+              "title": "検証",
+              "description": [
+                "検証を通過する"
+              ]
+            }
           ],
           "orientation": "horizontal",
           "blockContent": "number",
           "loop": false
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

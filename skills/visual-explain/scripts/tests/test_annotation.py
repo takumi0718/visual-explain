@@ -3,6 +3,7 @@ import json
 import unittest
 from pathlib import Path
 
+from fixture_util import canonical_ir, canonical_section
 from ve_components.diagnostics import ContractError
 from ve_components import validation
 from ve_components.validation import validate_assembly
@@ -15,7 +16,7 @@ def _load(name):
 
 
 def _ir(raw):
-    return raw["sections"][0]["ir"]
+    return canonical_ir(raw)
 
 
 class AnnotationValidationTest(unittest.TestCase):
@@ -29,7 +30,7 @@ class AnnotationValidationTest(unittest.TestCase):
 
     def test_valid_annotation_accepted(self):
         request = validate_assembly(self.raw)
-        ir = request.sections[0].ir
+        ir = next(s for s in request.sections if hasattr(s, "ir")).ir
         self.assertEqual(ir.takeaway_target_ids, ("edge-review-approve",))
         self.assertEqual(ir.emphasis[0].target_id, "node-review")
 
@@ -37,7 +38,7 @@ class AnnotationValidationTest(unittest.TestCase):
         # 注釈フィールドを一切持たない既存 IR は従来どおり受理される（opt-in 契約）
         legacy = _load("component-valid-flow.json")
         request = validate_assembly(legacy)
-        ir = request.sections[0].ir
+        ir = next(s for s in request.sections if hasattr(s, "ir")).ir
         self.assertEqual(ir.takeaway_target_ids, ())
         self.assertEqual(ir.emphasis, ())
 

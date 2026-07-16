@@ -9,6 +9,11 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-review-flow",
@@ -94,6 +99,18 @@
           }
         ]
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

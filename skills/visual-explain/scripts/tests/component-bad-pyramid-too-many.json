@@ -1,25 +1,90 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad-pyramid", "title": "bad", "summary": "bad", "type": "system", "profile": "strict"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad",
-      "relationship": {"kind": "layered-priority", "capabilities": ["priority-layering"]},
-      "selection": {"component": "pyramid", "version": 2, "matchedCapabilities": ["priority-layering"]},
-      "caption": "bad",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
-      "sources": [{"id": "s1", "label": "x"}],
-      "accessibility": {"label": "x", "summary": "x"},
-      "pyramid": {
-        "tiers": [
-          {"id": "t1", "label": "1"},
-          {"id": "t2", "label": "2"},
-          {"id": "t3", "label": "3"},
-          {"id": "t4", "label": "4"},
-          {"id": "t5", "label": "5"}
-        ]
+  "document": {
+    "id": "bad-pyramid",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad",
+        "relationship": {
+          "kind": "layered-priority",
+          "capabilities": [
+            "priority-layering"
+          ]
+        },
+        "selection": {
+          "component": "pyramid",
+          "version": 2,
+          "matchedCapabilities": [
+            "priority-layering"
+          ]
+        },
+        "caption": "bad",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "x"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s1",
+            "label": "x"
+          }
+        ],
+        "accessibility": {
+          "label": "x",
+          "summary": "x"
+        },
+        "pyramid": {
+          "tiers": [
+            {
+              "id": "t1",
+              "label": "1"
+            },
+            {
+              "id": "t2",
+              "label": "2"
+            },
+            {
+              "id": "t3",
+              "label": "3"
+            },
+            {
+              "id": "t4",
+              "label": "4"
+            },
+            {
+              "id": "t5",
+              "label": "5"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }

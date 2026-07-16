@@ -34,7 +34,17 @@ def _first_screen_assembly(**section_extra):
             "type": "proposal",
             "profile": "strict",
         },
-        "sections": [section],
+        "sections": [
+            section,
+            {
+                "kind": "closing",
+                "id": "sec-closing",
+                "blocks": [
+                    {"heading": "リスクと弱い前提", "items": ["前提Aが弱い"]},
+                    {"heading": "不確かな点", "items": ["未確認の利用状況"]},
+                ],
+            },
+        ],
     }
 
 

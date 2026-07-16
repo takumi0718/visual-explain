@@ -5,6 +5,7 @@ rejection maps to one of the bounded diagnostic codes owned by this task.
 """
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import copy
 import json
 import unittest
@@ -39,7 +40,7 @@ class VocabularyFixtureTest(unittest.TestCase):
 
     def test_matrix_fixture_uses_authoritative_vocabulary(self) -> None:
         request = validate_assembly(self.matrix)
-        section = request.sections[0]
+        section = next(s for s in request.sections if hasattr(s, "ir"))
         self.assertEqual(section.ir.selection.component, "matrix")
         self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "two-axis")
@@ -50,7 +51,7 @@ class VocabularyFixtureTest(unittest.TestCase):
 
     def test_flow_fixture_uses_authoritative_vocabulary(self) -> None:
         request = validate_assembly(self.flow)
-        section = request.sections[0]
+        section = next(s for s in request.sections if hasattr(s, "ir"))
         self.assertEqual(section.ir.selection.component, "flow")
         self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "directed-graph")
@@ -59,7 +60,7 @@ class VocabularyFixtureTest(unittest.TestCase):
         self.assertTrue(set(section.ir.relationship.capabilities) <= allowed)
 
     def test_validate_canonical_section_accepts_matrix_ir(self) -> None:
-        ir = validate_canonical_section(self.matrix["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(self.matrix))
         self.assertEqual(ir.selection.component, "matrix")
         self.assertEqual([r.id for r in ir.matrix.rows], ["row-admin", "row-viewer"])
         self.assertEqual(len(ir.matrix.cells), 4)
@@ -122,8 +123,8 @@ class SchemaVocabularyConsistencyTest(unittest.TestCase):
 
 class CanonicalRejectionTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.ir = load("component-valid-matrix.json")["sections"][0]["ir"]
-        self.flow_ir = load("component-valid-flow.json")["sections"][0]["ir"]
+        self.ir = canonical_ir(load("component-valid-matrix.json"))
+        self.flow_ir = canonical_ir(load("component-valid-flow.json"))
 
     def reject(self, ir: dict) -> ContractError:
         with self.assertRaises(ContractError) as ctx:
@@ -157,17 +158,17 @@ class CanonicalRejectionTest(unittest.TestCase):
 
     def test_both_payloads_present(self) -> None:
         ir = copy.deepcopy(self.ir)
-        ir["flow"] = load("component-valid-flow.json")["sections"][0]["ir"]["flow"]
+        ir["flow"] = canonical_ir(load("component-valid-flow.json"))["flow"]
         self.assertIn("invalid_component_payload", codes(self.reject(ir)))
 
     def test_matrix_and_slope_payloads_rejected(self) -> None:
         ir = copy.deepcopy(self.ir)
-        ir["slope"] = load("component-valid-slope.json")["sections"][0]["ir"]["slope"]
+        ir["slope"] = canonical_ir(load("component-valid-slope.json"))["slope"]
         self.assertIn("invalid_component_payload", codes(self.reject(ir)))
 
     def test_waterfall_and_evidence_map_payloads_rejected(self) -> None:
-        ir = load("component-valid-waterfall.json")["sections"][0]["ir"]
-        ir["evidence-map"] = load("component-valid-evidence-map.json")["sections"][0]["ir"]["evidence-map"]
+        ir = canonical_ir(load("component-valid-waterfall.json"))
+        ir["evidence-map"] = canonical_ir(load("component-valid-evidence-map.json"))["evidence-map"]
         self.assertIn("invalid_component_payload", codes(self.reject(ir)))
 
     def test_unknown_field(self) -> None:
@@ -258,7 +259,8 @@ class CompatibilityProvenanceTest(unittest.TestCase):
 
     def compat(self, **provenance) -> dict:
         req = copy.deepcopy(self.request)
-        req["sections"].append({
+        # Insert before trailing closing so document structure invariants hold.
+        req["sections"].insert(-1, {
             "kind": "compatibility",
             "id": "legacy-section",
             "markup": "<section>既存ルールの内容</section>",
@@ -269,7 +271,8 @@ class CompatibilityProvenanceTest(unittest.TestCase):
     def test_accepts_known_provenance(self) -> None:
         req = self.compat(source="legacy-html-insertion", reason="unmigrated-format", format="layers")
         result = validate_assembly(req)
-        self.assertEqual(result.sections[1].provenance.source, "legacy-html-insertion")
+        compat = next(s for s in result.sections if getattr(s, "provenance", None) is not None)
+        self.assertEqual(compat.provenance.source, "legacy-html-insertion")
 
     def test_rejects_unknown_source(self) -> None:
         req = self.compat(source="hand-written", reason="unmigrated-format", format="layers")
@@ -285,7 +288,7 @@ class CompatibilityProvenanceTest(unittest.TestCase):
 
     def test_rejects_relationship_field_on_compatibility(self) -> None:
         req = copy.deepcopy(self.request)
-        req["sections"].append({
+        req["sections"].insert(-1, {
             "kind": "compatibility",
             "id": "legacy-section",
             "markup": "<section>x</section>",
@@ -336,9 +339,10 @@ class DocumentationConsistencyTest(unittest.TestCase):
                 elif isinstance(section, NarrativeSection):
                     # narrative sections carry no provenance/vocabulary tokens to check.
                     continue
-                else:
+                elif getattr(section, "provenance", None) is not None:
                     self.assertIn(section.provenance.source, sources)
                     self.assertIn(section.provenance.reason, reasons)
+                # first-screen / closing / ask: typed sections, no vocabulary tokens.
 
     def test_docs_have_canonical_examples_for_all_twelve_components(self) -> None:
         text = Path("../references/patterns.md").read_text(encoding="utf-8")
@@ -419,12 +423,12 @@ class FlowTopologyContractTest(unittest.TestCase):
     def test_valid_flow_still_accepted(self) -> None:
         raw = load("component-valid-flow.json")
         request = validate_assembly(raw)
-        self.assertEqual(len(request.sections), 1)
+        self.assertEqual(sum(1 for s in request.sections if hasattr(s, "ir")), 1)
 
     def test_valid_flow_groups_still_accepted(self) -> None:
         raw = load("component-valid-flow-groups.json")
         request = validate_assembly(raw)
-        self.assertEqual(len(request.sections), 1)
+        self.assertEqual(sum(1 for s in request.sections if hasattr(s, "ir")), 1)
 
     def test_row_budget_exceeded_is_rejected_at_validation(self) -> None:
         # 15-node linear chain + one long skip edge (1 -> 15) is a topologically
@@ -433,7 +437,7 @@ class FlowTopologyContractTest(unittest.TestCase):
         # caught here, as flow_topology_too_complex, rather than surfacing
         # later as an opaque renderer_failure.
         raw = copy.deepcopy(load("component-valid-flow.json"))
-        ir = raw["sections"][0]["ir"]
+        ir = canonical_ir(raw)
         node_ids = [f"node-{i}" for i in range(1, 16)]
         ir["flow"]["nodes"] = [{"id": nid, "label": nid} for nid in node_ids]
         ir["flow"]["edges"] = [

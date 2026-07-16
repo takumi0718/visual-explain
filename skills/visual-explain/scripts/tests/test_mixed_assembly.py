@@ -1,6 +1,7 @@
 """Task 4 tests: one mixed composition/flattening route with compatibility bypass."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section, compatibility_section
 import copy
 import hashlib
 import html
@@ -126,7 +127,7 @@ class CompatibilityBypassTest(unittest.TestCase):
 
     def test_compatibility_wrapper_has_section_kind(self) -> None:
         request = validate_assembly(json.loads((TESTS / "component-valid-weak-model.json").read_text("utf-8")))
-        wrapped = process_compatibility_section(request.sections[0])
+        wrapped = process_compatibility_section(next(s for s in request.sections if hasattr(s, "provenance") and s.provenance is not None))
         self.assertIn('data-ve-section-kind="compatibility"', wrapped.markup)
 
 
@@ -140,7 +141,7 @@ class FailureTest(unittest.TestCase):
 
     def test_false_provenance_rejected(self) -> None:
         raw = json.loads((TESTS / "component-valid-weak-model.json").read_text("utf-8"))
-        del raw["sections"][0]["provenance"]
+        del compatibility_section(raw)["provenance"]
         with self.assertRaises(ContractError):
             self.build(raw)
 
@@ -156,13 +157,16 @@ class FailureTest(unittest.TestCase):
 
     def test_canonical_failure_no_silent_fallback(self) -> None:
         raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
-        raw["sections"][0]["ir"]["selection"]["component"] = "flow"  # mismatch → invalid before matching
+        canonical_ir(raw)["selection"]["component"] = "flow"  # mismatch → invalid before matching
         with self.assertRaises(ContractError):
             self.build(raw)
 
     def test_duplicate_section_ids_fail(self) -> None:
         raw = json.loads((TESTS / "component-valid-mixed.json").read_text("utf-8"))
-        raw["sections"][2]["ir"]["id"] = "sec-mixed-matrix"
+        # Force two canonical sections to share the matrix instance id.
+        canonicals = [s for s in raw["sections"] if s.get("kind") == "canonical"]
+        self.assertGreaterEqual(len(canonicals), 2)
+        canonicals[1]["ir"]["id"] = canonicals[0]["ir"]["id"]
         with self.assertRaises(ContractError):
             self.build(raw)
 

@@ -9,26 +9,55 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-lt-depth",
         "relationship": {
           "kind": "hierarchical-decomposition",
-          "capabilities": ["mece-decomposition"]
+          "capabilities": [
+            "mece-decomposition"
+          ]
         },
         "selection": {
           "component": "logic-tree",
           "version": 2,
-          "matchedCapabilities": ["mece-decomposition"]
+          "matchedCapabilities": [
+            "mece-decomposition"
+          ]
         },
         "caption": "深さ違反",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "ロジックツリー", "summary": "葉の下にさらに枝がある。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "ロジックツリー",
+          "summary": "葉の下にさらに枝がある。"
+        },
         "logic-tree": {
-          "root": {"id": "root-topic", "label": "全体"},
+          "root": {
+            "id": "root-topic",
+            "label": "全体"
+          },
           "branches": [
-            {"id": "branch-a", "label": "枝A"},
+            {
+              "id": "branch-a",
+              "label": "枝A"
+            },
             {
               "id": "branch-b",
               "label": "枝B",
@@ -36,13 +65,30 @@
                 {
                   "id": "leaf-1",
                   "text": "詳細",
-                  "leaves": [{"id": "leaf-nested", "text": "孫"}]
+                  "leaves": [
+                    {
+                      "id": "leaf-nested",
+                      "text": "孫"
+                    }
+                  ]
                 }
               ]
             }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1,32 +1,132 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad-wf-many", "title": "bad", "summary": "bad", "type": "system", "profile": "strict"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad-wf-many",
-      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
-      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
-      "caption": "bad",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
-      "sources": [{"id": "s1", "label": "x"}],
-      "accessibility": {"label": "x", "summary": "x"},
-      "waterfall": {
-        "displayPrecision": 1,
-        "title": "図表",
-        "unitLabel": "件",
-        "axisTicks": ["0", "50", "100"],
-        "start": {"id": "st", "label": "開始", "value": 10, "valueText": "10件"},
-        "steps": [
-          {"id": "s1", "label": "a", "delta": 1, "tone": "positive", "valueText": "+1件"},
-          {"id": "s2", "label": "b", "delta": 1, "tone": "positive", "valueText": "+1件"},
-          {"id": "s3", "label": "c", "delta": 1, "tone": "positive", "valueText": "+1件"},
-          {"id": "s4", "label": "d", "delta": 1, "tone": "positive", "valueText": "+1件"},
-          {"id": "s5", "label": "e", "delta": 1, "tone": "positive", "valueText": "+1件"},
-          {"id": "s6", "label": "f", "delta": 1, "tone": "positive", "valueText": "+1件"}
+  "document": {
+    "id": "bad-wf-many",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad-wf-many",
+        "relationship": {
+          "kind": "additive-bridge",
+          "capabilities": [
+            "additive-bridging"
+          ]
+        },
+        "selection": {
+          "component": "waterfall",
+          "version": 2,
+          "matchedCapabilities": [
+            "additive-bridging"
+          ]
+        },
+        "caption": "bad",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "x"
+          }
         ],
-        "end": {"id": "en", "label": "終了", "value": 16, "valueText": "16件"}
+        "sources": [
+          {
+            "id": "s1",
+            "label": "x"
+          }
+        ],
+        "accessibility": {
+          "label": "x",
+          "summary": "x"
+        },
+        "waterfall": {
+          "displayPrecision": 1,
+          "title": "図表",
+          "unitLabel": "件",
+          "axisTicks": [
+            "0",
+            "50",
+            "100"
+          ],
+          "start": {
+            "id": "st",
+            "label": "開始",
+            "value": 10,
+            "valueText": "10件"
+          },
+          "steps": [
+            {
+              "id": "s1",
+              "label": "a",
+              "delta": 1,
+              "tone": "positive",
+              "valueText": "+1件"
+            },
+            {
+              "id": "s2",
+              "label": "b",
+              "delta": 1,
+              "tone": "positive",
+              "valueText": "+1件"
+            },
+            {
+              "id": "s3",
+              "label": "c",
+              "delta": 1,
+              "tone": "positive",
+              "valueText": "+1件"
+            },
+            {
+              "id": "s4",
+              "label": "d",
+              "delta": 1,
+              "tone": "positive",
+              "valueText": "+1件"
+            },
+            {
+              "id": "s5",
+              "label": "e",
+              "delta": 1,
+              "tone": "positive",
+              "valueText": "+1件"
+            },
+            {
+              "id": "s6",
+              "label": "f",
+              "delta": 1,
+              "tone": "positive",
+              "valueText": "+1件"
+            }
+          ],
+          "end": {
+            "id": "en",
+            "label": "終了",
+            "value": 16,
+            "valueText": "16件"
+          }
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }

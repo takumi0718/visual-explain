@@ -1,6 +1,7 @@
 """S2 tests: chevron validation and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 from typing import NamedTuple
 
 import json
@@ -92,7 +93,7 @@ def render_fixture(name: str) -> _FixtureRender:
     from ve_components.renderers.chevron import render_chevron
     path = TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
     raw = json.loads(path.read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     result = render_chevron(CanonicalSection(ir=ir), CHEVRON_DEF)
     return _FixtureRender(ir, result)
 

@@ -30,7 +30,22 @@ def _doc() -> dict:
 
 
 def _assembly(section: dict) -> dict:
-    return {"schemaVersion": 1, "document": _doc(), "sections": [section]}
+    return {
+        "schemaVersion": 1,
+        "document": _doc(),
+        "sections": [
+            {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"},
+            section,
+            {
+                "kind": "closing",
+                "id": "sec-closing",
+                "blocks": [
+                    {"heading": "リスクと弱い前提", "items": ["前提Aが弱い"]},
+                    {"heading": "不確かな点", "items": ["未確認の利用状況"]},
+                ],
+            },
+        ],
+    }
 
 
 def _decision_section(**extra) -> dict:
@@ -52,8 +67,7 @@ def _decision_section(**extra) -> dict:
 class AskSectionTest(unittest.TestCase):
     def test_decision_happy_path_renders_and_passes_ask_inspector(self) -> None:
         req = validate_assembly(_assembly(_decision_section()))
-        section = req.sections[0]
-        self.assertIsInstance(section, AskSection)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
         self.assertEqual(section.ask_type, "decision")
         self.assertEqual(section.question, "注釈を今回に含めますか？")
         self.assertEqual(section.default_id, "include")
@@ -101,8 +115,7 @@ class AskSectionTest(unittest.TestCase):
             ],
         })
         req = validate_assembly(raw)
-        section = req.sections[0]
-        self.assertIsInstance(section, AskSection)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
         self.assertEqual(section.ask_type, "request")
         self.assertEqual(len(section.steps), 2)
 
@@ -126,8 +139,7 @@ class AskSectionTest(unittest.TestCase):
             "verify": "検証方法: 見出し列のみで判断内容を言えるか確認する",
         })
         req = validate_assembly(raw)
-        section = req.sections[0]
-        self.assertIsInstance(section, AskSection)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
         self.assertEqual(section.ask_type, "hypothesis")
         self.assertIsNotNone(section.claim)
         self.assertEqual(section.claim.text, "見出しだけで判断できる")

@@ -9,10 +9,31 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "compatibility",
       "id": "sec-weak-matrix",
       "markup": "<figure class=\"matrix\" aria-label=\"役割と操作の許可\"><figcaption>役割 × 操作</figcaption><table><thead><tr><th class=\"matrix-label\">役割</th><th class=\"matrix-label\">読み取り</th><th class=\"matrix-label\">書き込み</th></tr></thead><tbody><tr><th class=\"matrix-label\">管理者</th><td class=\"matrix-cell\">許可</td><td class=\"matrix-cell\">許可</td></tr><tr><th class=\"matrix-label\">閲覧者</th><td class=\"matrix-cell\">許可</td><td class=\"matrix-cell\">不可</td></tr></tbody></table></figure>",
-      "provenance": {"source": "legacy-html-insertion", "reason": "weak-model-degradation", "format": "matrix"}
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "weak-model-degradation",
+        "format": "matrix"
+      }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

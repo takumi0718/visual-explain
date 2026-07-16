@@ -9,24 +9,41 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-stairs",
         "relationship": {
           "kind": "staged-maturity",
-          "capabilities": ["maturity-staging"]
+          "capabilities": [
+            "maturity-staging"
+          ]
         },
         "selection": {
           "component": "stairs",
           "version": 2,
-          "matchedCapabilities": ["maturity-staging"]
+          "matchedCapabilities": [
+            "maturity-staging"
+          ]
         },
         "caption": "成熟度の5段階",
         "certainty": [
-          {"id": "cert-stairs", "level": "confirmed", "statement": "5段は成熟度モデルに準拠。"}
+          {
+            "id": "cert-stairs",
+            "level": "confirmed",
+            "statement": "5段は成熟度モデルに準拠。"
+          }
         ],
         "sources": [
-          {"id": "src-model", "label": "成熟度モデル v1", "detail": "段階定義。"}
+          {
+            "id": "src-model",
+            "label": "成熟度モデル v1",
+            "detail": "段階定義。"
+          }
         ],
         "accessibility": {
           "label": "成熟度階段",
@@ -35,14 +52,41 @@
         "stairs": {
           "highlightId": "stage-3",
           "stages": [
-            {"id": "stage-1", "label": "未整備"},
-            {"id": "stage-2", "label": "部分導入"},
-            {"id": "stage-3", "label": "標準化"},
-            {"id": "stage-4", "label": "最適化"},
-            {"id": "stage-5", "label": "自律運用"}
+            {
+              "id": "stage-1",
+              "label": "未整備"
+            },
+            {
+              "id": "stage-2",
+              "label": "部分導入"
+            },
+            {
+              "id": "stage-3",
+              "label": "標準化"
+            },
+            {
+              "id": "stage-4",
+              "label": "最適化"
+            },
+            {
+              "id": "stage-5",
+              "label": "自律運用"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

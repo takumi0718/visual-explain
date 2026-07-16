@@ -1,6 +1,7 @@
 """S5 tests: waterfall validation, Decimal parsing, and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import re
 import unittest
@@ -66,7 +67,7 @@ def render_fixture(name: str):
 
     path = TESTS / name if name.endswith(".json") else TESTS / f"{name}.json"
     raw = json.loads(path.read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return render_waterfall(CanonicalSection(ir=ir), WATERFALL_DEF)
 
 
@@ -74,7 +75,7 @@ def expect_violation_fixture(test_case: unittest.TestCase, fixture_name: str, co
     path = TESTS / fixture_name if fixture_name.endswith(".json") else TESTS / f"{fixture_name}.json"
     raw = json.loads(path.read_text("utf-8"))
     with test_case.assertRaises(ContractError) as ctx:
-        validate_canonical_section(raw["sections"][0]["ir"])
+        validate_canonical_section(canonical_ir(raw))
     codes = {d.code for d in ctx.exception.diagnostics}
     test_case.assertIn(code, codes)
 
@@ -117,7 +118,7 @@ class WaterfallValidationTest(unittest.TestCase):
     def test_rejects_zero_range(self) -> None:
         raw = json.loads((TESTS / "component-bad-waterfall-zero-range.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(WATERFALL_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_accepts_delta_zero_step(self) -> None:
@@ -139,7 +140,7 @@ class WaterfallValidationTest(unittest.TestCase):
     def test_bars_rejects_six_steps(self) -> None:
         raw = json.loads((TESTS / "component-bad-waterfall-too-many-bars.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(WATERFALL_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_requires_unit_label(self) -> None:
@@ -160,7 +161,7 @@ class WaterfallValidationTest(unittest.TestCase):
     def test_rejects_missing_tone(self) -> None:
         raw = json.loads((TESTS / "component-bad-waterfall-missing-tone.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(WATERFALL_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_value_text_required_nonempty_max_16(self) -> None:
@@ -185,7 +186,7 @@ class WaterfallValidationTest(unittest.TestCase):
     def test_rejects_arithmetic_mismatch_fixture(self) -> None:
         raw = json.loads((TESTS / "component-bad-waterfall-arithmetic.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(WATERFALL_ARITHMETIC_MISMATCH, {d.code for d in ctx.exception.diagnostics})
 
 
@@ -209,10 +210,10 @@ class BuildDecimalParsingTest(unittest.TestCase):
         original_va = be.validate_assembly
 
         def tracking_validate(raw):
-            prec = raw["sections"][0]["ir"]["waterfall"]["displayPrecision"]
+            prec = canonical_ir(raw)["waterfall"]["displayPrecision"]
             captured.append(("raw", prec, type(prec)))
             result = original_va(raw)
-            section = result.sections[0]
+            section = next(s for s in result.sections if hasattr(s, "ir"))
             from ve_components.model import CanonicalSection
             assert isinstance(section, CanonicalSection)
             captured.append(("validated", section.ir.waterfall.display_precision,
@@ -285,7 +286,7 @@ class WaterfallManifestTest(unittest.TestCase):
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         raw = json.loads((TESTS / "component-valid-waterfall.json").read_text("utf-8"))
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(raw))
         result = render_fixture("component-valid-waterfall.json")
         self.assertEqual(set(result.manifest.consumed_semantic_ids), set(ir.semantic_ids()))
 

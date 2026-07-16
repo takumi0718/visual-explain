@@ -9,26 +9,77 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-bad-cap",
-        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
-        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence"]},
+        "relationship": {
+          "kind": "ordered-sequence",
+          "capabilities": [
+            "linear-sequence"
+          ]
+        },
+        "selection": {
+          "component": "chevron",
+          "version": 2,
+          "matchedCapabilities": [
+            "linear-sequence"
+          ]
+        },
         "caption": "capability 不整合",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト用。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "チェブロン",
+          "summary": "不正 fixture。"
+        },
         "chevron": {
           "steps": [
-            {"id": "s1", "label": "計測"},
-            {"id": "s2", "label": "評価"},
-            {"id": "s3", "label": "改善"}
+            {
+              "id": "s1",
+              "label": "計測"
+            },
+            {
+              "id": "s2",
+              "label": "評価"
+            },
+            {
+              "id": "s3",
+              "label": "改善"
+            }
           ],
           "orientation": "vertical",
           "blockContent": "label",
           "loop": true
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

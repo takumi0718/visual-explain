@@ -6,11 +6,21 @@ import unittest
 from ve_components.diagnostics import ContractError
 from ve_components.validation import validate_assembly
 
+_FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+_CLOSING = {
+    "kind": "closing",
+    "id": "sec-closing",
+    "blocks": [
+        {"heading": "リスクと弱い前提", "items": ["前提"]},
+        {"heading": "不確かな点", "items": ["未確認"]},
+    ],
+}
+
 BASE = {
     "schemaVersion": 1,
     "document": {"id": "doc-1", "title": "タイトル", "summary": "要約。",
                  "type": "proposal", "profile": "strict"},
-    "sections": [],  # Task 5 までは空 sections を許す前提で書く（Task 5 で必須構造テストに置き換える）
+    "sections": [_FIRST, _CLOSING],
 }
 
 

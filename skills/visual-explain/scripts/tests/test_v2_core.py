@@ -1,6 +1,7 @@
 """S1 core tests: cross-cutting generalization and enumeration validation."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import copy
 import json
 import unittest
@@ -18,7 +19,7 @@ def _load(name: str) -> dict:
 
 
 def _ir(raw: dict) -> dict:
-    return raw["sections"][0]["ir"]
+    return canonical_ir(raw)
 
 
 class V2CoreValidationTest(unittest.TestCase):
@@ -45,7 +46,7 @@ class V2CoreValidationTest(unittest.TestCase):
 
     def test_semantic_ids_include_enumeration_items(self) -> None:
         request = validate_assembly(_load("component-valid-enumeration.json"))
-        ir = request.sections[0].ir
+        ir = next(s for s in request.sections if hasattr(s, "ir")).ir
         item_ids = {item.id for item in ir.enumeration.items}
         self.assertTrue(item_ids)
         self.assertTrue(item_ids <= set(ir.semantic_ids()))

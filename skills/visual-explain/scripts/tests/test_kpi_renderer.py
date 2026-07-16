@@ -1,6 +1,7 @@
 """S7 tests: kpi validation, ring markup, and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import unittest
 from pathlib import Path
@@ -26,7 +27,7 @@ def _fixture_path(name: str) -> Path:
 def expect_violation(test_case: unittest.TestCase, fixture_name: str, code: str) -> None:
     raw = json.loads(_fixture_path(fixture_name).read_text("utf-8"))
     with test_case.assertRaises(ContractError) as ctx:
-        validate_canonical_section(raw["sections"][0]["ir"])
+        validate_canonical_section(canonical_ir(raw))
     codes = {d.code for d in ctx.exception.diagnostics}
     test_case.assertIn(code, codes)
 
@@ -35,7 +36,7 @@ def render_fixture(name: str = "component-valid-kpi"):
     from ve_components.renderers.kpi import render_kpi
 
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return render_kpi(CanonicalSection(ir=ir), KPI_DEF)
 
 
@@ -45,7 +46,7 @@ class KpiAssemblyTest(unittest.TestCase):
 
         raw = json.loads(_fixture_path("component-valid-kpi").read_text("utf-8"))
         request = validate_assembly(raw)
-        section = request.sections[0]
+        section = next(s for s in request.sections if hasattr(s, "ir"))
         self.assertEqual(section.ir.selection.component, "kpi")
         self.assertEqual(section.ir.selection.version, 2)
         self.assertEqual(section.ir.relationship.kind, "headline-metrics")

@@ -9,9 +9,9 @@
   },
   "sections": [
     {
-      "kind": "narrative",
-      "id": "sec-first-screen",
-      "markup": "<section class=\"first-screen\"><h1>3つの並列施策を同時に進める</h1><p class=\"subtitle decision\"><strong>あなたが決めること:</strong> 福利厚生・監査ログ・通知チャネルの3施策を同時に進めるか、優先順位をつけて順に進めるか決めます。</p></section>"
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -19,19 +19,31 @@
         "id": "sec-enum-list",
         "relationship": {
           "kind": "parallel-enumeration",
-          "capabilities": ["parallel-itemization"]
+          "capabilities": [
+            "parallel-itemization"
+          ]
         },
         "selection": {
           "component": "enumeration",
           "version": 2,
-          "matchedCapabilities": ["parallel-itemization"]
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
         },
         "caption": "検討対象の並列項目",
         "certainty": [
-          {"id": "cert-enum-confirmed", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}
+          {
+            "id": "cert-enum-confirmed",
+            "level": "confirmed",
+            "statement": "3項目は同一会議で合意された範囲。"
+          }
         ],
         "sources": [
-          {"id": "src-notes", "label": "議事録 2026-06", "detail": "並列検討の記録。"}
+          {
+            "id": "src-notes",
+            "label": "議事録 2026-06",
+            "detail": "並列検討の記録。"
+          }
         ],
         "accessibility": {
           "label": "並列項目の列挙",
@@ -42,11 +54,25 @@
             {
               "id": "item-a",
               "title": "福利厚生",
-              "description": ["従業員向けに無料のフィットネス利用券を配布する"],
+              "description": [
+                "従業員向けに無料のフィットネス利用券を配布する"
+              ],
               "descriptionEmphasis": "無料のフィットネス利用券"
             },
-            {"id": "item-b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]},
-            {"id": "item-c", "title": "通知チャネル", "description": ["通知経路を一つに統合する"]}
+            {
+              "id": "item-b",
+              "title": "監査ログ",
+              "description": [
+                "必要な保持期間を決定する"
+              ]
+            },
+            {
+              "id": "item-c",
+              "title": "通知チャネル",
+              "description": [
+                "通知経路を一つに統合する"
+              ]
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
@@ -65,8 +91,20 @@
     },
     {
       "kind": "narrative",
+      "id": "sec-body",
+      "markup": "<p>補足: 並列施策の順序は会議で確定する。</p>"
+    },
+    {
+      "kind": "closing",
       "id": "sec-closing",
-      "markup": "<section class=\"closing-section\"><h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p></section>"
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

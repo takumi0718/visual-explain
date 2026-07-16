@@ -1,6 +1,7 @@
 """S3 tests: stairs validation and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import re
 import unittest
@@ -87,7 +88,7 @@ def expect_violation(ir: dict, code: str = STAIRS_STRUCTURE_VIOLATION) -> None:
 def render_fixture(name: str) -> _FixtureRender:
     from ve_components.renderers.stairs import render_stairs
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     result = render_stairs(CanonicalSection(ir=ir), STAIRS_DEF)
     return _FixtureRender(ir, result)
 

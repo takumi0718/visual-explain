@@ -9,38 +9,88 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-lt-leaves",
         "relationship": {
           "kind": "hierarchical-decomposition",
-          "capabilities": ["mece-decomposition"]
+          "capabilities": [
+            "mece-decomposition"
+          ]
         },
         "selection": {
           "component": "logic-tree",
           "version": 2,
-          "matchedCapabilities": ["mece-decomposition"]
+          "matchedCapabilities": [
+            "mece-decomposition"
+          ]
         },
         "caption": "葉過多",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "ロジックツリー", "summary": "1枝に葉3件。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "ロジックツリー",
+          "summary": "1枝に葉3件。"
+        },
         "logic-tree": {
-          "root": {"id": "root-topic", "label": "全体"},
+          "root": {
+            "id": "root-topic",
+            "label": "全体"
+          },
           "branches": [
-            {"id": "branch-a", "label": "枝A"},
+            {
+              "id": "branch-a",
+              "label": "枝A"
+            },
             {
               "id": "branch-b",
               "label": "枝B",
               "leaves": [
-                {"id": "leaf-1", "text": "詳細1"},
-                {"id": "leaf-2", "text": "詳細2"},
-                {"id": "leaf-3", "text": "詳細3"}
+                {
+                  "id": "leaf-1",
+                  "text": "詳細1"
+                },
+                {
+                  "id": "leaf-2",
+                  "text": "詳細2"
+                },
+                {
+                  "id": "leaf-3",
+                  "text": "詳細3"
+                }
               ]
             }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

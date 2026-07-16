@@ -1,23 +1,83 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad-stairs", "title": "bad", "summary": "bad", "type": "system", "profile": "strict"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad",
-      "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging"]},
-      "selection": {"component": "stairs", "version": 2, "matchedCapabilities": ["maturity-staging"]},
-      "caption": "bad",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
-      "sources": [{"id": "s1", "label": "x"}],
-      "accessibility": {"label": "x", "summary": "x"},
-      "stairs": {
-        "stages": [
-          {"id": "s1", "label": "下"},
-          {"id": "s2", "label": "中", "current": true},
-          {"id": "s3", "label": "上"}
-        ]
+  "document": {
+    "id": "bad-stairs",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad",
+        "relationship": {
+          "kind": "staged-maturity",
+          "capabilities": [
+            "maturity-staging"
+          ]
+        },
+        "selection": {
+          "component": "stairs",
+          "version": 2,
+          "matchedCapabilities": [
+            "maturity-staging"
+          ]
+        },
+        "caption": "bad",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "x"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s1",
+            "label": "x"
+          }
+        ],
+        "accessibility": {
+          "label": "x",
+          "summary": "x"
+        },
+        "stairs": {
+          "stages": [
+            {
+              "id": "s1",
+              "label": "下"
+            },
+            {
+              "id": "s2",
+              "label": "中",
+              "current": true
+            },
+            {
+              "id": "s3",
+              "label": "上"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }

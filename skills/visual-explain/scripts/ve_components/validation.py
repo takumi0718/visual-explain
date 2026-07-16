@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
+from html.parser import HTMLParser
 from pathlib import Path
 
 from .diagnostics import (
@@ -201,6 +202,139 @@ _CLOSING_REQUIRED = {
     "research": ("限界・反証・確度",),
 }
 _SENTENCE_TERMINATORS = frozenset("。！？!?")
+
+# Reserved tokens for narrative / freeform author markup (Global Constraints).
+_RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain"})
+_RESERVED_DATA_EXACT = frozenset({
+    "data-connect",
+    "data-connect-scope",
+    "data-stepper",
+    "data-step",
+    "data-step-action",
+    "data-ask",
+    "data-theme",
+    "data-lane",
+    "data-tone",
+})
+_RESERVED_DATA_PREFIXES = ("data-ve-", "data-ask-", "data-theme-", "data-step-")
+
+
+def _is_reserved_data_attr(name: str) -> bool:
+    n = name.lower()
+    if n in _RESERVED_DATA_EXACT:
+        return True
+    return any(n.startswith(prefix) for prefix in _RESERVED_DATA_PREFIXES)
+
+
+def _canonical_reserved_attr_name(name: str) -> str:
+    """Pick a stable diagnostic label for a reserved data attribute."""
+    n = name.lower()
+    if n.startswith("data-ve-"):
+        return "data-ve-*"
+    if n.startswith("data-ask"):
+        return "data-ask" if n == "data-ask" else "data-ask-*"
+    if n.startswith("data-theme"):
+        return "data-theme" if n == "data-theme" else "data-theme-*"
+    if n.startswith("data-step") and n not in {"data-stepper"}:
+        return n if n in {"data-step", "data-step-action"} else "data-step-*"
+    return n
+
+
+class _AuthorMarkupBanParser(HTMLParser):
+    """Collect h1/title and optional reserved class/data-attribute bans."""
+
+    def __init__(self, *, forbid_reserved: bool) -> None:
+        super().__init__(convert_charrefs=True)
+        self.forbid_reserved = forbid_reserved
+        self.has_h1 = False
+        self.has_title = False
+        self.reserved_classes: list[str] = []
+        self.reserved_attrs: list[str] = []
+        self._seen_classes: set[str] = set()
+        self._seen_attrs: set[str] = set()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._check(tag, attrs)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._check(tag, attrs)
+
+    def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        t = tag.lower()
+        if t == "h1":
+            self.has_h1 = True
+        elif t == "title":
+            self.has_title = True
+        if not self.forbid_reserved:
+            return
+        attr_map = {((n or "").lower()): v for n, v in attrs}
+        classes = (attr_map.get("class") or "").split()
+        for cls in classes:
+            if cls in _RESERVED_CLASSES and cls not in self._seen_classes:
+                self._seen_classes.add(cls)
+                self.reserved_classes.append(cls)
+        for name in attr_map:
+            if _is_reserved_data_attr(name):
+                label = _canonical_reserved_attr_name(name)
+                if label not in self._seen_attrs:
+                    self._seen_attrs.add(label)
+                    self.reserved_attrs.append(label)
+
+
+def scan_author_markup_bans(
+    markup: str,
+    *,
+    section_label: str,
+    forbid_reserved: bool,
+    code: str,
+) -> list[tuple[str, str]]:
+    """Return (code, message) pairs for author-markup structure bans.
+
+    Used by IR validation and by ``validate_content_markup`` (via flags) so
+    narrative/compatibility author markup and final-document content can share
+    the rule set without applying reserved-token bans to rendered wrappers.
+    """
+    parser = _AuthorMarkupBanParser(forbid_reserved=forbid_reserved)
+    parser.feed(markup)
+    parser.close()
+    out: list[tuple[str, str]] = []
+    if parser.has_h1:
+        out.append((
+            code,
+            f"{section_label} に <h1> は置けません（h1 は first-screen 専有）",
+        ))
+    if parser.has_title:
+        out.append((
+            code,
+            f"{section_label} に <title> は置けません",
+        ))
+    for cls in parser.reserved_classes:
+        out.append((code, f"{section_label} に予約 class {cls} は置けません"))
+    for attr in parser.reserved_attrs:
+        out.append((code, f"{section_label} に予約属性 {attr} は置けません"))
+    return out
+
+
+def _validate_document_structure(sections_raw: list, col: DiagnosticCollector) -> None:
+    """Enforce first-screen at [0] exactly once and closing at the end exactly once."""
+    kinds = [
+        item.get("kind") if isinstance(item, dict) else None
+        for item in sections_raw
+    ]
+    first_indices = [i for i, k in enumerate(kinds) if k == "first-screen"]
+    if len(first_indices) != 1 or first_indices[0] != 0:
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            "first-screen は先頭にちょうど1個必要です",
+            "assembly.sections",
+        )
+    closing_indices = [i for i, k in enumerate(kinds) if k == "closing"]
+    if len(closing_indices) != 1 or closing_indices[0] != len(kinds) - 1:
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            "closing は最後にちょうど1個必要です",
+            "assembly.sections",
+        )
 
 
 def _is_int(value: object) -> bool:
@@ -2010,7 +2144,6 @@ def validate_assembly(raw: object) -> AssemblyRequest:
     document = _validate_document(raw.get("document"), "assembly.document", col)
     sections_raw = raw.get("sections")
     sections: list[object] = []
-    # Empty sections allowed until Task 5 replaces this with structure invariants.
     if not isinstance(sections_raw, list):
         col.add(MISSING_REQUIRED_SLOT, "sections は非空の配列である必要があります", "assembly")
         sections_raw = []
@@ -2021,6 +2154,7 @@ def validate_assembly(raw: object) -> AssemblyRequest:
         section = _validate_section(item, p, col, seen_section_ids, doc_type)
         if section is not None:
             sections.append(section)
+    _validate_document_structure(sections_raw, col)
     col.raise_if_any()
     assert document is not None
     return AssemblyRequest(schema_version=1, document=document, sections=tuple(sections))
@@ -2104,7 +2238,7 @@ def _validate_closing_section(raw: dict, path: str, col: DiagnosticCollector, se
                         "closing.blocks[].items の各要素は非空文字列である必要があります", bp)
             elif _nonblank_str(heading):
                 blocks.append(ClosingBlock(heading=heading, items=tuple(items_raw)))
-    required = _CLOSING_REQUIRED.get(document_type, ())
+    required = _CLOSING_REQUIRED.get(document_type, ()) if isinstance(document_type, str) else ()
     present = {b.heading for b in blocks}
     for heading in required:
         if heading not in present:
@@ -2323,8 +2457,17 @@ def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, 
     sid = raw.get("id")
     if not _nonblank_str(sid):
         col.add(INVALID_NARRATIVE_SECTION, "narrative.id は空にできません", path)
-    if not _nonblank_str(raw.get("markup")):
+    markup = raw.get("markup")
+    if not _nonblank_str(markup):
         col.add(INVALID_NARRATIVE_SECTION, "narrative.markup は空にできません", path)
+    elif isinstance(markup, str):
+        for code, message in scan_author_markup_bans(
+            markup,
+            section_label="narrative",
+            forbid_reserved=True,
+            code=INVALID_NARRATIVE_SECTION,
+        ):
+            col.add(code, message, path)
     if len(col.diagnostics) > before:
         return None
     if sid in seen_ids:
@@ -2337,14 +2480,24 @@ def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, 
 def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
     # Compatibility accepts only id, markup, and provenance. Any relationship,
     # selection, renderer, style, or script field is a provenance violation.
+    before = len(col.diagnostics)
     for key in raw:
         if key not in _COMPAT_SECTION_KEYS:
             col.add(INVALID_COMPATIBILITY_PROVENANCE, f"compatibility に不正なフィールド '{key}'", path)
     sid = raw.get("id")
     if not _nonblank_str(sid):
         col.add(INVALID_COMPATIBILITY_PROVENANCE, "compatibility.id は空にできません", path)
-    if not _nonblank_str(raw.get("markup")):
+    markup = raw.get("markup")
+    if not _nonblank_str(markup):
         col.add(INVALID_COMPATIBILITY_PROVENANCE, "compatibility.markup は空にできません", path)
+    elif isinstance(markup, str):
+        for code, message in scan_author_markup_bans(
+            markup,
+            section_label="compatibility",
+            forbid_reserved=False,
+            code=INVALID_COMPATIBILITY_PROVENANCE,
+        ):
+            col.add(code, message, path)
     prov = raw.get("provenance")
     provenance = None
     if not isinstance(prov, dict):
@@ -2368,6 +2521,6 @@ def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollect
         col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
     if isinstance(sid, str):
         seen_ids.add(sid)
-    if provenance is None or not _nonblank_str(sid) or not _nonblank_str(raw.get("markup")):
+    if len(col.diagnostics) > before or provenance is None or not _nonblank_str(sid) or not _nonblank_str(markup):
         return None
-    return CompatibilitySection(id=sid, markup=raw.get("markup"), provenance=provenance)
+    return CompatibilitySection(id=sid, markup=markup, provenance=provenance)

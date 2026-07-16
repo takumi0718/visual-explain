@@ -189,7 +189,7 @@ def process_canonical_section(section: CanonicalSection, registry: Registry, ren
 
 
 def process_compatibility_section(section: CompatibilitySection) -> WrappedCompatibility:
-    diagnostics = validate_content_markup(section.markup)
+    diagnostics = validate_content_markup(section.markup, section_kind="compatibility")
     if diagnostics:
         raise ContractError(diagnostics)
     wrapper = (
@@ -205,7 +205,7 @@ def process_compatibility_section(section: CompatibilitySection) -> WrappedCompa
 
 
 def process_narrative_section(section: NarrativeSection) -> WrappedNarrative:
-    diagnostics = validate_content_markup(section.markup)
+    diagnostics = validate_content_markup(section.markup, section_kind="narrative")
     if diagnostics:
         raise ContractError(diagnostics)
     wrapper = (

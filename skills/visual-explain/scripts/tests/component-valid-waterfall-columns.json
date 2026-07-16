@@ -9,24 +9,40 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-waterfall-columns",
         "relationship": {
           "kind": "additive-bridge",
-          "capabilities": ["additive-bridging"]
+          "capabilities": [
+            "additive-bridging"
+          ]
         },
         "selection": {
           "component": "waterfall",
           "version": 2,
-          "matchedCapabilities": ["additive-bridging"]
+          "matchedCapabilities": [
+            "additive-bridging"
+          ]
         },
         "caption": "売上の段階変化",
         "certainty": [
-          {"id": "cert-wfc", "level": "confirmed", "statement": "各段は監査済み。"}
+          {
+            "id": "cert-wfc",
+            "level": "confirmed",
+            "statement": "各段は監査済み。"
+          }
         ],
         "sources": [
-          {"id": "src-wfc", "label": "売上レポート"}
+          {
+            "id": "src-wfc",
+            "label": "売上レポート"
+          }
         ],
         "accessibility": {
           "label": "横並びウォーターフォール",
@@ -36,18 +52,75 @@
           "displayPrecision": 1,
           "title": "売上",
           "unitLabel": "件",
-          "axisTicks": ["0", "50", "100", "150"],
-          "start": {"id": "wfc-start", "label": "期首", "value": 100, "valueText": "100件"},
-          "steps": [
-            {"id": "wfc-s1", "label": "増", "delta": 10, "tone": "positive", "valueText": "+10件"},
-            {"id": "wfc-s2", "label": "減", "delta": -20, "tone": "warning", "valueText": "−20件"},
-            {"id": "wfc-s3", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"},
-            {"id": "wfc-s4", "label": "減", "delta": -30, "tone": "warning", "valueText": "−30件"},
-            {"id": "wfc-s5", "label": "増", "delta": 15, "tone": "positive", "valueText": "+15件"}
+          "axisTicks": [
+            "0",
+            "50",
+            "100",
+            "150"
           ],
-          "end": {"id": "wfc-end", "label": "期末", "value": 80, "valueText": "80件"}
+          "start": {
+            "id": "wfc-start",
+            "label": "期首",
+            "value": 100,
+            "valueText": "100件"
+          },
+          "steps": [
+            {
+              "id": "wfc-s1",
+              "label": "増",
+              "delta": 10,
+              "tone": "positive",
+              "valueText": "+10件"
+            },
+            {
+              "id": "wfc-s2",
+              "label": "減",
+              "delta": -20,
+              "tone": "warning",
+              "valueText": "−20件"
+            },
+            {
+              "id": "wfc-s3",
+              "label": "増",
+              "delta": 5,
+              "tone": "positive",
+              "valueText": "+5件"
+            },
+            {
+              "id": "wfc-s4",
+              "label": "減",
+              "delta": -30,
+              "tone": "warning",
+              "valueText": "−30件"
+            },
+            {
+              "id": "wfc-s5",
+              "label": "増",
+              "delta": 15,
+              "tone": "positive",
+              "valueText": "+15件"
+            }
+          ],
+          "end": {
+            "id": "wfc-end",
+            "label": "期末",
+            "value": 80,
+            "valueText": "80件"
+          }
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

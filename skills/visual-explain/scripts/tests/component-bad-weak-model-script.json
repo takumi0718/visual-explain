@@ -9,10 +9,31 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "compatibility",
       "id": "sec-weak-bad-script",
       "markup": "<figure class=\"matrix\"><script>alert(1)</script><figcaption>役割</figcaption></figure>",
-      "provenance": {"source": "legacy-html-insertion", "reason": "weak-model-degradation", "format": "matrix"}
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "weak-model-degradation",
+        "format": "matrix"
+      }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

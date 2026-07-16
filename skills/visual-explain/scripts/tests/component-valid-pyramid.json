@@ -9,24 +9,41 @@
   },
   "sections": [
     {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
       "kind": "canonical",
       "ir": {
         "id": "sec-pyramid",
         "relationship": {
           "kind": "layered-priority",
-          "capabilities": ["priority-layering"]
+          "capabilities": [
+            "priority-layering"
+          ]
         },
         "selection": {
           "component": "pyramid",
           "version": 2,
-          "matchedCapabilities": ["priority-layering"]
+          "matchedCapabilities": [
+            "priority-layering"
+          ]
         },
         "caption": "優先度の4層ピラミッド",
         "certainty": [
-          {"id": "cert-pyramid", "level": "confirmed", "statement": "4層は経営会議で合意。"}
+          {
+            "id": "cert-pyramid",
+            "level": "confirmed",
+            "statement": "4層は経営会議で合意。"
+          }
         ],
         "sources": [
-          {"id": "src-strategy", "label": "戦略方針 v2", "detail": "優先順位の定義。"}
+          {
+            "id": "src-strategy",
+            "label": "戦略方針 v2",
+            "detail": "優先順位の定義。"
+          }
         ],
         "accessibility": {
           "label": "優先度ピラミッド",
@@ -34,13 +51,38 @@
         },
         "pyramid": {
           "tiers": [
-            {"id": "tier-apex", "label": "最優先事項"},
-            {"id": "tier-high", "label": "重要施策", "sub": "四半期で追う重点領域"},
-            {"id": "tier-mid", "label": "維持管理"},
-            {"id": "tier-base", "label": "基盤整備"}
+            {
+              "id": "tier-apex",
+              "label": "最優先事項"
+            },
+            {
+              "id": "tier-high",
+              "label": "重要施策",
+              "sub": "四半期で追う重点領域"
+            },
+            {
+              "id": "tier-mid",
+              "label": "維持管理"
+            },
+            {
+              "id": "tier-base",
+              "label": "基盤整備"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

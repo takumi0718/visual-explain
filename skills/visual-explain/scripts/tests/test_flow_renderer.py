@@ -1,6 +1,7 @@
 """Task 6 tests: the flow component through the same route as matrix."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import copy
 import json
 import re
@@ -25,7 +26,7 @@ FLOW_DEF = REGISTRY.find("flow", 2)
 
 def flow_ir(mutate=None) -> dict:
     raw = json.loads((TESTS / "component-valid-flow.json").read_text("utf-8"))
-    ir = raw["sections"][0]["ir"]
+    ir = canonical_ir(raw)
     if mutate:
         mutate(ir)
     return ir
@@ -41,7 +42,7 @@ def _load(name: str) -> dict:
 
 
 def _render(raw: dict) -> RenderResult:
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return render_flow(CanonicalSection(ir=ir), FLOW_DEF)
 
 
@@ -171,7 +172,7 @@ class FlowMarkupTest(unittest.TestCase):
 class FlowGroupsTest(unittest.TestCase):
     def setUp(self) -> None:
         raw = json.loads((TESTS / "component-valid-flow-groups.json").read_text("utf-8"))
-        self.ir = validate_canonical_section(raw["sections"][0]["ir"])
+        self.ir = validate_canonical_section(canonical_ir(raw))
         self.result = render_flow(CanonicalSection(ir=self.ir), FLOW_DEF)
         self.markup = self.result.markup
 
@@ -344,7 +345,7 @@ class SpineLayoutTest(unittest.TestCase):
 
     def test_skip_edge_becomes_rail_with_lane(self) -> None:
         raw = _load("component-valid-flow.json")
-        ir = raw["sections"][0]["ir"]
+        ir = canonical_ir(raw)
         ir["flow"]["edges"].append(
             {"id": "edge-skip", "from": "node-draft", "to": "node-approve",
              "relation": "branching", "label": "即時承認"})
@@ -360,7 +361,7 @@ class SpineLayoutTest(unittest.TestCase):
         result = _render(raw)
         nodes, edges, incomplete = extract_flow_dom(result.markup)
         self.assertFalse(incomplete)
-        declared = {(e["from"], e["to"], e["relation"]) for e in raw["sections"][0]["ir"]["flow"]["edges"]}
+        declared = {(e["from"], e["to"], e["relation"]) for e in canonical_ir(raw)["flow"]["edges"]}
         self.assertEqual(edges, declared)
 
     def test_hidden_edge_list_has_no_data_attrs(self) -> None:
