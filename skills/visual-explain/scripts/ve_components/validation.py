@@ -2055,8 +2055,6 @@ def _validate_first_screen_section(raw: dict, path: str, col: DiagnosticCollecto
                 "first-screen.decision は1文（末尾の 。！？!? がちょうど1個）である必要があります", path)
     conditions_raw = raw.get("conditions", [])
     conditions: tuple[str, ...] = ()
-    if conditions_raw is None:
-        conditions_raw = []
     if not isinstance(conditions_raw, list):
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は文字列配列である必要があります", path)
     elif len(conditions_raw) > 2:
