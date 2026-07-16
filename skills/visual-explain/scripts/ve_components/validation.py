@@ -70,6 +70,10 @@ from .model import (
     FirstScreenSection,
     ClosingBlock,
     ClosingSection,
+    AskClaim,
+    AskOption,
+    AskSection,
+    AskStep,
     NarrativeSection,
     SlopeAxes,
     SlopeItem,
@@ -178,6 +182,19 @@ _NARRATIVE_SECTION_KEYS = {"kind", "id", "markup"}
 _FIRST_SCREEN_SECTION_KEYS = {"kind", "id", "decision", "conditions"}
 _CLOSING_SECTION_KEYS = {"kind", "id", "blocks"}
 _CLOSING_BLOCK_KEYS = {"heading", "items"}
+_ASK_SECTION_KEYS = {
+    "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason",
+    "steps", "claim", "verify",
+}
+_ASK_OPTION_KEYS = {"id", "label", "tradeoff"}
+_ASK_STEP_KEYS = {"role", "roleLabel", "text"}
+_ASK_CLAIM_KEYS = {"text", "certainty"}
+_ASK_TYPES = frozenset({"decision", "request", "hypothesis"})
+_ASK_ROLES = frozenset({"user", "agent", "third-party"})
+_ASK_CERTAINTY = frozenset({"confirmed", "inferred", "unverified"})
+_DECISION_ONLY_KEYS = frozenset({"question", "options", "defaultId", "noDefaultReason"})
+_REQUEST_ONLY_KEYS = frozenset({"steps"})
+_HYPOTHESIS_ONLY_KEYS = frozenset({"claim", "verify"})
 _CLOSING_REQUIRED = {
     "proposal": ("リスクと弱い前提", "不確かな点"),
     "system": ("限界・確度",),
@@ -2048,6 +2065,8 @@ def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids
         return _validate_first_screen_section(raw, path, col, seen_ids)
     if kind == "closing":
         return _validate_closing_section(raw, path, col, seen_ids, document_type)
+    if kind == "ask":
+        return _validate_ask_section(raw, path, col, seen_ids)
     if kind == "compatibility":
         return _validate_compatibility_section(raw, path, col, seen_ids)
     col.add(INVALID_COMPONENT_PAYLOAD, f"未知の section.kind '{kind}'", path)
@@ -2129,6 +2148,169 @@ def _validate_first_screen_section(raw: dict, path: str, col: DiagnosticCollecto
         return None
     seen_ids.add(sid)
     return FirstScreenSection(id=sid, decision=decision, conditions=conditions)
+
+
+def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
+    before = len(col.diagnostics)
+    _check_keys(raw, _ASK_SECTION_KEYS, path, col)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "ask.id は空にできません", path)
+    ask_type = raw.get("askType")
+    if not isinstance(ask_type, str) or ask_type not in _ASK_TYPES:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "ask.askType は decision / request / hypothesis のいずれかが必要です", path)
+        ask_type = ""
+    present = set(raw.keys()) - {"kind", "id", "askType"}
+    if ask_type == "decision":
+        foreign = present - _DECISION_ONLY_KEYS
+        if foreign:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"decision ask に不正なフィールド {sorted(foreign)}", path)
+        section = _validate_ask_decision(raw, path, col)
+    elif ask_type == "request":
+        foreign = present - _REQUEST_ONLY_KEYS
+        if foreign:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"request ask に不正なフィールド {sorted(foreign)}", path)
+        section = _validate_ask_request(raw, path, col)
+    elif ask_type == "hypothesis":
+        foreign = present - _HYPOTHESIS_ONLY_KEYS
+        if foreign:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"hypothesis ask に不正なフィールド {sorted(foreign)}", path)
+        section = _validate_ask_hypothesis(raw, path, col)
+    else:
+        section = None
+    if len(col.diagnostics) > before or section is None:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return section
+
+
+def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
+    before = len(col.diagnostics)
+    question = raw.get("question")
+    if not _nonblank_str(question):
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.question は空にできません", path)
+    options_raw = raw.get("options")
+    options: list[AskOption] = []
+    option_ids: set[str] = set()
+    if not isinstance(options_raw, list) or len(options_raw) < 2:
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.options は2件以上必要です", path)
+    else:
+        for i, item in enumerate(options_raw):
+            op = f"{path}.options[{i}]"
+            if not isinstance(item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options の各要素はオブジェクトである必要があります", op)
+                continue
+            _check_keys(item, _ASK_OPTION_KEYS, op, col)
+            oid = item.get("id")
+            accepted_id = False
+            if not _nonblank_str(oid):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].id は空にできません", op)
+            elif oid in option_ids:
+                col.add(DUPLICATE_SEMANTIC_ID, f"option id '{oid}' が重複しています", op)
+            else:
+                option_ids.add(oid)
+                accepted_id = True
+            label = item.get("label")
+            if not _nonblank_str(label):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].label は空にできません", op)
+            tradeoff = item.get("tradeoff")
+            if not _nonblank_str(tradeoff):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].tradeoff は空にできません", op)
+            if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff):
+                options.append(AskOption(id=oid, label=label, tradeoff=tradeoff))
+    has_default = "defaultId" in raw and raw.get("defaultId") is not None
+    has_reason = "noDefaultReason" in raw and raw.get("noDefaultReason") is not None
+    default_id = raw.get("defaultId") if has_default else None
+    no_default_reason = raw.get("noDefaultReason") if has_reason else None
+    if has_default and has_reason:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision の defaultId と noDefaultReason は同時に指定できません", path)
+    elif not has_default and not has_reason:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision には defaultId か noDefaultReason のどちらか一方が必要です", path)
+    else:
+        if has_default:
+            if not _nonblank_str(default_id):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は空にできません", path)
+            elif default_id not in option_ids:
+                col.add(INVALID_COMPONENT_PAYLOAD,
+                        f"decision.defaultId '{default_id}' が options にありません", path)
+        if has_reason and not _nonblank_str(no_default_reason):
+            col.add(INVALID_COMPONENT_PAYLOAD, "decision.noDefaultReason は空にできません", path)
+    if len(col.diagnostics) > before:
+        return None
+    return AskSection(
+        id=raw["id"],
+        ask_type="decision",
+        question=question,
+        options=tuple(options),
+        default_id=default_id,
+        no_default_reason=no_default_reason,
+    )
+
+
+def _validate_ask_request(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
+    before = len(col.diagnostics)
+    steps_raw = raw.get("steps")
+    steps: list[AskStep] = []
+    if not isinstance(steps_raw, list) or len(steps_raw) == 0:
+        col.add(INVALID_COMPONENT_PAYLOAD, "request.steps は1件以上必要です", path)
+    else:
+        for i, item in enumerate(steps_raw):
+            sp = f"{path}.steps[{i}]"
+            if not isinstance(item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "request.steps の各要素はオブジェクトである必要があります", sp)
+                continue
+            _check_keys(item, _ASK_STEP_KEYS, sp, col)
+            role = item.get("role")
+            if not isinstance(role, str) or role not in _ASK_ROLES:
+                col.add(INVALID_COMPONENT_PAYLOAD,
+                        "request.steps[].role は user / agent / third-party のみ有効です", sp)
+            role_label = item.get("roleLabel")
+            if not _nonblank_str(role_label):
+                col.add(INVALID_COMPONENT_PAYLOAD, "request.steps[].roleLabel は空にできません", sp)
+            text = item.get("text")
+            if not _nonblank_str(text):
+                col.add(INVALID_COMPONENT_PAYLOAD, "request.steps[].text は空にできません", sp)
+            if (isinstance(role, str) and role in _ASK_ROLES
+                    and _nonblank_str(role_label) and _nonblank_str(text)):
+                steps.append(AskStep(role=role, role_label=role_label, text=text))
+    if len(col.diagnostics) > before:
+        return None
+    return AskSection(id=raw["id"], ask_type="request", steps=tuple(steps))
+
+
+def _validate_ask_hypothesis(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
+    before = len(col.diagnostics)
+    claim_raw = raw.get("claim")
+    claim: AskClaim | None = None
+    if not isinstance(claim_raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "hypothesis.claim はオブジェクトである必要があります", path)
+    else:
+        _check_keys(claim_raw, _ASK_CLAIM_KEYS, f"{path}.claim", col)
+        text = claim_raw.get("text")
+        if not _nonblank_str(text):
+            col.add(INVALID_COMPONENT_PAYLOAD, "hypothesis.claim.text は空にできません", path)
+        certainty = claim_raw.get("certainty")
+        if not isinstance(certainty, str) or certainty not in _ASK_CERTAINTY:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    "hypothesis.claim.certainty は confirmed / inferred / unverified のいずれかが必要です",
+                    path)
+        elif _nonblank_str(text):
+            claim = AskClaim(text=text, certainty=certainty)
+    verify = raw.get("verify")
+    if not _nonblank_str(verify):
+        col.add(INVALID_COMPONENT_PAYLOAD, "hypothesis.verify は空にできません", path)
+    if len(col.diagnostics) > before or claim is None:
+        return None
+    return AskSection(id=raw["id"], ask_type="hypothesis", claim=claim, verify=verify)
 
 
 def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):

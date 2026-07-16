@@ -456,6 +456,46 @@ class ClosingSection:
 
 
 @dataclass(frozen=True)
+class AskOption:
+    id: str
+    label: str
+    tradeoff: str
+
+
+@dataclass(frozen=True)
+class AskStep:
+    role: str
+    role_label: str
+    text: str
+
+
+@dataclass(frozen=True)
+class AskClaim:
+    text: str
+    certainty: str  # confirmed | inferred | unverified
+
+
+@dataclass(frozen=True)
+class AskSection:
+    """Discriminated union over ask_type ∈ {decision, request, hypothesis}.
+
+    decision: question + options + (default_id XOR no_default_reason)
+    request: steps
+    hypothesis: claim + verify
+    Unused arms are None / empty.
+    """
+    id: str
+    ask_type: str
+    question: Optional[str] = None
+    options: tuple[AskOption, ...] = ()
+    default_id: Optional[str] = None
+    no_default_reason: Optional[str] = None
+    steps: tuple[AskStep, ...] = ()
+    claim: Optional[AskClaim] = None
+    verify: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class AssemblyRequest:
     schema_version: int
     document: DocumentMetadata

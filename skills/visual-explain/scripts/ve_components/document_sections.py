@@ -9,10 +9,21 @@ from __future__ import annotations
 import html
 from dataclasses import dataclass
 
-from .model import ClosingSection, DocumentMetadata, FirstScreenSection
+from .model import (
+    AskSection,
+    CERTAINTY_LABEL,
+    ClosingSection,
+    DocumentMetadata,
+    FirstScreenSection,
+)
 
 _SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
                    "research": "この資料が答える問い"}
+_ASK_KIND_LABEL = {
+    "decision": "判断してください",
+    "request": "お願いする動作",
+    "hypothesis": "検証待ちの仮説",
+}
 
 
 @dataclass(frozen=True)
@@ -57,3 +68,77 @@ def render_closing(section: ClosingSection) -> WrappedDocumentSection:
         f"</section>\n</section>"
     )
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
+
+
+def render_ask(section: AskSection) -> WrappedDocumentSection:
+    kind = section.ask_type
+    kind_label = _ASK_KIND_LABEL[kind]
+    if kind == "decision":
+        body = _render_decision_body(section, kind_label)
+    elif kind == "request":
+        body = _render_request_body(section, kind_label)
+    else:
+        body = _render_hypothesis_body(section, kind_label)
+    markup = (
+        f'<section data-ve-section-kind="ask" data-ve-ask-type="{_esc(kind)}"'
+        f' id="{_esc(section.id)}">\n'
+        f'{body}\n'
+        f"</section>"
+    )
+    return WrappedDocumentSection(instance_id=section.id, markup=markup)
+
+
+def _render_decision_body(section: AskSection, kind_label: str) -> str:
+    options_html: list[str] = []
+    for opt in section.options:
+        attrs = "data-ask-option"
+        if section.default_id is not None and opt.id == section.default_id:
+            attrs += " data-ask-default"
+        options_html.append(
+            f"<li {attrs}><span>{_esc(opt.label)}</span>"
+            f'<span class="ask-tradeoff">{_esc(opt.tradeoff)}</span></li>'
+        )
+    reason = ""
+    if section.no_default_reason:
+        reason = (
+            f'\n  <p class="ask-no-default-reason">{_esc(section.no_default_reason)}</p>'
+        )
+    return (
+        f'<div class="ask" data-ask="decision">\n'
+        f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
+        f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
+        f'  <ul class="ask-options">\n'
+        f'    {"".join(options_html)}\n'
+        f"  </ul>{reason}\n"
+        f"</div>"
+    )
+
+
+def _render_request_body(section: AskSection, kind_label: str) -> str:
+    steps_html = "".join(
+        f'<li data-ask-role="{_esc(step.role)}" '
+        f'data-ask-role-label="{_esc(step.role_label)}">{_esc(step.text)}</li>'
+        for step in section.steps
+    )
+    return (
+        f'<div class="ask" data-ask="request">\n'
+        f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
+        f'  <ol class="ask-steps">\n'
+        f"    {steps_html}\n"
+        f"  </ol>\n"
+        f"</div>"
+    )
+
+
+def _render_hypothesis_body(section: AskSection, kind_label: str) -> str:
+    assert section.claim is not None
+    certainty = section.claim.certainty
+    certainty_label = CERTAINTY_LABEL[certainty]
+    return (
+        f'<div class="ask" data-ask="hypothesis">\n'
+        f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
+        f'  <p class="ask-claim">{_esc(section.claim.text)} '
+        f'<span class="certainty {certainty}">{_esc(certainty_label)}</span></p>\n'
+        f'  <p class="ask-verify">{_esc(section.verify or "")}</p>\n'
+        f"</div>"
+    )

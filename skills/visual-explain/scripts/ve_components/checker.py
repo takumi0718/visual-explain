@@ -481,6 +481,10 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
             # Attribute / required-heading checks land in Task 8 group-3 structure
             # checks; provenance only allows the kind here.
             pass
+        elif kind == "ask":
+            # Attribute checks (data-ve-ask-type / id) land in Task 8 group-3 structure
+            # checks; provenance only allows the kind here.
+            pass
         else:
             diagnostics.append(Diagnostic(MISSING_PROVENANCE, f"未知の section-kind '{kind}'"))
     return diagnostics
