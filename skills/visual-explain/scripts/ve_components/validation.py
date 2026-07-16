@@ -267,15 +267,23 @@ class _AuthorMarkupBanParser(HTMLParser):
             self.has_title = True
         if not self.forbid_reserved:
             return
-        attr_map = {((n or "").lower()): v for n, v in attrs}
-        classes = (attr_map.get("class") or "").split()
-        for cls in classes:
-            if cls in _RESERVED_CLASSES and cls not in self._seen_classes:
+        # Collect every class= value (including duplicate attributes). Collapsing
+        # to a dict would keep only the last value and let
+        # class="first-screen" class="safe" bypass the reserved-class ban.
+        classes: set[str] = set()
+        for name, value in attrs:
+            if (name or "").lower() == "class" and value:
+                classes.update(value.split())
+        for cls in classes & _RESERVED_CLASSES:
+            if cls not in self._seen_classes:
                 self._seen_classes.add(cls)
                 self.reserved_classes.append(cls)
-        for name in attr_map:
-            if _is_reserved_data_attr(name):
-                label = _canonical_reserved_attr_name(name)
+        for name, _value in attrs:
+            attr_name = (name or "").lower()
+            if attr_name == "class":
+                continue
+            if _is_reserved_data_attr(attr_name):
+                label = _canonical_reserved_attr_name(attr_name)
                 if label not in self._seen_attrs:
                     self._seen_attrs.add(label)
                     self.reserved_attrs.append(label)

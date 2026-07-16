@@ -19,11 +19,3 @@ def compatibility_section(raw: dict) -> dict:
         if isinstance(section, dict) and section.get("kind") == "compatibility":
             return section
     raise KeyError("compatibility section not found")
-
-
-def first_typed(sections, cls):
-    """Return the first typed model section of the given class."""
-    for section in sections:
-        if isinstance(section, cls):
-            return section
-    raise KeyError(f"{cls.__name__} not found")

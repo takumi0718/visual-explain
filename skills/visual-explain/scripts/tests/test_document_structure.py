@@ -25,6 +25,28 @@ _CLOSING = {
 }
 _NARR = {"kind": "narrative", "id": "sec-body", "markup": "<p>本文です。</p>"}
 
+# criteria / Global Constraints の予約トークン一覧（診断ラベル付き）。
+_RESERVED_DATA_CASES = (
+    ("data-ve-instance", "data-ve-*", 'data-ve-instance="x"'),
+    ("data-connect", "data-connect", 'data-connect="a->b"'),
+    ("data-connect-scope", "data-connect-scope", "data-connect-scope"),
+    ("data-stepper", "data-stepper", 'data-stepper="1"'),
+    ("data-step", "data-step", 'data-step="1"'),
+    ("data-step-action", "data-step-action", 'data-step-action="next"'),
+    ("data-ask", "data-ask", 'data-ask="decision"'),
+    ("data-ask-option", "data-ask-*", "data-ask-option"),
+    ("data-theme", "data-theme", 'data-theme="dark"'),
+    ("data-theme-pref", "data-theme-*", 'data-theme-pref="system"'),
+    ("data-lane", "data-lane", 'data-lane="input"'),
+    ("data-tone", "data-tone", 'data-tone="warning"'),
+)
+_RESERVED_CLASS_CASES = (
+    "first-screen",
+    "closing-section",
+    "ask",
+    "link-domain",
+)
+
 
 def _assembly(*sections: dict) -> dict:
     return {"schemaVersion": 1, "document": dict(_DOC), "sections": list(sections)}
@@ -67,15 +89,17 @@ class DocumentStructureTest(unittest.TestCase):
             validate_assembly(_assembly(_FIRST, narr, _CLOSING))
         self.assertIn("narrative に <h1> は置けません（h1 は first-screen 専有）", _messages(ctx.exception))
 
-    def test_rejects_data_ask_in_narrative(self) -> None:
+    def test_rejects_duplicate_class_attr_hiding_reserved_class(self) -> None:
+        # Duplicate class attrs: browsers may keep the first value (first-screen),
+        # so collapsing to the last value would incorrectly allow this markup.
         narr = {
             "kind": "narrative",
-            "id": "sec-bad-ask",
-            "markup": '<div data-ask="decision"><p>問いはここに置かない</p></div>',
+            "id": "sec-dup-class",
+            "markup": '<section class="first-screen" class="safe"><p>本文</p></section>',
         }
         with self.assertRaises(ContractError) as ctx:
             validate_assembly(_assembly(_FIRST, narr, _CLOSING))
-        self.assertIn("narrative に予約属性 data-ask は置けません", _messages(ctx.exception))
+        self.assertIn("narrative に予約 class first-screen は置けません", _messages(ctx.exception))
 
     def test_valid_structure_accepted(self) -> None:
         req = validate_assembly(_assembly(_FIRST, _NARR, _CLOSING))
@@ -109,3 +133,37 @@ class DocumentStructureTest(unittest.TestCase):
         with self.assertRaises(ContractError) as ctx:
             validate_assembly(_assembly(_FIRST, compat, _CLOSING))
         self.assertIn("<h1>", _messages(ctx.exception))
+
+
+class NarrativeReservedTokenCoverageTest(unittest.TestCase):
+    """Parametrize reserved data attrs / classes so list/prefix regressions fail closed."""
+
+    def test_reserved_data_attrs(self) -> None:
+        for _name, label, attr_html in _RESERVED_DATA_CASES:
+            with self.subTest(attr=label):
+                narr = {
+                    "kind": "narrative",
+                    "id": f"sec-bad-{label}",
+                    "markup": f"<div {attr_html}><p>本文</p></div>",
+                }
+                with self.assertRaises(ContractError) as ctx:
+                    validate_assembly(_assembly(_FIRST, narr, _CLOSING))
+                self.assertIn(
+                    f"narrative に予約属性 {label} は置けません",
+                    _messages(ctx.exception),
+                )
+
+    def test_reserved_classes(self) -> None:
+        for cls in _RESERVED_CLASS_CASES:
+            with self.subTest(cls=cls):
+                narr = {
+                    "kind": "narrative",
+                    "id": f"sec-bad-cls-{cls}",
+                    "markup": f'<div class="{cls}"><p>本文</p></div>',
+                }
+                with self.assertRaises(ContractError) as ctx:
+                    validate_assembly(_assembly(_FIRST, narr, _CLOSING))
+                self.assertIn(
+                    f"narrative に予約 class {cls} は置けません",
+                    _messages(ctx.exception),
+                )
