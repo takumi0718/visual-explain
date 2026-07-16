@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 from dataclasses import dataclass
+from html.parser import HTMLParser
 
 from .model import (
     AskSection,
@@ -16,6 +17,13 @@ from .model import (
     DocumentMetadata,
     FirstScreenSection,
 )
+
+_VOID_TAGS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+})
+_TOC_INSTANCE_ID = "sec-toc"
+_TOC_MIN_ENTRIES = 5
 
 _SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
                    "research": "この資料が答える問い"}
@@ -32,8 +40,76 @@ class WrappedDocumentSection:
     markup: str
 
 
+@dataclass(frozen=True)
+class TocEntry:
+    anchor_id: str
+    heading: str
+
+
 def _esc(value: str) -> str:
     return html.escape(value)
+
+
+class _FirstH2H3Parser(HTMLParser):
+    """Extract the first h2/h3 text the same way as check.sh ContentInspector.headings."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[str] = []
+        self.active: tuple[int, list[str]] | None = None
+        self.result: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag not in _VOID_TAGS:
+            self.stack.append(tag)
+        depth = len(self.stack)
+        if self.result is None and self.active is None and tag in {"h2", "h3"}:
+            self.active = (depth, [])
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag.lower() not in _VOID_TAGS:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in _VOID_TAGS or not self.stack:
+            return
+        depth = len(self.stack)
+        if self.active is not None and self.active[0] == depth:
+            text = "".join(self.active[1]).strip()
+            self.result = text if text else None
+            self.active = None
+        self.stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        if self.active is not None:
+            self.active[1].append(data)
+
+
+def extract_first_h2_h3(markup: str) -> str | None:
+    """Return the text of the first h2/h3 in markup, or None if absent/blank."""
+    parser = _FirstH2H3Parser()
+    parser.feed(markup)
+    parser.close()
+    return parser.result
+
+
+def build_toc(entries: tuple[TocEntry, ...]) -> WrappedDocumentSection | None:
+    """Build a flat TOC section when there are at least five headed body sections."""
+    if len(entries) < _TOC_MIN_ENTRIES:
+        return None
+    items = "".join(
+        f'<li><a href="#{_esc(entry.anchor_id)}">{_esc(entry.heading)}</a></li>'
+        for entry in entries
+    )
+    markup = (
+        f'<section data-ve-section-kind="toc">\n'
+        f'<nav aria-label="目次"><ol>{items}</ol></nav>\n'
+        f"</section>"
+    )
+    return WrappedDocumentSection(instance_id=_TOC_INSTANCE_ID, markup=markup)
 
 
 def render_first_screen(section: FirstScreenSection, document: DocumentMetadata) -> WrappedDocumentSection:

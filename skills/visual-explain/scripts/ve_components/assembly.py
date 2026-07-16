@@ -204,13 +204,19 @@ def process_compatibility_section(section: CompatibilitySection) -> WrappedCompa
     )
 
 
-def process_narrative_section(section: NarrativeSection) -> WrappedNarrative:
+def process_narrative_section(
+    section: NarrativeSection,
+    *,
+    include_anchor_id: bool = False,
+) -> WrappedNarrative:
     diagnostics = validate_content_markup(section.markup, section_kind="narrative")
     if diagnostics:
         raise ContractError(diagnostics)
+    id_attr = f' id="{_attr(section.id)}"' if include_anchor_id else ""
     wrapper = (
         f'<section data-ve-section-kind="narrative"'
-        f' data-ve-instance="{_attr(section.id)}">\n{section.markup}\n</section>'
+        f' data-ve-instance="{_attr(section.id)}"{id_attr}>\n'
+        f'{section.markup}\n</section>'
     )
     return WrappedNarrative(instance_id=section.id, markup=wrapper)
 
