@@ -473,6 +473,10 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
         elif kind == "narrative":
             if not _ATTR_RE("data-ve-instance").search(attrs):
                 diagnostics.append(Diagnostic(MISSING_PROVENANCE, "narrative セクションに instance がありません"))
+        elif kind == "first-screen":
+            # Attribute checks (id / data-ve-document-type / data-ve-profile) land in
+            # Task 8 group-3 structure checks; provenance only allows the kind here.
+            pass
         else:
             diagnostics.append(Diagnostic(MISSING_PROVENANCE, f"未知の section-kind '{kind}'"))
     return diagnostics
