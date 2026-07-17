@@ -135,6 +135,14 @@ class NarrativeHttpsHrefTest(unittest.TestCase):
         self.assertTrue(diags)
         self.assertIn("self-closing の <a> は使えません", diags[0].message)
 
+    def test_unclosed_anchor_rejected(self) -> None:
+        diags = _diags(
+            '<p><a href="https://example.com/x">x</p>',
+            section_kind="narrative",
+        )
+        self.assertTrue(diags)
+        self.assertIn("未閉鎖の <a> は使えません", diags[0].message)
+
 
 class CompatibilityKeepsLegacyTest(unittest.TestCase):
     def test_compatibility_still_rejects_https_href(self) -> None:

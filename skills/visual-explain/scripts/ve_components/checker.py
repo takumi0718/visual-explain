@@ -180,6 +180,7 @@ class _ContentSafetyParser(HTMLParser):
         # "https_or_anchor": narrative / typed / final — https absolute + # only.
         # "legacy_no_external": compatibility — reject all external http(s)/protocol-relative.
         self.href_policy = href_policy
+        self._open_anchors = 0
 
     def _check_src(self, v: str) -> None:
         scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
@@ -222,6 +223,8 @@ class _ContentSafetyParser(HTMLParser):
                     self._check_href(v)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() == "a":
+            self._open_anchors += 1
         self._check(tag, attrs)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -234,9 +237,22 @@ class _ContentSafetyParser(HTMLParser):
             return
         self._check(tag, attrs)
 
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "a" and self._open_anchors > 0:
+            self._open_anchors -= 1
+
     def handle_comment(self, data: str) -> None:
         if "VE-CONTROLLED:" in data:
             self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, "content スロット内に制御マーカーを入れ子にできません"))
+
+    def close(self) -> None:
+        super().close()
+        # Unclosed <a> skips marker insertion (no handle_endtag). Reject at input.
+        if self._open_anchors > 0:
+            self.diagnostics.append(
+                Diagnostic(FORBIDDEN_CONTENT_MARKUP, "未閉鎖の <a> は使えません")
+            )
+            self._open_anchors = 0
 
 
 def validate_content_markup(
