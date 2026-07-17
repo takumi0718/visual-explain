@@ -73,7 +73,7 @@ def test_build_document_inserts_toc_after_first_screen_with_narrative_ids():
         _narr("sec-c", "論点C"),
         _narr("sec-d", "論点D"),
     )
-    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
 
     i_first = doc.index('data-ve-section-kind="first-screen"')
     i_toc = doc.index('data-ve-section-kind="toc"')
@@ -107,7 +107,7 @@ def test_build_document_no_toc_and_no_narrative_id_when_under_threshold():
         _narr("sec-b", "論点B"),
         _narr("sec-c", "論点C"),
     )
-    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
 
     assert 'data-ve-section-kind="toc"' not in doc
     assert 'data-ve-instance="sec-a"' in doc
@@ -131,7 +131,7 @@ def test_headingless_narrative_excluded_from_toc_entries():
         _narr("sec-c", "論点C"),
         _narr("sec-d", "論点D"),
     )
-    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
 
     assert 'data-ve-section-kind="toc"' in doc
     assert 'href="#sec-plain"' not in doc
@@ -157,7 +157,7 @@ def test_build_document_succeeds_when_user_section_id_is_sec_toc():
         _narr("sec-b", "論点B"),
         _narr("sec-c", "論点C"),
     )
-    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
 
     assert 'data-ve-section-kind="toc"' in doc
     assert 'data-ve-instance="sec-toc"' in doc

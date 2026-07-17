@@ -191,3 +191,12 @@ S6 スライスで追加したスロープ・論拠地図と renderer-svg ゲー
 | `component-valid-svg-boundary.html` | viewBox 端 0/600/220 の境界 valid |
 | `slope-doc.html` | light/dark 目視用（スロープ SVG） |
 | `evidence-map-doc.html` | light/dark 目視用（論拠地図） |
+
+## 検査群③ decision-panel fixtures
+
+decision ask の回収パネル（存在・位置・digest 整合）を検査群③（`check_document_structure`）に固定するフィクスチャ。
+
+| ファイル | 意図 |
+|---|---|
+| `structure-bad-panel-missing.html` | decision ask はあるがパネル wrapper を除去 → `"decision ask があるのに回収パネルがありません"` |
+| `structure-bad-panel-digest.html` | パネルの `data-ve-ask-digest` を改竄 → `"回収パネルの ask 契約ダイジェストが一致しません"` |

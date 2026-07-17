@@ -15,7 +15,12 @@ from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
-from .validation import _CLOSING_REQUIRED, _DOCUMENT_PROFILES, _DOCUMENT_TYPES
+from .document_sections import compute_ask_digest_from_pairs
+from .validation import (
+    _CLOSING_REQUIRED,
+    _DOCUMENT_PROFILES,
+    _DOCUMENT_TYPES,
+)
 
 _VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
@@ -27,6 +32,22 @@ _OPAQUE_TAGS = frozenset({"script", "style"})
 # under profile=strict is still rejected so the gate is ready.
 _EXTENDED_ONLY_KINDS = frozenset({"freeform", "image"})
 
+# Structural reserved attributes and the single tag each may legitimately
+# appear on. The skeleton's JS binder and this checker both key document
+# structure off these attributes via bare `[attr]` DOM queries (not
+# `tag[attr]`), so an attacker who smuggles one onto the wrong tag — e.g. a
+# `<div data-ve-section-kind="decision-panel">` inside otherwise-permitted
+# compatibility markup, which `_StructureParser` below only tracks on
+# `<section>` — is invisible to `structure.sections` yet still matched by a
+# real browser's `document.querySelector('[data-ve-section-kind=...]')`.
+# Fail-closed on any occurrence outside its designated tag, mirroring the
+# self-closing-tag divergence guard above.
+_RESERVED_ATTR_REQUIRED_TAG = {
+    "data-ve-section-kind": "section",
+    "data-ve-ask-type": "section",
+    "data-ve-panel-ask": "li",
+}
+
 
 @dataclass
 class _SectionNode:
@@ -35,6 +56,7 @@ class _SectionNode:
     h1_texts: list[str] = field(default_factory=list)
     h2_texts: list[str] = field(default_factory=list)
     has_summary: bool = False
+    option_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -42,6 +64,8 @@ class _DocStructure:
     sections: list[_SectionNode] = field(default_factory=list)
     h1_in_first_screen: int = 0
     h1_total: int = 0
+    self_closing_tags: list[str] = field(default_factory=list)
+    misplaced_reserved_attrs: list[tuple[str, str]] = field(default_factory=list)
 
 
 class _StructureParser(HTMLParser):
@@ -59,6 +83,8 @@ class _StructureParser(HTMLParser):
         self._paragraph_parts: list[str] = []
         # Outermost data-ve-section-kind="first-screen" currently open, if any.
         self._first_screen_depth: int | None = None
+        # Depth of nested <svg> foreign content currently open (0 = none).
+        self._svg_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
@@ -67,7 +93,11 @@ class _StructureParser(HTMLParser):
         if tag in _OPAQUE_TAGS:
             self._opaque = tag
             return
+        if tag == "svg":
+            self._svg_depth += 1
         attr_map = {k.lower(): (v or "") for k, v in attrs}
+        self._collect_option_id(attr_map)
+        self._check_reserved_attr_placement(tag, attr_map)
         if tag not in _VOID_TAGS:
             self._element_stack.append(tag)
 
@@ -98,11 +128,46 @@ class _StructureParser(HTMLParser):
             pass
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        # Void / self-closing: no stack push beyond start handling for voids.
+        # Self-closing syntax (``<tag .../>``) has no structural effect for
+        # genuinely void elements (``<br/>`` etc: browsers treat them
+        # identically with or without the slash). For any other element in
+        # HTML content, real browsers ignore the trailing slash as a parse
+        # error and open the element as a normal, unclosed start tag instead
+        # of skipping it — the opposite of a no-op. Silently ignoring it
+        # here (as a naive ``HTMLParser`` override might) would let a
+        # self-closed ``<section data-ve-section-kind="decision-panel".../>``
+        # (or a fake ask) vanish from this parser's model while a browser
+        # still materializes a real, open section. Recording it as a
+        # violation closes that divergence fail-closed rather than trying to
+        # emulate browser mis-nesting.
+        #
+        # Inside <svg> foreign content the HTML5 parsing algorithm takes the
+        # opposite branch: the self-closing flag IS honored for every
+        # element there (not just a recognized SVG tag list), so a
+        # self-closed ``<path/>``/``<circle/>`` genuinely self-closes in a
+        # real browser too — there is no divergence to guard against, and
+        # any HTML section/panel/ask tag self-closed inside <svg> becomes an
+        # inert, foreign-namespaced element rather than a real document
+        # section, so it can't spoof structure either. Treat that case as a
+        # no-op for the self-closing-tag violation only — the element is
+        # still a real, attribute-bearing DOM node a browser materializes,
+        # so any ``data-ask-option-id`` it carries must still reach the
+        # digest, exactly like a void self-closing tag's does below.
         tag = tag.lower()
         if self._opaque is not None or tag in _OPAQUE_TAGS:
             return
-        # No structural effect for void tags we care about.
+        in_svg = tag == "svg" or self._svg_depth > 0
+        if not in_svg and tag not in _VOID_TAGS:
+            self.structure.self_closing_tags.append(tag)
+            return
+        # Void elements (e.g. ``<input .../>``) never reach handle_starttag
+        # — HTMLParser fires handle_startendtag exclusively for self-closing
+        # syntax. Collect data-ask-option-id here too (and for any element
+        # self-closed inside <svg>, void or not), or an option carried on it
+        # silently evades the decision-panel digest.
+        attr_map = {k.lower(): (v or "") for k, v in attrs}
+        self._collect_option_id(attr_map)
+        self._check_reserved_attr_placement(tag, attr_map)
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
@@ -110,6 +175,8 @@ class _StructureParser(HTMLParser):
             if tag == self._opaque:
                 self._opaque = None
             return
+        if tag == "svg" and self._svg_depth > 0:
+            self._svg_depth -= 1
 
         if self._heading_tag == tag:
             text = "".join(self._heading_parts).strip()
@@ -170,6 +237,44 @@ class _StructureParser(HTMLParser):
         node = self._open[self._first_screen_depth - 1]
         return node
 
+    def _collect_option_id(self, attr_map: dict[str, str]) -> None:
+        """Record ``data-ask-option-id`` on the innermost open decision ask.
+
+        Shared by ``handle_starttag`` and ``handle_startendtag`` (both the
+        void-tag and svg-foreign-content branches) so every code path that
+        can carry the attribute on a real DOM element funnels through one
+        place instead of duplicating the presence check and lookup.
+        """
+        if "data-ask-option-id" in attr_map:
+            ask_node = self._current_ask_decision()
+            if ask_node is not None:
+                ask_node.option_ids.append(attr_map["data-ask-option-id"])
+
+    def _check_reserved_attr_placement(self, tag: str, attr_map: dict[str, str]) -> None:
+        """Fail-closed on a structural reserved attribute borne by the wrong tag.
+
+        Shared by ``handle_starttag`` and ``handle_startendtag`` so a bare
+        ``[data-ve-section-kind]``-style DOM query (as the skeleton's JS
+        binder and ``document.querySelector`` calls use) can never match an
+        element this parser silently ignored as non-structural.
+        """
+        for attr, required_tag in _RESERVED_ATTR_REQUIRED_TAG.items():
+            if tag != required_tag and attr in attr_map:
+                self.structure.misplaced_reserved_attrs.append((tag, attr))
+
+    def _current_ask_decision(self) -> _SectionNode | None:
+        """Innermost currently-open decision-typed ask wrapper, if any.
+
+        Walks outward through any intervening nested sections (e.g. plain
+        grouping wrappers with no ``data-ve-section-kind``) so options
+        nested arbitrarily deep inside an ask still attribute to it in
+        document order, instead of silently dropping out of the digest.
+        """
+        for node in reversed(self._open):
+            if node is not None and node.kind == "ask" and node.attrs.get("data-ve-ask-type") == "decision":
+                return node
+        return None
+
     def _finish_heading(self, tag: str, text: str) -> None:
         if tag == "h1":
             self.structure.h1_total += 1
@@ -224,6 +329,24 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
     """
     diagnostics: list[Diagnostic] = []
     structure = _parse_structure(content_markup)
+    if structure.self_closing_tags:
+        tags = ", ".join(f"<{tag}/>" for tag in structure.self_closing_tags)
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"自己閉じタグは許容されません（ブラウザとの解釈差異のため）: {tags}",
+            "content",
+        ))
+        return diagnostics
+    if structure.misplaced_reserved_attrs:
+        offenders = ", ".join(
+            f"<{tag} {attr}>" for tag, attr in structure.misplaced_reserved_attrs
+        )
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"構造予約属性が許可されない要素にあります: {offenders}",
+            "content",
+        ))
+        return diagnostics
     first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
     if not first_nodes:
         diagnostics.append(Diagnostic(
@@ -296,6 +419,7 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
     diagnostics.extend(_check_external_link_markers(content_markup))
     if profile == "strict":
         diagnostics.extend(_check_strict_excludes_extended(structure))
+    diagnostics.extend(_check_decision_panel(structure))
     return diagnostics
 
 
@@ -336,12 +460,16 @@ def _check_closing_from_structure(
             "closing セクションがありません",
             "content",
         )]
+    if len(closing_nodes) != 1:
+        return [Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "closing はちょうど1個必要です",
+            "content",
+        )]
     if doc_type is None:
         return []
     required = _CLOSING_REQUIRED.get(doc_type, ())
-    headings = set()
-    for node in closing_nodes:
-        headings.update(node.h2_texts)
+    headings = set(closing_nodes[0].h2_texts)
     diagnostics: list[Diagnostic] = []
     for heading in required:
         if heading not in headings:
@@ -466,6 +594,75 @@ def _check_external_link_markers(content: str) -> list[Diagnostic]:
     parser.feed(content)
     parser.close()
     return parser.diagnostics
+
+
+def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
+    """Group-3: decision-recovery panel presence, position, and digest integrity.
+
+    Only typed ask wrappers (``data-ve-section-kind="ask"`` with
+    ``data-ve-ask-type="decision"``) count toward the decision-ask tally; the
+    panel's own summary ``<li>`` elements use a distinct attribute name and
+    never leak into ``option_ids``.
+    """
+    ask_nodes = [
+        s for s in structure.sections
+        if s.kind == "ask" and s.attrs.get("data-ve-ask-type") == "decision"
+    ]
+    panel_nodes = [s for s in structure.sections if s.kind == "decision-panel"]
+
+    if not ask_nodes:
+        if panel_nodes:
+            return [Diagnostic(
+                DOCUMENT_STRUCTURE_VIOLATION,
+                "decision ask がないのに回収パネルがあります",
+                "content",
+            )]
+        return []
+
+    if not panel_nodes:
+        return [Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "decision ask があるのに回収パネルがありません",
+            "content",
+        )]
+    if len(panel_nodes) != 1:
+        return [Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルはちょうど1個必要です",
+            "content",
+        )]
+
+    diagnostics: list[Diagnostic] = []
+    panel = panel_nodes[0]
+    panel_index = next(i for i, node in enumerate(structure.sections) if node is panel)
+    closing_indices = [
+        i for i, node in enumerate(structure.sections) if node.kind == "closing"
+    ]
+    if closing_indices and panel_index < max(closing_indices):
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルは closing の後に必要です",
+            "content",
+        ))
+
+    pairs = tuple((node.attrs.get("id", ""), tuple(node.option_ids)) for node in ask_nodes)
+    expected_digest = compute_ask_digest_from_pairs(pairs)
+    if panel.attrs.get("data-ve-ask-digest") != expected_digest:
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルの ask 契約ダイジェストが一致しません",
+            "content",
+        ))
+
+    required_attrs = ("data-ve-document-id", "data-ve-schema-version", "data-ve-document-path")
+    if any(not panel.attrs.get(attr) for attr in required_attrs):
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルの自己表明属性が不足しています",
+            "content",
+        ))
+
+    return diagnostics
 
 
 def _check_strict_excludes_extended(structure: _DocStructure) -> list[Diagnostic]:

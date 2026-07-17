@@ -8,7 +8,7 @@ from build_explainer import build_document
 from ve_components.checker import validate_ask_blocks
 from ve_components.diagnostics import ContractError
 from ve_components.document_sections import render_ask
-from ve_components.model import AskOption, AskSection
+from ve_components.model import AskOption, AskSection, AskStep
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
 from ve_components.validation import validate_assembly
@@ -104,6 +104,78 @@ class AskSectionTest(unittest.TestCase):
                             or "既定" in str(d)
                             for d in ctx.exception.diagnostics))
 
+    def test_ask_id_with_quote_character_is_accepted(self) -> None:
+        """r3 made the decision-panel binder splice the ask id, unescaped,
+        into a CSS attribute selector, so this id shape was rejected up
+        front at validation. r4 replaces the binder with a dataset-comparison
+        scan that never builds a selector string, so decision ask ids accept
+        the same arbitrary non-empty string request/hypothesis ids always
+        did — restoring the pre-r3 contract.
+        """
+        raw = _assembly(_decision_section(id='sec-ask"decision'))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, 'sec-ask"decision')
+
+    def test_option_id_with_quote_character_is_accepted(self) -> None:
+        raw = _assembly(_decision_section(
+            options=[
+                {"id": 'opt"a', "label": "A", "tradeoff": "t1"},
+                {"id": "opt-b", "label": "B", "tradeoff": "t2"},
+            ],
+            defaultId="opt-b",
+        ))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual([o.id for o in section.options], ['opt"a', "opt-b"])
+
+    def test_ask_id_with_trailing_newline_is_accepted(self) -> None:
+        raw = _assembly(_decision_section(id="sec-ask-decision\n"))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, "sec-ask-decision\n")
+
+    def test_option_id_with_trailing_newline_is_accepted(self) -> None:
+        """Same restored compatibility as the ask id, for option ids."""
+        raw = _assembly(_decision_section(
+            options=[
+                {"id": "opt-a\n", "label": "A", "tradeoff": "t1"},
+                {"id": "opt-b", "label": "B", "tradeoff": "t2"},
+            ],
+            defaultId="opt-b",
+        ))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual([o.id for o in section.options], ["opt-a\n", "opt-b"])
+
+    def test_request_id_with_japanese_and_whitespace_is_accepted(self) -> None:
+        """request.id is never spliced into a CSS selector or digest (only
+        decision asks get a recovery panel), so it must keep accepting the
+        broader charset it always allowed, unlike decision/option ids."""
+        raw = _assembly({
+            "kind": "ask",
+            "id": "依頼 セクション",
+            "askType": "request",
+            "steps": [
+                {"role": "user", "roleLabel": "あなた", "text": "specをレビューする"},
+            ],
+        })
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, "依頼 セクション")
+
+    def test_hypothesis_id_with_japanese_and_whitespace_is_accepted(self) -> None:
+        raw = _assembly({
+            "kind": "ask",
+            "id": "仮説 セクション",
+            "askType": "hypothesis",
+            "claim": {"text": "見出しだけで判断できる", "certainty": "inferred"},
+            "verify": "検証方法: 見出し列のみで判断内容を言えるか確認する",
+        })
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, "仮説 セクション")
+
     def test_request_static_output_passes_ask_inspector(self) -> None:
         raw = _assembly({
             "kind": "ask",
@@ -181,6 +253,7 @@ class AskSectionTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS_DIR,
+            document_path="doc.html",
         )
         self.assertIn('data-ve-section-kind="ask"', html)
         self.assertIn('data-ve-ask-type="decision"', html)
@@ -188,6 +261,46 @@ class AskSectionTest(unittest.TestCase):
         self.assertIn('data-ask="decision"', html)
         self.assertIn("注釈を今回に含めますか？", html)
         self.assertIn("data-ask-default", html)
+
+    def test_decision_options_carry_option_ids(self) -> None:
+        section = AskSection(id="ask-1", ask_type="decision", question="どちらにしますか。",
+                             options=(AskOption("opt-a", "案A", "早いが粗い"),
+                                      AskOption("opt-b", "案B", "遅いが確実")),
+                             default_id="opt-b")
+        wrapped = render_ask(section)
+        self.assertIn('data-ask-option data-ask-option-id="opt-a"', wrapped.markup)
+        self.assertIn('data-ask-option-id="opt-b" data-ask-default', wrapped.markup.replace("data-ask-option ", ""))
+
+    def test_decision_renders_static_memo_field(self) -> None:
+        section = AskSection(id="ask-1", ask_type="decision", question="どちらにしますか。",
+                             options=(AskOption("opt-a", "案A", "早いが粗い"),
+                                      AskOption("opt-b", "案B", "遅いが確実")),
+                             default_id="opt-b")
+        wrapped = render_ask(section)
+        self.assertIn('<textarea data-ask-memo></textarea>', wrapped.markup)
+        self.assertIn('メモ（この判断について）', wrapped.markup)
+
+    def test_digest_ids_cannot_collide_across_field_boundaries(self) -> None:
+        from ve_components.document_sections import compute_ask_digest_from_pairs
+        self.assertNotEqual(
+            compute_ask_digest_from_pairs((("ask-1", ("a,b",)),)),
+            compute_ask_digest_from_pairs((("ask-1", ("a", "b")),)))
+        self.assertNotEqual(
+            compute_ask_digest_from_pairs((("ask-1=a", ("b",)),)),
+            compute_ask_digest_from_pairs((("ask-1", ("a", "b")),)))
+
+    def test_digest_depends_only_on_decision_contract(self) -> None:
+        from ve_components.document_sections import compute_ask_digest
+        base = (AskSection(id="ask-1", ask_type="decision", question="Q。",
+                           options=(AskOption("a", "A", "t"), AskOption("b", "B", "t")),
+                           no_default_reason="理由"),)
+        with_request = base + (AskSection(id="ask-2", ask_type="request",
+                                          steps=(AskStep("user", "あなた", "確認する"),)),)
+        self.assertEqual(compute_ask_digest(base), compute_ask_digest(with_request))
+        changed = (AskSection(id="ask-1", ask_type="decision", question="Q。",
+                              options=(AskOption("a", "A", "t"), AskOption("c", "C", "t")),
+                              no_default_reason="理由"),)
+        self.assertNotEqual(compute_ask_digest(base), compute_ask_digest(changed))
 
     def test_render_escapes_html(self) -> None:
         section = AskSection(

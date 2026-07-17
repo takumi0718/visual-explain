@@ -102,7 +102,7 @@
     h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
     a { color: var(--accent-strong); }
     button, summary, a { outline-offset: 3px; }
-    button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); }
+    button:focus-visible, summary:focus-visible, a:focus-visible, .ask-options [data-ask-option]:focus-visible { outline: 3px solid var(--focus); }
     button { font: inherit; color: inherit; background: var(--surface); border: 0; border-radius: .4rem; padding: var(--space-1) var(--space-2); cursor: pointer; }
     button:hover:not(:disabled) { background: var(--border); }
     button:disabled { color: var(--text-dim); cursor: not-allowed; }
@@ -205,6 +205,17 @@
 
     /* 図表記法 */
     .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
+    .ask-options [data-ask-option][data-ask-selected] { box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask-memo { display: grid; gap: var(--space-1); margin-top: var(--space-2); }
+    .ask-memo textarea, .decision-panel textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; max-width: 100%; }
+    .decision-panel { max-width: var(--w-narrative); padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .decision-panel h2 { margin-top: 0; }
+    .panel-asks { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+    .panel-status { color: var(--text-dim); }
+    .panel-memo { display: block; color: var(--text-dim); white-space: pre-wrap; }
+    .panel-copy-status { margin: var(--space-1) 0 0; color: var(--text-dim); }
+    .panel-copy-fallback { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); white-space: pre-wrap; }
 
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
@@ -490,6 +501,284 @@ figure[data-ve-component="stairs"] .ve-stairs-count-5 .ve-stairs-index-5 { min-h
       if (event.target.matches('details')) event.target.setAttribute('aria-expanded', String(event.target.open));
     }, true);
   })();
+
+  /* FIXED DECISION ENGINE CORE:BEGIN (verbatim copy of scripts/tests/runtime/decision_engine.js) */
+/* Decision-collection pure core for visual-explain.
+   This file is the source of truth; assets/skeleton.html embeds it verbatim
+   between the FIXED DECISION ENGINE CORE markers (byte-equality is enforced
+   by test_skeleton_audit.py). No DOM, no timers, no I/O here. */
+(function (global) {
+  "use strict";
+
+  function storageKey(contract) {
+    return "ve-decision:" + contract.documentId + ":" + contract.schemaVersion + ":" + contract.digest;
+  }
+
+  function emptyMap() {
+    // Object.create(null) keeps ask ids like "__proto__" as ordinary own
+    // properties instead of tripping the Object.prototype accessor, which
+    // would otherwise silently drop the assignment for such ids.
+    return Object.create(null);
+  }
+
+  function emptyState() {
+    return { selections: emptyMap(), memos: emptyMap(), globalMemo: "" };
+  }
+
+  function findAsk(contract, askId) {
+    for (const ask of contract.asks) if (ask.id === askId) return ask;
+    return null;
+  }
+
+  function findOption(ask, optionId) {
+    for (const option of ask.options) if (option.id === optionId) return option;
+    return null;
+  }
+
+  function findPanelRow(rows, askId) {
+    // Candidates come from the unparameterized ``li[data-ve-panel-ask]``
+    // selector; matching by ``dataset`` equality here (instead of splicing
+    // askId into a CSS attribute selector at the call site) keeps arbitrary
+    // non-empty ask ids — quotes, whitespace, Japanese text, leading
+    // digits — working without ever building a selector string from them.
+    for (const row of rows) if (row.dataset.vePanelAsk === askId) return row;
+    return null;
+  }
+
+  function cloneWith(state, patch) {
+    return {
+      selections: Object.assign(emptyMap(), state.selections, patch.selections || emptyMap()),
+      memos: Object.assign(emptyMap(), state.memos, patch.memos || emptyMap()),
+      globalMemo: patch.globalMemo !== undefined ? patch.globalMemo : state.globalMemo,
+    };
+  }
+
+  function selectOption(state, askId, optionId, contract) {
+    const ask = findAsk(contract, askId);
+    if (!ask || !findOption(ask, optionId)) return state;
+    const patch = { selections: emptyMap() };
+    patch.selections[askId] = optionId;
+    return cloneWith(state, patch);
+  }
+
+  function setMemo(state, askId, text) {
+    const patch = { memos: emptyMap() };
+    patch.memos[askId] = String(text);
+    return cloneWith(state, patch);
+  }
+
+  function setGlobalMemo(state, text) {
+    return cloneWith(state, { globalMemo: String(text) });
+  }
+
+  function restoreState(raw, contract) {
+    // Stale or foreign entries never survive: unknown ask ids and option ids
+    // are dropped so a regenerated document starts unselected (scenario 7).
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      return emptyState();
+    }
+    if (!parsed || typeof parsed !== "object") return emptyState();
+    const state = emptyState();
+    for (const ask of contract.asks) {
+      const selected = parsed.selections ? parsed.selections[ask.id] : undefined;
+      if (typeof selected === "string" && findOption(ask, selected)) state.selections[ask.id] = selected;
+      const memo = parsed.memos ? parsed.memos[ask.id] : undefined;
+      if (typeof memo === "string") state.memos[ask.id] = memo;
+    }
+    if (typeof parsed.globalMemo === "string") state.globalMemo = parsed.globalMemo;
+    return state;
+  }
+
+  function serializeState(state) {
+    return JSON.stringify(state);
+  }
+
+  function defaultLabel(ask) {
+    if (!ask.defaultId) return null;
+    const option = findOption(ask, ask.defaultId);
+    return option ? option.label : null;
+  }
+
+  function unselectedNote(ask) {
+    const label = defaultLabel(ask);
+    return ask.question + "（既定案: " + (label === null ? "なし" : label) + "）";
+  }
+
+  function selectionStatus(ask, optionId) {
+    if (!ask.defaultId) return "既定案なし";
+    return optionId === ask.defaultId ? "既定案どおり" : "既定案から変更";
+  }
+
+  function askLines(state, ask, unselected) {
+    // r1 C3: every ask emits its 問い/選択/メモ block regardless of selection
+    // state, so memos on unselected asks are never dropped from the copy text.
+    const lines = ["問い: " + ask.question];
+    const selectedId = state.selections[ask.id];
+    const option = selectedId ? findOption(ask, selectedId) : null;
+    if (option) {
+      lines.push("→ 選択: " + option.label + "（" + selectionStatus(ask, option.id) + "）"
+        + " — トレードオフ: " + option.tradeoff);
+    } else {
+      const label = defaultLabel(ask);
+      lines.push("→ 選択: 未選択（既定案: " + (label === null ? "なし" : label) + "）");
+      unselected.push(unselectedNote(ask));
+    }
+    const memo = state.memos[ask.id];
+    if (typeof memo === "string" && memo.trim()) lines.push("→ メモ: " + memo);
+    return lines;
+  }
+
+  function formatCopyText(contract, state) {
+    const lines = [
+      "[visual-explain 判断結果]",
+      "資料: " + contract.title,
+      "(" + contract.documentPath + " / id: " + contract.documentId +
+        " / schema: " + contract.schemaVersion + " / asks: " + contract.digest + ")",
+    ];
+    const unselected = [];
+    for (const ask of contract.asks) lines.push(...askLines(state, ask, unselected));
+    if (unselected.length) lines.push("未選択: " + unselected.join(" / "));
+    if (contract.riskHeadings.length) lines.push("リスク要約: " + contract.riskHeadings.join(" / "));
+    if (state.globalMemo && state.globalMemo.trim()) lines.push("全体メモ: " + state.globalMemo);
+    return lines.join("\n");
+  }
+
+  const engine = {
+    storageKey, emptyState, selectOption, setMemo, setGlobalMemo,
+    restoreState, serializeState, formatCopyText, findPanelRow,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = engine;
+  else global.veDecisionEngine = engine;
+})(globalThis);
+
+  /* FIXED DECISION ENGINE CORE:END */
+
+  /* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */
+  (() => {
+    const engine = globalThis.veDecisionEngine;
+    const panel = document.querySelector('section[data-ve-section-kind="decision-panel"]');
+    if (!engine || !panel) return;
+    const askSections = Array.from(document.querySelectorAll(
+      'section[data-ve-section-kind="ask"][data-ve-ask-type="decision"][id]'));
+    const contract = {
+      documentId: panel.dataset.veDocumentId || "",
+      schemaVersion: panel.dataset.veSchemaVersion || "",
+      digest: panel.dataset.veAskDigest || "",
+      title: document.title,
+      documentPath: panel.dataset.veDocumentPath || "",
+      riskHeadings: Array.from(document.querySelectorAll(
+        'section[data-ve-section-kind="closing"] h2')).map((h) => h.textContent.trim()),
+      asks: askSections.map((section) => {
+        const defaultItem = section.querySelector('[data-ask-default]');
+        return {
+          id: section.id,
+          question: (section.querySelector('.ask-question')?.textContent || "").trim(),
+          defaultId: defaultItem ? (defaultItem.dataset.askOptionId || null) : null,
+          options: Array.from(section.querySelectorAll('[data-ask-option]')).map((item) => ({
+            id: item.dataset.askOptionId || "",
+            label: (item.querySelector('span')?.textContent || "").trim(),
+            tradeoff: (item.querySelector('.ask-tradeoff')?.textContent || "").trim(),
+          })),
+        };
+      }),
+    };
+    let storage = null;
+    let state = engine.emptyState();
+    try {
+      storage = window.localStorage;
+      state = engine.restoreState(storage.getItem(engine.storageKey(contract)), contract);
+    } catch {
+      storage = null; // 永続化のみ喪失。選択は動き続ける（シナリオ④）。
+    }
+    const persist = () => {
+      if (!storage) return;
+      try { storage.setItem(engine.storageKey(contract), engine.serializeState(state)); } catch {}
+    };
+    const render = () => {
+      contract.asks.forEach((ask) => {
+        const section = document.getElementById(ask.id);
+        if (!section) return;
+        section.querySelectorAll('[data-ask-option]').forEach((item) => {
+          const selected = state.selections[ask.id] === item.dataset.askOptionId;
+          if (selected) item.setAttribute('data-ask-selected', '');
+          else item.removeAttribute('data-ask-selected');
+          item.setAttribute('aria-pressed', String(selected));
+        });
+        const row = engine.findPanelRow(
+          Array.from(panel.querySelectorAll('li[data-ve-panel-ask]')), ask.id);
+        if (!row) return;
+        const status = row.querySelector('[data-ve-panel-status]');
+        const option = ask.options.find((o) => o.id === state.selections[ask.id]);
+        if (status && option) status.textContent = `選択: ${option.label}`;
+        const memoRow = row.querySelector('[data-ve-panel-memo]');
+        if (memoRow) {
+          const memo = state.memos[ask.id] || '';
+          memoRow.hidden = !memo.trim();
+          memoRow.textContent = memo.trim() ? `メモ: ${memo}` : '';
+        }
+      });
+    };
+    askSections.forEach((section) => {
+      section.querySelectorAll('[data-ask-option]').forEach((item) => {
+        item.setAttribute('role', 'button');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('aria-pressed', 'false');
+        const select = () => {
+          state = engine.selectOption(state, section.id, item.dataset.askOptionId, contract);
+          persist(); render();
+        };
+        item.addEventListener('click', select);
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          select();
+        });
+      });
+      const memoField = section.querySelector('textarea[data-ask-memo]');
+      if (memoField) {
+        memoField.value = state.memos[section.id] || '';
+        memoField.addEventListener('input', () => {
+          state = engine.setMemo(state, section.id, memoField.value);
+          persist(); render();
+        });
+      }
+    });
+    const globalField = panel.querySelector('textarea[data-ve-panel-global-memo]');
+    if (globalField) {
+      globalField.value = state.globalMemo || '';
+      globalField.addEventListener('input', () => {
+        state = engine.setGlobalMemo(state, globalField.value);
+        persist();
+      });
+    }
+    const copyButton = document.createElement('button');
+    copyButton.type = 'button';
+    copyButton.textContent = '判断をプロンプトとしてコピー';
+    const copyStatus = document.createElement('p');
+    copyStatus.className = 'panel-copy-status';
+    copyStatus.setAttribute('aria-live', 'polite');
+    const fallback = document.createElement('pre');
+    fallback.className = 'panel-copy-fallback';
+    fallback.hidden = true;
+    copyButton.addEventListener('click', async () => {
+      const text = engine.formatCopyText(contract, state);
+      try {
+        await navigator.clipboard.writeText(text);
+        fallback.hidden = true;
+        copyStatus.textContent = 'コピーしました。エージェントへ貼り付けてください。';
+      } catch {
+        fallback.textContent = text;
+        fallback.hidden = false;
+        copyStatus.textContent = 'クリップボードを使えないため、以下を手動でコピーしてください。';
+      }
+    });
+    panel.querySelector('.decision-panel')?.append(copyButton, copyStatus, fallback);
+    render();
+  })();
+
   </script>
 </body>
 </html>

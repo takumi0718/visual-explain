@@ -105,6 +105,7 @@ class ClosingSectionTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS_DIR,
+            document_path="doc.html",
         )
         self.assertIn('data-ve-section-kind="closing"', html)
         self.assertIn('id="sec-closing"', html)

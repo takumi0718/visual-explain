@@ -184,6 +184,80 @@ class ColorDisciplineAuditTest(unittest.TestCase):
                                 f"意味色が判断状態以外のセレクタに使われています: {selector.strip()[:80]}")
 
 
+class DecisionEngineEmbedTest(unittest.TestCase):
+    def test_skeleton_embeds_engine_core_verbatim(self):
+        core = (Path(__file__).resolve().parent / "runtime" / "decision_engine.js").read_text("utf-8")
+        begin = "/* FIXED DECISION ENGINE CORE:BEGIN"
+        end = "/* FIXED DECISION ENGINE CORE:END */"
+        self.assertIn(begin, SKELETON)
+        embedded = SKELETON.split(begin, 1)[1].split("*/", 1)[1].split(end, 1)[0]
+        self.assertEqual(embedded.strip(), core.strip())
+
+    def test_skeleton_has_decision_collection_block(self):
+        self.assertIn("/* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */", SKELETON)
+
+
+class DecisionOptionCardInteractionTest(unittest.TestCase):
+    """選択肢の枠全体を選択操作面にする改修。旧・個別「この案を選ぶ」ボタン方式を廃止する。"""
+
+    def _collection_block(self):
+        begin = "/* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */"
+        end = "</script>"
+        return SKELETON.split(begin, 1)[1].split(end, 1)[0]
+
+    def test_no_legacy_select_button_is_created(self):
+        block = self._collection_block()
+        self.assertNotIn("この案を選ぶ", block)
+        self.assertNotIn("'data-ask-select'", block)
+        self.assertNotIn("'ask-select'", block)
+
+    def test_option_item_becomes_the_interactive_surface(self):
+        block = self._collection_block()
+        self.assertIn("item.setAttribute('role', 'button')", block)
+        self.assertIn("item.setAttribute('tabindex', '0')", block)
+        self.assertIn("item.addEventListener('click', select)", block)
+
+    def test_option_item_responds_to_enter_and_space(self):
+        block = self._collection_block()
+        self.assertIn("item.addEventListener('keydown'", block)
+        self.assertIn("event.key !== 'Enter'", block)
+        self.assertIn("event.key !== ' '", block)
+        self.assertIn("event.preventDefault()", block)
+
+    def test_aria_pressed_syncs_on_the_item_itself(self):
+        block = self._collection_block()
+        self.assertIn("item.setAttribute('aria-pressed', String(selected))", block)
+        self.assertNotIn("querySelector('button[data-ask-select]')", block)
+
+    def test_option_focus_style_extends_to_the_option_card(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(".ask-options [data-ask-option]:focus-visible", style)
+        self.assertNotIn(".ask-select {", style)
+
+    def test_selected_ring_never_competes_with_the_focus_ring(self):
+        """``[data-ask-option]:focus-visible`` and
+        ``[data-ask-option][data-ask-selected]`` share equal specificity
+        (class + attribute + pseudo-class/attribute, 0-3-0 either way), so a
+        card that is both selected and keyboard-focused would have only one
+        of the two ``outline`` declarations survive the cascade — whichever
+        is declared later wins, silently hiding the focus ring on an
+        already-selected card. Pinning the selected rule to a different
+        property (``box-shadow``, not ``outline``) makes both rings render
+        at once regardless of source order or any future specificity
+        change, instead of relying on a fragile tie-break.
+        """
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        selected_rule = re.search(
+            r"\.ask-options \[data-ask-option\]\[data-ask-selected\] \{([^}]*)\}", style)
+        self.assertIsNotNone(selected_rule, "selected 状態のルールが見つかりません")
+        self.assertNotIn("outline", selected_rule.group(1))
+        self.assertIn("box-shadow", selected_rule.group(1))
+        focus_rule = re.search(
+            r"\.ask-options \[data-ask-option\]:focus-visible \{([^}]*)\}", style)
+        self.assertIsNotNone(focus_rule, "option card の focus-visible ルールが見つかりません")
+        self.assertIn("outline", focus_rule.group(1))
+
+
 class ResponsiveLayoutTest(unittest.TestCase):
     """design spec 2026-07-13: 流体ルートスケールと二層幅の骨格規則を固定する。"""
 

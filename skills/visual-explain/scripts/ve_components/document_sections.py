@@ -6,7 +6,9 @@ final checker (group 3) re-verifies the result in the flattened document.
 """
 from __future__ import annotations
 
+import hashlib
 import html
+import json
 from dataclasses import dataclass
 from html.parser import HTMLParser
 
@@ -24,6 +26,7 @@ _VOID_TAGS = frozenset({
 })
 _TOC_INSTANCE_ID_PREFIX = "sec-toc"
 _TOC_MIN_ENTRIES = 5
+_PANEL_INSTANCE_ID_PREFIX = "sec-decision-panel"
 
 _SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
                    "research": "この資料が答える問い"}
@@ -96,16 +99,24 @@ def extract_first_h2_h3(markup: str) -> str | None:
     return parser.result
 
 
-def allocate_toc_instance_id(occupied_ids: frozenset[str] | set[str]) -> str:
-    """Pick a compose-only TOC instance id that does not collide with section ids."""
-    if _TOC_INSTANCE_ID_PREFIX not in occupied_ids:
-        return _TOC_INSTANCE_ID_PREFIX
+def _allocate_instance_id(prefix: str, occupied_ids: frozenset[str] | set[str]) -> str:
+    """Pick a compose-only instance id that does not collide with section ids."""
+    if prefix not in occupied_ids:
+        return prefix
     n = 2
     while True:
-        candidate = f"{_TOC_INSTANCE_ID_PREFIX}-{n}"
+        candidate = f"{prefix}-{n}"
         if candidate not in occupied_ids:
             return candidate
         n += 1
+
+
+def allocate_toc_instance_id(occupied_ids: frozenset[str] | set[str]) -> str:
+    """Pick a compose-only TOC instance id that does not collide with section ids.
+
+    Compatibility wrapper around ``_allocate_instance_id``.
+    """
+    return _allocate_instance_id(_TOC_INSTANCE_ID_PREFIX, occupied_ids)
 
 
 def build_toc(
@@ -186,7 +197,7 @@ def render_ask(section: AskSection) -> WrappedDocumentSection:
 def _render_decision_body(section: AskSection, kind_label: str) -> str:
     options_html: list[str] = []
     for opt in section.options:
-        attrs = "data-ask-option"
+        attrs = f'data-ask-option data-ask-option-id="{_esc(opt.id)}"'
         if section.default_id is not None and opt.id == section.default_id:
             attrs += " data-ask-default"
         options_html.append(
@@ -198,14 +209,96 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
         reason = (
             f'\n  <p class="ask-no-default-reason">{_esc(section.no_default_reason)}</p>'
         )
+    memo = (
+        '\n  <div class="ask-memo">'
+        '<label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>'
+    )
     return (
         f'<div class="ask" data-ask="decision">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
         f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
-        f"  </ul>{reason}\n"
+        f"  </ul>{reason}{memo}\n"
         f"</div>"
+    )
+
+
+def compute_ask_digest_from_pairs(pairs: tuple[tuple[str, tuple[str, ...]], ...]) -> str:
+    """Ask-contract digest: sha256 over the JSON-canonical [askId, [optionIds]] list.
+
+    JSON encoding keeps ids with delimiter characters (",", ";", "=") from
+    colliding across field boundaries.
+    """
+    payload = json.dumps([[ask_id, list(option_ids)] for ask_id, option_ids in pairs],
+                         ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def compute_ask_digest(asks: tuple[AskSection, ...]) -> str:
+    pairs = tuple((a.id, tuple(o.id for o in a.options))
+                  for a in asks if a.ask_type == "decision")
+    return compute_ask_digest_from_pairs(pairs)
+
+
+def render_decision_panel(
+    asks: tuple[AskSection, ...],
+    document: DocumentMetadata,
+    schema_version: int,
+    document_path: str,
+    *,
+    occupied_ids: frozenset[str] | set[str] = frozenset(),
+) -> WrappedDocumentSection | None:
+    """Build the decision-recovery panel inserted after closing.
+
+    Returns ``None`` when there are no decision-type asks (an empty panel is
+    never emitted). Static markup only: JS-driven selection sync, copy
+    controls, and status updates are Task 5.
+    """
+    decisions = tuple(a for a in asks if a.ask_type == "decision")
+    if not decisions:
+        return None
+    digest = compute_ask_digest(asks)
+    items_html = "".join(_render_panel_ask_item(a) for a in decisions)
+    instance_id = _allocate_instance_id(_PANEL_INSTANCE_ID_PREFIX, occupied_ids)
+    body = (
+        '<section class="decision-panel" aria-label="判断の回収">\n'
+        "  <h2>判断の回収</h2>\n"
+        '  <ul class="panel-asks">\n'
+        f"    {items_html}\n"
+        "  </ul>\n"
+        '  <div class="ask-memo"><label>全体メモ'
+        "<textarea data-ve-panel-global-memo></textarea></label></div>\n"
+        '  <p class="panel-note">選択の反映・メモの保存・コピーはブラウザの'
+        "JavaScript が有効なときに使えます。</p>\n"
+        "</section>"
+    )
+    markup = (
+        f'<section data-ve-section-kind="decision-panel"'
+        f' data-ve-document-id="{_esc(document.id)}"'
+        f' data-ve-schema-version="{schema_version}"'
+        f' data-ve-ask-digest="{_esc(digest)}"'
+        f' data-ve-document-path="{_esc(document_path)}"'
+        f' id="{_esc(instance_id)}">\n'
+        f"{body}\n"
+        f"</section>"
+    )
+    return WrappedDocumentSection(instance_id=instance_id, markup=markup)
+
+
+def _render_panel_ask_item(section: AskSection) -> str:
+    default_label = None
+    if section.default_id is not None:
+        default_label = next(
+            (opt.label for opt in section.options if opt.id == section.default_id), None
+        )
+    status = f"未選択（既定案: {default_label}）" if default_label is not None else "未選択（既定案なし）"
+    return (
+        f'<li data-ve-panel-ask="{_esc(section.id)}">'
+        f'<span class="panel-question">{_esc(section.question or "")}</span>'
+        f'<span class="panel-status" data-ve-panel-status>{_esc(status)}</span>'
+        f'<span class="panel-memo" data-ve-panel-memo hidden></span>'
+        f"</li>"
     )
 
 

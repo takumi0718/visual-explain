@@ -71,7 +71,7 @@ class MixedAssemblyTest(unittest.TestCase):
 
     def build(self, name: str) -> str:
         raw = json.loads((TESTS / name).read_text("utf-8"))
-        return build_document(raw, self.registry, self.renderers, SKELETON, self.tmp)
+        return build_document(raw, self.registry, self.renderers, SKELETON, self.tmp, document_path="doc.html")
 
     def test_mixed_order_and_single_markers(self) -> None:
         doc = self.build("component-valid-mixed.json")
@@ -102,7 +102,7 @@ class MixedAssemblyTest(unittest.TestCase):
 
     def test_weak_model_builds_with_production_registry(self) -> None:
         raw = json.loads((TESTS / "component-valid-weak-model.json").read_text("utf-8"))
-        doc = build_document(raw, PROD_REGISTRY, {}, SKELETON, SKILL / "assets" / "components")
+        doc = build_document(raw, PROD_REGISTRY, {}, SKELETON, SKILL / "assets" / "components", document_path="doc.html")
         self.assertIn('data-ve-compat-source="legacy-html-insertion"', doc)
         self.assertIn('data-ve-compat-reason="weak-model-degradation"', doc)
         # Compatibility markup lands only in the content slot, never in styles/scripts.
@@ -118,7 +118,7 @@ class CompatibilityBypassTest(unittest.TestCase):
              mock.patch.object(assembly, "validate_canonical_section") as vcs, \
              mock.patch.object(assembly, "render_canonical") as render, \
              mock.patch.object(assembly, "validate_content_markup", wraps=assembly.validate_content_markup) as vcm:
-            build_document(raw, PROD_REGISTRY, {}, SKELETON, SKILL / "assets" / "components")
+            build_document(raw, PROD_REGISTRY, {}, SKELETON, SKILL / "assets" / "components", document_path="doc.html")
             narrow.assert_not_called()
             resolve.assert_not_called()
             vcs.assert_not_called()
@@ -137,7 +137,7 @@ class FailureTest(unittest.TestCase):
         MixedAssemblyTest.setUpClass()
 
     def build(self, raw) -> str:
-        return build_document(raw, MixedAssemblyTest.registry, MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp)
+        return build_document(raw, MixedAssemblyTest.registry, MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp, document_path="doc.html")
 
     def test_false_provenance_rejected(self) -> None:
         raw = json.loads((TESTS / "component-valid-weak-model.json").read_text("utf-8"))
@@ -174,7 +174,7 @@ class FailureTest(unittest.TestCase):
         raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
         # An empty registry yields no candidates → no_matching_component, no output.
         with self.assertRaises(ContractError):
-            build_document(raw, Registry(registry_version=1, components=()), MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp)
+            build_document(raw, Registry(registry_version=1, components=()), MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp, document_path="doc.html")
 
 
 class MatrixAnnotationRenderTest(unittest.TestCase):
@@ -188,7 +188,7 @@ class MatrixAnnotationRenderTest(unittest.TestCase):
                 cell_id = section["ir"]["matrix"]["cells"][0]["id"]
                 section["ir"]["takeawayTargetIds"] = [cell_id]
                 section["ir"]["emphasis"] = [{"targetId": cell_id, "label": "判断の分岐点"}]
-                doc = build_document(raw, MixedAssemblyTest.registry, MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp)
+                doc = build_document(raw, MixedAssemblyTest.registry, MixedAssemblyTest.renderers, SKELETON, MixedAssemblyTest.tmp, document_path="doc.html")
                 return doc, cell_id
         raise AssertionError("matrix section not found")
 
@@ -214,11 +214,11 @@ class RendererTrustBoundaryTest(unittest.TestCase):
 
     def _build_matrix(self, renderer) -> str:
         raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
-        return build_document(raw, self.registry, {"matrix@2": renderer}, SKELETON, self.tmp)
+        return build_document(raw, self.registry, {"matrix@2": renderer}, SKELETON, self.tmp, document_path="doc.html")
 
     def _build_flow(self, renderer) -> str:
         raw = json.loads((TESTS / "component-valid-flow.json").read_text("utf-8"))
-        return build_document(raw, self.registry, {"flow@2": renderer}, SKELETON, self.tmp)
+        return build_document(raw, self.registry, {"flow@2": renderer}, SKELETON, self.tmp, document_path="doc.html")
 
     @staticmethod
     def _mutate_matrix(**changes):

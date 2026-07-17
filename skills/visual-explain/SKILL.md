@@ -43,8 +43,8 @@ license: MIT
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
 4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
-5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
-6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・summary 描画・外部リンクのドメインマーカーを検証する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
+5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。`askType: "decision"` の ask は回収パネルの対象になる。パネルは末尾 `closing` の後にビルドが自動生成し、選択肢とラベルを ask の option から引き写す。**パネル自体を IR に書いてはならない**。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
+6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・summary 描画・外部リンクのドメインマーカーに加え、decision ask を含む文書では判断の回収パネル（decision-panel）の存在・個数・closing 後の位置・ask 契約 digest・自己表明属性を検証し、自己閉じタグによる偽装も fail-closed で検出する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
 8. **保存する:** 下の保存規約に従い、衝突を避けて資料を保存する。
 9. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
@@ -115,6 +115,8 @@ license: MIT
 
 仕組み理解型と調査報告型では、対応する「限界・確度」または「限界・反証・確度」節を置く。理解度テスト、回答の強制、理解問題は置かない。このスキルの責務は、判断ポイント、リスク、確度を隠さない説明資料の提示までである。
 
+decision ask を含む資料は、末尾節のさらに後にビルドが回収パネルを自動生成する。パネルは読者の選択を集めるための UI であり、`defaultId` で示した既定案は**選択済みとして扱わない**。既定案は初期フォーカスや案内文で示してよいが、選択状態（accent アウトライン等）は読者の明示操作後にのみ付与する。
+
 ## 目視チェック
 
 機械チェックの後に、次を確認する。
@@ -127,6 +129,7 @@ license: MIT
 - [ ] ノード、矢印、数値を原資料のコードまたは文書と逆照合した。
 - [ ] 未確認事項を事実として描いていない。推論・未確認は対象の直近に直接表記した。
 - [ ] 紫グラデーションや過剰装飾による generic な AI 見た目になっていない。
+- [ ] decision ask がある場合、回収パネルが closing の後にあり、既定案（`defaultId`）が選択済み扱いされていない。
 
 ## 保存規約と縮退規則
 
@@ -172,7 +175,7 @@ matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/eviden
 
 `layers`・`compare`・`timeline`・`terms`・`details`・`stepper` は引き続き旧ルールの HTML マークアップとして互換節から始まる。`bars` と `kpi` は canonical に昇格済みであり、通常経路は canonical IR である（legacy HTML 節は互換用）。互換は決して canonical 成功ではなく、provenance の `reason` で区別される。
 
-skeleton 直編集（`assets/skeleton.html` をコピーして CONTENT を手書きする方式）は正規経路ではない。`build_explainer.py` を実行できない環境での最終手段としてだけ許され、その場合も `scripts/check.sh <絶対パス> --type <proposal|system|research>` を通し、資料が canonical 成功ではないことを利用者に報告する。同梱の `examples/example-proposal.html` は `examples/example-proposal.assembly.json` からの IR ビルド生成物であり、直編集の見本ではない。
+skeleton 直編集（`assets/skeleton.html` をコピーして CONTENT を手書きする方式）は正規経路ではない。`build_explainer.py` を実行できない環境での最終手段としてだけ許され、その場合も `scripts/check.sh <絶対パス> --type <proposal|system|research>` を通し、資料が canonical 成功ではないことを利用者に報告する。同梱の `examples/example-proposal.html` は `examples/example-proposal.assembly.json` からの IR ビルド生成物であり、直編集の見本ではない。`--output` にそのまま渡した文字列が `data-ve-document-path` としてビルド生成物に自己記録されるため、この checked-in な見本を再ビルドするときは、リポジトリルートを cwd として `--output skills/visual-explain/examples/example-proposal.html`（リポジトリルートからの相対パス）のように必ず相対パスで指定する。絶対パスで再ビルドすると、その時のワークツリー固有の絶対パスが `data-ve-document-path` に焼き込まれてコミットされてしまう（`.visual-explain/` に出力するユーザー生成文書では絶対パス指定のままでよい）。
 
 Attribution: visual-explainer (MIT) の固定図フォーマット、デザイン規則、目視確認の設計要素を参照した。
 Attribution: obra/superpowers 由来の提案ゲートと承認後ワークフローの設計要素を参照した。
