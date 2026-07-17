@@ -179,12 +179,16 @@ class _StructureParser(HTMLParser):
         return node
 
     def _current_ask_decision(self) -> _SectionNode | None:
-        """Innermost currently-open decision-typed ask wrapper, if any."""
-        if not self._open:
-            return None
-        node = self._open[-1]
-        if node is not None and node.kind == "ask" and node.attrs.get("data-ve-ask-type") == "decision":
-            return node
+        """Innermost currently-open decision-typed ask wrapper, if any.
+
+        Walks outward through any intervening nested sections (e.g. plain
+        grouping wrappers with no ``data-ve-section-kind``) so options
+        nested arbitrarily deep inside an ask still attribute to it in
+        document order, instead of silently dropping out of the digest.
+        """
+        for node in reversed(self._open):
+            if node is not None and node.kind == "ask" and node.attrs.get("data-ve-ask-type") == "decision":
+                return node
         return None
 
     def _finish_heading(self, tag: str, text: str) -> None:

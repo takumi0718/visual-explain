@@ -420,6 +420,31 @@ class DecisionPanelStructureTest(unittest.TestCase):
         content = _FIRST_BLOCK + _ask_block() + _CLOSING_BLOCK + _panel_block(digest)
         self.assertEqual(check_document_structure(content, title=None), [])
 
+    def test_option_id_hidden_in_nested_section_is_detected_as_tampering(self) -> None:
+        """An option tucked inside a plain nested <section> must still count
+        toward the enclosing decision ask's digest — otherwise an option
+        smuggled into a nested wrapper evades digest verification entirely.
+        """
+        nested_ask = (
+            '<section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">\n'
+            '<div class="ask" data-ask="decision">\n'
+            '  <ul class="ask-options">'
+            '<li data-ask-option data-ask-option-id="opt-a"><span>opt-a</span></li>'
+            '</ul>\n'
+            '<section class="ask-option-group">\n'
+            '  <ul class="ask-options">'
+            '<li data-ask-option data-ask-option-id="opt-b"><span>opt-b</span></li>'
+            '</ul>\n'
+            '</section>\n'
+            '</div>\n</section>\n'
+        )
+        # Digest recorded in the panel reflects only the un-nested option,
+        # as a checker that ignores nested-section options would compute.
+        stale_digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("opt-a",)),))
+        content = _FIRST_BLOCK + nested_ask + _CLOSING_BLOCK + _panel_block(stale_digest)
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+
 
 if __name__ == "__main__":
     unittest.main()
