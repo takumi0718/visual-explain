@@ -242,7 +242,15 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
         diagnostics.extend(_check_closing_from_structure(structure, None))
         return diagnostics
 
-    # Use the first real first-screen wrapper (document invariant: exactly one).
+    if len(first_nodes) != 1:
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "first-screen はちょうど1個必要です",
+            "content",
+        ))
+        diagnostics.extend(_check_external_link_markers(content_markup))
+        return diagnostics
+
     first = first_nodes[0]
     doc_type = first.attrs.get("data-ve-document-type") or None
     profile = first.attrs.get("data-ve-profile") or None

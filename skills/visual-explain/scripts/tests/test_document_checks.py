@@ -138,6 +138,30 @@ class DocumentStructureParserHardeningTest(unittest.TestCase):
         # title slot text still contains the entity; both sides must decode alike.
         self.assertEqual(check_document_structure(content, title="A &amp; B"), [])
 
+    def test_duplicate_first_screen_is_rejected(self) -> None:
+        # Second first-screen has conflicting type/profile and no h1 — must not be ignored.
+        content = (
+            '<section data-ve-section-kind="first-screen"'
+            ' data-ve-document-type="proposal" data-ve-profile="strict" id="sec-first">\n'
+            '<section class="first-screen" aria-label="最初に伝えること">\n'
+            '  <h1>タイトル</h1>\n'
+            '  <p class="subtitle decision"><strong>あなたが決めること:</strong> 決めます。</p>\n'
+            '  <p class="subtitle">要約。</p>\n'
+            '</section>\n</section>\n'
+            '<section data-ve-section-kind="first-screen"'
+            ' data-ve-document-type="research" data-ve-profile="extended" id="sec-first-2">\n'
+            '<section class="first-screen" aria-label="最初に伝えること">\n'
+            '  <p class="subtitle">別の要約。</p>\n'
+            '</section>\n</section>\n'
+            '<section data-ve-section-kind="closing" id="sec-closing">\n'
+            '<section class="closing-section" aria-label="判断材料">\n'
+            '  <h2>リスクと弱い前提</h2>\n  <ul><li>a</li></ul>\n'
+            '  <h2>不確かな点</h2>\n  <ul><li>b</li></ul>\n'
+            '</section>\n</section>\n'
+        )
+        msgs = _msgs(check_document_structure(content, title="タイトル"))
+        self.assertIn("first-screen はちょうど1個必要です", msgs)
+
 
 class DocumentStructureValidTest(unittest.TestCase):
     def test_built_typed_document_has_no_structure_diagnostics(self) -> None:
