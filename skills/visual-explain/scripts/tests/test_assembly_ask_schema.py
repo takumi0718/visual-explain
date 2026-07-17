@@ -163,6 +163,28 @@ class AskSchemaDiscriminatedUnionTest(unittest.TestCase):
         self.assertTrue(schema_accepts_ask(valid))
 
 
+class AskSchemaSafeIdScopeTest(unittest.TestCase):
+    """The ASCII-token `pattern` exists only to protect the decision-panel's
+    DOM id splicing and digest recomputation; request/hypothesis ids are
+    never spliced into a selector or digest, so they must keep accepting
+    Japanese characters and whitespace, as they did before the safe-id
+    check was introduced."""
+
+    def test_decision_id_and_option_id_keep_ascii_token_pattern(self) -> None:
+        for name in ("askDecisionWithDefault", "askDecisionNoDefault"):
+            branch = ASSEMBLY_SCHEMA["$defs"][name]
+            self.assertEqual(branch["properties"]["id"].get("pattern"),
+                              "^[A-Za-z][A-Za-z0-9_-]*$", name)
+        option = ASSEMBLY_SCHEMA["$defs"]["askOption"]
+        self.assertEqual(option["properties"]["id"].get("pattern"),
+                          "^[A-Za-z][A-Za-z0-9_-]*$")
+
+    def test_request_and_hypothesis_id_have_no_ascii_token_pattern(self) -> None:
+        for name in ("askRequestSection", "askHypothesisSection"):
+            branch = ASSEMBLY_SCHEMA["$defs"][name]
+            self.assertNotIn("pattern", branch["properties"]["id"], name)
+
+
 class AskSchemaRegressionTest(unittest.TestCase):
     def test_example_proposal_asks_match_schema_and_validate(self) -> None:
         raw = json.loads((EXAMPLES / "example-proposal.assembly.json").read_text("utf-8"))

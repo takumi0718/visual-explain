@@ -151,6 +151,34 @@ class AskSectionTest(unittest.TestCase):
             validate_assembly(raw)
         self.assertTrue(any("options" in str(d) for d in ctx.exception.diagnostics))
 
+    def test_request_id_with_japanese_and_whitespace_is_accepted(self) -> None:
+        """request.id is never spliced into a CSS selector or digest (only
+        decision asks get a recovery panel), so it must keep accepting the
+        broader charset it always allowed, unlike decision/option ids."""
+        raw = _assembly({
+            "kind": "ask",
+            "id": "依頼 セクション",
+            "askType": "request",
+            "steps": [
+                {"role": "user", "roleLabel": "あなた", "text": "specをレビューする"},
+            ],
+        })
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, "依頼 セクション")
+
+    def test_hypothesis_id_with_japanese_and_whitespace_is_accepted(self) -> None:
+        raw = _assembly({
+            "kind": "ask",
+            "id": "仮説 セクション",
+            "askType": "hypothesis",
+            "claim": {"text": "見出しだけで判断できる", "certainty": "inferred"},
+            "verify": "検証方法: 見出し列のみで判断内容を言えるか確認する",
+        })
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, "仮説 セクション")
+
     def test_request_static_output_passes_ask_inspector(self) -> None:
         raw = _assembly({
             "kind": "ask",

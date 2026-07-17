@@ -161,7 +161,7 @@
       "required": ["kind", "id", "askType", "steps"],
       "properties": {
         "kind": {"const": "ask"},
-        "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        "id": {"type": "string", "minLength": 1},
         "askType": {"const": "request"},
         "steps": {
           "type": "array",
@@ -176,7 +176,7 @@
       "required": ["kind", "id", "askType", "claim", "verify"],
       "properties": {
         "kind": {"const": "ask"},
-        "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        "id": {"type": "string", "minLength": 1},
         "askType": {"const": "hypothesis"},
         "claim": {"$ref": "#/$defs/askClaim"},
         "verify": {"type": "string", "minLength": 1}

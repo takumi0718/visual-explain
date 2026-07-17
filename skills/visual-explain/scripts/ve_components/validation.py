@@ -2313,15 +2313,19 @@ def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_i
     sid = raw.get("id")
     if not _nonblank_str(sid):
         col.add(INVALID_COMPONENT_PAYLOAD, "ask.id は空にできません", path)
-    elif not _is_safe_id_token(sid):
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                f"ask.id は英字で始まり英数字・ハイフン・アンダースコアのみで構成される必要があります: '{sid}'",
-                path)
     ask_type = raw.get("askType")
     if not isinstance(ask_type, str) or ask_type not in _ASK_TYPES:
         col.add(INVALID_COMPONENT_PAYLOAD,
                 "ask.askType は decision / request / hypothesis のいずれかが必要です", path)
         ask_type = ""
+    # Only decision asks get a DOM recovery panel: their id is spliced into a
+    # CSS attribute selector and folded into compute_ask_digest_from_pairs.
+    # request/hypothesis ids never reach that path, so they keep accepting
+    # the broader charset (Japanese, whitespace) they always allowed.
+    if ask_type == "decision" and _nonblank_str(sid) and not _is_safe_id_token(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                f"ask.id は英字で始まり英数字・ハイフン・アンダースコアのみで構成される必要があります: '{sid}'",
+                path)
     present = set(raw.keys()) - {"kind", "id", "askType"}
     if ask_type == "decision":
         foreign = present - _DECISION_ONLY_KEYS
