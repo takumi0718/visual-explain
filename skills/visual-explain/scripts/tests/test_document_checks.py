@@ -566,6 +566,39 @@ class DecisionPanelStructureTest(unittest.TestCase):
         msgs = _msgs(check_document_structure(content, title=None))
         self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
 
+    def test_svg_self_closing_option_id_is_detected_as_tampering(self) -> None:
+        """An option carried on a self-closing element inside ``<svg>``
+        foreign content (e.g. ``<circle data-ask-option-id="opt-c"/>``) must
+        still count toward the enclosing decision ask's digest. Self-closing
+        syntax genuinely self-closes inside ``<svg>`` in real browsers (unlike
+        plain HTML), so ``handle_startendtag`` must not treat that as a
+        reason to skip attribute collection too — a parser that no-ops the
+        entire callback for any tag inside ``<svg>`` would silently drop this
+        option, letting a forged panel digest (computed as if the option
+        never existed) pass.
+        """
+        ask_with_svg_option = (
+            '<section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">\n'
+            '<div class="ask" data-ask="decision">\n'
+            '  <ul class="ask-options">'
+            '<li data-ask-option data-ask-option-id="opt-a"><span>opt-a</span></li>'
+            '<li data-ask-option data-ask-option-id="opt-b"><span>opt-b</span></li>'
+            '</ul>\n'
+            '<svg viewBox="0 0 10 10"><circle data-ask-option-id="opt-c"/></svg>\n'
+            '</div>\n</section>\n'
+        )
+        # Digest recorded in the panel reflects only opt-a/opt-b, as a
+        # checker blind to svg-foreign-content self-closing option ids
+        # would compute.
+        stale_digest = compute_ask_digest_from_pairs(
+            (("sec-ask-decision", ("opt-a", "opt-b")),)
+        )
+        content = (
+            _FIRST_BLOCK + ask_with_svg_option + _CLOSING_BLOCK + _panel_block(stale_digest)
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+
     def test_empty_option_id_attribute_still_counts_toward_digest(self) -> None:
         """``data-ask-option-id=""`` is attribute *presence*, not absence —
         a parser using truthiness (``if option_id:``) instead of

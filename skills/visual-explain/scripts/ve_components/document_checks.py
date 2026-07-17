@@ -79,10 +79,7 @@ class _StructureParser(HTMLParser):
         if tag == "svg":
             self._svg_depth += 1
         attr_map = {k.lower(): (v or "") for k, v in attrs}
-        if "data-ask-option-id" in attr_map:
-            ask_node = self._current_ask_decision()
-            if ask_node is not None:
-                ask_node.option_ids.append(attr_map["data-ask-option-id"])
+        self._collect_option_id(attr_map)
         if tag not in _VOID_TAGS:
             self._element_stack.append(tag)
 
@@ -134,24 +131,24 @@ class _StructureParser(HTMLParser):
         # any HTML section/panel/ask tag self-closed inside <svg> becomes an
         # inert, foreign-namespaced element rather than a real document
         # section, so it can't spoof structure either. Treat that case as a
-        # no-op instead of a violation.
+        # no-op for the self-closing-tag violation only — the element is
+        # still a real, attribute-bearing DOM node a browser materializes,
+        # so any ``data-ask-option-id`` it carries must still reach the
+        # digest, exactly like a void self-closing tag's does below.
         tag = tag.lower()
         if self._opaque is not None or tag in _OPAQUE_TAGS:
             return
-        if tag == "svg" or self._svg_depth > 0:
-            return
-        if tag not in _VOID_TAGS:
+        in_svg = tag == "svg" or self._svg_depth > 0
+        if not in_svg and tag not in _VOID_TAGS:
             self.structure.self_closing_tags.append(tag)
             return
         # Void elements (e.g. ``<input .../>``) never reach handle_starttag
         # — HTMLParser fires handle_startendtag exclusively for self-closing
-        # syntax. Collect data-ask-option-id here too, or an option carried
-        # on a void tag silently evades the decision-panel digest.
+        # syntax. Collect data-ask-option-id here too (and for any element
+        # self-closed inside <svg>, void or not), or an option carried on it
+        # silently evades the decision-panel digest.
         attr_map = {k.lower(): (v or "") for k, v in attrs}
-        if "data-ask-option-id" in attr_map:
-            ask_node = self._current_ask_decision()
-            if ask_node is not None:
-                ask_node.option_ids.append(attr_map["data-ask-option-id"])
+        self._collect_option_id(attr_map)
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
@@ -220,6 +217,19 @@ class _StructureParser(HTMLParser):
             return None
         node = self._open[self._first_screen_depth - 1]
         return node
+
+    def _collect_option_id(self, attr_map: dict[str, str]) -> None:
+        """Record ``data-ask-option-id`` on the innermost open decision ask.
+
+        Shared by ``handle_starttag`` and ``handle_startendtag`` (both the
+        void-tag and svg-foreign-content branches) so every code path that
+        can carry the attribute on a real DOM element funnels through one
+        place instead of duplicating the presence check and lookup.
+        """
+        if "data-ask-option-id" in attr_map:
+            ask_node = self._current_ask_decision()
+            if ask_node is not None:
+                ask_node.option_ids.append(attr_map["data-ask-option-id"])
 
     def _current_ask_decision(self) -> _SectionNode | None:
         """Innermost currently-open decision-typed ask wrapper, if any.
