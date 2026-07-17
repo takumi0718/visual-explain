@@ -441,6 +441,69 @@ class DecisionPanelStructureTest(unittest.TestCase):
         msgs = _msgs(check_document_structure(content, title=None))
         self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
 
+    def test_option_id_on_section_tag_is_detected_as_tampering(self) -> None:
+        """An option element renamed from <li> to <section> must still count
+        toward the enclosing decision ask's digest — a parser that returns
+        early on tag == "section" before scanning for
+        ``data-ask-option-id`` would silently drop it, letting a forged
+        panel digest (computed as if the option never existed) pass.
+        """
+        html = build_document(
+            _decision_assembly(),
+            REGISTRY,
+            TRUSTED_RENDERERS,
+            SKELETON,
+            COMPONENTS,
+            document_path="doc.html",
+        )
+        self.assertIn(
+            '<li data-ask-option data-ask-option-id="opt-adopt" data-ask-default>',
+            html,
+        )
+        tampered = html.replace(
+            '<li data-ask-option data-ask-option-id="opt-adopt" data-ask-default>',
+            '<section data-ask-option data-ask-option-id="opt-adopt" data-ask-default>',
+            1,
+        ).replace(
+            '</span></li><li data-ask-option data-ask-option-id="opt-hold">',
+            '</span></section><li data-ask-option data-ask-option-id="opt-hold">',
+            1,
+        )
+        # Panel digest forged to match a document where opt-adopt never
+        # existed — exactly what a parser blind to <section>-tagged
+        # options would (wrongly) compute as "expected".
+        stale_digest = compute_ask_digest_from_pairs(
+            (("sec-ask-decision", ("opt-hold",)),)
+        )
+        marker = 'data-ve-ask-digest="'
+        start = tampered.index(marker) + len(marker)
+        end = tampered.index('"', start)
+        tampered = tampered[:start] + stale_digest + tampered[end:]
+        msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
+        self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+
+    def test_empty_option_id_attribute_still_counts_toward_digest(self) -> None:
+        """``data-ask-option-id=""`` is attribute *presence*, not absence —
+        a parser using truthiness (``if option_id:``) instead of
+        ``"data-ask-option-id" in attr_map`` would silently drop it,
+        letting a forged digest computed without that option pass.
+        """
+        ask = (
+            '<section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">\n'
+            '<div class="ask" data-ask="decision">\n'
+            '  <ul class="ask-options">'
+            '<li data-ask-option data-ask-option-id=""><span>blank</span></li>'
+            '<li data-ask-option data-ask-option-id="opt-b"><span>opt-b</span></li>'
+            '</ul>\n'
+            '</div>\n</section>\n'
+        )
+        # Digest recorded in the panel reflects only opt-b, as a checker
+        # that treats the empty value as "no attribute" would compute.
+        stale_digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("opt-b",)),))
+        content = _FIRST_BLOCK + ask + _CLOSING_BLOCK + _panel_block(stale_digest)
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+
 
 if __name__ == "__main__":
     unittest.main()

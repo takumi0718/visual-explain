@@ -70,6 +70,10 @@ class _StructureParser(HTMLParser):
             self._opaque = tag
             return
         attr_map = {k.lower(): (v or "") for k, v in attrs}
+        if "data-ask-option-id" in attr_map:
+            ask_node = self._current_ask_decision()
+            if ask_node is not None:
+                ask_node.option_ids.append(attr_map["data-ask-option-id"])
         if tag not in _VOID_TAGS:
             self._element_stack.append(tag)
 
@@ -94,12 +98,6 @@ class _StructureParser(HTMLParser):
             self._paragraph_classes = classes
             self._paragraph_parts = []
             return
-
-        option_id = attr_map.get("data-ask-option-id")
-        if option_id:
-            ask_node = self._current_ask_decision()
-            if ask_node is not None:
-                ask_node.option_ids.append(option_id)
 
         if self._heading_tag and tag not in _VOID_TAGS:
             # Nested tags inside heading: still collect text via handle_data.
