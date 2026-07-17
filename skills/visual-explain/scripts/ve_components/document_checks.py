@@ -16,7 +16,12 @@ from urllib.parse import urlsplit
 
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
 from .document_sections import compute_ask_digest_from_pairs
-from .validation import _CLOSING_REQUIRED, _DOCUMENT_PROFILES, _DOCUMENT_TYPES
+from .validation import (
+    _CLOSING_REQUIRED,
+    _DOCUMENT_PROFILES,
+    _DOCUMENT_TYPES,
+    _is_safe_id_token,
+)
 
 _VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
@@ -44,6 +49,7 @@ class _DocStructure:
     sections: list[_SectionNode] = field(default_factory=list)
     h1_in_first_screen: int = 0
     h1_total: int = 0
+    self_closing_tags: list[str] = field(default_factory=list)
 
 
 class _StructureParser(HTMLParser):
@@ -104,11 +110,23 @@ class _StructureParser(HTMLParser):
             pass
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        # Void / self-closing: no stack push beyond start handling for voids.
+        # Self-closing syntax (``<tag .../>``) has no structural effect for
+        # genuinely void elements (``<br/>`` etc: browsers treat them
+        # identically with or without the slash). For any other element,
+        # real browsers ignore the trailing slash as a parse error and open
+        # the element as a normal, unclosed start tag instead of skipping it
+        # — the opposite of a no-op. Silently ignoring it here (as a naive
+        # ``HTMLParser`` override might) would let a self-closed
+        # ``<section data-ve-section-kind="decision-panel".../>`` (or a
+        # fake ask) vanish from this parser's model while a browser still
+        # materializes a real, open section. Recording it as a violation
+        # closes that divergence fail-closed rather than trying to emulate
+        # browser mis-nesting.
         tag = tag.lower()
         if self._opaque is not None or tag in _OPAQUE_TAGS:
             return
-        # No structural effect for void tags we care about.
+        if tag not in _VOID_TAGS:
+            self.structure.self_closing_tags.append(tag)
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
@@ -243,6 +261,14 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
     """
     diagnostics: list[Diagnostic] = []
     structure = _parse_structure(content_markup)
+    if structure.self_closing_tags:
+        tags = ", ".join(f"<{tag}/>" for tag in structure.self_closing_tags)
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"自己閉じタグは許容されません（ブラウザとの解釈差異のため）: {tags}",
+            "content",
+        ))
+        return diagnostics
     first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
     if not first_nodes:
         diagnostics.append(Diagnostic(
@@ -502,6 +528,23 @@ def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
     ]
     panel_nodes = [s for s in structure.sections if s.kind == "decision-panel"]
 
+    # The fixed decision-panel binder script reads each ask's DOM ``.id``
+    # property and splices it, unescaped, into a CSS attribute selector
+    # (``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``). An id
+    # shaped outside the safe token contract (e.g. containing a quote)
+    # breaks that selector's syntax at runtime. ``validate_assembly``
+    # already rejects this shape for freshly authored IR, but a
+    # hand-crafted final document must be caught here too.
+    id_shape_diagnostics = [
+        Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"decision ask の id は安全な ID 形式ではありません: '{node.attrs.get('id', '')}'",
+            "content",
+        )
+        for node in ask_nodes
+        if not _is_safe_id_token(node.attrs.get("id", ""))
+    ]
+
     if not ask_nodes:
         if panel_nodes:
             return [Diagnostic(
@@ -512,19 +555,19 @@ def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
         return []
 
     if not panel_nodes:
-        return [Diagnostic(
+        return id_shape_diagnostics + [Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             "decision ask があるのに回収パネルがありません",
             "content",
         )]
     if len(panel_nodes) != 1:
-        return [Diagnostic(
+        return id_shape_diagnostics + [Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             "回収パネルはちょうど1個必要です",
             "content",
         )]
 
-    diagnostics: list[Diagnostic] = []
+    diagnostics: list[Diagnostic] = list(id_shape_diagnostics)
     panel = panel_nodes[0]
     panel_index = next(i for i, node in enumerate(structure.sections) if node is panel)
     closing_indices = [

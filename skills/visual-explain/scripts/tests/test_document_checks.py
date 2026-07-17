@@ -416,6 +416,25 @@ class DecisionPanelStructureTest(unittest.TestCase):
         content = _FIRST_BLOCK + _ask_block() + _CLOSING_BLOCK + _panel_block(digest)
         self.assertEqual(check_document_structure(content, title=None), [])
 
+    def test_ask_id_with_quote_character_is_detected_as_unsafe(self) -> None:
+        """A decision ask id ends up as the DOM ``.id`` property and is
+        spliced into a CSS attribute selector by the fixed decision-panel
+        binder script (``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``).
+        A quote in the id breaks that selector's syntax at runtime.
+        ``validate_assembly`` already rejects this id shape for freshly
+        authored IR, but a hand-crafted final document must be caught here
+        too, fail-closed, instead of only matching digests blindly.
+        """
+        digest = compute_ask_digest_from_pairs((('sec-ask"decision', ("opt-a", "opt-b")),))
+        content = (
+            _FIRST_BLOCK
+            + _ask_block(section_id="sec-ask&quot;decision")
+            + _CLOSING_BLOCK
+            + _panel_block(digest)
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertNotEqual(msgs, [])
+
     def test_option_id_hidden_in_nested_section_is_detected_as_tampering(self) -> None:
         """An option tucked inside a plain nested <section> must still count
         toward the enclosing decision ask's digest — otherwise an option
@@ -503,6 +522,62 @@ class DecisionPanelStructureTest(unittest.TestCase):
         content = _FIRST_BLOCK + ask + _CLOSING_BLOCK + _panel_block(stale_digest)
         msgs = _msgs(check_document_structure(content, title=None))
         self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+
+    def test_self_closing_fake_ask_section_is_rejected(self) -> None:
+        """A self-closing ``<section .../>`` is invisible to a naive HTMLParser
+        subclass whose ``handle_startendtag`` is a no-op, yet real browsers do
+        NOT self-close non-void elements: they open the section and keep it
+        open. A ``no-op`` parser would report this document as clean (no
+        decision ask, no panel needed) while a browser actually materializes
+        a genuine ask-decision section. The checker must fail closed instead.
+        """
+        fake_ask = (
+            '<section data-ve-section-kind="ask" data-ve-ask-type="decision"'
+            ' id="sec-ask-fake"/>\n'
+        )
+        content = _FIRST_BLOCK + fake_ask + _CLOSING_BLOCK
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertNotEqual(msgs, [])
+
+    def test_self_closing_fake_panel_section_is_rejected(self) -> None:
+        """A genuine, correctly-closed decision panel is present and valid,
+        but an extra self-closing ``<section data-ve-section-kind=
+        "decision-panel" .../>`` is smuggled in alongside it. Browsers would
+        materialize two decision-panel sections (violating the ``ちょうど1個``
+        cardinality rule); a parser that no-ops self-closing tags never sees
+        the extra one and would wrongly report the document as clean.
+        """
+        digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("opt-a", "opt-b")),))
+        fake_panel = (
+            '<section data-ve-section-kind="decision-panel" id="sec-fake-panel"'
+            ' data-ve-document-id="x" data-ve-schema-version="1"'
+            ' data-ve-ask-digest="deadbeefdeadbeef" data-ve-document-path="x"/>\n'
+        )
+        content = (
+            _FIRST_BLOCK + _ask_block() + _CLOSING_BLOCK + _panel_block(digest) + fake_panel
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertNotEqual(msgs, [])
+
+    def test_self_closing_fake_panel_fails_final_check(self) -> None:
+        """End-to-end: a genuinely built decision document (real ask + real
+        panel, all group-3 checks clean) must still FAIL check_final_document
+        once a self-closing spoofed decision-panel is smuggled into the
+        markup, even though it carries no children and never appears in a
+        naive parser's section list.
+        """
+        html = build_document(
+            _decision_assembly(), REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS,
+            document_path="doc.html",
+        )
+        fake_panel = (
+            '<section data-ve-section-kind="decision-panel" id="sec-fake-panel"'
+            ' data-ve-document-id="x" data-ve-schema-version="1"'
+            ' data-ve-ask-digest="deadbeefdeadbeef" data-ve-document-path="x"/>\n'
+        )
+        tampered = html.replace(CONTENT_END, fake_panel + CONTENT_END, 1)
+        msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
+        self.assertNotEqual(msgs, [])
 
 
 if __name__ == "__main__":

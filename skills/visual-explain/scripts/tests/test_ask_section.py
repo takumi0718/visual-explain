@@ -104,6 +104,29 @@ class AskSectionTest(unittest.TestCase):
                             or "既定" in str(d)
                             for d in ctx.exception.diagnostics))
 
+    def test_ask_id_with_quote_character_is_rejected(self) -> None:
+        """The built document's id attribute round-trips through the DOM and
+        is spliced into a CSS attribute selector by the fixed decision-panel
+        binder script; a quote in the id breaks that selector's syntax at
+        runtime, so the id shape must be rejected up front at validation.
+        """
+        raw = _assembly(_decision_section(id='sec-ask"decision'))
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(raw)
+        self.assertTrue(any("ask.id" in str(d) for d in ctx.exception.diagnostics))
+
+    def test_option_id_with_quote_character_is_rejected(self) -> None:
+        raw = _assembly(_decision_section(
+            options=[
+                {"id": 'opt"a', "label": "A", "tradeoff": "t1"},
+                {"id": "opt-b", "label": "B", "tradeoff": "t2"},
+            ],
+            defaultId="opt-b",
+        ))
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(raw)
+        self.assertTrue(any("options" in str(d) for d in ctx.exception.diagnostics))
+
     def test_request_static_output_passes_ask_inspector(self) -> None:
         raw = _assembly({
             "kind": "ask",
