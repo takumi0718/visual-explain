@@ -1,6 +1,8 @@
 """検査群③: 最終文書の構造検査（check_document_structure）。"""
 from __future__ import annotations
 
+import json
+import re
 import unittest
 from pathlib import Path
 
@@ -416,35 +418,25 @@ class DecisionPanelStructureTest(unittest.TestCase):
         content = _FIRST_BLOCK + _ask_block() + _CLOSING_BLOCK + _panel_block(digest)
         self.assertEqual(check_document_structure(content, title=None), [])
 
-    def test_ask_id_with_quote_character_is_detected_as_unsafe(self) -> None:
-        """A decision ask id ends up as the DOM ``.id`` property and is
-        spliced into a CSS attribute selector by the fixed decision-panel
-        binder script (``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``).
-        A quote in the id breaks that selector's syntax at runtime.
-        ``validate_assembly`` already rejects this id shape for freshly
-        authored IR, but a hand-crafted final document must be caught here
-        too, fail-closed, instead of only matching digests blindly.
+    def test_ask_id_with_quote_and_japanese_characters_is_accepted(self) -> None:
+        """r3 made the decision-panel binder splice the ask id, unescaped,
+        into a CSS attribute selector, so this checker started rejecting any
+        id shaped outside an ASCII token. r4 replaces the binder with a
+        dataset-comparison scan that never builds a selector string, so
+        arbitrary non-empty ids (quotes, Japanese text, whatever an author
+        already had) must be accepted again — restoring the pre-r3 contract.
         """
-        digest = compute_ask_digest_from_pairs((('sec-ask"decision', ("opt-a", "opt-b")),))
+        digest = compute_ask_digest_from_pairs((('決定"確認', ("opt-a", "opt-b")),))
         content = (
             _FIRST_BLOCK
-            + _ask_block(section_id="sec-ask&quot;decision")
+            + _ask_block(section_id="決定&quot;確認")
             + _CLOSING_BLOCK
             + _panel_block(digest)
         )
-        msgs = _msgs(check_document_structure(content, title=None))
-        self.assertNotEqual(msgs, [])
+        self.assertEqual(check_document_structure(content, title=None), [])
 
-    def test_option_id_with_quote_character_is_detected_as_unsafe(self) -> None:
-        """An option id is read by the fixed decision-panel binder script via
-        ``item.dataset.askOptionId`` and used as a selection-state key; the
-        same safe-token contract that protects the ask wrapper id must also
-        cover option ids. A hand-crafted final document can carry a
-        tampered, unsafe option id alongside a digest recomputed to match it
-        exactly — a checker that only re-derives the digest from whatever
-        option ids it collected, without validating their shape, would wave
-        this through. It must fail closed instead.
-        """
+    def test_option_id_with_quote_character_is_accepted(self) -> None:
+        """Same restored compatibility as the ask id, for option ids."""
         digest = compute_ask_digest_from_pairs((("sec-ask-decision", ('opt"a', "opt-b")),))
         content = (
             _FIRST_BLOCK
@@ -452,37 +444,30 @@ class DecisionPanelStructureTest(unittest.TestCase):
             + _CLOSING_BLOCK
             + _panel_block(digest)
         )
-        msgs = _msgs(check_document_structure(content, title=None))
-        self.assertNotEqual(msgs, [])
+        self.assertEqual(check_document_structure(content, title=None), [])
 
-    def test_ask_id_with_trailing_newline_is_detected_as_unsafe(self) -> None:
-        """Python's ``$`` anchor matches just before a string-final newline
-        under ``re.match``, so a naive safe-token check using ``match``
-        would accept 'sec-ask-decision\\n' as if the trailing newline were
-        not there. A hand-crafted final document can render that newline as
-        ``&#10;`` inside the id attribute; the checker must reject it.
-        """
-        digest = compute_ask_digest_from_pairs((("sec-ask-decision\n", ("opt-a", "opt-b")),))
+    def test_ask_id_with_leading_whitespace_and_digit_is_accepted(self) -> None:
+        """Leading whitespace and a digit-leading token both used to be
+        rejected by the ASCII-token pattern; both are ordinary, previously
+        working ids that must be accepted again."""
+        digest = compute_ask_digest_from_pairs(((" 1決定", ("opt-a", "opt-b")),))
         content = (
             _FIRST_BLOCK
-            + _ask_block(section_id="sec-ask-decision&#10;")
+            + _ask_block(section_id="&#32;1決定")
             + _CLOSING_BLOCK
             + _panel_block(digest)
         )
-        msgs = _msgs(check_document_structure(content, title=None))
-        self.assertNotEqual(msgs, [])
+        self.assertEqual(check_document_structure(content, title=None), [])
 
-    def test_option_id_with_trailing_newline_is_detected_as_unsafe(self) -> None:
-        """Same trailing-newline gap as the ask id, but on an option id."""
-        digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("opt-a\n", "opt-b")),))
+    def test_option_id_starting_with_digit_is_accepted(self) -> None:
+        digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("1st-option", "opt-b")),))
         content = (
             _FIRST_BLOCK
-            + _ask_block(option_ids=("opt-a&#10;", "opt-b"))
+            + _ask_block(option_ids=("1st-option", "opt-b"))
             + _CLOSING_BLOCK
             + _panel_block(digest)
         )
-        msgs = _msgs(check_document_structure(content, title=None))
-        self.assertNotEqual(msgs, [])
+        self.assertEqual(check_document_structure(content, title=None), [])
 
     def test_option_id_hidden_in_nested_section_is_detected_as_tampering(self) -> None:
         """An option tucked inside a plain nested <section> must still count
@@ -660,6 +645,44 @@ class DecisionPanelStructureTest(unittest.TestCase):
         tampered = html.replace(CONTENT_END, fake_panel + CONTENT_END, 1)
         msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
         self.assertNotEqual(msgs, [])
+
+
+class SelfClosingForeignContentTest(unittest.TestCase):
+    """The blanket self-closing-tag ban exists to fail-closed on spoofed
+    HTML section/panel/ask wrappers (real browsers do NOT self-close
+    non-void HTML elements). Inside ``<svg>`` foreign content, though, real
+    browsers honor the self-closing flag for every element per the HTML5
+    foreign-content parsing algorithm — so a self-closed ``<path/>`` or
+    ``<circle/>`` there is not a parser/browser divergence and must be
+    permitted, while the same self-closing syntax on a plain HTML section
+    outside any ``<svg>`` must still fail closed.
+    """
+
+    def test_self_closed_svg_elements_in_a_real_canonical_document_are_permitted(self) -> None:
+        raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
+        html = build_document(
+            raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS, document_path="doc.html",
+        )
+        # Every <circle>/<line> in the built slope SVG is content-empty;
+        # self-closing them is a lossless, spec-legal rewrite of the same markup.
+        self.assertIn("<circle", html)
+        self_closed = re.sub(r"<(circle|line)([^>]*)></\1>", r"<\1\2/>", html)
+        self.assertIn("<circle", self_closed)
+        self.assertNotIn("</circle>", self_closed)
+        content, title = _content_and_title(self_closed)
+        self.assertEqual(check_document_structure(content, title=title), [])
+
+    def test_self_closed_html_section_outside_svg_still_fails(self) -> None:
+        fake_ask = (
+            '<section data-ve-section-kind="ask" data-ve-ask-type="decision"'
+            ' id="sec-ask-fake"/>\n'
+        )
+        content = _FIRST_BLOCK + fake_ask + _CLOSING_BLOCK
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertIn(
+            "自己閉じタグは許容されません（ブラウザとの解釈差異のため）: <section/>",
+            msgs,
+        )
 
 
 if __name__ == "__main__":

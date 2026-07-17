@@ -8,7 +8,6 @@ direction and component choice are never inferred from prose.
 from __future__ import annotations
 
 import json
-import re
 from decimal import Decimal
 from html.parser import HTMLParser
 from pathlib import Path
@@ -352,20 +351,6 @@ def _is_int(value: object) -> bool:
 
 def _nonblank_str(value: object) -> bool:
     return isinstance(value, str) and value.strip() != ""
-
-
-# Ask section ids and option ids are read back out of the built document's DOM
-# (``element.id`` / ``dataset.askOptionId``) and spliced into a CSS attribute
-# selector by the fixed decision-panel binder script (e.g.
-# ``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``). A quote,
-# backslash, or bracket in the id breaks that selector's syntax at runtime.
-# Restricting ids to this token shape keeps them safe wherever they end up:
-# HTML id attributes, CSS attribute-selector values, and JSON digest payloads.
-_SAFE_ID_TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
-
-
-def _is_safe_id_token(value: object) -> bool:
-    return isinstance(value, str) and _SAFE_ID_TOKEN_RE.fullmatch(value) is not None
 
 
 def _is_single_sentence(value: str) -> bool:
@@ -2318,14 +2303,6 @@ def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_i
         col.add(INVALID_COMPONENT_PAYLOAD,
                 "ask.askType は decision / request / hypothesis のいずれかが必要です", path)
         ask_type = ""
-    # Only decision asks get a DOM recovery panel: their id is spliced into a
-    # CSS attribute selector and folded into compute_ask_digest_from_pairs.
-    # request/hypothesis ids never reach that path, so they keep accepting
-    # the broader charset (Japanese, whitespace) they always allowed.
-    if ask_type == "decision" and _nonblank_str(sid) and not _is_safe_id_token(sid):
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                f"ask.id は英字で始まり英数字・ハイフン・アンダースコアのみで構成される必要があります: '{sid}'",
-                path)
     present = set(raw.keys()) - {"kind", "id", "askType"}
     if ask_type == "decision":
         foreign = present - _DECISION_ONLY_KEYS
@@ -2377,10 +2354,6 @@ def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> As
             accepted_id = False
             if not _nonblank_str(oid):
                 col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].id は空にできません", op)
-            elif not _is_safe_id_token(oid):
-                col.add(INVALID_COMPONENT_PAYLOAD,
-                        f"decision.options[].id は英字で始まり英数字・ハイフン・アンダースコアのみで構成される必要があります: '{oid}'",
-                        op)
             elif oid in option_ids:
                 col.add(DUPLICATE_SEMANTIC_ID, f"option id '{oid}' が重複しています", op)
             else:

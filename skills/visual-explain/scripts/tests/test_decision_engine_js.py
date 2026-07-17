@@ -225,6 +225,34 @@ class DecisionEngineJsTest(unittest.TestCase):
         ])
         self.assertEqual(run_calls(calls)[-1], expected)
 
+    def test_find_panel_row_matches_by_dataset_value_not_position(self) -> None:
+        """The binder used to splice ``ask.id`` into a CSS attribute selector
+        (``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``), which
+        broke for ids containing a quote, whitespace, Japanese text, or a
+        leading digit. ``findPanelRow`` instead takes a static list of
+        candidate rows (found via the unparameterized
+        ``[data-ve-panel-ask]`` selector) and compares ``dataset`` values
+        with plain ``===``, so any non-empty string id works.
+        """
+        rows = [
+            {"dataset": {"vePanelAsk": "決定\"1"}, "marker": "row-quote-japanese"},
+            {"dataset": {"vePanelAsk": " 2ask"}, "marker": "row-leading-space-digit"},
+            {"dataset": {"vePanelAsk": "plain-id"}, "marker": "row-plain"},
+        ]
+        (matched,) = run_calls([
+            {"fn": "findPanelRow", "args": [rows, "決定\"1"]},
+        ])
+        self.assertEqual(matched["marker"], "row-quote-japanese")
+        (matched,) = run_calls([
+            {"fn": "findPanelRow", "args": [rows, " 2ask"]},
+        ])
+        self.assertEqual(matched["marker"], "row-leading-space-digit")
+
+    def test_find_panel_row_returns_null_when_no_match(self) -> None:
+        rows = [{"dataset": {"vePanelAsk": "a"}, "marker": "row-a"}]
+        (matched,) = run_calls([{"fn": "findPanelRow", "args": [rows, "b"]}])
+        self.assertIsNone(matched)
+
     def test_engine_sources_pass_node_check(self) -> None:
         for name in ("decision_engine.js", "decision_engine_driver.js"):
             proc = subprocess.run([NODE, "--check", str(RUNTIME / name)], capture_output=True)

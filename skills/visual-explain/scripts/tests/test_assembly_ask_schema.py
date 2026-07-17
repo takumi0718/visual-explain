@@ -164,25 +164,72 @@ class AskSchemaDiscriminatedUnionTest(unittest.TestCase):
 
 
 class AskSchemaSafeIdScopeTest(unittest.TestCase):
-    """The ASCII-token `pattern` exists only to protect the decision-panel's
-    DOM id splicing and digest recomputation; request/hypothesis ids are
-    never spliced into a selector or digest, so they must keep accepting
-    Japanese characters and whitespace, as they did before the safe-id
-    check was introduced."""
+    """decision/option ids accept the same arbitrary non-empty string as
+    request/hypothesis ids do. The decision-panel binder no longer splices
+    ask ids into a CSS attribute selector (it scans ``[data-ve-panel-ask]``
+    candidates and compares ``dataset`` values directly instead), so the
+    ASCII-token ``pattern`` that used to protect that selector is gone;
+    restoring this compatibility undoes the r3 regression that rejected
+    quoted/Japanese/whitespace/digit-leading ids that worked before."""
 
-    def test_decision_id_and_option_id_keep_ascii_token_pattern(self) -> None:
+    def test_decision_id_and_option_id_have_no_ascii_token_pattern(self) -> None:
         for name in ("askDecisionWithDefault", "askDecisionNoDefault"):
             branch = ASSEMBLY_SCHEMA["$defs"][name]
-            self.assertEqual(branch["properties"]["id"].get("pattern"),
-                              "^[A-Za-z][A-Za-z0-9_-]*$", name)
+            self.assertNotIn("pattern", branch["properties"]["id"], name)
         option = ASSEMBLY_SCHEMA["$defs"]["askOption"]
-        self.assertEqual(option["properties"]["id"].get("pattern"),
-                          "^[A-Za-z][A-Za-z0-9_-]*$")
+        self.assertNotIn("pattern", option["properties"]["id"])
 
     def test_request_and_hypothesis_id_have_no_ascii_token_pattern(self) -> None:
         for name in ("askRequestSection", "askHypothesisSection"):
             branch = ASSEMBLY_SCHEMA["$defs"][name]
             self.assertNotIn("pattern", branch["properties"]["id"], name)
+
+
+class AskSchemaArbitraryIdRegressionTest(unittest.TestCase):
+    """r3 rejected decision ask/option ids outside `^[A-Za-z][A-Za-z0-9_-]*$`;
+    this cost real authors ids that always worked before (Japanese text,
+    embedded quotes, leading whitespace, digit-leading tokens). validate_assembly
+    must accept them again, same as any other non-empty id."""
+
+    def _assembly_with_ids(self, ask_id: str, option_ids: list[str]) -> dict:
+        return {
+            "schemaVersion": 1,
+            "document": {
+                "id": "arbitrary-id-doc", "title": "任意ID文書", "summary": "要約。",
+                "type": "proposal", "profile": "strict",
+            },
+            "sections": [
+                {"kind": "first-screen", "id": "sec-first", "decision": "採否を決めます。"},
+                {
+                    "kind": "ask", "id": ask_id, "askType": "decision",
+                    "question": "進めますか？",
+                    "options": [
+                        {"id": option_ids[0], "label": "A", "tradeoff": "t1"},
+                        {"id": option_ids[1], "label": "B", "tradeoff": "t2"},
+                    ],
+                    "defaultId": option_ids[0],
+                },
+                {
+                    "kind": "closing", "id": "sec-closing",
+                    "blocks": [
+                        {"heading": "リスクと弱い前提", "items": ["前提が弱い"]},
+                        {"heading": "不確かな点", "items": ["未確認"]},
+                    ],
+                },
+            ],
+        }
+
+    def test_decision_ask_id_with_quote_and_japanese_is_accepted(self) -> None:
+        assembly = self._assembly_with_ids('決定"1', ["opt-a", "opt-b"])
+        validate_assembly(assembly)  # must not raise
+
+    def test_decision_ask_id_with_leading_whitespace_is_accepted(self) -> None:
+        assembly = self._assembly_with_ids("  ask-1", ["opt-a", "opt-b"])
+        validate_assembly(assembly)  # must not raise
+
+    def test_option_id_starting_with_digit_is_accepted(self) -> None:
+        assembly = self._assembly_with_ids("sec-ask-decision", ["1st-option", "2nd-option"])
+        validate_assembly(assembly)  # must not raise
 
 
 class AskSchemaRegressionTest(unittest.TestCase):

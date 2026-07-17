@@ -30,6 +30,16 @@
     return null;
   }
 
+  function findPanelRow(rows, askId) {
+    // Candidates come from the unparameterized ``[data-ve-panel-ask]``
+    // selector; matching by ``dataset`` equality here (instead of splicing
+    // askId into a CSS attribute selector at the call site) keeps arbitrary
+    // non-empty ask ids — quotes, whitespace, Japanese text, leading
+    // digits — working without ever building a selector string from them.
+    for (const row of rows) if (row.dataset.vePanelAsk === askId) return row;
+    return null;
+  }
+
   function cloneWith(state, patch) {
     return {
       selections: Object.assign(emptyMap(), state.selections, patch.selections || emptyMap()),
@@ -133,7 +143,7 @@
 
   const engine = {
     storageKey, emptyState, selectOption, setMemo, setGlobalMemo,
-    restoreState, serializeState, formatCopyText,
+    restoreState, serializeState, formatCopyText, findPanelRow,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = engine;
   else global.veDecisionEngine = engine;

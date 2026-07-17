@@ -104,18 +104,20 @@ class AskSectionTest(unittest.TestCase):
                             or "既定" in str(d)
                             for d in ctx.exception.diagnostics))
 
-    def test_ask_id_with_quote_character_is_rejected(self) -> None:
-        """The built document's id attribute round-trips through the DOM and
-        is spliced into a CSS attribute selector by the fixed decision-panel
-        binder script; a quote in the id breaks that selector's syntax at
-        runtime, so the id shape must be rejected up front at validation.
+    def test_ask_id_with_quote_character_is_accepted(self) -> None:
+        """r3 made the decision-panel binder splice the ask id, unescaped,
+        into a CSS attribute selector, so this id shape was rejected up
+        front at validation. r4 replaces the binder with a dataset-comparison
+        scan that never builds a selector string, so decision ask ids accept
+        the same arbitrary non-empty string request/hypothesis ids always
+        did — restoring the pre-r3 contract.
         """
         raw = _assembly(_decision_section(id='sec-ask"decision'))
-        with self.assertRaises(ContractError) as ctx:
-            validate_assembly(raw)
-        self.assertTrue(any("ask.id" in str(d) for d in ctx.exception.diagnostics))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, 'sec-ask"decision')
 
-    def test_option_id_with_quote_character_is_rejected(self) -> None:
+    def test_option_id_with_quote_character_is_accepted(self) -> None:
         raw = _assembly(_decision_section(
             options=[
                 {"id": 'opt"a', "label": "A", "tradeoff": "t1"},
@@ -123,23 +125,18 @@ class AskSectionTest(unittest.TestCase):
             ],
             defaultId="opt-b",
         ))
-        with self.assertRaises(ContractError) as ctx:
-            validate_assembly(raw)
-        self.assertTrue(any("options" in str(d) for d in ctx.exception.diagnostics))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual([o.id for o in section.options], ['opt"a', "opt-b"])
 
-    def test_ask_id_with_trailing_newline_is_rejected(self) -> None:
-        """Python's ``$`` anchor matches just before a string-final newline
-        under ``re.match``, so a naive safe-token check using ``match``
-        would accept 'sec-ask-decision\\n' as if the trailing newline were
-        not there. IR authoring must reject it up front.
-        """
+    def test_ask_id_with_trailing_newline_is_accepted(self) -> None:
         raw = _assembly(_decision_section(id="sec-ask-decision\n"))
-        with self.assertRaises(ContractError) as ctx:
-            validate_assembly(raw)
-        self.assertTrue(any("ask.id" in str(d) for d in ctx.exception.diagnostics))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual(section.id, "sec-ask-decision\n")
 
-    def test_option_id_with_trailing_newline_is_rejected(self) -> None:
-        """Same trailing-newline gap as the ask id, but on an option id."""
+    def test_option_id_with_trailing_newline_is_accepted(self) -> None:
+        """Same restored compatibility as the ask id, for option ids."""
         raw = _assembly(_decision_section(
             options=[
                 {"id": "opt-a\n", "label": "A", "tradeoff": "t1"},
@@ -147,9 +144,9 @@ class AskSectionTest(unittest.TestCase):
             ],
             defaultId="opt-b",
         ))
-        with self.assertRaises(ContractError) as ctx:
-            validate_assembly(raw)
-        self.assertTrue(any("options" in str(d) for d in ctx.exception.diagnostics))
+        req = validate_assembly(raw)
+        section = next(s for s in req.sections if isinstance(s, AskSection))
+        self.assertEqual([o.id for o in section.options], ["opt-a\n", "opt-b"])
 
     def test_request_id_with_japanese_and_whitespace_is_accepted(self) -> None:
         """request.id is never spliced into a CSS selector or digest (only

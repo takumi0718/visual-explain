@@ -89,7 +89,7 @@
       "additionalProperties": false,
       "required": ["id", "label", "tradeoff"],
       "properties": {
-        "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        "id": {"type": "string", "minLength": 1},
         "label": {"type": "string", "minLength": 1},
         "tradeoff": {"type": "string", "minLength": 1}
       }
@@ -127,7 +127,7 @@
       "required": ["kind", "id", "askType", "question", "options", "defaultId"],
       "properties": {
         "kind": {"const": "ask"},
-        "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        "id": {"type": "string", "minLength": 1},
         "askType": {"const": "decision"},
         "question": {"type": "string", "minLength": 1},
         "options": {
@@ -144,7 +144,7 @@
       "required": ["kind", "id", "askType", "question", "options", "noDefaultReason"],
       "properties": {
         "kind": {"const": "ask"},
-        "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        "id": {"type": "string", "minLength": 1},
         "askType": {"const": "decision"},
         "question": {"type": "string", "minLength": 1},
         "options": {
