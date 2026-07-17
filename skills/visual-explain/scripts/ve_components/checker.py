@@ -341,6 +341,7 @@ class _AskParser(HTMLParser):
                 "question_texts": [],
                 "options": 0,
                 "option_records": [],
+                "memos": 0,
                 "defaults": 0,
                 "no_default_reason_texts": [],
                 "roles": [],
@@ -361,7 +362,10 @@ class _AskParser(HTMLParser):
                 self._scopes.append((self._depth, block, "question_texts", len(block["question_texts"]) - 1))
             if "data-ask-option" in attr:
                 block["options"] += 1
-                block["option_records"].append({"tradeoffs": 0, "text": ""})
+                block["option_records"].append(
+                    {"tradeoffs": 0, "text": "", "option_id": (attr.get("data-ask-option-id") or "").strip()})
+            if "data-ask-memo" in attr and tag == "textarea":
+                block["memos"] += 1
             if "ask-tradeoff" in classes and block["option_records"]:
                 block["option_records"][-1]["tradeoffs"] += 1
                 self._scopes.append((self._depth, block, "option_tradeoff_text", None))
@@ -431,6 +435,13 @@ def validate_ask_blocks(content_markup: str) -> list[Diagnostic]:
                 len(block["no_default_reason_texts"]) != 1 or not block["no_default_reason_texts"][0].strip()
             ):
                 diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "既定案なしの decision には非空の ask-no-default-reason が必要です"))
+            option_ids = [rec["option_id"] for rec in block["option_records"]]
+            if any(not oid for oid in option_ids):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision の各選択肢には非空の data-ask-option-id が必要です"))
+            for oid in sorted({o for o in option_ids if o and option_ids.count(o) > 1}):
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, f"decision の選択肢 id が重複しています: {oid}"))
+            if block["memos"] != 1:
+                diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision にはメモ欄（data-ask-memo）がちょうど1つ必要です"))
         elif kind == "request":
             if not block["roles"]:
                 diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "request には data-ask-role 付きの手順が1件以上必要です"))

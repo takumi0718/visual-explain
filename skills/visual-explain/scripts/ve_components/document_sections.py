@@ -6,7 +6,9 @@ final checker (group 3) re-verifies the result in the flattened document.
 """
 from __future__ import annotations
 
+import hashlib
 import html
+import json
 from dataclasses import dataclass
 from html.parser import HTMLParser
 
@@ -186,7 +188,7 @@ def render_ask(section: AskSection) -> WrappedDocumentSection:
 def _render_decision_body(section: AskSection, kind_label: str) -> str:
     options_html: list[str] = []
     for opt in section.options:
-        attrs = "data-ask-option"
+        attrs = f'data-ask-option data-ask-option-id="{_esc(opt.id)}"'
         if section.default_id is not None and opt.id == section.default_id:
             attrs += " data-ask-default"
         options_html.append(
@@ -198,15 +200,36 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
         reason = (
             f'\n  <p class="ask-no-default-reason">{_esc(section.no_default_reason)}</p>'
         )
+    memo = (
+        '\n  <div class="ask-memo">'
+        '<label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>'
+    )
     return (
         f'<div class="ask" data-ask="decision">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
         f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
-        f"  </ul>{reason}\n"
+        f"  </ul>{reason}{memo}\n"
         f"</div>"
     )
+
+
+def compute_ask_digest_from_pairs(pairs: tuple[tuple[str, tuple[str, ...]], ...]) -> str:
+    """Ask-contract digest: sha256 over the JSON-canonical [askId, [optionIds]] list.
+
+    JSON encoding keeps ids with delimiter characters (",", ";", "=") from
+    colliding across field boundaries.
+    """
+    payload = json.dumps([[ask_id, list(option_ids)] for ask_id, option_ids in pairs],
+                         ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def compute_ask_digest(asks: tuple[AskSection, ...]) -> str:
+    pairs = tuple((a.id, tuple(o.id for o in a.options))
+                  for a in asks if a.ask_type == "decision")
+    return compute_ask_digest_from_pairs(pairs)
 
 
 def _render_request_body(section: AskSection, kind_label: str) -> str:

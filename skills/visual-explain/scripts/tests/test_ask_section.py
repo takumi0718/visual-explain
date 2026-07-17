@@ -8,7 +8,7 @@ from build_explainer import build_document
 from ve_components.checker import validate_ask_blocks
 from ve_components.diagnostics import ContractError
 from ve_components.document_sections import render_ask
-from ve_components.model import AskOption, AskSection
+from ve_components.model import AskOption, AskSection, AskStep
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
 from ve_components.validation import validate_assembly
@@ -188,6 +188,46 @@ class AskSectionTest(unittest.TestCase):
         self.assertIn('data-ask="decision"', html)
         self.assertIn("注釈を今回に含めますか？", html)
         self.assertIn("data-ask-default", html)
+
+    def test_decision_options_carry_option_ids(self) -> None:
+        section = AskSection(id="ask-1", ask_type="decision", question="どちらにしますか。",
+                             options=(AskOption("opt-a", "案A", "早いが粗い"),
+                                      AskOption("opt-b", "案B", "遅いが確実")),
+                             default_id="opt-b")
+        wrapped = render_ask(section)
+        self.assertIn('data-ask-option data-ask-option-id="opt-a"', wrapped.markup)
+        self.assertIn('data-ask-option-id="opt-b" data-ask-default', wrapped.markup.replace("data-ask-option ", ""))
+
+    def test_decision_renders_static_memo_field(self) -> None:
+        section = AskSection(id="ask-1", ask_type="decision", question="どちらにしますか。",
+                             options=(AskOption("opt-a", "案A", "早いが粗い"),
+                                      AskOption("opt-b", "案B", "遅いが確実")),
+                             default_id="opt-b")
+        wrapped = render_ask(section)
+        self.assertIn('<textarea data-ask-memo></textarea>', wrapped.markup)
+        self.assertIn('メモ（この判断について）', wrapped.markup)
+
+    def test_digest_ids_cannot_collide_across_field_boundaries(self) -> None:
+        from ve_components.document_sections import compute_ask_digest_from_pairs
+        self.assertNotEqual(
+            compute_ask_digest_from_pairs((("ask-1", ("a,b",)),)),
+            compute_ask_digest_from_pairs((("ask-1", ("a", "b")),)))
+        self.assertNotEqual(
+            compute_ask_digest_from_pairs((("ask-1=a", ("b",)),)),
+            compute_ask_digest_from_pairs((("ask-1", ("a", "b")),)))
+
+    def test_digest_depends_only_on_decision_contract(self) -> None:
+        from ve_components.document_sections import compute_ask_digest
+        base = (AskSection(id="ask-1", ask_type="decision", question="Q。",
+                           options=(AskOption("a", "A", "t"), AskOption("b", "B", "t")),
+                           no_default_reason="理由"),)
+        with_request = base + (AskSection(id="ask-2", ask_type="request",
+                                          steps=(AskStep("user", "あなた", "確認する"),)),)
+        self.assertEqual(compute_ask_digest(base), compute_ask_digest(with_request))
+        changed = (AskSection(id="ask-1", ask_type="decision", question="Q。",
+                              options=(AskOption("a", "A", "t"), AskOption("c", "C", "t")),
+                              no_default_reason="理由"),)
+        self.assertNotEqual(compute_ask_digest(base), compute_ask_digest(changed))
 
     def test_render_escapes_html(self) -> None:
         section = AskSection(

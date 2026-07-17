@@ -536,9 +536,10 @@
         <p class="ask-kind">判断してください</p>
         <p class="ask-question">この4画面の見た目を v1 の「正」として確定しますか？</p>
         <ul class="ask-options">
-          <li data-ask-option data-ask-default><span>今すぐ承認する</span><span class="ask-tradeoff">後続タスクへ即着手できる一方、微修正は次サイクル送りになる</span></li>
-          <li data-ask-option><span>指摘を戻して再提示させる</span><span class="ask-tradeoff">仕上がりは上がるが承認が1サイクル遅れる</span></li>
+          <li data-ask-option data-ask-option-id="approve-now" data-ask-default><span>今すぐ承認する</span><span class="ask-tradeoff">後続タスクへ即着手できる一方、微修正は次サイクル送りになる</span></li>
+          <li data-ask-option data-ask-option-id="send-back"><span>指摘を戻して再提示させる</span><span class="ask-tradeoff">仕上がりは上がるが承認が1サイクル遅れる</span></li>
         </ul>
+        <div class="ask-memo"><label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>
       </div>
 
       <div class="ask" data-ask="request">

@@ -7,9 +7,10 @@ VALID_DECISION = """
   <p class="ask-kind">判断してください</p>
   <p class="ask-question">注釈を今回に含めますか？</p>
   <ul class="ask-options">
-    <li data-ask-option data-ask-default><span>含める</span><span class="ask-tradeoff">変更量が増える</span></li>
-    <li data-ask-option><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>
+    <li data-ask-option data-ask-option-id="include" data-ask-default><span>含める</span><span class="ask-tradeoff">変更量が増える</span></li>
+    <li data-ask-option data-ask-option-id="later"><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>
   </ul>
+  <div class="ask-memo"><label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>
 </div>
 """
 
@@ -43,11 +44,13 @@ class AskBlockTest(unittest.TestCase):
 
     def test_decision_needs_two_options(self):
         markup = VALID_DECISION.replace(
-            '<li data-ask-option><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>', "")
+            '<li data-ask-option data-ask-option-id="later"><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>', "")
         self.assertTrue(validate_ask_blocks(markup))
 
     def test_decision_two_defaults_fail(self):
-        markup = VALID_DECISION.replace("<li data-ask-option><span>次フェーズ", "<li data-ask-option data-ask-default><span>次フェーズ")
+        markup = VALID_DECISION.replace(
+            '<li data-ask-option data-ask-option-id="later"><span>次フェーズ',
+            '<li data-ask-option data-ask-option-id="later" data-ask-default><span>次フェーズ')
         self.assertTrue(validate_ask_blocks(markup))
 
     def test_decision_zero_default_requires_reason(self):
@@ -89,6 +92,42 @@ class AskBlockTest(unittest.TestCase):
     def test_empty_request_step_fails(self):
         markup = VALID_REQUEST.replace("specをレビューする", "")
         self.assertTrue(validate_ask_blocks(markup))
+
+    def test_decision_option_missing_id_fails(self):
+        markup = VALID_DECISION.replace(' data-ask-option-id="later"', "")
+        diags = validate_ask_blocks(markup)
+        self.assertTrue(diags)
+        self.assertIn("decision の各選択肢には非空の data-ask-option-id が必要です",
+                       [d.message for d in diags])
+
+    def test_decision_option_duplicate_id_fails(self):
+        markup = VALID_DECISION.replace('data-ask-option-id="later"', 'data-ask-option-id="include"')
+        diags = validate_ask_blocks(markup)
+        self.assertTrue(diags)
+        self.assertIn("decision の選択肢 id が重複しています: include",
+                       [d.message for d in diags])
+
+    def test_decision_missing_memo_fails(self):
+        markup = VALID_DECISION.replace(
+            '<div class="ask-memo"><label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>', "")
+        diags = validate_ask_blocks(markup)
+        self.assertTrue(diags)
+        self.assertIn("decision にはメモ欄（data-ask-memo）がちょうど1つ必要です",
+                       [d.message for d in diags])
+
+    def test_decision_memo_on_non_textarea_fails(self):
+        markup = VALID_DECISION.replace(
+            '<textarea data-ask-memo></textarea>', '<div data-ask-memo></div>')
+        diags = validate_ask_blocks(markup)
+        self.assertTrue(diags)
+        self.assertIn("decision にはメモ欄（data-ask-memo）がちょうど1つ必要です",
+                       [d.message for d in diags])
+        markup2 = VALID_DECISION.replace(
+            '<textarea data-ask-memo></textarea>', '<input data-ask-memo>')
+        diags2 = validate_ask_blocks(markup2)
+        self.assertTrue(diags2)
+        self.assertIn("decision にはメモ欄（data-ask-memo）がちょうど1つ必要です",
+                       [d.message for d in diags2])
 
 
 if __name__ == "__main__":
