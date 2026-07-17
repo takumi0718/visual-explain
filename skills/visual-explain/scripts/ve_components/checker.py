@@ -438,6 +438,10 @@ def validate_ask_blocks(content_markup: str) -> list[Diagnostic]:
             option_ids = [rec["option_id"] for rec in block["option_records"]]
             if any(not oid for oid in option_ids):
                 diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, "decision の各選択肢には非空の data-ask-option-id が必要です"))
+            for oid in sorted({o for o in option_ids if o and any(ch in o for ch in (",", "="))}):
+                diags.append(Diagnostic(
+                    ASK_CONTRACT_VIOLATION,
+                    f"decision の選択肢 id に使用できない文字（, や =）が含まれています: {oid}"))
             for oid in sorted({o for o in option_ids if o and option_ids.count(o) > 1}):
                 diags.append(Diagnostic(ASK_CONTRACT_VIOLATION, f"decision の選択肢 id が重複しています: {oid}"))
             if block["memos"] != 1:

@@ -107,6 +107,20 @@ class AskBlockTest(unittest.TestCase):
         self.assertIn("decision の選択肢 id が重複しています: include",
                        [d.message for d in diags])
 
+    def test_decision_option_id_with_comma_fails(self):
+        markup = VALID_DECISION.replace('data-ask-option-id="later"', 'data-ask-option-id="a,b"')
+        diags = validate_ask_blocks(markup)
+        self.assertTrue(diags)
+        self.assertIn("decision の選択肢 id に使用できない文字（, や =）が含まれています: a,b",
+                       [d.message for d in diags])
+
+    def test_decision_option_id_with_equals_fails(self):
+        markup = VALID_DECISION.replace('data-ask-option-id="later"', 'data-ask-option-id="a=b"')
+        diags = validate_ask_blocks(markup)
+        self.assertTrue(diags)
+        self.assertIn("decision の選択肢 id に使用できない文字（, や =）が含まれています: a=b",
+                       [d.message for d in diags])
+
     def test_decision_missing_memo_fails(self):
         markup = VALID_DECISION.replace(
             '<div class="ask-memo"><label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>', "")
