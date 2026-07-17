@@ -1,0 +1,6 @@
+OK: .visual-explain/phase1-gate-research-external-link.html
+build_exit:0
+PASS
+check_exit:0
+=== marker excerpt ===
+305:<section aria-labelledby="finding"><h2 id="finding">見出しが自己完結な資料は差し戻しが減る</h2><p class="claim">1発見1ブロックに出典を近傍へ置く。<a href="https://docs.example.org/page">調査メモ<span class="link-domain">‹docs.example.org›</span></a></p></section>

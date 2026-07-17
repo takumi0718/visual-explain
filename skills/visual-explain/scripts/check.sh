@@ -369,6 +369,34 @@ def run_selftest(script_dir: Path) -> int:
             print(f"selftest failure: {filename}: diagnostics differed", file=sys.stderr)
             print(f"  expected: {list(expected_errors)!r}", file=sys.stderr)
             print(f"  actual:   {errors!r}", file=sys.stderr)
+
+    # Group 3 structure checks (component checker path).
+    sys.path.insert(0, str(script_dir))
+    from ve_components.checker import check_final_document
+    from ve_components.registry import load_registry
+    registry_path = script_dir.parent / "assets" / "components" / "registry.json"
+    registry = load_registry(registry_path)
+    structure_cases = [
+        ("structure-bad-no-first-screen.html", ("文書型の自己表明がありません",)),
+        ("structure-bad-duplicate-h1.html", ("h1 は first-screen 内にちょうど1個必要です",)),
+        ("structure-bad-title-mismatch.html", ("title と h1 が一致しません",)),
+        ("structure-bad-no-closing.html", ("closing セクションがありません",)),
+    ]
+    for filename, expected_errors in structure_cases:
+        raw = (fixtures / filename).read_text("utf-8")
+        diags = check_final_document(
+            raw, skeleton.read_text("utf-8"), registry,
+            components_dir=registry_path.parent,
+        )
+        errors = tuple(d.message for d in diags)
+        if errors == expected_errors:
+            passed += 1
+        else:
+            failed += 1
+            print(f"selftest failure: {filename}: diagnostics differed", file=sys.stderr)
+            print(f"  expected: {list(expected_errors)!r}", file=sys.stderr)
+            print(f"  actual:   {list(errors)!r}", file=sys.stderr)
+
     print(f"selftest: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1
 

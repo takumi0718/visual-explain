@@ -3,28 +3,77 @@
   "document": {
     "id": "bad-enum-empty",
     "title": "空ブロック",
-    "summary": "番号だけの空 item。"
+    "summary": "番号だけの空 item。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-bad-empty",
-        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": [
+            "parallel-itemization"
+          ]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 2,
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
+        },
         "caption": "空ブロック",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "列挙", "summary": "不正 fixture。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト用。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "列挙",
+          "summary": "不正 fixture。"
+        },
         "enumeration": {
           "items": [
-            {"id": "a", "title": "A"},
-            {"id": "b"}
+            {
+              "id": "a",
+              "title": "A"
+            },
+            {
+              "id": "b"
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

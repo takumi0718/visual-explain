@@ -1,6 +1,7 @@
 """S1 tests: enumeration renderer DOM contract and manifest invariants."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import re
 import unittest
@@ -36,12 +37,12 @@ def expect_violation(ir: dict, code: str) -> None:
 
 def expect_violation_fixture(name: str, code: str) -> None:
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    expect_violation(raw["sections"][0]["ir"], code)
+    expect_violation(canonical_ir(raw), code)
 
 
 def render_fixture(name: str = "component-valid-enumeration"):
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return ir, render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
 
 
@@ -84,19 +85,19 @@ class EnumerationMarkupTest(unittest.TestCase):
         numbers = re.findall(r'class="ve-enum-number"[^>]*>(\d+)<', self.markup)
         self.assertEqual(numbers, ["1", "2", "3"])
         raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
-        for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
+        for item in canonical_ir(raw)["enumeration"]["items"]:
             self.assertNotIn("number", item)
 
     def test_number_mode_requires_title_even_with_description(self) -> None:
         raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
-        items = raw["sections"][0]["ir"]["enumeration"]["items"]
+        items = canonical_ir(raw)["enumeration"]["items"]
         for item in items:
             item["description"] = ["全項目に説明がある"]
         item = items[0]
         item.pop("title")
         item["description"] = ["説明だけではコンセプトにならない"]
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(
             "enumeration_structure_violation",
             {diagnostic.code for diagnostic in ctx.exception.diagnostics},
@@ -138,17 +139,17 @@ class EnumerationMarkupTest(unittest.TestCase):
 
     def test_concept_only_emits_no_description_region(self) -> None:
         raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
-        for item in raw["sections"][0]["ir"]["enumeration"]["items"]:
+        for item in canonical_ir(raw)["enumeration"]["items"]:
             item.pop("description")
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(raw))
         result = render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
         self.assertNotIn("ve-enum-description", result.markup)
         self.assertNotIn("ve-enum-has-description", result.markup)
 
     def test_takeaway_class_is_on_concept_not_outer_item(self) -> None:
         raw = json.loads(_fixture_path("component-valid-enumeration").read_text("utf-8"))
-        raw["sections"][0]["ir"]["takeawayTargetIds"] = ["item-a"]
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        canonical_ir(raw)["takeawayTargetIds"] = ["item-a"]
+        ir = validate_canonical_section(canonical_ir(raw))
         result = render_enumeration(CanonicalSection(ir=ir), ENUM_DEF)
         self.assertRegex(
             result.markup,

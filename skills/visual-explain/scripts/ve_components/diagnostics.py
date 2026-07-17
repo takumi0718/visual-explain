@@ -86,6 +86,9 @@ KPI_STRUCTURE_VIOLATION = "kpi_structure_violation"
 # Task 7 — ask block contract codes.
 ASK_CONTRACT_VIOLATION = "ask_contract_violation"
 
+# Task 8 — final-document structure checks (group 3).
+DOCUMENT_STRUCTURE_VIOLATION = "document_structure_violation"
+
 # Task 3 — document-wide notation rules.
 NOTATION_EMPHASIS_LIMIT = "notation-emphasis-limit"
 NOTATION_HIGHLIGHT_LIMIT = "notation-highlight-limit"
@@ -127,6 +130,7 @@ ALL_CODES = frozenset({
     FLOW_TOPOLOGY_VIOLATION,
     FLOW_TOPOLOGY_TOO_COMPLEX,
     ASK_CONTRACT_VIOLATION,
+    DOCUMENT_STRUCTURE_VIOLATION,
     ENUMERATION_STRUCTURE_VIOLATION,
     ENUMERATION_EMPHASIS_NOT_FOUND,
     CHEVRON_STRUCTURE_VIOLATION,

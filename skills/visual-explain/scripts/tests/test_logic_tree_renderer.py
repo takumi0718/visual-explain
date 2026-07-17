@@ -1,6 +1,7 @@
 """S4 tests: logic-tree validation and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import re
 import unittest
@@ -88,7 +89,7 @@ def _fixture_path(name: str) -> Path:
 def render_fixture(name: str):
     from ve_components.renderers.logic_tree import render_logic_tree
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return ir, render_logic_tree(CanonicalSection(ir=ir), LOGIC_TREE_DEF)
 
 
@@ -176,31 +177,31 @@ class LogicTreeValidationTest(unittest.TestCase):
     def test_bad_fixture_too_few_branches(self) -> None:
         raw = json.loads((TESTS / "component-bad-logic-tree-too-few-branches.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(LOGIC_TREE_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_bad_fixture_too_many_branches(self) -> None:
         raw = json.loads((TESTS / "component-bad-logic-tree-too-many-branches.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(LOGIC_TREE_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_bad_fixture_three_leaves(self) -> None:
         raw = json.loads((TESTS / "component-bad-logic-tree-three-leaves.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(LOGIC_TREE_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_bad_fixture_label_long(self) -> None:
         raw = json.loads((TESTS / "component-bad-logic-tree-label-long.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(LOGIC_TREE_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_bad_fixture_depth(self) -> None:
         raw = json.loads((TESTS / "component-bad-logic-tree-depth.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(INVALID_COMPONENT_PAYLOAD, {d.code for d in ctx.exception.diagnostics})
 
 

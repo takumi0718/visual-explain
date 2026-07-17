@@ -1,6 +1,7 @@
 """S6 tests: slope validation, geometry, and renderer DOM contract."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import re
 import unittest
@@ -71,7 +72,7 @@ def render_fixture(name: str):
     from ve_components.renderers.slope import render_slope
 
     raw = json.loads((TESTS / name).read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return ir, render_slope(CanonicalSection(ir=ir), SLOPE_DEF)
 
 
@@ -141,13 +142,13 @@ class SlopeValidationTest(unittest.TestCase):
     def test_rejects_six_items(self) -> None:
         raw = json.loads((TESTS / "component-bad-slope-too-many-items.json").read_text("utf-8"))
         with self.assertRaises(ContractError) as ctx:
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
         self.assertIn(SLOPE_STRUCTURE_VIOLATION, {d.code for d in ctx.exception.diagnostics})
 
     def test_rejects_three_point_shape(self) -> None:
         raw = json.loads((TESTS / "component-bad-slope-three-points-shape.json").read_text("utf-8"))
         with self.assertRaises(ContractError):
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
 
     def test_accepts_contradictory_value_text(self) -> None:
         ir = _base_ir(items=[{

@@ -181,6 +181,13 @@ Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに
 - 1セクション1問いを守り、主張を1行、根拠を2〜3行の目安に抑えよ。概ね1画面に収まるかを目視確認せよ。
 - 二層幅の張り出しは幅の節の閉じた列挙にだけ適用する。新しい図種を張り出させるには、幅の節・骨格 CSS・`test_skeleton_audit.py` の監査例外を同時に改訂せよ。
 
+## 目次とドメインマーカー（目視規範）
+
+描画はビルド時レンダラが保証する。目視では次を確認する。
+
+- **目次**: 見出しを持つ本文セクション（narrative の最初の h2/h3 と closing。first-screen と目次自身は含まない）が **5 個以上**のときだけ、first-screen 直後にフラットな目次（`nav[aria-label="目次"]` の番号付きリスト）が現れる。アンカーは各セクション wrapper の `id` を指す。5 未満なら目次は出ない。
+- **ドメインマーカー**: narrative / 型付きセクション内の外部 `https:` リンクは、リンク文言の末尾に `‹hostname›` 形式の `.link-domain` が見えること。マーカーはモデル入力ではなくレンダラ生成である。`http:`・相対 URL・`javascript:` 等は資料に残ってはならない。
+
 ## コンポーネント資産の所有権（canonical 12 形式）
 
 昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は骨格とコンポーネントで所有権を分ける。

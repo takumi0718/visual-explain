@@ -3,37 +3,67 @@
   "document": {
     "id": "evidence-map-demo",
     "title": "論拠地図",
-    "summary": "結論と根拠の対応を示す資料。"
+    "summary": "結論と根拠の対応を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-em",
         "relationship": {
           "kind": "claim-support",
-          "capabilities": ["claim-support-mapping"]
+          "capabilities": [
+            "claim-support-mapping"
+          ]
         },
         "selection": {
           "component": "evidence-map",
           "version": 2,
-          "matchedCapabilities": ["claim-support-mapping"]
+          "matchedCapabilities": [
+            "claim-support-mapping"
+          ]
         },
         "caption": "移行判断の論拠",
         "certainty": [
-          {"id": "cert-conf", "level": "confirmed", "statement": "監査済みの実績値。"},
-          {"id": "cert-inf", "level": "inferred", "statement": "類似案件からの推定。"}
+          {
+            "id": "cert-conf",
+            "level": "confirmed",
+            "statement": "監査済みの実績値。"
+          },
+          {
+            "id": "cert-inf",
+            "level": "inferred",
+            "statement": "類似案件からの推定。"
+          }
         ],
         "sources": [
-          {"id": "src-a", "label": "監査報告", "detail": "2025年度。"},
-          {"id": "src-b", "label": "ベンチマーク", "detail": "業界平均。"}
+          {
+            "id": "src-a",
+            "label": "監査報告",
+            "detail": "2025年度。"
+          },
+          {
+            "id": "src-b",
+            "label": "ベンチマーク",
+            "detail": "業界平均。"
+          }
         ],
         "accessibility": {
           "label": "論拠地図",
           "summary": "結論1件に対し根拠2件を対応づける。"
         },
         "evidence-map": {
-          "conclusion": {"id": "conc-main", "label": "クラウド移行を今四半期で開始すべき"},
+          "conclusion": {
+            "id": "conc-main",
+            "label": "クラウド移行を今四半期で開始すべき"
+          },
           "evidence": [
             {
               "id": "ev-a",
@@ -50,6 +80,18 @@
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

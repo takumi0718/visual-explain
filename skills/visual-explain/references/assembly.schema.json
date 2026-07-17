@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "visual-explain/assembly.schema.json",
   "title": "visual-explain assembly request",
-  "description": "One explainer build request. A section is discriminated by kind: canonical delegates to component-ir.schema.json (contractVersion 2; v2 components such as bars quantitative-comparison and kpi headline-metrics are validated there, not in this file); narrative accepts only id and markup (trusted-authored prose, no provenance); compatibility accepts only id, markup, and three provenance fields. Compatibility source/reason enums are copied verbatim from component-vocabulary.json; scripts/tests/test_component_contract.py fails on any drift.",
+  "description": "One explainer build request. A section is discriminated by kind: first-screen / closing / ask are typed document sections; canonical delegates to component-ir.schema.json (contractVersion 2; v2 components such as bars quantitative-comparison and kpi headline-metrics are validated there, not in this file); narrative accepts only id and markup (trusted-authored prose, no provenance); compatibility accepts only id, markup, and three provenance fields. Compatibility source/reason enums are copied verbatim from component-vocabulary.json; scripts/tests/test_component_contract.py fails on any drift.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "document", "sections"],
@@ -18,22 +18,169 @@
   "$defs": {
     "compatibilitySource": {"enum": ["legacy-html-insertion"]},
     "compatibilityReason": {"enum": ["unmigrated-format", "weak-model-degradation"]},
+    "documentType": {"enum": ["proposal", "system", "research"]},
+    "documentProfile": {"enum": ["strict", "extended"]},
     "document": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "title", "summary"],
+      "required": ["id", "title", "summary", "type", "profile"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "title": {"type": "string", "minLength": 1},
-        "summary": {"type": "string", "minLength": 1}
+        "summary": {"type": "string", "minLength": 1},
+        "type": {"$ref": "#/$defs/documentType"},
+        "profile": {"$ref": "#/$defs/documentProfile"}
       }
     },
     "section": {
       "oneOf": [
+        {"$ref": "#/$defs/firstScreenSection"},
+        {"$ref": "#/$defs/closingSection"},
+        {"$ref": "#/$defs/askSection"},
         {"$ref": "#/$defs/canonicalSection"},
         {"$ref": "#/$defs/narrativeSection"},
         {"$ref": "#/$defs/compatibilitySection"}
       ]
+    },
+    "firstScreenSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "decision"],
+      "properties": {
+        "kind": {"const": "first-screen"},
+        "id": {"type": "string", "minLength": 1},
+        "decision": {"type": "string", "minLength": 1},
+        "conditions": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "closingBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heading", "items"],
+      "properties": {
+        "heading": {"type": "string", "minLength": 1},
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "closingSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "blocks"],
+      "properties": {
+        "kind": {"const": "closing"},
+        "id": {"type": "string", "minLength": 1},
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/closingBlock"}
+        }
+      }
+    },
+    "askOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "tradeoff"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "tradeoff": {"type": "string", "minLength": 1}
+      }
+    },
+    "askStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "roleLabel", "text"],
+      "properties": {
+        "role": {"enum": ["user", "agent", "third-party"]},
+        "roleLabel": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1}
+      }
+    },
+    "askClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "certainty"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1},
+        "certainty": {"enum": ["confirmed", "inferred", "unverified"]}
+      }
+    },
+    "askSection": {
+      "oneOf": [
+        {"$ref": "#/$defs/askDecisionWithDefault"},
+        {"$ref": "#/$defs/askDecisionNoDefault"},
+        {"$ref": "#/$defs/askRequestSection"},
+        {"$ref": "#/$defs/askHypothesisSection"}
+      ]
+    },
+    "askDecisionWithDefault": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "question", "options", "defaultId"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "decision"},
+        "question": {"type": "string", "minLength": 1},
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/askOption"}
+        },
+        "defaultId": {"type": "string", "minLength": 1}
+      }
+    },
+    "askDecisionNoDefault": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "question", "options", "noDefaultReason"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "decision"},
+        "question": {"type": "string", "minLength": 1},
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/askOption"}
+        },
+        "noDefaultReason": {"type": "string", "minLength": 1}
+      }
+    },
+    "askRequestSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "steps"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "request"},
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/askStep"}
+        }
+      }
+    },
+    "askHypothesisSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "claim", "verify"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "hypothesis"},
+        "claim": {"$ref": "#/$defs/askClaim"},
+        "verify": {"type": "string", "minLength": 1}
+      }
     },
     "canonicalSection": {
       "type": "object",

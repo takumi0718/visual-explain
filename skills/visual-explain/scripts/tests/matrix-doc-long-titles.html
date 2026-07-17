@@ -295,14 +295,17 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section class="first-screen" aria-label="最初に伝えること">
+    <section data-ve-section-kind="first-screen" data-ve-document-type="proposal" data-ve-profile="strict" id="sec-first">
+<section class="first-screen" aria-label="最初に伝えること">
       <h1>承認フローの手戻りは、引き継ぎ境界の受け入れ確認で減らせる</h1>
       <p class="subtitle decision"><strong>あなたが決めること:</strong> 引き継ぎ境界に受け入れ確認を挟む試行を、次スプリントで開始するか決めます。</p>
+      <p class="subtitle">引き継ぎ境界の受け入れ確認で手戻りを減らすかを判断する説明用シナリオ。</p>
       <ul class="conditions">
         <li>手戻りの主因が引き継ぎ境界での差し戻しだと確認できていること</li>
         <li>受け入れ確認を足してもレビュー全体の所要時間が延びすぎないこと</li>
       </ul>
     </section>
+</section>
 
     <section aria-labelledby="lt-finding">
       <h2 id="lt-finding">承認フローの手戻りは3箇所に集中しており、いずれもレビュー担当の引き継ぎ境界で発生している</h2>
@@ -315,6 +318,14 @@
       <p class="claim">受け手が着手前に前工程の成果物を点検すれば、差し戻しの多くは引き継ぎ時点で解消できると見込んでいます。<span class="certainty inferred">推論</span></p>
       <p class="evidence">この見込みは差し戻しの発生位置からの推論であり、実際の削減率は試行で測る必要があります。確認の追加が新たな待ち時間を生む可能性も残ります。</p>
     </section>
+    <section data-ve-section-kind="closing" id="sec-closing">
+<section class="closing-section" aria-label="判断材料">
+  <h2>リスクと弱い前提</h2>
+  <ul><li>前提が弱い場合がある。</li></ul>
+  <h2>不確かな点</h2>
+  <ul><li>未検証の点がある。</li></ul>
+</section>
+</section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>

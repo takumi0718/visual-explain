@@ -3,9 +3,16 @@
   "document": {
     "id": "bad-selection",
     "title": "権限モデルの二軸整理",
-    "summary": "役割と操作の交差で許可範囲を判断するための資料。"
+    "summary": "役割と操作の交差で許可範囲を判断するための資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
@@ -106,6 +113,18 @@
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

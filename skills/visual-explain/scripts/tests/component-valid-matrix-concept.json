@@ -3,28 +3,49 @@
   "document": {
     "id": "matrix-concept-demo",
     "title": "概念マトリクス",
-    "summary": "短いラベルで交差を比較する概念型マトリクス。"
+    "summary": "短いラベルで交差を比較する概念型マトリクス。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-matrix-concept",
         "relationship": {
           "kind": "two-axis",
-          "capabilities": ["two-axis-classification", "intersection-comparison"]
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
         },
         "selection": {
           "component": "matrix",
           "version": 2,
-          "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
         },
         "caption": "役割 × 操作（概念型）",
         "certainty": [
-          {"id": "cert-confirmed", "level": "confirmed", "statement": "管理者の全操作は仕様で確定済み。"}
+          {
+            "id": "cert-confirmed",
+            "level": "confirmed",
+            "statement": "管理者の全操作は仕様で確定済み。"
+          }
         ],
         "sources": [
-          {"id": "src-spec", "label": "権限仕様 v3", "detail": "2026-06 版の権限表。"}
+          {
+            "id": "src-spec",
+            "label": "権限仕様 v3",
+            "detail": "2026-06 版の権限表。"
+          }
         ],
         "accessibility": {
           "label": "役割と操作の概念マトリクス",
@@ -34,21 +55,73 @@
           "presentation": "concept",
           "highlightId": "cell-viewer-write",
           "rows": [
-            {"id": "row-admin", "label": "管理者"},
-            {"id": "row-viewer", "label": "閲覧者"}
+            {
+              "id": "row-admin",
+              "label": "管理者"
+            },
+            {
+              "id": "row-viewer",
+              "label": "閲覧者"
+            }
           ],
           "columns": [
-            {"id": "col-read", "label": "読取"},
-            {"id": "col-write", "label": "書込"}
+            {
+              "id": "col-read",
+              "label": "読取"
+            },
+            {
+              "id": "col-write",
+              "label": "書込"
+            }
           ],
           "cells": [
-            {"id": "cell-admin-read", "rowId": "row-admin", "columnId": "col-read", "content": "許可", "certaintyRef": "cert-confirmed", "sourceRef": "src-spec"},
-            {"id": "cell-admin-write", "rowId": "row-admin", "columnId": "col-write", "content": "許可", "certaintyRef": "cert-confirmed", "sourceRef": "src-spec"},
-            {"id": "cell-viewer-read", "rowId": "row-viewer", "columnId": "col-read", "content": "許可", "certaintyRef": "cert-confirmed", "sourceRef": "src-spec"},
-            {"id": "cell-viewer-write", "rowId": "row-viewer", "columnId": "col-write", "content": "不可", "certaintyRef": "cert-confirmed", "sourceRef": "src-spec"}
+            {
+              "id": "cell-admin-read",
+              "rowId": "row-admin",
+              "columnId": "col-read",
+              "content": "許可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            },
+            {
+              "id": "cell-admin-write",
+              "rowId": "row-admin",
+              "columnId": "col-write",
+              "content": "許可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            },
+            {
+              "id": "cell-viewer-read",
+              "rowId": "row-viewer",
+              "columnId": "col-read",
+              "content": "許可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            },
+            {
+              "id": "cell-viewer-write",
+              "rowId": "row-viewer",
+              "columnId": "col-write",
+              "content": "不可",
+              "certaintyRef": "cert-confirmed",
+              "sourceRef": "src-spec"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

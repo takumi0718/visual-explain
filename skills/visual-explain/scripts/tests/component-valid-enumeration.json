@@ -3,28 +3,47 @@
   "document": {
     "id": "enumeration-demo",
     "title": "並列項目の列挙",
-    "summary": "順序を持たない並列関係を列挙型で示す資料。"
+    "summary": "順序を持たない並列関係を列挙型で示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-enum-list",
         "relationship": {
           "kind": "parallel-enumeration",
-          "capabilities": ["parallel-itemization"]
+          "capabilities": [
+            "parallel-itemization"
+          ]
         },
         "selection": {
           "component": "enumeration",
           "version": 2,
-          "matchedCapabilities": ["parallel-itemization"]
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
         },
         "caption": "検討対象の並列項目",
         "certainty": [
-          {"id": "cert-enum-confirmed", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}
+          {
+            "id": "cert-enum-confirmed",
+            "level": "confirmed",
+            "statement": "3項目は同一会議で合意された範囲。"
+          }
         ],
         "sources": [
-          {"id": "src-notes", "label": "議事録 2026-06", "detail": "並列検討の記録。"}
+          {
+            "id": "src-notes",
+            "label": "議事録 2026-06",
+            "detail": "並列検討の記録。"
+          }
         ],
         "accessibility": {
           "label": "並列項目の列挙",
@@ -35,16 +54,42 @@
             {
               "id": "item-a",
               "title": "福利厚生",
-              "description": ["従業員向けに無料のフィットネス利用券を配布する"],
+              "description": [
+                "従業員向けに無料のフィットネス利用券を配布する"
+              ],
               "descriptionEmphasis": "無料のフィットネス利用券"
             },
-            {"id": "item-b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]},
-            {"id": "item-c", "title": "通知チャネル", "description": ["通知経路を一つに統合する"]}
+            {
+              "id": "item-b",
+              "title": "監査ログ",
+              "description": [
+                "必要な保持期間を決定する"
+              ]
+            },
+            {
+              "id": "item-c",
+              "title": "通知チャネル",
+              "description": [
+                "通知経路を一つに統合する"
+              ]
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

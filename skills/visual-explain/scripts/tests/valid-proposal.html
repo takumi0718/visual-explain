@@ -295,14 +295,21 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
-    <section class="first-screen" aria-label="最初に伝えること">
-      <p class="proposal">提案の概要です。</p>
-      <p class="decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
-    </section>
-    <section class="closing-section" aria-label="判断材料">
-      <h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p>
-      <h2>不確かな点</h2><p>利用状況は未確認です。</p>
-    </section>
+    <section data-ve-section-kind="first-screen" data-ve-document-type="proposal" data-ve-profile="strict" id="sec-first">
+<section class="first-screen" aria-label="最初に伝えること">
+  <h1>有効な提案フィクスチャ</h1>
+  <p class="subtitle decision"><strong>あなたが決めること:</strong> 段階的な導入を承認するか決めます。</p>
+  <p class="subtitle">提案の概要を判断するための有効フィクスチャです。</p>
+</section>
+</section>
+    <section data-ve-section-kind="closing" id="sec-closing">
+<section class="closing-section" aria-label="判断材料">
+  <h2>リスクと弱い前提</h2>
+  <ul><li>検証量が不足する可能性があります。</li></ul>
+  <h2>不確かな点</h2>
+  <ul><li>利用状況は未確認です。</li></ul>
+</section>
+</section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>

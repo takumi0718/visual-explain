@@ -3,30 +3,94 @@
   "document": {
     "id": "bad-chevron-loop-h",
     "title": "loop+horizontal 禁止",
-    "summary": "loop:true と horizontal の組み合わせは不正。"
+    "summary": "loop:true と horizontal の組み合わせは不正。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-bad-loop-h",
-        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence", "closed-loop"]},
-        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence", "closed-loop"]},
+        "relationship": {
+          "kind": "ordered-sequence",
+          "capabilities": [
+            "linear-sequence",
+            "closed-loop"
+          ]
+        },
+        "selection": {
+          "component": "chevron",
+          "version": 2,
+          "matchedCapabilities": [
+            "linear-sequence",
+            "closed-loop"
+          ]
+        },
         "caption": "不正な組み合わせ",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "チェブロン", "summary": "不正 fixture。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト用。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "チェブロン",
+          "summary": "不正 fixture。"
+        },
         "chevron": {
           "steps": [
-            {"id": "s1", "title": "計画", "description": ["説明1"]},
-            {"id": "s2", "title": "準備", "description": ["説明2"]},
-            {"id": "s3", "title": "実施", "description": ["説明3"]}
+            {
+              "id": "s1",
+              "title": "計画",
+              "description": [
+                "説明1"
+              ]
+            },
+            {
+              "id": "s2",
+              "title": "準備",
+              "description": [
+                "説明2"
+              ]
+            },
+            {
+              "id": "s3",
+              "title": "実施",
+              "description": [
+                "説明3"
+              ]
+            }
           ],
           "orientation": "horizontal",
           "blockContent": "number",
           "loop": true
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

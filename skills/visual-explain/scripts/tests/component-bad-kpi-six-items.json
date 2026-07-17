@@ -3,28 +3,46 @@
   "document": {
     "id": "kpi-bad-items",
     "title": "KPI 上限超過",
-    "summary": "items が6件の不正 IR。"
+    "summary": "items が6件の不正 IR。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-kpi-bad",
         "relationship": {
           "kind": "headline-metrics",
-          "capabilities": ["metric-highlight"]
+          "capabilities": [
+            "metric-highlight"
+          ]
         },
         "selection": {
           "component": "kpi",
           "version": 2,
-          "matchedCapabilities": ["metric-highlight"]
+          "matchedCapabilities": [
+            "metric-highlight"
+          ]
         },
         "caption": "上限超過",
         "certainty": [
-          {"id": "cert-kpi-bad", "level": "confirmed", "statement": "テスト用。"}
+          {
+            "id": "cert-kpi-bad",
+            "level": "confirmed",
+            "statement": "テスト用。"
+          }
         ],
         "sources": [
-          {"id": "src-kpi-bad", "label": "テスト"}
+          {
+            "id": "src-kpi-bad",
+            "label": "テスト"
+          }
         ],
         "accessibility": {
           "label": "KPI",
@@ -32,15 +50,57 @@
         },
         "kpi": {
           "items": [
-            {"id": "k1", "value": "88", "unit": "%", "caption": "指標1"},
-            {"id": "k2", "value": "77", "unit": "%", "caption": "指標2"},
-            {"id": "k3", "value": "66", "unit": "%", "caption": "指標3"},
-            {"id": "k4", "value": "55", "unit": "%", "caption": "指標4"},
-            {"id": "k5", "value": "44", "unit": "%", "caption": "指標5"},
-            {"id": "k6", "value": "33", "unit": "%", "caption": "指標6"}
+            {
+              "id": "k1",
+              "value": "88",
+              "unit": "%",
+              "caption": "指標1"
+            },
+            {
+              "id": "k2",
+              "value": "77",
+              "unit": "%",
+              "caption": "指標2"
+            },
+            {
+              "id": "k3",
+              "value": "66",
+              "unit": "%",
+              "caption": "指標3"
+            },
+            {
+              "id": "k4",
+              "value": "55",
+              "unit": "%",
+              "caption": "指標4"
+            },
+            {
+              "id": "k5",
+              "value": "44",
+              "unit": "%",
+              "caption": "指標5"
+            },
+            {
+              "id": "k6",
+              "value": "33",
+              "unit": "%",
+              "caption": "指標6"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

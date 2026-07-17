@@ -1,23 +1,82 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad-pyramid", "title": "bad", "summary": "bad"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad",
-      "relationship": {"kind": "layered-priority", "capabilities": ["priority-layering"]},
-      "selection": {"component": "pyramid", "version": 2, "matchedCapabilities": ["priority-layering"]},
-      "caption": "bad",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
-      "sources": [{"id": "s1", "label": "x"}],
-      "accessibility": {"label": "x", "summary": "x"},
-      "pyramid": {
-        "tiers": [
-          {"id": "t1", "label": "あああああああああああああ"},
-          {"id": "t2", "label": "中"},
-          {"id": "t3", "label": "下"}
-        ]
+  "document": {
+    "id": "bad-pyramid",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad",
+        "relationship": {
+          "kind": "layered-priority",
+          "capabilities": [
+            "priority-layering"
+          ]
+        },
+        "selection": {
+          "component": "pyramid",
+          "version": 2,
+          "matchedCapabilities": [
+            "priority-layering"
+          ]
+        },
+        "caption": "bad",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "x"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s1",
+            "label": "x"
+          }
+        ],
+        "accessibility": {
+          "label": "x",
+          "summary": "x"
+        },
+        "pyramid": {
+          "tiers": [
+            {
+              "id": "t1",
+              "label": "あああああああああああああ"
+            },
+            {
+              "id": "t2",
+              "label": "中"
+            },
+            {
+              "id": "t3",
+              "label": "下"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }

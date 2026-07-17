@@ -3,28 +3,47 @@
   "document": {
     "id": "slope-demo",
     "title": "2時点比較スロープ",
-    "summary": "増加・減少・横ばいの3系列を示すスロープ図。"
+    "summary": "増加・減少・横ばいの3系列を示すスロープ図。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-slope",
         "relationship": {
           "kind": "two-point-change",
-          "capabilities": ["two-point-comparison"]
+          "capabilities": [
+            "two-point-comparison"
+          ]
         },
         "selection": {
           "component": "slope",
           "version": 2,
-          "matchedCapabilities": ["two-point-comparison"]
+          "matchedCapabilities": [
+            "two-point-comparison"
+          ]
         },
         "caption": "主要指標の推移",
         "certainty": [
-          {"id": "cert-slope", "level": "confirmed", "statement": "台帳値に基づく。"}
+          {
+            "id": "cert-slope",
+            "level": "confirmed",
+            "statement": "台帳値に基づく。"
+          }
         ],
         "sources": [
-          {"id": "src-slope", "label": "月次台帳", "detail": "2026Q1。"}
+          {
+            "id": "src-slope",
+            "label": "月次台帳",
+            "detail": "2026Q1。"
+          }
         ],
         "accessibility": {
           "label": "2時点比較スロープ",
@@ -32,7 +51,10 @@
         },
         "slope": {
           "title": "主要指標",
-          "axes": {"fromLabel": "開始", "toLabel": "終了"},
+          "axes": {
+            "fromLabel": "開始",
+            "toLabel": "終了"
+          },
           "unitLabel": "件",
           "highlightId": "sl-up",
           "items": [
@@ -66,6 +88,18 @@
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

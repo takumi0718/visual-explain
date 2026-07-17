@@ -1,23 +1,84 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad", "title": "bad", "summary": "bad"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad",
-      "relationship": {"kind": "claim-support", "capabilities": ["claim-support-mapping"]},
-      "selection": {"component": "evidence-map", "version": 2, "matchedCapabilities": ["claim-support-mapping"]},
-      "caption": "c",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "s"}],
-      "sources": [{"id": "s1", "label": "出"}],
-      "accessibility": {"label": "l", "summary": "s"},
-      "evidence-map": {
-        "conclusion": {"id": "conc", "label": "結論"},
-        "evidence": [
-          {"id": "e1", "label": "根拠1", "certaintyRef": "missing"},
-          {"id": "e2", "label": "根拠2", "certaintyRef": "c1"}
-        ]
+  "document": {
+    "id": "bad",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad",
+        "relationship": {
+          "kind": "claim-support",
+          "capabilities": [
+            "claim-support-mapping"
+          ]
+        },
+        "selection": {
+          "component": "evidence-map",
+          "version": 2,
+          "matchedCapabilities": [
+            "claim-support-mapping"
+          ]
+        },
+        "caption": "c",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "s"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s1",
+            "label": "出"
+          }
+        ],
+        "accessibility": {
+          "label": "l",
+          "summary": "s"
+        },
+        "evidence-map": {
+          "conclusion": {
+            "id": "conc",
+            "label": "結論"
+          },
+          "evidence": [
+            {
+              "id": "e1",
+              "label": "根拠1",
+              "certaintyRef": "missing"
+            },
+            {
+              "id": "e2",
+              "label": "根拠2",
+              "certaintyRef": "c1"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }

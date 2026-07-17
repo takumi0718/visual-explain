@@ -3,28 +3,47 @@
   "document": {
     "id": "waterfall-v2-demo",
     "title": "ウォーターフォール（SVG）",
-    "summary": "期首から増減を経て期末へつなぐ SVG ブリッジ。"
+    "summary": "期首から増減を経て期末へつなぐ SVG ブリッジ。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-waterfall",
         "relationship": {
           "kind": "additive-bridge",
-          "capabilities": ["additive-bridging"]
+          "capabilities": [
+            "additive-bridging"
+          ]
         },
         "selection": {
           "component": "waterfall",
           "version": 2,
-          "matchedCapabilities": ["additive-bridging"]
+          "matchedCapabilities": [
+            "additive-bridging"
+          ]
         },
         "caption": "営業利益ブリッジ",
         "certainty": [
-          {"id": "cert-wf", "level": "confirmed", "statement": "算術は台帳と一致。"}
+          {
+            "id": "cert-wf",
+            "level": "confirmed",
+            "statement": "算術は台帳と一致。"
+          }
         ],
         "sources": [
-          {"id": "src-wf", "label": "利益台帳", "detail": "四半期集計。"}
+          {
+            "id": "src-wf",
+            "label": "利益台帳",
+            "detail": "四半期集計。"
+          }
         ],
         "accessibility": {
           "label": "ウォーターフォール",
@@ -34,17 +53,68 @@
           "displayPrecision": 1,
           "title": "営業利益",
           "unitLabel": "億円",
-          "axisTicks": ["0", "50", "100", "150"],
-          "start": {"id": "wf-start", "label": "期首", "value": 90, "valueText": "90"},
-          "steps": [
-            {"id": "wf-step-1", "label": "価格改定", "delta": 40, "tone": "positive", "valueText": "+40"},
-            {"id": "wf-step-2", "label": "販促費削減", "delta": 20, "tone": "positive", "valueText": "+20"},
-            {"id": "wf-step-3", "label": "値引き", "delta": -50, "tone": "warning", "valueText": "−50"},
-            {"id": "wf-step-4", "label": "原価上昇", "delta": -20, "tone": "warning", "valueText": "−20"}
+          "axisTicks": [
+            "0",
+            "50",
+            "100",
+            "150"
           ],
-          "end": {"id": "wf-end", "label": "期末", "value": 80, "valueText": "80"}
+          "start": {
+            "id": "wf-start",
+            "label": "期首",
+            "value": 90,
+            "valueText": "90"
+          },
+          "steps": [
+            {
+              "id": "wf-step-1",
+              "label": "価格改定",
+              "delta": 40,
+              "tone": "positive",
+              "valueText": "+40"
+            },
+            {
+              "id": "wf-step-2",
+              "label": "販促費削減",
+              "delta": 20,
+              "tone": "positive",
+              "valueText": "+20"
+            },
+            {
+              "id": "wf-step-3",
+              "label": "値引き",
+              "delta": -50,
+              "tone": "warning",
+              "valueText": "−50"
+            },
+            {
+              "id": "wf-step-4",
+              "label": "原価上昇",
+              "delta": -20,
+              "tone": "warning",
+              "valueText": "−20"
+            }
+          ],
+          "end": {
+            "id": "wf-end",
+            "label": "期末",
+            "value": 80,
+            "valueText": "80"
+          }
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

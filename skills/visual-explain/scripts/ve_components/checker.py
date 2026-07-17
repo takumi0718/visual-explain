@@ -34,7 +34,7 @@ from .diagnostics import (
     KPI_STRUCTURE_VIOLATION,
     Diagnostic,
 )
-from .validation import VOCABULARY
+from .validation import VOCABULARY, scan_author_markup_bans
 
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
 _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
@@ -147,10 +147,62 @@ def normalized_fixed_regions(candidate: str, skeleton: str) -> list[Diagnostic]:
     return []
 
 
+_HREF_HTTPS_OR_ANCHOR_MSG = "外部リンクは https の絶対 URL か # アンカーだけ使えます"
+
+
+def _is_absolute_https(url: str) -> bool:
+    """True when url is an absolute https: URL with a non-empty hostname.
+
+    Malformed https URLs that make ``urlsplit`` / ``.hostname`` / ``.port`` raise
+    ``ValueError`` (e.g. broken IPv6 brackets, fullwidth ``＠`` in netloc,
+    non-integer or out-of-range port) return False so callers emit the standard
+    href diagnostic instead of crashing or accepting an unusable absolute URL.
+    """
+    from urllib.parse import urlsplit
+
+    if not url.lower().startswith("https://"):
+        return False
+    try:
+        parsed = urlsplit(url)
+        if not parsed.hostname:
+            return False
+        # Access .port to reject :bad / :99999 etc. (raises ValueError).
+        _ = parsed.port
+        return True
+    except ValueError:
+        return False
+
+
 class _ContentSafetyParser(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, *, href_policy: str = "https_or_anchor") -> None:
         super().__init__(convert_charrefs=True)
         self.diagnostics: list[Diagnostic] = []
+        # "https_or_anchor": narrative / typed / final — https absolute + # only.
+        # "legacy_no_external": compatibility — reject all external http(s)/protocol-relative.
+        self.href_policy = href_policy
+        self._open_anchors = 0
+
+    def _check_src(self, v: str) -> None:
+        scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
+        if v.startswith("//") or v.lower().startswith(("http://", "https://")):
+            self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"外部参照は禁止です: {v}"))
+        elif scheme not in {"", "file"} and not v.startswith("#"):
+            self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"許可されない URL スキームです: {v}"))
+
+    def _check_href(self, v: str) -> None:
+        if self.href_policy == "legacy_no_external":
+            scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
+            if v.startswith("//") or v.lower().startswith(("http://", "https://")):
+                self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"外部参照は禁止です: {v}"))
+            elif scheme not in {"", "file"} and not v.startswith("#"):
+                self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"許可されない URL スキームです: {v}"))
+            return
+        # https_or_anchor (default for narrative / typed / final document)
+        if v.startswith("#") or _is_absolute_https(v):
+            return
+        self.diagnostics.append(
+            Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"{_HREF_HTTPS_OR_ANCHOR_MSG}: {v}")
+        )
 
     def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
@@ -165,30 +217,82 @@ class _ContentSafetyParser(HTMLParser):
             local = name.rsplit(":", 1)[-1]
             if local in {"href", "src"} and value is not None:
                 v = value.strip()
-                scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
-                if v.startswith("//") or v.lower().startswith(("http://", "https://")):
-                    self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"外部参照は禁止です: {v}"))
-                elif scheme not in {"", "file"} and not v.startswith("#"):
-                    self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"許可されない URL スキームです: {v}"))
+                if local == "src":
+                    self._check_src(v)
+                else:
+                    self._check_href(v)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() == "a":
+            self._open_anchors += 1
         self._check(tag, attrs)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # <a> is not a void element; self-closing form leaves an unannotated
+        # external link in browsers. Reject at input so markers are never skipped.
+        if tag.lower() == "a":
+            self.diagnostics.append(
+                Diagnostic(FORBIDDEN_CONTENT_MARKUP, "self-closing の <a> は使えません")
+            )
+            return
         self._check(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "a" and self._open_anchors > 0:
+            self._open_anchors -= 1
 
     def handle_comment(self, data: str) -> None:
         if "VE-CONTROLLED:" in data:
             self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, "content スロット内に制御マーカーを入れ子にできません"))
 
+    def close(self) -> None:
+        super().close()
+        # Unclosed <a> skips marker insertion (no handle_endtag). Reject at input.
+        if self._open_anchors > 0:
+            self.diagnostics.append(
+                Diagnostic(FORBIDDEN_CONTENT_MARKUP, "未閉鎖の <a> は使えません")
+            )
+            self._open_anchors = 0
 
-def validate_content_markup(content_markup: str) -> list[Diagnostic]:
+
+def validate_content_markup(
+    content_markup: str,
+    *,
+    section_kind: str | None = None,
+) -> list[Diagnostic]:
     """Reject style/script/link/base/iframe/object/embed, inline style, on* attrs,
-    executable/external URLs, and nested controlled markers in content markup."""
-    parser = _ContentSafetyParser()
+    executable/external URLs, and nested controlled markers in content markup.
+
+    When ``section_kind`` is ``\"narrative\"`` or ``\"compatibility\"``, also reject
+    author-markup bans (h1/title; reserved class/data for narrative only). Final
+    document content must call this with ``section_kind=None`` so rendered
+    wrappers (first-screen / ask / data-ve-*) are not false-positive rejected.
+
+    href policy: narrative / typed / final allow ``https:`` absolute URLs and ``#``
+    anchors only; compatibility keeps the legacy ban on all external hrefs. src
+    always rejects external references.
+    """
+    href_policy = "legacy_no_external" if section_kind == "compatibility" else "https_or_anchor"
+    parser = _ContentSafetyParser(href_policy=href_policy)
     parser.feed(content_markup)
     parser.close()
     diagnostics = list(parser.diagnostics)
+    if section_kind == "narrative":
+        for code, message in scan_author_markup_bans(
+            content_markup,
+            section_label="narrative",
+            forbid_reserved=True,
+            code=FORBIDDEN_CONTENT_MARKUP,
+        ):
+            diagnostics.append(Diagnostic(code, message))
+    elif section_kind == "compatibility":
+        for code, message in scan_author_markup_bans(
+            content_markup,
+            section_label="compatibility",
+            forbid_reserved=False,
+            code=FORBIDDEN_CONTENT_MARKUP,
+        ):
+            diagnostics.append(Diagnostic(code, message))
     diagnostics.extend(validate_ask_blocks(content_markup))
     return diagnostics
 
@@ -473,6 +577,21 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
         elif kind == "narrative":
             if not _ATTR_RE("data-ve-instance").search(attrs):
                 diagnostics.append(Diagnostic(MISSING_PROVENANCE, "narrative セクションに instance がありません"))
+        elif kind == "first-screen":
+            # Attribute checks (id / data-ve-document-type / data-ve-profile) land in
+            # Task 8 group-3 structure checks; provenance only allows the kind here.
+            pass
+        elif kind == "closing":
+            # Attribute / required-heading checks land in Task 8 group-3 structure
+            # checks; provenance only allows the kind here.
+            pass
+        elif kind == "ask":
+            # Attribute checks (data-ve-ask-type / id) land in Task 8 group-3 structure
+            # checks; provenance only allows the kind here.
+            pass
+        elif kind == "toc":
+            # Build-time TOC: trusted renderer output; no author provenance fields.
+            pass
         else:
             diagnostics.append(Diagnostic(MISSING_PROVENANCE, f"未知の section-kind '{kind}'"))
     return diagnostics
@@ -1603,13 +1722,27 @@ def validate_notation_rules(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
+def _extract_title_text(document: str) -> str | None:
+    """Return the text inside the TITLE:BEGIN/END slot, or None if markers absent."""
+    begin, end = "<!-- TITLE:BEGIN -->", "<!-- TITLE:END -->"
+    if document.count(begin) != 1 or document.count(end) != 1:
+        return None
+    body = document[document.index(begin) + len(begin):document.index(end)].strip()
+    lower = body.lower()
+    if lower.startswith("<title>") and lower.endswith("</title>"):
+        return body[len("<title>"):-len("</title>")].strip()
+    m = re.search(r"<title\b[^>]*>(.*?)</title>", body, re.IGNORECASE | re.S)
+    return m.group(1).strip() if m else (body or None)
+
+
 def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expected=None,
                          components_dir: Path | None = None) -> list[Diagnostic]:
     """Run the four-layer checker. Legacy documents pass unchanged.
 
     Layers: (1) safety/fixed regions, (2) IR/selection is enforced at build time,
     (3) component/manifest — manifest-to-DOM when ``expected`` is present, final
-    provenance/semantic attributes otherwise, (4) flattened-document safety.
+    provenance/semantic attributes otherwise, plus group-3 document structure,
+    (4) flattened-document safety.
     """
     text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
     skel = skeleton.decode("utf-8") if isinstance(skeleton, bytes) else skeleton
@@ -1626,6 +1759,8 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_artifact_semantics(content)
         diagnostics += validate_renderer_svg(content)
         diagnostics += validate_notation_rules(content)
+        from .document_checks import check_document_structure
+        diagnostics += check_document_structure(content, title=_extract_title_text(text))
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

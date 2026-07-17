@@ -3,28 +3,46 @@
   "document": {
     "id": "waterfall-decimal-demo",
     "title": "Decimal displayPrecision 検証",
-    "summary": "build_explainer.main が 0.1 を Decimal として受理する fixture。"
+    "summary": "build_explainer.main が 0.1 を Decimal として受理する fixture。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-waterfall-decimal",
         "relationship": {
           "kind": "additive-bridge",
-          "capabilities": ["additive-bridging"]
+          "capabilities": [
+            "additive-bridging"
+          ]
         },
         "selection": {
           "component": "waterfall",
           "version": 2,
-          "matchedCapabilities": ["additive-bridging"]
+          "matchedCapabilities": [
+            "additive-bridging"
+          ]
         },
         "caption": "Decimal 精度のブリッジ",
         "certainty": [
-          {"id": "cert-dec", "level": "confirmed", "statement": "displayPrecision 0.1 を検証。"}
+          {
+            "id": "cert-dec",
+            "level": "confirmed",
+            "statement": "displayPrecision 0.1 を検証。"
+          }
         ],
         "sources": [
-          {"id": "src-dec", "label": "算術テスト"}
+          {
+            "id": "src-dec",
+            "label": "算術テスト"
+          }
         ],
         "accessibility": {
           "label": "ウォーターフォール",
@@ -34,12 +52,46 @@
           "displayPrecision": 0.1,
           "title": "件数",
           "unitLabel": "件",
-          "axisTicks": ["0", "10", "20"],
-          "start": {"id": "wf-start", "label": "開始", "value": 10, "valueText": "10件"},
-          "steps": [{"id": "wf-step", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"}],
-          "end": {"id": "wf-end", "label": "終了", "value": 15, "valueText": "15件"}
+          "axisTicks": [
+            "0",
+            "10",
+            "20"
+          ],
+          "start": {
+            "id": "wf-start",
+            "label": "開始",
+            "value": 10,
+            "valueText": "10件"
+          },
+          "steps": [
+            {
+              "id": "wf-step",
+              "label": "増",
+              "delta": 5,
+              "tone": "positive",
+              "valueText": "+5件"
+            }
+          ],
+          "end": {
+            "id": "wf-end",
+            "label": "終了",
+            "value": 15,
+            "valueText": "15件"
+          }
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

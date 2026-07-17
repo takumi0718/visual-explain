@@ -1,0 +1,12 @@
+--- structure-bad-no-first-screen.html ---
+FAIL: document_structure_violation: 文書型の自己表明がありません [content]
+exit:1
+--- structure-bad-duplicate-h1.html ---
+FAIL: document_structure_violation: h1 は first-screen 内にちょうど1個必要です [content]
+exit:1
+--- structure-bad-title-mismatch.html ---
+FAIL: document_structure_violation: title と h1 が一致しません [content]
+exit:1
+--- structure-bad-no-closing.html ---
+FAIL: document_structure_violation: closing セクションがありません [content]
+exit:1

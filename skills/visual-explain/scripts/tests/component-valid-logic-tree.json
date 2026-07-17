@@ -3,49 +3,101 @@
   "document": {
     "id": "logic-tree-demo",
     "title": "構成の分解",
-    "summary": "3枝のロジックツリーで全体テーマを分解して示す資料。"
+    "summary": "3枝のロジックツリーで全体テーマを分解して示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-logic-tree",
         "relationship": {
           "kind": "hierarchical-decomposition",
-          "capabilities": ["mece-decomposition"]
+          "capabilities": [
+            "mece-decomposition"
+          ]
         },
         "selection": {
           "component": "logic-tree",
           "version": 2,
-          "matchedCapabilities": ["mece-decomposition"]
+          "matchedCapabilities": [
+            "mece-decomposition"
+          ]
         },
         "caption": "全体テーマの3枝分解",
         "certainty": [
-          {"id": "cert-lt", "level": "confirmed", "statement": "3枝はレビューで合意された分解。"}
+          {
+            "id": "cert-lt",
+            "level": "confirmed",
+            "statement": "3枝はレビューで合意された分解。"
+          }
         ],
         "sources": [
-          {"id": "src-lt", "label": "分解メモ v1", "detail": "枝の定義。"}
+          {
+            "id": "src-lt",
+            "label": "分解メモ v1",
+            "detail": "枝の定義。"
+          }
         ],
         "accessibility": {
           "label": "ロジックツリー",
           "summary": "左に全体テーマ、右に3枝と各枝の詳細を示す。"
         },
         "logic-tree": {
-          "root": {"id": "root-topic", "label": "全体テーマ"},
+          "root": {
+            "id": "root-topic",
+            "label": "全体テーマ"
+          },
           "branches": [
-            {"id": "branch-a", "label": "市場機会"},
-            {"id": "branch-b", "label": "実装負債", "leaves": [{"id": "leaf-b1", "text": "レガシー連携の残債"}]},
+            {
+              "id": "branch-a",
+              "label": "市場機会"
+            },
+            {
+              "id": "branch-b",
+              "label": "実装負債",
+              "leaves": [
+                {
+                  "id": "leaf-b1",
+                  "text": "レガシー連携の残債"
+                }
+              ]
+            },
             {
               "id": "branch-c",
               "label": "運用体制",
               "leaves": [
-                {"id": "leaf-c1", "text": "オンコール体制"},
-                {"id": "leaf-c2", "text": "権限委譲の遅れ"}
+                {
+                  "id": "leaf-c1",
+                  "text": "オンコール体制"
+                },
+                {
+                  "id": "leaf-c2",
+                  "text": "権限委譲の遅れ"
+                }
               ]
             }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

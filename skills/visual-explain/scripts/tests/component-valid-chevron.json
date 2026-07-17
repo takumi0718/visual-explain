@@ -3,28 +3,47 @@
   "document": {
     "id": "chevron-demo",
     "title": "線形順序のチェブロン",
-    "summary": "縦型チェブロンで4段の処理順序を示す資料。"
+    "summary": "縦型チェブロンで4段の処理順序を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-chevron-vertical",
         "relationship": {
           "kind": "ordered-sequence",
-          "capabilities": ["linear-sequence"]
+          "capabilities": [
+            "linear-sequence"
+          ]
         },
         "selection": {
           "component": "chevron",
           "version": 2,
-          "matchedCapabilities": ["linear-sequence"]
+          "matchedCapabilities": [
+            "linear-sequence"
+          ]
         },
         "caption": "処理フローの4段階",
         "certainty": [
-          {"id": "cert-chevron", "level": "confirmed", "statement": "4段は運用手順書に準拠。"}
+          {
+            "id": "cert-chevron",
+            "level": "confirmed",
+            "statement": "4段は運用手順書に準拠。"
+          }
         ],
         "sources": [
-          {"id": "src-runbook", "label": "運用手順書 v3", "detail": "受付から報告まで。"}
+          {
+            "id": "src-runbook",
+            "label": "運用手順書 v3",
+            "detail": "受付から報告まで。"
+          }
         ],
         "accessibility": {
           "label": "処理フローのチェブロン",
@@ -32,16 +51,56 @@
         },
         "chevron": {
           "steps": [
-            {"id": "step-intake", "title": "受付", "description": ["依頼を記録する", "担当を割り当てる"]},
-            {"id": "step-verify", "title": "検証", "description": ["入力を確認する", "不足を差し戻す"]},
-            {"id": "step-execute", "title": "実行", "description": ["手順に従い処理する", "結果を保存する"]},
-            {"id": "step-report", "title": "報告", "description": ["完了を記録する", "関係者へ通知する"]}
+            {
+              "id": "step-intake",
+              "title": "受付",
+              "description": [
+                "依頼を記録する",
+                "担当を割り当てる"
+              ]
+            },
+            {
+              "id": "step-verify",
+              "title": "検証",
+              "description": [
+                "入力を確認する",
+                "不足を差し戻す"
+              ]
+            },
+            {
+              "id": "step-execute",
+              "title": "実行",
+              "description": [
+                "手順に従い処理する",
+                "結果を保存する"
+              ]
+            },
+            {
+              "id": "step-report",
+              "title": "報告",
+              "description": [
+                "完了を記録する",
+                "関係者へ通知する"
+              ]
+            }
           ],
           "orientation": "vertical",
           "blockContent": "number",
           "loop": false
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

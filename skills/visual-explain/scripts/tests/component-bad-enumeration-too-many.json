@@ -3,29 +3,98 @@
   "document": {
     "id": "bad-enum-many",
     "title": "項目過多",
-    "summary": "7項目の列挙。"
+    "summary": "7項目の列挙。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-bad-many",
-        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": [
+            "parallel-itemization"
+          ]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 2,
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
+        },
         "caption": "項目過多",
-        "certainty": [{"id": "cert-1", "level": "confirmed", "statement": "テスト用。"}],
-        "sources": [{"id": "src-1", "label": "出典"}],
-        "accessibility": {"label": "列挙", "summary": "不正 fixture。"},
+        "certainty": [
+          {
+            "id": "cert-1",
+            "level": "confirmed",
+            "statement": "テスト用。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-1",
+            "label": "出典"
+          }
+        ],
+        "accessibility": {
+          "label": "列挙",
+          "summary": "不正 fixture。"
+        },
         "enumeration": {
           "items": [
-            {"id": "a", "title": "1"}, {"id": "b", "title": "2"}, {"id": "c", "title": "3"},
-            {"id": "d", "title": "4"}, {"id": "e", "title": "5"}, {"id": "f", "title": "6"},
-            {"id": "g", "title": "7"}
+            {
+              "id": "a",
+              "title": "1"
+            },
+            {
+              "id": "b",
+              "title": "2"
+            },
+            {
+              "id": "c",
+              "title": "3"
+            },
+            {
+              "id": "d",
+              "title": "4"
+            },
+            {
+              "id": "e",
+              "title": "5"
+            },
+            {
+              "id": "f",
+              "title": "6"
+            },
+            {
+              "id": "g",
+              "title": "7"
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

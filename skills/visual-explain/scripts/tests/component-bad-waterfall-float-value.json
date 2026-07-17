@@ -1,25 +1,97 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad-wf-float", "title": "bad", "summary": "bad"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad-wf-float",
-      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
-      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
-      "caption": "bad",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "x"}],
-      "sources": [{"id": "s1", "label": "x"}],
-      "accessibility": {"label": "x", "summary": "x"},
-      "waterfall": {
-        "displayPrecision": 1,
-        "title": "件数",
-        "unitLabel": "件",
-        "axisTicks": ["0", "10", "20"],
-        "start": {"id": "st", "label": "開始", "value": 10, "valueText": "10件"},
-        "steps": [{"id": "sp", "label": "増", "delta": 5, "tone": "positive", "valueText": "+5件"}],
-        "end": {"id": "en", "label": "終了", "value": 15, "valueText": "15件"}
+  "document": {
+    "id": "bad-wf-float",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad-wf-float",
+        "relationship": {
+          "kind": "additive-bridge",
+          "capabilities": [
+            "additive-bridging"
+          ]
+        },
+        "selection": {
+          "component": "waterfall",
+          "version": 2,
+          "matchedCapabilities": [
+            "additive-bridging"
+          ]
+        },
+        "caption": "bad",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "x"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s1",
+            "label": "x"
+          }
+        ],
+        "accessibility": {
+          "label": "x",
+          "summary": "x"
+        },
+        "waterfall": {
+          "displayPrecision": 1,
+          "title": "件数",
+          "unitLabel": "件",
+          "axisTicks": [
+            "0",
+            "10",
+            "20"
+          ],
+          "start": {
+            "id": "st",
+            "label": "開始",
+            "value": 10,
+            "valueText": "10件"
+          },
+          "steps": [
+            {
+              "id": "sp",
+              "label": "増",
+              "delta": 5,
+              "tone": "positive",
+              "valueText": "+5件"
+            }
+          ],
+          "end": {
+            "id": "en",
+            "label": "終了",
+            "value": 15,
+            "valueText": "15件"
+          }
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }

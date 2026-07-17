@@ -649,29 +649,36 @@ class MixedAndWeakModelFinalTest(unittest.TestCase):
 
 
 class VerificationMatrixTest(unittest.TestCase):
-    """The spec's verification fixture matrix: authored documents must pass the
-    four-layer checker, and the branching flow assembly must build with rails and
-    group labels. These are component documents (empty controlled markers), so
-    the checker's content-safety, ask, and artifact layers apply."""
+    """Verification documents must pass group-3 structure checks."""
 
-    DOCS = ["matrix-doc-long-titles.html", "matrix-doc-mixed-density.html",
-            "matrix-doc-all-notations.html"]
+    TYPED_DOCS = ["matrix-doc-long-titles.html", "matrix-doc-mixed-density.html",
+                  "matrix-doc-all-notations.html"]
 
-    def _check(self, name: str) -> list:
-        raw = (TESTS / name).read_text("utf-8")
-        return check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS)
-
-    def test_verification_docs_pass_checker(self) -> None:
-        for name in self.DOCS:
+    def test_typed_verification_docs_pass_group3_structure(self) -> None:
+        for name in self.TYPED_DOCS:
             with self.subTest(doc=name):
-                self.assertEqual(self._check(name), [])
+                raw = (TESTS / name).read_text("utf-8")
+                self.assertEqual(
+                    check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS),
+                    [],
+                )
 
-    def test_verification_docs_pass_via_check_sh(self) -> None:
-        for name in self.DOCS:
-            with self.subTest(doc=name):
-                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
-                                      capture_output=True, text=True)
-                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+    def test_fresh_matrix_assembly_passes_checker_and_check_sh(self) -> None:
+        html_doc = build("component-valid-matrix.json")
+        self.assertEqual(
+            check_final_document(html_doc, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+            fh.write(html_doc)
+            path = Path(fh.name)
+        try:
+            proc = subprocess.run(["bash", str(CHECK), str(path)],
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("PASS", proc.stdout + proc.stderr)
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_branching_flow_assembly_builds(self) -> None:
         # The renderer routes the skip (branching) edge onto a right-hand rail
@@ -682,79 +689,148 @@ class VerificationMatrixTest(unittest.TestCase):
 
 
 class EnumerationDocRegressionTest(unittest.TestCase):
-    """Committed enumeration-doc.html must pass the same gate as check.sh."""
+    """Fresh enumeration IR must pass the same gate as check.sh."""
 
-    def test_committed_enumeration_doc_passes_check_sh(self) -> None:
-        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "enumeration-doc.html")],
-                              capture_output=True, text=True)
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("PASS", proc.stdout + proc.stderr)
+    def test_fresh_enumeration_passes_check_sh(self) -> None:
+        html_doc = build("component-valid-enumeration.json")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+            fh.write(html_doc)
+            path = Path(fh.name)
+        try:
+            proc = subprocess.run(["bash", str(CHECK), str(path)],
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("PASS", proc.stdout + proc.stderr)
+        finally:
+            path.unlink(missing_ok=True)
 
-    def test_committed_enumeration_doc_passes_four_layer_checker(self) -> None:
+    def test_fresh_enumeration_passes_four_layer_checker(self) -> None:
+        html_doc = build("component-valid-enumeration.json")
+        self.assertEqual(
+            check_final_document(html_doc, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
+
+    def test_enumeration_doc_passes_group3(self) -> None:
         raw = (TESTS / "enumeration-doc.html").read_text("utf-8")
-        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+        self.assertEqual(
+            check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
 
 
 class ChevronDocRegressionTest(unittest.TestCase):
-    """Committed chevron inspection documents must pass the same gate as check.sh."""
+    """Fresh chevron IR must pass the same gate as check.sh."""
 
-    DOCS = ["chevron-doc.html", "chevron-horizontal-doc.html"]
+    ASSEMBLIES = [
+        ("chevron-doc.html", "component-valid-chevron.json"),
+        ("chevron-horizontal-doc.html", "component-valid-chevron-horizontal.json"),
+    ]
 
-    def test_committed_chevron_docs_pass_check_sh(self) -> None:
-        for name in self.DOCS:
-            with self.subTest(name=name):
-                proc = subprocess.run(["bash", str(CHECK), str(TESTS / name)],
-                                      capture_output=True, text=True)
-                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-                self.assertIn("PASS", proc.stdout + proc.stderr)
+    def test_fresh_chevron_docs_pass_check_sh(self) -> None:
+        for _stale, assembly in self.ASSEMBLIES:
+            with self.subTest(assembly=assembly):
+                html_doc = build(assembly)
+                with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+                    fh.write(html_doc)
+                    path = Path(fh.name)
+                try:
+                    proc = subprocess.run(["bash", str(CHECK), str(path)],
+                                          capture_output=True, text=True)
+                    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                    self.assertIn("PASS", proc.stdout + proc.stderr)
+                finally:
+                    path.unlink(missing_ok=True)
 
-    def test_committed_chevron_docs_pass_four_layer_checker(self) -> None:
-        for name in self.DOCS:
+    def test_fresh_chevron_docs_pass_four_layer_checker(self) -> None:
+        for _stale, assembly in self.ASSEMBLIES:
+            with self.subTest(assembly=assembly):
+                html_doc = build(assembly)
+                self.assertEqual(
+                    check_final_document(html_doc, SKELETON, REGISTRY, components_dir=COMPONENTS),
+                    [],
+                )
+
+    def test_chevron_docs_pass_group3(self) -> None:
+        for name, _assembly in self.ASSEMBLIES:
             with self.subTest(name=name):
                 raw = (TESTS / name).read_text("utf-8")
-                self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+                self.assertEqual(
+                    check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS),
+                    [],
+                )
 
 
 class PyramidDocRegressionTest(unittest.TestCase):
-    """Committed pyramid-doc.html must pass the same gate as check.sh."""
+    """Fresh pyramid IR must pass the same gate as check.sh."""
 
-    def test_committed_pyramid_doc_passes_check_sh(self) -> None:
-        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "pyramid-doc.html")],
-                              capture_output=True, text=True)
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("PASS", proc.stdout + proc.stderr)
+    def test_fresh_pyramid_passes_check_sh(self) -> None:
+        html_doc = build("component-valid-pyramid.json")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+            fh.write(html_doc)
+            path = Path(fh.name)
+        try:
+            proc = subprocess.run(["bash", str(CHECK), str(path)],
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("PASS", proc.stdout + proc.stderr)
+        finally:
+            path.unlink(missing_ok=True)
 
-    def test_committed_pyramid_doc_passes_four_layer_checker(self) -> None:
-        raw = (TESTS / "pyramid-doc.html").read_text("utf-8")
-        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+    def test_fresh_pyramid_passes_four_layer_checker(self) -> None:
+        html_doc = build("component-valid-pyramid.json")
+        self.assertEqual(
+            check_final_document(html_doc, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
 
 
 class StairsDocRegressionTest(unittest.TestCase):
-    """Committed stairs-doc.html must pass the same gate as check.sh."""
+    """Fresh stairs IR must pass the same gate as check.sh."""
 
-    def test_committed_stairs_doc_passes_check_sh(self) -> None:
-        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "stairs-doc.html")],
-                              capture_output=True, text=True)
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("PASS", proc.stdout + proc.stderr)
+    def test_fresh_stairs_passes_check_sh(self) -> None:
+        html_doc = build("component-valid-stairs.json")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+            fh.write(html_doc)
+            path = Path(fh.name)
+        try:
+            proc = subprocess.run(["bash", str(CHECK), str(path)],
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("PASS", proc.stdout + proc.stderr)
+        finally:
+            path.unlink(missing_ok=True)
 
-    def test_committed_stairs_doc_passes_four_layer_checker(self) -> None:
-        raw = (TESTS / "stairs-doc.html").read_text("utf-8")
-        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+    def test_fresh_stairs_passes_four_layer_checker(self) -> None:
+        html_doc = build("component-valid-stairs.json")
+        self.assertEqual(
+            check_final_document(html_doc, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
 
 
 class LogicTreeDocRegressionTest(unittest.TestCase):
-    """Committed logic-tree-doc.html must pass the same gate as check.sh."""
+    """Fresh logic-tree IR must pass the same gate as check.sh."""
 
-    def test_committed_logic_tree_doc_passes_check_sh(self) -> None:
-        proc = subprocess.run(["bash", str(CHECK), str(TESTS / "logic-tree-doc.html")],
-                              capture_output=True, text=True)
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("PASS", proc.stdout + proc.stderr)
+    def test_fresh_logic_tree_passes_check_sh(self) -> None:
+        html_doc = build("component-valid-logic-tree.json")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+            fh.write(html_doc)
+            path = Path(fh.name)
+        try:
+            proc = subprocess.run(["bash", str(CHECK), str(path)],
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("PASS", proc.stdout + proc.stderr)
+        finally:
+            path.unlink(missing_ok=True)
 
-    def test_committed_logic_tree_doc_passes_four_layer_checker(self) -> None:
-        raw = (TESTS / "logic-tree-doc.html").read_text("utf-8")
-        self.assertEqual(check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+    def test_fresh_logic_tree_passes_four_layer_checker(self) -> None:
+        html_doc = build("component-valid-logic-tree.json")
+        self.assertEqual(
+            check_final_document(html_doc, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
 
 
 class FreshBuiltArtifactRegressionTest(unittest.TestCase):

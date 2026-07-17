@@ -3,28 +3,47 @@
   "document": {
     "id": "enumeration-columns",
     "title": "横並びラベル列挙",
-    "summary": "columns 表示でラベル付き並列項目を示す資料。"
+    "summary": "columns 表示でラベル付き並列項目を示す資料。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-enum-columns",
         "relationship": {
           "kind": "parallel-enumeration",
-          "capabilities": ["parallel-itemization"]
+          "capabilities": [
+            "parallel-itemization"
+          ]
         },
         "selection": {
           "component": "enumeration",
           "version": 2,
-          "matchedCapabilities": ["parallel-itemization"]
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
         },
         "caption": "横並びの並列ラベル",
         "certainty": [
-          {"id": "cert-enum-col", "level": "confirmed", "statement": "4項目は同じ優先度で並列。"}
+          {
+            "id": "cert-enum-col",
+            "level": "confirmed",
+            "statement": "4項目は同じ優先度で並列。"
+          }
         ],
         "sources": [
-          {"id": "src-brief", "label": "企画ブリーフ", "detail": "2026-06 版。"}
+          {
+            "id": "src-brief",
+            "label": "企画ブリーフ",
+            "detail": "2026-06 版。"
+          }
         ],
         "accessibility": {
           "label": "横並び列挙",
@@ -32,15 +51,51 @@
         },
         "enumeration": {
           "items": [
-            {"id": "col-a", "label": "コスト", "description": ["初期費用と運用費を比較する"]},
-            {"id": "col-b", "label": "品質", "description": ["期待品質を満たすか確認する"]},
-            {"id": "col-c", "label": "速度", "description": ["完了までの時間を比較する"]},
-            {"id": "col-d", "label": "リスク", "description": ["失敗時の影響を確認する"]}
+            {
+              "id": "col-a",
+              "label": "コスト",
+              "description": [
+                "初期費用と運用費を比較する"
+              ]
+            },
+            {
+              "id": "col-b",
+              "label": "品質",
+              "description": [
+                "期待品質を満たすか確認する"
+              ]
+            },
+            {
+              "id": "col-c",
+              "label": "速度",
+              "description": [
+                "完了までの時間を比較する"
+              ]
+            },
+            {
+              "id": "col-d",
+              "label": "リスク",
+              "description": [
+                "失敗時の影響を確認する"
+              ]
+            }
           ],
           "presentation": "columns",
           "blockContent": "label"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

@@ -29,22 +29,28 @@ TESTS_DIR = SKILL_DIR / "scripts" / "tests"
 CHECK = SKILL_DIR / "scripts" / "check.sh"
 
 BASE = {"schemaVersion": 1,
-        "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。"}}
+        "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。",
+                     "type": "system", "profile": "strict"}}
 
-NARR = {"kind": "narrative", "id": "sec-intro",
-        "markup": '<section class="first-screen"><h1>結論を先に示す</h1></section>'}
+FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+CLOSING = {
+    "kind": "closing",
+    "id": "sec-closing",
+    "blocks": [{"heading": "限界・確度", "items": ["推論を含む"]}],
+}
+NARR = {"kind": "narrative", "id": "sec-intro", "markup": "<p>結論を先に示す</p>"}
 
 
-def _assembly(*sections):
-    return {**BASE, "sections": list(sections)}
+def _assembly(*middle):
+    return {**BASE, "sections": [FIRST, *middle, CLOSING]}
 
 
 def test_narrative_section_parses():
     req = validate_assembly(_assembly(NARR))
-    sec = req.sections[0]
+    sec = req.sections[1]
     assert isinstance(sec, NarrativeSection)
     assert sec.id == "sec-intro"
-    assert "first-screen" in sec.markup
+    assert "結論を先に示す" in sec.markup
 
 
 def test_narrative_rejects_extra_field():
@@ -67,7 +73,7 @@ def test_narrative_duplicate_id_rejected():
 
 
 def test_process_narrative_wraps_with_instance():
-    sec = NarrativeSection(id="sec-intro", markup="<h1>結論</h1>")
+    sec = NarrativeSection(id="sec-intro", markup="<p>結論</p>")
     wrapped = process_narrative_section(sec)
     assert 'data-ve-section-kind="narrative"' in wrapped.markup
     assert 'data-ve-instance="sec-intro"' in wrapped.markup
@@ -82,31 +88,33 @@ def test_process_narrative_rejects_forbidden_markup():
 
 def _mixed_narrative_assembly():
     # Reuse the canonical ir from the enumeration fixture verbatim, sandwiched
-    # between a first-screen and a closing narrative section.
+    # between typed first-screen and closing with a body narrative.
     canonical = json.loads((TESTS_DIR / "component-valid-enumeration.json").read_text("utf-8"))
-    first_screen = {"kind": "narrative", "id": "sec-first-screen",
-                     "markup": '<section class="first-screen"><h1>結論を先に示す</h1></section>'}
-    closing = {"kind": "narrative", "id": "sec-closing",
-               "markup": '<section class="closing"><p>まとめ</p></section>'}
-    canonical["sections"] = [first_screen, canonical["sections"][0], closing]
+    body = {"kind": "narrative", "id": "sec-body", "markup": "<p>補足の本文です。</p>"}
+    # Keep typed bookends from the fixture; insert body narrative before closing.
+    sections = list(canonical["sections"])
+    # fixture is [first-screen, canonical, closing]
+    sections.insert(-1, body)
+    canonical["sections"] = sections
     return canonical
 
 
 def test_build_document_orders_narrative_and_canonical_sections():
     raw = _mixed_narrative_assembly()
     doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
-    i_first = doc.index('data-ve-instance="sec-first-screen"')
+    i_first = doc.index('data-ve-section-kind="first-screen"')
     i_canonical = doc.index('data-ve-instance="sec-enum-list"')
-    i_closing = doc.index('data-ve-instance="sec-closing"')
-    assert i_first < i_canonical < i_closing
-    assert doc.count('data-ve-section-kind="narrative"') == 2
+    i_body = doc.index('data-ve-instance="sec-body"')
+    i_closing = doc.index('data-ve-section-kind="closing"')
+    assert i_first < i_canonical < i_body < i_closing
+    assert doc.count('data-ve-section-kind="narrative"') == 1
     assert doc.count('data-ve-section-kind="canonical"') == 1
 
 
 def test_compose_sections_rejects_duplicate_id_across_narrative_and_canonical():
     canonical_request = validate_assembly(
         json.loads((TESTS_DIR / "component-valid-enumeration.json").read_text("utf-8")))
-    canonical_section = canonical_request.sections[0]
+    canonical_section = next(s for s in canonical_request.sections if isinstance(s, CanonicalSection))
     rendered = process_canonical_section(canonical_section, REGISTRY, TRUSTED_RENDERERS)
     narrative = process_narrative_section(NarrativeSection(id=rendered.instance_id, markup="<p>まとめ</p>"))
     with pytest.raises(ContractError) as exc:
@@ -116,12 +124,12 @@ def test_compose_sections_rejects_duplicate_id_across_narrative_and_canonical():
 
 def test_final_provenance_accepts_narrative_with_instance():
     content = ('<section data-ve-section-kind="narrative"'
-               ' data-ve-instance="sec-intro"><h1>結論</h1></section>')
+               ' data-ve-instance="sec-intro"><p>結論</p></section>')
     assert validate_final_provenance(content) == []
 
 
 def test_final_provenance_rejects_narrative_without_instance():
-    content = '<section data-ve-section-kind="narrative"><h1>結論</h1></section>'
+    content = '<section data-ve-section-kind="narrative"><p>結論</p></section>'
     diags = validate_final_provenance(content)
     assert any(d.code == "missing_provenance" for d in diags)
 
@@ -131,6 +139,9 @@ def _build_composition_and_document(raw):
     # the intermediate CompositionResult around so the test can pass it as
     # ``expected`` to check_final_document directly (build_document only
     # returns the final HTML string).
+    from ve_components.document_sections import render_ask, render_closing, render_first_screen
+    from ve_components.model import AskSection, ClosingSection, FirstScreenSection
+
     request = validate_assembly(raw)
     items = []
     for section in request.sections:
@@ -138,6 +149,12 @@ def _build_composition_and_document(raw):
             items.append(process_canonical_section(section, REGISTRY, TRUSTED_RENDERERS))
         elif isinstance(section, NarrativeSection):
             items.append(process_narrative_section(section))
+        elif isinstance(section, FirstScreenSection):
+            items.append(render_first_screen(section, request.document))
+        elif isinstance(section, ClosingSection):
+            items.append(render_closing(section))
+        elif isinstance(section, AskSection):
+            items.append(render_ask(section))
         else:
             items.append(process_compatibility_section(section))
     composition = compose_sections(items)

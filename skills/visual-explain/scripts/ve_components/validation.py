@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
+from html.parser import HTMLParser
 from pathlib import Path
 
 from .diagnostics import (
@@ -67,6 +68,13 @@ from .model import (
     EvidenceConclusion,
     EvidenceItem,
     EvidenceMapPayload,
+    FirstScreenSection,
+    ClosingBlock,
+    ClosingSection,
+    AskClaim,
+    AskOption,
+    AskSection,
+    AskStep,
     NarrativeSection,
     SlopeAxes,
     SlopeItem,
@@ -164,12 +172,177 @@ _EVIDENCE_MAP_KEYS = {"conclusion", "evidence"}
 _EVIDENCE_CONCLUSION_KEYS = {"id", "label"}
 _EVIDENCE_ITEM_KEYS = {"id", "label", "certaintyRef", "sourceRef"}
 _SLOPE_TONES = frozenset({"positive", "warning", "neutral"})
-_DOCUMENT_KEYS = {"id", "title", "summary"}
+_DOCUMENT_KEYS = {"id", "title", "summary", "type", "profile"}
+_DOCUMENT_TYPES = frozenset({"proposal", "system", "research"})
+_DOCUMENT_PROFILES = frozenset({"strict", "extended"})
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
 _PROVENANCE_KEYS = {"source", "reason", "format"}
 _CANONICAL_SECTION_KEYS = {"kind", "ir"}
 _NARRATIVE_SECTION_KEYS = {"kind", "id", "markup"}
+_FIRST_SCREEN_SECTION_KEYS = {"kind", "id", "decision", "conditions"}
+_CLOSING_SECTION_KEYS = {"kind", "id", "blocks"}
+_CLOSING_BLOCK_KEYS = {"heading", "items"}
+_ASK_SECTION_KEYS = {
+    "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason",
+    "steps", "claim", "verify",
+}
+_ASK_OPTION_KEYS = {"id", "label", "tradeoff"}
+_ASK_STEP_KEYS = {"role", "roleLabel", "text"}
+_ASK_CLAIM_KEYS = {"text", "certainty"}
+_ASK_TYPES = frozenset({"decision", "request", "hypothesis"})
+_ASK_ROLES = frozenset({"user", "agent", "third-party"})
+_ASK_CERTAINTY = frozenset({"confirmed", "inferred", "unverified"})
+_DECISION_ONLY_KEYS = frozenset({"question", "options", "defaultId", "noDefaultReason"})
+_REQUEST_ONLY_KEYS = frozenset({"steps"})
+_HYPOTHESIS_ONLY_KEYS = frozenset({"claim", "verify"})
+_CLOSING_REQUIRED = {
+    "proposal": ("リスクと弱い前提", "不確かな点"),
+    "system": ("限界・確度",),
+    "research": ("限界・反証・確度",),
+}
+_SENTENCE_TERMINATORS = frozenset("。！？!?")
+
+# Reserved tokens for narrative / freeform author markup (Global Constraints).
+_RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain"})
+_RESERVED_DATA_EXACT = frozenset({
+    "data-connect",
+    "data-connect-scope",
+    "data-stepper",
+    "data-step",
+    "data-step-action",
+    "data-ask",
+    "data-theme",
+    "data-lane",
+    "data-tone",
+})
+_RESERVED_DATA_PREFIXES = ("data-ve-", "data-ask-", "data-theme-", "data-step-")
+
+
+def _is_reserved_data_attr(name: str) -> bool:
+    n = name.lower()
+    if n in _RESERVED_DATA_EXACT:
+        return True
+    return any(n.startswith(prefix) for prefix in _RESERVED_DATA_PREFIXES)
+
+
+def _canonical_reserved_attr_name(name: str) -> str:
+    """Pick a stable diagnostic label for a reserved data attribute."""
+    n = name.lower()
+    if n.startswith("data-ve-"):
+        return "data-ve-*"
+    if n.startswith("data-ask"):
+        return "data-ask" if n == "data-ask" else "data-ask-*"
+    if n.startswith("data-theme"):
+        return "data-theme" if n == "data-theme" else "data-theme-*"
+    if n.startswith("data-step") and n not in {"data-stepper"}:
+        return n if n in {"data-step", "data-step-action"} else "data-step-*"
+    return n
+
+
+class _AuthorMarkupBanParser(HTMLParser):
+    """Collect h1/title and optional reserved class/data-attribute bans."""
+
+    def __init__(self, *, forbid_reserved: bool) -> None:
+        super().__init__(convert_charrefs=True)
+        self.forbid_reserved = forbid_reserved
+        self.has_h1 = False
+        self.has_title = False
+        self.reserved_classes: list[str] = []
+        self.reserved_attrs: list[str] = []
+        self._seen_classes: set[str] = set()
+        self._seen_attrs: set[str] = set()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._check(tag, attrs)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._check(tag, attrs)
+
+    def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        t = tag.lower()
+        if t == "h1":
+            self.has_h1 = True
+        elif t == "title":
+            self.has_title = True
+        if not self.forbid_reserved:
+            return
+        # Collect every class= value (including duplicate attributes). Collapsing
+        # to a dict would keep only the last value and let
+        # class="first-screen" class="safe" bypass the reserved-class ban.
+        classes: set[str] = set()
+        for name, value in attrs:
+            if (name or "").lower() == "class" and value:
+                classes.update(value.split())
+        for cls in classes & _RESERVED_CLASSES:
+            if cls not in self._seen_classes:
+                self._seen_classes.add(cls)
+                self.reserved_classes.append(cls)
+        for name, _value in attrs:
+            attr_name = (name or "").lower()
+            if attr_name == "class":
+                continue
+            if _is_reserved_data_attr(attr_name):
+                label = _canonical_reserved_attr_name(attr_name)
+                if label not in self._seen_attrs:
+                    self._seen_attrs.add(label)
+                    self.reserved_attrs.append(label)
+
+
+def scan_author_markup_bans(
+    markup: str,
+    *,
+    section_label: str,
+    forbid_reserved: bool,
+    code: str,
+) -> list[tuple[str, str]]:
+    """Return (code, message) pairs for author-markup structure bans.
+
+    Used by IR validation and by ``validate_content_markup`` (via flags) so
+    narrative/compatibility author markup and final-document content can share
+    the rule set without applying reserved-token bans to rendered wrappers.
+    """
+    parser = _AuthorMarkupBanParser(forbid_reserved=forbid_reserved)
+    parser.feed(markup)
+    parser.close()
+    out: list[tuple[str, str]] = []
+    if parser.has_h1:
+        out.append((
+            code,
+            f"{section_label} に <h1> は置けません（h1 は first-screen 専有）",
+        ))
+    if parser.has_title:
+        out.append((
+            code,
+            f"{section_label} に <title> は置けません",
+        ))
+    for cls in parser.reserved_classes:
+        out.append((code, f"{section_label} に予約 class {cls} は置けません"))
+    for attr in parser.reserved_attrs:
+        out.append((code, f"{section_label} に予約属性 {attr} は置けません"))
+    return out
+
+
+def _validate_document_structure(sections_raw: list, col: DiagnosticCollector) -> None:
+    """Enforce first-screen at [0] exactly once and closing at the end exactly once."""
+    kinds = [
+        item.get("kind") if isinstance(item, dict) else None
+        for item in sections_raw
+    ]
+    first_indices = [i for i, k in enumerate(kinds) if k == "first-screen"]
+    if len(first_indices) != 1 or first_indices[0] != 0:
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            "first-screen は先頭にちょうど1個必要です",
+            "assembly.sections",
+        )
+    closing_indices = [i for i, k in enumerate(kinds) if k == "closing"]
+    if len(closing_indices) != 1 or closing_indices[0] != len(kinds) - 1:
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            "closing は最後にちょうど1個必要です",
+            "assembly.sections",
+        )
 
 
 def _is_int(value: object) -> bool:
@@ -178,6 +351,13 @@ def _is_int(value: object) -> bool:
 
 def _nonblank_str(value: object) -> bool:
     return isinstance(value, str) and value.strip() != ""
+
+
+def _is_single_sentence(value: str) -> bool:
+    """True iff value ends with a sentence terminator and contains exactly one."""
+    if not value or value[-1] not in _SENTENCE_TERMINATORS:
+        return False
+    return sum(1 for ch in value if ch in _SENTENCE_TERMINATORS) == 1
 
 
 def _check_keys(obj: dict, allowed: set[str], path: str, col: DiagnosticCollector,
@@ -1972,15 +2152,17 @@ def validate_assembly(raw: object) -> AssemblyRequest:
     document = _validate_document(raw.get("document"), "assembly.document", col)
     sections_raw = raw.get("sections")
     sections: list[object] = []
-    if not isinstance(sections_raw, list) or not sections_raw:
+    if not isinstance(sections_raw, list):
         col.add(MISSING_REQUIRED_SLOT, "sections は非空の配列である必要があります", "assembly")
         sections_raw = []
     seen_section_ids: set[str] = set()
+    doc_type = document.type if document is not None else ""
     for i, item in enumerate(sections_raw):
         p = f"assembly.sections[{i}]"
-        section = _validate_section(item, p, col, seen_section_ids)
+        section = _validate_section(item, p, col, seen_section_ids, doc_type)
         if section is not None:
             sections.append(section)
+    _validate_document_structure(sections_raw, col)
     col.raise_if_any()
     assert document is not None
     return AssemblyRequest(schema_version=1, document=document, sections=tuple(sections))
@@ -1994,10 +2176,18 @@ def _validate_document(raw: object, path: str, col: DiagnosticCollector) -> Docu
     for slot in ("id", "title", "summary"):
         if not _nonblank_str(raw.get(slot)):
             col.add(MISSING_REQUIRED_SLOT, f"document.{slot} は空にできません", path)
-    return DocumentMetadata(id=raw.get("id", ""), title=raw.get("title", ""), summary=raw.get("summary", ""))
+    type_val = raw.get("type")
+    if not isinstance(type_val, str) or type_val not in _DOCUMENT_TYPES:
+        col.add(MISSING_REQUIRED_SLOT, "document.type は proposal / system / research のいずれかが必要です", path)
+    profile_val = raw.get("profile")
+    if not isinstance(profile_val, str) or profile_val not in _DOCUMENT_PROFILES:
+        col.add(MISSING_REQUIRED_SLOT, "document.profile は strict / extended のいずれかが必要です", path)
+    return DocumentMetadata(id=raw.get("id", ""), title=raw.get("title", ""), summary=raw.get("summary", ""),
+                            type=raw.get("type", ""), profile=raw.get("profile", ""))
 
 
-def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids: set[str]) -> object | None:
+def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids: set[str],
+                      document_type: str = "") -> object | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "section はオブジェクトである必要があります", path)
         return None
@@ -2013,10 +2203,256 @@ def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids
         return CanonicalSection(ir=ir)
     if kind == "narrative":
         return _validate_narrative_section(raw, path, col, seen_ids)
+    if kind == "first-screen":
+        return _validate_first_screen_section(raw, path, col, seen_ids)
+    if kind == "closing":
+        return _validate_closing_section(raw, path, col, seen_ids, document_type)
+    if kind == "ask":
+        return _validate_ask_section(raw, path, col, seen_ids)
     if kind == "compatibility":
         return _validate_compatibility_section(raw, path, col, seen_ids)
     col.add(INVALID_COMPONENT_PAYLOAD, f"未知の section.kind '{kind}'", path)
     return None
+
+
+def _validate_closing_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str],
+                              document_type: str):
+    before = len(col.diagnostics)
+    _check_keys(raw, _CLOSING_SECTION_KEYS, path, col)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "closing.id は空にできません", path)
+    blocks_raw = raw.get("blocks")
+    blocks: list[ClosingBlock] = []
+    if not isinstance(blocks_raw, list) or len(blocks_raw) == 0:
+        col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks は非空の配列である必要があります", path)
+    else:
+        for i, block in enumerate(blocks_raw):
+            bp = f"{path}.blocks[{i}]"
+            if not isinstance(block, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks の各要素はオブジェクトである必要があります", bp)
+                continue
+            _check_keys(block, _CLOSING_BLOCK_KEYS, bp, col)
+            heading = block.get("heading")
+            if not _nonblank_str(heading):
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks[].heading は空にできません", bp)
+            items_raw = block.get("items")
+            if not isinstance(items_raw, list):
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks[].items は文字列配列である必要があります", bp)
+            elif len(items_raw) == 0:
+                col.add(INVALID_COMPONENT_PAYLOAD, "closing.blocks[].items は空にできません", bp)
+            elif not all(isinstance(item, str) and item.strip() != "" for item in items_raw):
+                col.add(INVALID_COMPONENT_PAYLOAD,
+                        "closing.blocks[].items の各要素は非空文字列である必要があります", bp)
+            elif _nonblank_str(heading):
+                blocks.append(ClosingBlock(heading=heading, items=tuple(items_raw)))
+    required = _CLOSING_REQUIRED.get(document_type, ()) if isinstance(document_type, str) else ()
+    present = {b.heading for b in blocks}
+    for heading in required:
+        if heading not in present:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"closing に必須見出し '{heading}' がありません（document.type={document_type}）", path)
+    if len(col.diagnostics) > before:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return ClosingSection(id=sid, blocks=tuple(blocks))
+
+
+def _validate_first_screen_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
+    before = len(col.diagnostics)
+    _check_keys(raw, _FIRST_SCREEN_SECTION_KEYS, path, col)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.id は空にできません", path)
+    decision = raw.get("decision")
+    if not _nonblank_str(decision):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.decision は空にできません", path)
+    elif isinstance(decision, str) and not _is_single_sentence(decision):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "first-screen.decision は1文（末尾の 。！？!? がちょうど1個）である必要があります", path)
+    conditions_raw = raw.get("conditions", [])
+    conditions: tuple[str, ...] = ()
+    if not isinstance(conditions_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は文字列配列である必要があります", path)
+    elif len(conditions_raw) > 2:
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は最大2件です", path)
+    elif not all(isinstance(c, str) and c.strip() != "" for c in conditions_raw):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions の各要素は非空文字列である必要があります", path)
+    else:
+        conditions = tuple(conditions_raw)
+    if len(col.diagnostics) > before:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return FirstScreenSection(id=sid, decision=decision, conditions=conditions)
+
+
+def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
+    before = len(col.diagnostics)
+    _check_keys(raw, _ASK_SECTION_KEYS, path, col)
+    sid = raw.get("id")
+    if not _nonblank_str(sid):
+        col.add(INVALID_COMPONENT_PAYLOAD, "ask.id は空にできません", path)
+    ask_type = raw.get("askType")
+    if not isinstance(ask_type, str) or ask_type not in _ASK_TYPES:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "ask.askType は decision / request / hypothesis のいずれかが必要です", path)
+        ask_type = ""
+    present = set(raw.keys()) - {"kind", "id", "askType"}
+    if ask_type == "decision":
+        foreign = present - _DECISION_ONLY_KEYS
+        if foreign:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"decision ask に不正なフィールド {sorted(foreign)}", path)
+        section = _validate_ask_decision(raw, path, col)
+    elif ask_type == "request":
+        foreign = present - _REQUEST_ONLY_KEYS
+        if foreign:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"request ask に不正なフィールド {sorted(foreign)}", path)
+        section = _validate_ask_request(raw, path, col)
+    elif ask_type == "hypothesis":
+        foreign = present - _HYPOTHESIS_ONLY_KEYS
+        if foreign:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"hypothesis ask に不正なフィールド {sorted(foreign)}", path)
+        section = _validate_ask_hypothesis(raw, path, col)
+    else:
+        section = None
+    if len(col.diagnostics) > before or section is None:
+        return None
+    if sid in seen_ids:
+        col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
+        return None
+    seen_ids.add(sid)
+    return section
+
+
+def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
+    before = len(col.diagnostics)
+    question = raw.get("question")
+    if not _nonblank_str(question):
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.question は空にできません", path)
+    options_raw = raw.get("options")
+    options: list[AskOption] = []
+    option_ids: set[str] = set()
+    if not isinstance(options_raw, list) or len(options_raw) < 2:
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.options は2件以上必要です", path)
+    else:
+        for i, item in enumerate(options_raw):
+            op = f"{path}.options[{i}]"
+            if not isinstance(item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options の各要素はオブジェクトである必要があります", op)
+                continue
+            _check_keys(item, _ASK_OPTION_KEYS, op, col)
+            oid = item.get("id")
+            accepted_id = False
+            if not _nonblank_str(oid):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].id は空にできません", op)
+            elif oid in option_ids:
+                col.add(DUPLICATE_SEMANTIC_ID, f"option id '{oid}' が重複しています", op)
+            else:
+                option_ids.add(oid)
+                accepted_id = True
+            label = item.get("label")
+            if not _nonblank_str(label):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].label は空にできません", op)
+            tradeoff = item.get("tradeoff")
+            if not _nonblank_str(tradeoff):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].tradeoff は空にできません", op)
+            if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff):
+                options.append(AskOption(id=oid, label=label, tradeoff=tradeoff))
+    has_default = "defaultId" in raw and raw.get("defaultId") is not None
+    has_reason = "noDefaultReason" in raw and raw.get("noDefaultReason") is not None
+    default_id = raw.get("defaultId") if has_default else None
+    no_default_reason = raw.get("noDefaultReason") if has_reason else None
+    if has_default and has_reason:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision の defaultId と noDefaultReason は同時に指定できません", path)
+    elif not has_default and not has_reason:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision には defaultId か noDefaultReason のどちらか一方が必要です", path)
+    else:
+        if has_default:
+            if not _nonblank_str(default_id):
+                col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は空にできません", path)
+            elif default_id not in option_ids:
+                col.add(INVALID_COMPONENT_PAYLOAD,
+                        f"decision.defaultId '{default_id}' が options にありません", path)
+        if has_reason and not _nonblank_str(no_default_reason):
+            col.add(INVALID_COMPONENT_PAYLOAD, "decision.noDefaultReason は空にできません", path)
+    if len(col.diagnostics) > before:
+        return None
+    return AskSection(
+        id=raw["id"],
+        ask_type="decision",
+        question=question,
+        options=tuple(options),
+        default_id=default_id,
+        no_default_reason=no_default_reason,
+    )
+
+
+def _validate_ask_request(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
+    before = len(col.diagnostics)
+    steps_raw = raw.get("steps")
+    steps: list[AskStep] = []
+    if not isinstance(steps_raw, list) or len(steps_raw) == 0:
+        col.add(INVALID_COMPONENT_PAYLOAD, "request.steps は1件以上必要です", path)
+    else:
+        for i, item in enumerate(steps_raw):
+            sp = f"{path}.steps[{i}]"
+            if not isinstance(item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "request.steps の各要素はオブジェクトである必要があります", sp)
+                continue
+            _check_keys(item, _ASK_STEP_KEYS, sp, col)
+            role = item.get("role")
+            if not isinstance(role, str) or role not in _ASK_ROLES:
+                col.add(INVALID_COMPONENT_PAYLOAD,
+                        "request.steps[].role は user / agent / third-party のみ有効です", sp)
+            role_label = item.get("roleLabel")
+            if not _nonblank_str(role_label):
+                col.add(INVALID_COMPONENT_PAYLOAD, "request.steps[].roleLabel は空にできません", sp)
+            text = item.get("text")
+            if not _nonblank_str(text):
+                col.add(INVALID_COMPONENT_PAYLOAD, "request.steps[].text は空にできません", sp)
+            if (isinstance(role, str) and role in _ASK_ROLES
+                    and _nonblank_str(role_label) and _nonblank_str(text)):
+                steps.append(AskStep(role=role, role_label=role_label, text=text))
+    if len(col.diagnostics) > before:
+        return None
+    return AskSection(id=raw["id"], ask_type="request", steps=tuple(steps))
+
+
+def _validate_ask_hypothesis(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
+    before = len(col.diagnostics)
+    claim_raw = raw.get("claim")
+    claim: AskClaim | None = None
+    if not isinstance(claim_raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "hypothesis.claim はオブジェクトである必要があります", path)
+    else:
+        _check_keys(claim_raw, _ASK_CLAIM_KEYS, f"{path}.claim", col)
+        text = claim_raw.get("text")
+        if not _nonblank_str(text):
+            col.add(INVALID_COMPONENT_PAYLOAD, "hypothesis.claim.text は空にできません", path)
+        certainty = claim_raw.get("certainty")
+        if not isinstance(certainty, str) or certainty not in _ASK_CERTAINTY:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    "hypothesis.claim.certainty は confirmed / inferred / unverified のいずれかが必要です",
+                    path)
+        elif _nonblank_str(text):
+            claim = AskClaim(text=text, certainty=certainty)
+    verify = raw.get("verify")
+    if not _nonblank_str(verify):
+        col.add(INVALID_COMPONENT_PAYLOAD, "hypothesis.verify は空にできません", path)
+    if len(col.diagnostics) > before or claim is None:
+        return None
+    return AskSection(id=raw["id"], ask_type="hypothesis", claim=claim, verify=verify)
 
 
 def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
@@ -2029,8 +2465,17 @@ def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, 
     sid = raw.get("id")
     if not _nonblank_str(sid):
         col.add(INVALID_NARRATIVE_SECTION, "narrative.id は空にできません", path)
-    if not _nonblank_str(raw.get("markup")):
+    markup = raw.get("markup")
+    if not _nonblank_str(markup):
         col.add(INVALID_NARRATIVE_SECTION, "narrative.markup は空にできません", path)
+    elif isinstance(markup, str):
+        for code, message in scan_author_markup_bans(
+            markup,
+            section_label="narrative",
+            forbid_reserved=True,
+            code=INVALID_NARRATIVE_SECTION,
+        ):
+            col.add(code, message, path)
     if len(col.diagnostics) > before:
         return None
     if sid in seen_ids:
@@ -2043,14 +2488,24 @@ def _validate_narrative_section(raw: dict, path: str, col: DiagnosticCollector, 
 def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
     # Compatibility accepts only id, markup, and provenance. Any relationship,
     # selection, renderer, style, or script field is a provenance violation.
+    before = len(col.diagnostics)
     for key in raw:
         if key not in _COMPAT_SECTION_KEYS:
             col.add(INVALID_COMPATIBILITY_PROVENANCE, f"compatibility に不正なフィールド '{key}'", path)
     sid = raw.get("id")
     if not _nonblank_str(sid):
         col.add(INVALID_COMPATIBILITY_PROVENANCE, "compatibility.id は空にできません", path)
-    if not _nonblank_str(raw.get("markup")):
+    markup = raw.get("markup")
+    if not _nonblank_str(markup):
         col.add(INVALID_COMPATIBILITY_PROVENANCE, "compatibility.markup は空にできません", path)
+    elif isinstance(markup, str):
+        for code, message in scan_author_markup_bans(
+            markup,
+            section_label="compatibility",
+            forbid_reserved=False,
+            code=INVALID_COMPATIBILITY_PROVENANCE,
+        ):
+            col.add(code, message, path)
     prov = raw.get("provenance")
     provenance = None
     if not isinstance(prov, dict):
@@ -2074,6 +2529,6 @@ def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollect
         col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
     if isinstance(sid, str):
         seen_ids.add(sid)
-    if provenance is None or not _nonblank_str(sid) or not _nonblank_str(raw.get("markup")):
+    if len(col.diagnostics) > before or provenance is None or not _nonblank_str(sid) or not _nonblank_str(markup):
         return None
-    return CompatibilitySection(id=sid, markup=raw.get("markup"), provenance=provenance)
+    return CompatibilitySection(id=sid, markup=markup, provenance=provenance)

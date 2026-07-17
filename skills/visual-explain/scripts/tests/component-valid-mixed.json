@@ -3,9 +3,16 @@
   "document": {
     "id": "mixed-demo",
     "title": "混在資料: 権限と承認",
-    "summary": "カノニカルなマトリクスとフロー、および互換レイヤを一つの資料に並べる。"
+    "summary": "カノニカルなマトリクスとフロー、および互換レイヤを一つの資料に並べる。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
@@ -182,6 +189,18 @@
           "startId": "fl-draft"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

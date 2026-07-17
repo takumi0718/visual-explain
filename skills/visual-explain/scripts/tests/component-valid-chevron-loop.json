@@ -3,28 +3,49 @@
   "document": {
     "id": "chevron-loop-demo",
     "title": "閉ループの改善サイクル",
-    "summary": "縦型ラベルチェブロンで計測→評価→改善の循環を示す。"
+    "summary": "縦型ラベルチェブロンで計測→評価→改善の循環を示す。",
+    "type": "system",
+    "profile": "strict"
   },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-chevron-loop",
         "relationship": {
           "kind": "ordered-sequence",
-          "capabilities": ["linear-sequence", "closed-loop"]
+          "capabilities": [
+            "linear-sequence",
+            "closed-loop"
+          ]
         },
         "selection": {
           "component": "chevron",
           "version": 2,
-          "matchedCapabilities": ["linear-sequence", "closed-loop"]
+          "matchedCapabilities": [
+            "linear-sequence",
+            "closed-loop"
+          ]
         },
         "caption": "改善サイクルの3段",
         "certainty": [
-          {"id": "cert-loop", "level": "inferred", "statement": "サイクルは四半期ごとに回す想定。"}
+          {
+            "id": "cert-loop",
+            "level": "inferred",
+            "statement": "サイクルは四半期ごとに回す想定。"
+          }
         ],
         "sources": [
-          {"id": "src-pdca", "label": "PDCA ガイド", "detail": "計測・評価・改善の反復（ve-chevron-horizontal は横型専用）。"}
+          {
+            "id": "src-pdca",
+            "label": "PDCA ガイド",
+            "detail": "計測・評価・改善の反復（ve-chevron-horizontal は横型専用）。"
+          }
         ],
         "accessibility": {
           "label": "改善サイクルのチェブロン",
@@ -32,15 +53,45 @@
         },
         "chevron": {
           "steps": [
-            {"id": "step-measure", "label": "計測", "description": ["現状の指標を記録する"]},
-            {"id": "step-evaluate", "label": "評価", "description": ["結果を基準と照合する"]},
-            {"id": "step-improve", "label": "改善", "description": ["次の改善策を適用する"]}
+            {
+              "id": "step-measure",
+              "label": "計測",
+              "description": [
+                "現状の指標を記録する"
+              ]
+            },
+            {
+              "id": "step-evaluate",
+              "label": "評価",
+              "description": [
+                "結果を基準と照合する"
+              ]
+            },
+            {
+              "id": "step-improve",
+              "label": "改善",
+              "description": [
+                "次の改善策を適用する"
+              ]
+            }
           ],
           "orientation": "vertical",
           "blockContent": "label",
           "loop": true
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

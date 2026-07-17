@@ -22,6 +22,8 @@ class DocumentMetadata:
     id: str
     title: str
     summary: str
+    type: str
+    profile: str
 
 
 @dataclass(frozen=True)
@@ -432,6 +434,65 @@ class CompatibilitySection:
 class NarrativeSection:
     id: str
     markup: str
+
+
+@dataclass(frozen=True)
+class FirstScreenSection:
+    id: str
+    decision: str          # proposal: 判断文 / system・research: この資料が答える問い（1 文）
+    conditions: tuple[str, ...] = ()   # 最大 2 件
+
+
+@dataclass(frozen=True)
+class ClosingBlock:
+    heading: str
+    items: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ClosingSection:
+    id: str
+    blocks: tuple[ClosingBlock, ...]
+
+
+@dataclass(frozen=True)
+class AskOption:
+    id: str
+    label: str
+    tradeoff: str
+
+
+@dataclass(frozen=True)
+class AskStep:
+    role: str
+    role_label: str
+    text: str
+
+
+@dataclass(frozen=True)
+class AskClaim:
+    text: str
+    certainty: str  # confirmed | inferred | unverified
+
+
+@dataclass(frozen=True)
+class AskSection:
+    """Discriminated union over ask_type ∈ {decision, request, hypothesis}.
+
+    decision: question + options + (default_id XOR no_default_reason)
+    request: steps
+    hypothesis: claim + verify
+    Unused arms are None / empty.
+    """
+    id: str
+    ask_type: str
+    question: Optional[str] = None
+    options: tuple[AskOption, ...] = ()
+    default_id: Optional[str] = None
+    no_default_reason: Optional[str] = None
+    steps: tuple[AskStep, ...] = ()
+    claim: Optional[AskClaim] = None
+    verify: Optional[str] = None
 
 
 @dataclass(frozen=True)

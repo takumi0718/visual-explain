@@ -189,7 +189,7 @@ def process_canonical_section(section: CanonicalSection, registry: Registry, ren
 
 
 def process_compatibility_section(section: CompatibilitySection) -> WrappedCompatibility:
-    diagnostics = validate_content_markup(section.markup)
+    diagnostics = validate_content_markup(section.markup, section_kind="compatibility")
     if diagnostics:
         raise ContractError(diagnostics)
     wrapper = (
@@ -204,13 +204,86 @@ def process_compatibility_section(section: CompatibilitySection) -> WrappedCompa
     )
 
 
-def process_narrative_section(section: NarrativeSection) -> WrappedNarrative:
-    diagnostics = validate_content_markup(section.markup)
+def _linecol_to_index(text: str, lineno: int, col: int) -> int:
+    """Convert 1-based lineno + 0-based col (HTMLParser.getpos) to a string index."""
+    if lineno <= 1:
+        return col
+    lines = text.splitlines(keepends=True)
+    return sum(len(lines[i]) for i in range(lineno - 1)) + col
+
+
+def insert_link_domain_markers(markup: str) -> str:
+    """Insert ``<span class="link-domain">‹hostname›</span>`` before ``</a>`` of https anchors.
+
+    hostname comes from ``urllib.parse.urlsplit(href).hostname`` (IDN preserved).
+    Call only after content-safety validation has rejected author ``link-domain`` classes.
+    """
+    from html.parser import HTMLParser
+    from urllib.parse import urlsplit
+
+    class _Finder(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=False)
+            self.stack: list[str | None] = []
+            # (index of '</a>', hostname) — insert marker immediately before this index
+            self.inserts: list[tuple[int, str]] = []
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            if tag.lower() != "a":
+                return
+            href = None
+            for name, value in attrs:
+                if name.lower() == "href" and value is not None:
+                    href = value.strip()
+                    break
+            host: str | None = None
+            if href and href.lower().startswith("https://"):
+                host = urlsplit(href).hostname
+            self.stack.append(host)
+
+        def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            # Void / self-closing <a> has no inner content to annotate.
+            if tag.lower() == "a":
+                return
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag.lower() != "a" or not self.stack:
+                return
+            host = self.stack.pop()
+            if not host:
+                return
+            lineno, col = self.getpos()
+            self.inserts.append((_linecol_to_index(markup, lineno, col), host))
+
+    finder = _Finder()
+    finder.feed(markup)
+    finder.close()
+    if not finder.inserts:
+        return markup
+    parts: list[str] = []
+    cursor = 0
+    for index, host in finder.inserts:
+        parts.append(markup[cursor:index])
+        parts.append(f'<span class="link-domain">‹{html.escape(host)}›</span>')
+        cursor = index
+    parts.append(markup[cursor:])
+    return "".join(parts)
+
+
+def process_narrative_section(
+    section: NarrativeSection,
+    *,
+    include_anchor_id: bool = False,
+) -> WrappedNarrative:
+    diagnostics = validate_content_markup(section.markup, section_kind="narrative")
     if diagnostics:
         raise ContractError(diagnostics)
+    body = insert_link_domain_markers(section.markup)
+    id_attr = f' id="{_attr(section.id)}"' if include_anchor_id else ""
     wrapper = (
         f'<section data-ve-section-kind="narrative"'
-        f' data-ve-instance="{_attr(section.id)}">\n{section.markup}\n</section>'
+        f' data-ve-instance="{_attr(section.id)}"{id_attr}>\n'
+        f'{body}\n</section>'
     )
     return WrappedNarrative(instance_id=section.id, markup=wrapper)
 
@@ -247,6 +320,10 @@ def compose_sections(items) -> CompositionResult:
             compatibility.append(item)
         elif isinstance(item, WrappedNarrative):
             narrative.append(item)
+        elif hasattr(item, "instance_id") and hasattr(item, "markup"):
+            # Duck-typed typed document sections (first-screen / closing / ask / toc):
+            # markup already recorded; not aggregated into specialized tuples.
+            pass
         else:
             raise TypeError(f"compose_sections: unrecognized item type {type(item).__name__}")
     return CompositionResult(

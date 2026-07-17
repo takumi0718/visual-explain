@@ -1,6 +1,7 @@
 """Task 5 tests: the matrix component as a complete, static, accessible unit."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import copy
 import json
 import re
@@ -29,20 +30,20 @@ def _fixture_path(name: str) -> Path:
 def expect_violation_fixture(name: str, code: str) -> None:
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
     with unittest.TestCase().assertRaises(ContractError) as ctx:
-        validate_canonical_section(raw["sections"][0]["ir"])
+        validate_canonical_section(canonical_ir(raw))
     codes = {d.code for d in ctx.exception.diagnostics}
     unittest.TestCase().assertIn(code, codes)
 
 
 def render_fixture(name: str = "component-valid-matrix"):
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    ir = validate_canonical_section(raw["sections"][0]["ir"])
+    ir = validate_canonical_section(canonical_ir(raw))
     return render_matrix(CanonicalSection(ir=ir), MATRIX_DEF)
 
 
 def load_fixture_ir(name: str = "component-valid-matrix"):
     raw = json.loads(_fixture_path(name).read_text("utf-8"))
-    return validate_canonical_section(raw["sections"][0]["ir"])
+    return validate_canonical_section(canonical_ir(raw))
 
 
 class MatrixManifestTest(unittest.TestCase):
@@ -100,8 +101,8 @@ class MatrixMarkupTest(unittest.TestCase):
 
     def test_authored_text_is_escaped(self) -> None:
         raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
-        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = "a<b>&\"x\""
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        canonical_ir(raw)["matrix"]["cells"][0]["content"] = "a<b>&\"x\""
+        ir = validate_canonical_section(canonical_ir(raw))
         markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
         self.assertNotIn("a<b>", markup)
         self.assertIn("a&lt;b&gt;", markup)
@@ -193,8 +194,8 @@ class MatrixBorderTest(unittest.TestCase):
 class MatrixBulletCellTest(unittest.TestCase):
     def test_dense_cell_renders_bullet_list_for_array_content(self) -> None:
         raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
-        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["一つ目", "二つ目"]
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        canonical_ir(raw)["matrix"]["cells"][0]["content"] = ["一つ目", "二つ目"]
+        ir = validate_canonical_section(canonical_ir(raw))
         markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
         self.assertIn('class="ve-matrix-bullets"', markup)
         self.assertIn("<li>一つ目</li>", markup)
@@ -206,17 +207,17 @@ class MatrixBulletCellTest(unittest.TestCase):
 
     def test_array_cell_content_is_escaped(self) -> None:
         raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
-        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["a<b>&\"x\""]
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        canonical_ir(raw)["matrix"]["cells"][0]["content"] = ["a<b>&\"x\""]
+        ir = validate_canonical_section(canonical_ir(raw))
         markup = render_matrix(CanonicalSection(ir=ir), MATRIX_DEF).markup
         self.assertNotIn("a<b>", markup)
         self.assertIn("a&lt;b&gt;", markup)
 
     def test_concept_rejects_array_content(self) -> None:
         raw = json.loads((TESTS / "component-valid-matrix-concept.json").read_text("utf-8"))
-        raw["sections"][0]["ir"]["matrix"]["cells"][0]["content"] = ["a", "b"]
+        canonical_ir(raw)["matrix"]["cells"][0]["content"] = ["a", "b"]
         with self.assertRaises(ContractError):
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
 
 
 class MatrixHeaderlessTest(unittest.TestCase):
@@ -234,9 +235,9 @@ class MatrixHeaderlessTest(unittest.TestCase):
 
     def test_headerless_concept_is_rejected(self) -> None:
         raw = json.loads((TESTS / "component-valid-matrix-concept.json").read_text("utf-8"))
-        raw["sections"][0]["ir"]["matrix"]["showColumnHeaders"] = False
+        canonical_ir(raw)["matrix"]["showColumnHeaders"] = False
         with self.assertRaises(ContractError):
-            validate_canonical_section(raw["sections"][0]["ir"])
+            validate_canonical_section(canonical_ir(raw))
 
 
 if __name__ == "__main__":

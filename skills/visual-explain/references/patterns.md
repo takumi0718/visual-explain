@@ -1,43 +1,142 @@
 # 構成と図フォーマットの契約
 
-この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（provenance 必須）の section として一つの assembly に読み順で並べる。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
+この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
 ## 共通契約
 
-- **見出しはアクションタイトル**にする。述語を持つ自己完結した主張だけを見出しにし、トピック名（「性能について」「代替案」）を禁じる。「案Aは案Bより速いが検証が要る」のように、見出しだけで何を判断すべきかが分かる一文にする。1見出し＝1洞察、40〜50字を目安にする。資料型テンプレートが必須と定める末尾の固定セクション見出し（「リスクと弱い前提」「不確かな点」「限界・確度」「限界・反証・確度」）は構造上のランドマークであり、アクションタイトル契約の適用外とする。それ以外の全セクション見出しには契約を適用する。
+- **見出しはアクションタイトル**にする。述語を持つ自己完結した主張だけを見出しにし、トピック名（「性能について」「代替案」）を禁じる。「案Aは案Bより速いが検証が要る」のように、見出しだけで何を判断すべきかが分かる一文にする。1見出し＝1洞察、40〜50字を目安にする。資料型テンプレートが必須と定める末尾の固定セクション見出し（「リスクと弱い前提」「不確かな点」「限界・確度」「限界・反証・確度」）は構造上のランドマークであり、アクションタイトル契約の適用外とする。それ以外の全セクション見出しには契約を適用する。h1 は `first-screen`（`document.title` 由来）専有であり、narrative に `<h1>` は置けない。
 - **horizontal logic 自己検査**: 資料を完成させる前に、見出しだけを上から順に読め。見出しの列だけで承認/却下を判断できなければ、見出しを書き直す。
 - **キャプションは takeaway**にする。図のキャプションはその図から持ち帰る1文にし、図の説明文・操作手順・凡例の言い換えを書かない（下記「図のキャプション規約」）。
 
 ## Pi/Katsura Qwen 固有の保守的縮退
 
-Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文どおりに保持するか引用する。順序が明示的な必須事実でない限り矢印や連番を描かず、許される推論は対象の直近で **推論** と明記する。因果・順序が不確かなら、flow ではなく `matrix`、`terms`、または文章を使う。この追加制約は同モデル専用であり、一般の図契約を緩めない。
+Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文どおりに保持するか引用する。順序が明示的な必須事実でない限り矢印や連番を描かず、許される推論は対象の直近で **推論** と明記する。因果・順序が不確かなら、flow ではなく `matrix`、`terms`、または文章を使う。この追加制約は同モデル専用であり、一般の図契約を緩めない。`profile` は `strict` を既定にする。
 
-## 資料型の構成テンプレート
+## 資料型の構成テンプレート（型付き IR）
 
 ### 提案承認型
 
-1. 第一画面は `first-screen` を使い、`h1` タイトルに資料全体の主張を1文で置く（述語を持つ1文にしてトピック名を禁じ、40字目安。`<title>` 要素と同文にする）。続けて `subtitle` に**あなたが決めること**を1文で置く（判断のない資料型では「この資料が答える問い」を1文にする）。最後に判断を左右する条件を最大2件だけ置く。同じ判断文を末尾に重複させない。第三者が第一画面を3秒見て「何の話か」「何を判断するか」を答えられる状態にする。
-2. 新出用語が多いときだけ、先に用語表を置く。
-3. 現状と問題を図で示す。
-4. 提案は before/after を等しい大きさで並べる。
-5. 検討した代替案とトレードオフを比較表にする。単一案を決め打ちしない。
-6. 末尾に「リスクと弱い前提」と「不確かな点」を必ず置く。
+```json
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "proposal-example",
+    "title": "料金改定は限定対象で段階公開する",
+    "summary": "未確認の例外を含む改定を、限定対象で開始するか判断する。",
+    "type": "proposal",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "限定対象で開始するか決めます。",
+      "conditions": [
+        "撤回条件を公開前に合意できること",
+        "対象顧客群が根拠と一致していること"
+      ]
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-problem",
+      "markup": "<section aria-labelledby=\"problem\"><h2 id=\"problem\">部門別確認のままでは影響範囲を一度に検証できない</h2><p class=\"claim\">同じ顧客群への例外と撤回条件を横断できない。</p></section>"
+    },
+    {
+      "kind": "ask",
+      "id": "sec-ask-decision",
+      "askType": "decision",
+      "question": "限定対象で開始しますか？",
+      "options": [
+        {"id": "limited", "label": "限定対象で公開する", "tradeoff": "運用が追加で必要"},
+        {"id": "all", "label": "一斉公開する", "tradeoff": "影響範囲が最初から広い"}
+      ],
+      "defaultId": "limited"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "リスクと弱い前提", "items": ["例外分類が誤ると不利益が残る"]},
+        {"heading": "不確かな点", "items": ["撤回に要する時間は未検証"]}
+      ]
+    }
+  ]
+}
+```
+
+読み順の要点: 新出用語が多いときだけ用語表（narrative）を先に置く。現状と問題・before/after・代替案比較は narrative / canonical / compatibility で続ける。同じ判断文を末尾に重複させない。
 
 ### 仕組み理解型
 
-1. TL;DR で仕組みを一言で示す。`subtitle` を使う場合は、あなたが決めることの代わりに「この資料が答える問い」を1文で示す。
-2. 新出用語が多いときだけ、先に用語表を置く。
-3. 全体地図で zoom-out の構造を示す。
-4. 主要フローでデータまたは処理の流れを示す。動きが核心ならステッパーを使う。
-5. 判断に不要な検証過程と補足だけを `deep-dive` に入れる。
-6. 末尾に「限界・確度」を置き、推論で補った箇所を明示する。
+```json
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "system-example",
+    "title": "承認地図は根拠と顧客影響を一つの経路で照合する",
+    "summary": "共同承認の経路を理解するための仕組み説明。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この仕組みはなぜ安全か。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-map",
+      "markup": "<section aria-labelledby=\"map\"><h2 id=\"map\">全体地図で責務の境界を一度に見渡せる</h2><p class=\"claim\">根拠・影響・承認・撤回が一つの経路につながる。</p></section>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "限界・確度", "items": ["推論で補った箇所がある"]}
+      ]
+    }
+  ]
+}
+```
+
+読み順の要点: 全体地図 → 主要フロー（動きが核心ならステッパー）→ 判断に不要な検証は `deep-dive`。
 
 ### 調査報告型
 
-1. 結論または推奨を最初に示す。`subtitle` を使う場合は、あなたが決めることの代わりに「この資料が答える問い」を1文で示す。
-2. 主要な発見は、1発見につき1ブロックにし、近傍に出典リンクを置く。
-3. 定量データが必要なときだけ可視化する。
-4. 末尾に「限界・反証・確度」を置く。
+```json
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "research-example",
+    "title": "見出し列だけで判断できる資料は承認が速い",
+    "summary": "見出し品質と承認速度の関係を調べた結果。",
+    "type": "research",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "見出し品質は承認速度を左右するか。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-finding",
+      "markup": "<section aria-labelledby=\"finding\"><h2 id=\"finding\">見出しが自己完結な資料は差し戻しが減る</h2><p class=\"claim\">1発見1ブロックに出典を近傍へ置く。<a href=\"https://example.com/report\">調査メモ</a></p></section>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "限界・反証・確度", "items": ["サンプルが小さいため一般化は未確認"]}
+      ]
+    }
+  ]
+}
+```
+
+読み順の要点: 主要な発見は 1 発見 1 ブロック。定量が必要なときだけ可視化する。外部 `href` は `https:` のみ（レンダラが `link-domain` マーカーを付与する）。
 
 ## 図のキャプション規約
 
@@ -63,48 +162,57 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 </section>
 ```
 
-### ask ブロック — 未決事項・依頼・検証待ち主張
+### ask セクション — 未決事項・依頼・検証待ち主張
 
-読み手に判断・行動・検証を求める箇所は ask ブロックで明示する。使い分けは次の1行ずつ。
+読み手に判断・行動・検証を求める箇所は `kind: "ask"` で明示する（narrative に `.ask` 生 HTML を書かない）。使い分けは次の1行ずつ。
 
-- **未決事項は `decision`**: これから決める選択。選択肢を2件以上並べ、各選択肢にトレードオフを添える。
-- **ユーザーへの依頼は `request`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
-- **検証待ち主張は `hypothesis`**: まだ確証がない主張と、その検証方法。
+- **未決事項は `askType: "decision"`**: これから決める選択。選択肢を2件以上並べ、各選択肢にトレードオフを添える。
+- **ユーザーへの依頼は `askType: "request"`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
+- **検証待ち主張は `askType: "hypothesis"`**: まだ確証がない主張と、その検証方法。
 
-`decision`。選択肢は2件以上。既定案（推奨）は1件が原則で、`data-ask-default` を付ける。既定案を0件にするなら `.ask-no-default-reason` で理由を書け（既定を示さない理由の明示が必須）。選択チップは青（`--accent`）、既定案は緑（`--positive`）で示される。
+`decision`。選択肢は2件以上。既定案は `defaultId`（options の id）か、既定なし理由の `noDefaultReason` のどちらか一方。レンダラ出力では選択チップは青（`--accent`）、既定案は緑（`--positive`）。
 
-```html
-<div class="ask" data-ask="decision">
-  <p class="ask-kind">判断してください</p>
-  <p class="ask-question">注釈を今回に含めますか？</p>
-  <ul class="ask-options">
-    <li data-ask-option data-ask-default><span>含める</span><span class="ask-tradeoff">変更量が増える</span></li>
-    <li data-ask-option><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>
-  </ul>
-</div>
+```json
+{
+  "kind": "ask",
+  "id": "sec-ask-decision",
+  "askType": "decision",
+  "question": "注釈を今回に含めますか？",
+  "options": [
+    {"id": "include", "label": "含める", "tradeoff": "変更量が増える"},
+    {"id": "later", "label": "次フェーズ", "tradeoff": "効果が遅れる"}
+  ],
+  "defaultId": "include"
+}
 ```
 
-`request`。各手順に `data-ask-role`（`user` / `agent` などの意味ロール）と、表示名の `data-ask-role-label` を付ける。ロールは日本語表示名ではなく意味的な値にする。ask-kind チップはモノクロで、警告色にしない。
+`request`。各手順に意味ロール（`user` / `agent` / `third-party`）と表示名を付ける。
 
-```html
-<div class="ask" data-ask="request">
-  <p class="ask-kind">お願いする動作</p>
-  <ol class="ask-steps">
-    <li data-ask-role="user" data-ask-role-label="あなた">specをレビューする</li>
-    <li data-ask-role="agent" data-ask-role-label="Claude">planを執筆する</li>
-  </ol>
-</div>
+```json
+{
+  "kind": "ask",
+  "id": "sec-ask-request",
+  "askType": "request",
+  "steps": [
+    {"role": "user", "roleLabel": "あなた", "text": "specをレビューする"},
+    {"role": "agent", "roleLabel": "Claude", "text": "planを執筆する"}
+  ]
+}
 ```
 
-`hypothesis`。主張には確度バッジ（`certainty` の3値）を `ask-claim` の中に置き、`ask-verify` で検証方法を書く。ask-kind チップはモノクロ。
+`hypothesis`。主張テキストと確度（`confirmed` / `inferred` / `unverified`）、検証方法を書く。
 
-```html
-<div class="ask" data-ask="hypothesis">
-  <p class="ask-kind">検証待ちの仮説</p>
-  <p class="ask-claim">見出しだけで判断できる <span class="certainty inferred">推論</span></p>
-  <p class="ask-verify">検証方法: 見出し列のみで判断内容を言えるか確認する</p>
-</div>
+```json
+{
+  "kind": "ask",
+  "id": "sec-ask-hypothesis",
+  "askType": "hypothesis",
+  "claim": {"text": "見出しだけで判断できる", "certainty": "inferred"},
+  "verify": "検証方法: 見出し列のみで判断内容を言えるか確認する"
+}
 ```
+
+レンダラ出力の HTML 契約（`.ask` / `data-ask` / `.ask-options` 等）は checker が検証する。モデルは HTML を手書きせず IR だけを書く。
 
 ## 図フォーマット
 
@@ -274,30 +382,128 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-matrix", "title": "権限モデルの二軸整理", "summary": "役割と操作の交差で許可範囲を判断する。"},
+  "document": {
+    "id": "doc-matrix",
+    "title": "権限モデルの二軸整理",
+    "summary": "役割と操作の交差で許可範囲を判断する。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-matrix",
-        "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison"]},
-        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification", "intersection-comparison"]},
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
         "caption": "閲覧者は書き込みだけ不可、それ以外は全許可",
-        "takeawayTargetIds": ["d-c4"],
-        "certainty": [{"id": "d-cert", "level": "confirmed", "statement": "管理者の全操作は仕様で確定。"}],
-        "sources": [{"id": "d-src", "label": "権限仕様 v3"}],
-        "accessibility": {"label": "許可マトリクス", "summary": "行が役割、列が操作の表。"},
+        "takeawayTargetIds": [
+          "d-c4"
+        ],
+        "certainty": [
+          {
+            "id": "d-cert",
+            "level": "confirmed",
+            "statement": "管理者の全操作は仕様で確定。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "d-src",
+            "label": "権限仕様 v3"
+          }
+        ],
+        "accessibility": {
+          "label": "許可マトリクス",
+          "summary": "行が役割、列が操作の表。"
+        },
         "matrix": {
-          "rows": [{"id": "d-admin", "label": "管理者"}, {"id": "d-viewer", "label": "閲覧者"}],
-          "columns": [{"id": "d-read", "label": "読み取り"}, {"id": "d-write", "label": "書き込み"}],
+          "rows": [
+            {
+              "id": "d-admin",
+              "label": "管理者"
+            },
+            {
+              "id": "d-viewer",
+              "label": "閲覧者"
+            }
+          ],
+          "columns": [
+            {
+              "id": "d-read",
+              "label": "読み取り"
+            },
+            {
+              "id": "d-write",
+              "label": "書き込み"
+            }
+          ],
           "cells": [
-            {"id": "d-c1", "rowId": "d-admin", "columnId": "d-read", "content": "許可", "certaintyRef": "d-cert", "sourceRef": "d-src"},
-            {"id": "d-c2", "rowId": "d-admin", "columnId": "d-write", "content": "許可", "certaintyRef": "d-cert", "sourceRef": "d-src"},
-            {"id": "d-c3", "rowId": "d-viewer", "columnId": "d-read", "content": "許可", "certaintyRef": "d-cert", "sourceRef": "d-src"},
-            {"id": "d-c4", "rowId": "d-viewer", "columnId": "d-write", "content": "不可", "certaintyRef": "d-cert", "sourceRef": "d-src"}
+            {
+              "id": "d-c1",
+              "rowId": "d-admin",
+              "columnId": "d-read",
+              "content": "許可",
+              "certaintyRef": "d-cert",
+              "sourceRef": "d-src"
+            },
+            {
+              "id": "d-c2",
+              "rowId": "d-admin",
+              "columnId": "d-write",
+              "content": "許可",
+              "certaintyRef": "d-cert",
+              "sourceRef": "d-src"
+            },
+            {
+              "id": "d-c3",
+              "rowId": "d-viewer",
+              "columnId": "d-read",
+              "content": "許可",
+              "certaintyRef": "d-cert",
+              "sourceRef": "d-src"
+            },
+            {
+              "id": "d-c4",
+              "rowId": "d-viewer",
+              "columnId": "d-write",
+              "content": "不可",
+              "certaintyRef": "d-cert",
+              "sourceRef": "d-src"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -324,28 +530,105 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-flow", "title": "レビュー承認の流れ", "summary": "承認に至る順序と分岐を判断する。"},
+  "document": {
+    "id": "doc-flow",
+    "title": "レビュー承認の流れ",
+    "summary": "承認に至る順序と分岐を判断する。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-flow",
-        "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "directed-transition"]},
-        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition", "directed-transition"]},
+        "relationship": {
+          "kind": "directed-graph",
+          "capabilities": [
+            "ordered-transition",
+            "directed-transition"
+          ]
+        },
+        "selection": {
+          "component": "flow",
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition",
+            "directed-transition"
+          ]
+        },
         "caption": "一次レビューの合意なしに承認へ進めない",
-        "takeawayTargetIds": ["f-e2"],
-        "certainty": [{"id": "f-cert", "level": "confirmed", "statement": "起案から一次レビューへの遷移は確定。"}],
-        "sources": [{"id": "f-src", "label": "レビュー運用手順"}],
-        "accessibility": {"label": "承認フロー", "summary": "起案・一次レビュー・承認の順の有向グラフ。"},
+        "takeawayTargetIds": [
+          "f-e2"
+        ],
+        "certainty": [
+          {
+            "id": "f-cert",
+            "level": "confirmed",
+            "statement": "起案から一次レビューへの遷移は確定。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "f-src",
+            "label": "レビュー運用手順"
+          }
+        ],
+        "accessibility": {
+          "label": "承認フロー",
+          "summary": "起案・一次レビュー・承認の順の有向グラフ。"
+        },
         "flow": {
-          "nodes": [{"id": "f-draft", "label": "起案"}, {"id": "f-review", "label": "一次レビュー"}, {"id": "f-approve", "label": "承認"}],
+          "nodes": [
+            {
+              "id": "f-draft",
+              "label": "起案"
+            },
+            {
+              "id": "f-review",
+              "label": "一次レビュー"
+            },
+            {
+              "id": "f-approve",
+              "label": "承認"
+            }
+          ],
           "edges": [
-            {"id": "f-e1", "from": "f-draft", "to": "f-review", "relation": "ordered-transition", "label": "提出"},
-            {"id": "f-e2", "from": "f-review", "to": "f-approve", "relation": "directed-transition", "label": "合意"}
+            {
+              "id": "f-e1",
+              "from": "f-draft",
+              "to": "f-review",
+              "relation": "ordered-transition",
+              "label": "提出"
+            },
+            {
+              "id": "f-e2",
+              "from": "f-review",
+              "to": "f-approve",
+              "relation": "directed-transition",
+              "label": "合意"
+            }
           ],
           "startId": "f-draft"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -358,28 +641,95 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-enum", "title": "並列項目の列挙", "summary": "順序を持たない並列関係を示す。"},
+  "document": {
+    "id": "doc-enum",
+    "title": "並列項目の列挙",
+    "summary": "順序を持たない並列関係を示す。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-enum",
-        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": [
+            "parallel-itemization"
+          ]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 2,
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
+        },
         "caption": "検討対象の並列項目",
-        "certainty": [{"id": "e-cert", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}],
-        "sources": [{"id": "e-src", "label": "議事録 2026-06"}],
-        "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
+        "certainty": [
+          {
+            "id": "e-cert",
+            "level": "confirmed",
+            "statement": "3項目は同一会議で合意された範囲。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "e-src",
+            "label": "議事録 2026-06"
+          }
+        ],
+        "accessibility": {
+          "label": "並列項目の列挙",
+          "summary": "番号付きの縦リストで3項目を並列に示す。"
+        },
         "enumeration": {
           "items": [
-            {"id": "e-a", "title": "福利厚生", "description": ["従業員向けに無料のフィットネス利用券を配布する"], "descriptionEmphasis": "無料のフィットネス利用券"},
-            {"id": "e-b", "title": "監査ログ", "description": ["必要な保持期間を決める"]},
-            {"id": "e-c", "title": "通知チャネル", "description": ["通知経路を統合する"]}
+            {
+              "id": "e-a",
+              "title": "福利厚生",
+              "description": [
+                "従業員向けに無料のフィットネス利用券を配布する"
+              ],
+              "descriptionEmphasis": "無料のフィットネス利用券"
+            },
+            {
+              "id": "e-b",
+              "title": "監査ログ",
+              "description": [
+                "必要な保持期間を決める"
+              ]
+            },
+            {
+              "id": "e-c",
+              "title": "通知チャネル",
+              "description": [
+                "通知経路を統合する"
+              ]
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -392,30 +742,106 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-chevron", "title": "処理フローの4段階", "summary": "縦型チェブロンで線形順序を示す。"},
+  "document": {
+    "id": "doc-chevron",
+    "title": "処理フローの4段階",
+    "summary": "縦型チェブロンで線形順序を示す。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-chevron",
-        "relationship": {"kind": "ordered-sequence", "capabilities": ["linear-sequence"]},
-        "selection": {"component": "chevron", "version": 2, "matchedCapabilities": ["linear-sequence"]},
+        "relationship": {
+          "kind": "ordered-sequence",
+          "capabilities": [
+            "linear-sequence"
+          ]
+        },
+        "selection": {
+          "component": "chevron",
+          "version": 2,
+          "matchedCapabilities": [
+            "linear-sequence"
+          ]
+        },
         "caption": "受付から報告までの4段",
-        "certainty": [{"id": "c-cert", "level": "confirmed", "statement": "4段は運用手順書に準拠。"}],
-        "sources": [{"id": "c-src", "label": "運用手順書 v3"}],
-        "accessibility": {"label": "処理フローのチェブロン", "summary": "縦型の番号付き4段で線形順序を示す。"},
+        "certainty": [
+          {
+            "id": "c-cert",
+            "level": "confirmed",
+            "statement": "4段は運用手順書に準拠。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "c-src",
+            "label": "運用手順書 v3"
+          }
+        ],
+        "accessibility": {
+          "label": "処理フローのチェブロン",
+          "summary": "縦型の番号付き4段で線形順序を示す。"
+        },
         "chevron": {
           "steps": [
-            {"id": "c-intake", "title": "受付", "description": ["依頼を記録する", "担当を割り当てる"]},
-            {"id": "c-verify", "title": "検証", "description": ["入力を確認する", "不足を差し戻す"]},
-            {"id": "c-execute", "title": "実行", "description": ["手順に従い処理する", "結果を保存する"]},
-            {"id": "c-report", "title": "報告", "description": ["完了を記録する", "関係者へ通知する"]}
+            {
+              "id": "c-intake",
+              "title": "受付",
+              "description": [
+                "依頼を記録する",
+                "担当を割り当てる"
+              ]
+            },
+            {
+              "id": "c-verify",
+              "title": "検証",
+              "description": [
+                "入力を確認する",
+                "不足を差し戻す"
+              ]
+            },
+            {
+              "id": "c-execute",
+              "title": "実行",
+              "description": [
+                "手順に従い処理する",
+                "結果を保存する"
+              ]
+            },
+            {
+              "id": "c-report",
+              "title": "報告",
+              "description": [
+                "完了を記録する",
+                "関係者へ通知する"
+              ]
+            }
           ],
           "orientation": "vertical",
           "blockContent": "number",
           "loop": false
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -430,27 +856,88 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-pyramid", "title": "優先度の階層", "summary": "上ほど重要な4層を示す。"},
+  "document": {
+    "id": "doc-pyramid",
+    "title": "優先度の階層",
+    "summary": "上ほど重要な4層を示す。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-pyramid",
-        "relationship": {"kind": "layered-priority", "capabilities": ["priority-layering"]},
-        "selection": {"component": "pyramid", "version": 2, "matchedCapabilities": ["priority-layering"]},
+        "relationship": {
+          "kind": "layered-priority",
+          "capabilities": [
+            "priority-layering"
+          ]
+        },
+        "selection": {
+          "component": "pyramid",
+          "version": 2,
+          "matchedCapabilities": [
+            "priority-layering"
+          ]
+        },
         "caption": "優先度の4層ピラミッド",
-        "certainty": [{"id": "p-cert", "level": "confirmed", "statement": "4層は経営会議で合意。"}],
-        "sources": [{"id": "p-src", "label": "戦略方針 v2"}],
-        "accessibility": {"label": "優先度ピラミッド", "summary": "上から下へ4層の優先度を示す。"},
+        "certainty": [
+          {
+            "id": "p-cert",
+            "level": "confirmed",
+            "statement": "4層は経営会議で合意。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "p-src",
+            "label": "戦略方針 v2"
+          }
+        ],
+        "accessibility": {
+          "label": "優先度ピラミッド",
+          "summary": "上から下へ4層の優先度を示す。"
+        },
         "pyramid": {
           "tiers": [
-            {"id": "p-apex", "label": "最優先事項"},
-            {"id": "p-high", "label": "重要施策", "sub": "四半期で追う重点領域"},
-            {"id": "p-mid", "label": "維持管理"},
-            {"id": "p-base", "label": "基盤整備"}
+            {
+              "id": "p-apex",
+              "label": "最優先事項"
+            },
+            {
+              "id": "p-high",
+              "label": "重要施策",
+              "sub": "四半期で追う重点領域"
+            },
+            {
+              "id": "p-mid",
+              "label": "維持管理"
+            },
+            {
+              "id": "p-base",
+              "label": "基盤整備"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -463,29 +950,92 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-stairs", "title": "成熟度の階段", "summary": "5段で成熟度と現在地を示す。"},
+  "document": {
+    "id": "doc-stairs",
+    "title": "成熟度の階段",
+    "summary": "5段で成熟度と現在地を示す。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-stairs",
-        "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging"]},
-        "selection": {"component": "stairs", "version": 2, "matchedCapabilities": ["maturity-staging"]},
+        "relationship": {
+          "kind": "staged-maturity",
+          "capabilities": [
+            "maturity-staging"
+          ]
+        },
+        "selection": {
+          "component": "stairs",
+          "version": 2,
+          "matchedCapabilities": [
+            "maturity-staging"
+          ]
+        },
         "caption": "成熟度の5段階",
-        "certainty": [{"id": "s-cert", "level": "confirmed", "statement": "5段は成熟度モデルに準拠。"}],
-        "sources": [{"id": "s-src", "label": "成熟度モデル v1"}],
-        "accessibility": {"label": "成熟度階段", "summary": "低い段から高い段へ5段の成熟度を示す。"},
+        "certainty": [
+          {
+            "id": "s-cert",
+            "level": "confirmed",
+            "statement": "5段は成熟度モデルに準拠。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s-src",
+            "label": "成熟度モデル v1"
+          }
+        ],
+        "accessibility": {
+          "label": "成熟度階段",
+          "summary": "低い段から高い段へ5段の成熟度を示す。"
+        },
         "stairs": {
           "highlightId": "s-3",
           "stages": [
-            {"id": "s-1", "label": "未整備"},
-            {"id": "s-2", "label": "部分導入"},
-            {"id": "s-3", "label": "標準化"},
-            {"id": "s-4", "label": "最適化"},
-            {"id": "s-5", "label": "自律運用"}
+            {
+              "id": "s-1",
+              "label": "未整備"
+            },
+            {
+              "id": "s-2",
+              "label": "部分導入"
+            },
+            {
+              "id": "s-3",
+              "label": "標準化"
+            },
+            {
+              "id": "s-4",
+              "label": "最適化"
+            },
+            {
+              "id": "s-5",
+              "label": "自律運用"
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -498,27 +1048,103 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-logic-tree", "title": "構成の分解", "summary": "3枝で全体テーマを分解する。"},
+  "document": {
+    "id": "doc-logic-tree",
+    "title": "構成の分解",
+    "summary": "3枝で全体テーマを分解する。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-doc-logic-tree",
-        "relationship": {"kind": "hierarchical-decomposition", "capabilities": ["mece-decomposition"]},
-        "selection": {"component": "logic-tree", "version": 2, "matchedCapabilities": ["mece-decomposition"]},
+        "relationship": {
+          "kind": "hierarchical-decomposition",
+          "capabilities": [
+            "mece-decomposition"
+          ]
+        },
+        "selection": {
+          "component": "logic-tree",
+          "version": 2,
+          "matchedCapabilities": [
+            "mece-decomposition"
+          ]
+        },
         "caption": "全体テーマの3枝分解",
-        "certainty": [{"id": "lt-cert", "level": "inferred", "statement": "分解はレビューで合意（MECE は機械未検証）。"}],
-        "sources": [{"id": "lt-src", "label": "分解メモ v1"}],
-        "accessibility": {"label": "ロジックツリー", "summary": "左に全体、右に枝と詳細を示す。"},
+        "certainty": [
+          {
+            "id": "lt-cert",
+            "level": "inferred",
+            "statement": "分解はレビューで合意（MECE は機械未検証）。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "lt-src",
+            "label": "分解メモ v1"
+          }
+        ],
+        "accessibility": {
+          "label": "ロジックツリー",
+          "summary": "左に全体、右に枝と詳細を示す。"
+        },
         "logic-tree": {
-          "root": {"id": "lt-root", "label": "全体テーマ"},
+          "root": {
+            "id": "lt-root",
+            "label": "全体テーマ"
+          },
           "branches": [
-            {"id": "lt-a", "label": "市場機会"},
-            {"id": "lt-b", "label": "実装負債", "leaves": [{"id": "lt-b1", "text": "レガシー連携"}]},
-            {"id": "lt-c", "label": "運用体制", "leaves": [{"id": "lt-c1", "text": "オンコール"}, {"id": "lt-c2", "text": "権限委譲"}]}
+            {
+              "id": "lt-a",
+              "label": "市場機会"
+            },
+            {
+              "id": "lt-b",
+              "label": "実装負債",
+              "leaves": [
+                {
+                  "id": "lt-b1",
+                  "text": "レガシー連携"
+                }
+              ]
+            },
+            {
+              "id": "lt-c",
+              "label": "運用体制",
+              "leaves": [
+                {
+                  "id": "lt-c1",
+                  "text": "オンコール"
+                },
+                {
+                  "id": "lt-c2",
+                  "text": "権限委譲"
+                }
+              ]
+            }
           ]
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -531,31 +1157,108 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-waterfall", "title": "利益ブリッジ", "summary": "期首から増減を経て期末へ。"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-doc-waterfall",
-      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging"]},
-      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging"]},
-      "caption": "営業利益の増減ブリッジ",
-      "certainty": [{"id": "wf-cert", "level": "confirmed", "statement": "台帳と一致。"}],
-      "sources": [{"id": "wf-src", "label": "利益台帳"}],
-      "accessibility": {"label": "ウォーターフォール", "summary": "期首利益から増減を経て期末利益へ。"},
-      "waterfall": {
-        "displayPrecision": 1,
-        "title": "営業利益",
-        "unitLabel": "億円",
-        "axisTicks": ["0", "50", "100", "150"],
-        "start": {"id": "wf-start", "label": "期首", "value": 90, "valueText": "90"},
-        "steps": [
-          {"id": "wf-s1", "label": "価格改定", "delta": 40, "tone": "positive", "valueText": "+40"},
-          {"id": "wf-s2", "label": "値引き", "delta": -50, "tone": "warning", "valueText": "−50"}
+  "document": {
+    "id": "doc-waterfall",
+    "title": "利益ブリッジ",
+    "summary": "期首から増減を経て期末へ。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-waterfall",
+        "relationship": {
+          "kind": "additive-bridge",
+          "capabilities": [
+            "additive-bridging"
+          ]
+        },
+        "selection": {
+          "component": "waterfall",
+          "version": 2,
+          "matchedCapabilities": [
+            "additive-bridging"
+          ]
+        },
+        "caption": "営業利益の増減ブリッジ",
+        "certainty": [
+          {
+            "id": "wf-cert",
+            "level": "confirmed",
+            "statement": "台帳と一致。"
+          }
         ],
-        "end": {"id": "wf-end", "label": "期末", "value": 80, "valueText": "80"}
+        "sources": [
+          {
+            "id": "wf-src",
+            "label": "利益台帳"
+          }
+        ],
+        "accessibility": {
+          "label": "ウォーターフォール",
+          "summary": "期首利益から増減を経て期末利益へ。"
+        },
+        "waterfall": {
+          "displayPrecision": 1,
+          "title": "営業利益",
+          "unitLabel": "億円",
+          "axisTicks": [
+            "0",
+            "50",
+            "100",
+            "150"
+          ],
+          "start": {
+            "id": "wf-start",
+            "label": "期首",
+            "value": 90,
+            "valueText": "90"
+          },
+          "steps": [
+            {
+              "id": "wf-s1",
+              "label": "価格改定",
+              "delta": 40,
+              "tone": "positive",
+              "valueText": "+40"
+            },
+            {
+              "id": "wf-s2",
+              "label": "値引き",
+              "delta": -50,
+              "tone": "warning",
+              "valueText": "−50"
+            }
+          ],
+          "end": {
+            "id": "wf-end",
+            "label": "期末",
+            "value": 80,
+            "valueText": "80"
+          }
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }
 ```
 
@@ -565,29 +1268,89 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-slope", "title": "2時点比較", "summary": "同一単位で開始と終了を比較する。"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-doc-slope",
-      "relationship": {"kind": "two-point-change", "capabilities": ["two-point-comparison"]},
-      "selection": {"component": "slope", "version": 2, "matchedCapabilities": ["two-point-comparison"]},
-      "caption": "主要指標の推移",
-      "certainty": [{"id": "sl-cert", "level": "confirmed", "statement": "台帳値。"}],
-      "sources": [{"id": "sl-src", "label": "月次台帳"}],
-      "accessibility": {"label": "スロープ", "summary": "2時点の値変化。"},
-      "slope": {
-        "title": "主要指標",
-        "axes": {"fromLabel": "開始", "toLabel": "終了"},
-        "unitLabel": "件",
-        "highlightId": "sl-1",
-        "items": [{
-          "id": "sl-1", "label": "売上", "fromValue": 10, "toValue": 40,
-          "fromValueText": "10件", "toValueText": "40件", "tone": "positive"
-        }]
+  "document": {
+    "id": "doc-slope",
+    "title": "2時点比較",
+    "summary": "同一単位で開始と終了を比較する。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-slope",
+        "relationship": {
+          "kind": "two-point-change",
+          "capabilities": [
+            "two-point-comparison"
+          ]
+        },
+        "selection": {
+          "component": "slope",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-point-comparison"
+          ]
+        },
+        "caption": "主要指標の推移",
+        "certainty": [
+          {
+            "id": "sl-cert",
+            "level": "confirmed",
+            "statement": "台帳値。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "sl-src",
+            "label": "月次台帳"
+          }
+        ],
+        "accessibility": {
+          "label": "スロープ",
+          "summary": "2時点の値変化。"
+        },
+        "slope": {
+          "title": "主要指標",
+          "axes": {
+            "fromLabel": "開始",
+            "toLabel": "終了"
+          },
+          "unitLabel": "件",
+          "highlightId": "sl-1",
+          "items": [
+            {
+              "id": "sl-1",
+              "label": "売上",
+              "fromValue": 10,
+              "toValue": 40,
+              "fromValueText": "10件",
+              "toValueText": "40件",
+              "tone": "positive"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }
 ```
 
@@ -596,29 +1359,93 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-em", "title": "論拠地図", "summary": "結論と根拠の対応。"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-doc-em",
-      "relationship": {"kind": "claim-support", "capabilities": ["claim-support-mapping"]},
-      "selection": {"component": "evidence-map", "version": 2, "matchedCapabilities": ["claim-support-mapping"]},
-      "caption": "移行判断の論拠",
-      "certainty": [
-        {"id": "em-cert", "level": "confirmed", "statement": "監査済み。"},
-        {"id": "em-inf", "level": "inferred", "statement": "推定。"}
-      ],
-      "sources": [{"id": "em-src", "label": "報告書"}],
-      "accessibility": {"label": "論拠地図", "summary": "結論1件と根拠2件。"},
-      "evidence-map": {
-        "conclusion": {"id": "em-conc", "label": "移行を開始すべき"},
-        "evidence": [
-          {"id": "em-e1", "label": "コスト増加", "certaintyRef": "em-cert", "sourceRef": "em-src"},
-          {"id": "em-e2", "label": "期間見積", "certaintyRef": "em-inf"}
-        ]
+  "document": {
+    "id": "doc-em",
+    "title": "論拠地図",
+    "summary": "結論と根拠の対応。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-em",
+        "relationship": {
+          "kind": "claim-support",
+          "capabilities": [
+            "claim-support-mapping"
+          ]
+        },
+        "selection": {
+          "component": "evidence-map",
+          "version": 2,
+          "matchedCapabilities": [
+            "claim-support-mapping"
+          ]
+        },
+        "caption": "移行判断の論拠",
+        "certainty": [
+          {
+            "id": "em-cert",
+            "level": "confirmed",
+            "statement": "監査済み。"
+          },
+          {
+            "id": "em-inf",
+            "level": "inferred",
+            "statement": "推定。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "em-src",
+            "label": "報告書"
+          }
+        ],
+        "accessibility": {
+          "label": "論拠地図",
+          "summary": "結論1件と根拠2件。"
+        },
+        "evidence-map": {
+          "conclusion": {
+            "id": "em-conc",
+            "label": "移行を開始すべき"
+          },
+          "evidence": [
+            {
+              "id": "em-e1",
+              "label": "コスト増加",
+              "certaintyRef": "em-cert",
+              "sourceRef": "em-src"
+            },
+            {
+              "id": "em-e2",
+              "label": "期間見積",
+              "certaintyRef": "em-inf"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }
 ```
 
@@ -629,28 +1456,90 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-bars", "title": "棒グラフ比較", "summary": "2系列の定量比較を示す。"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-doc-bars",
-      "relationship": {"kind": "quantitative-comparison", "capabilities": ["single-axis-quantity", "ranked-comparison"]},
-      "selection": {"component": "bars", "version": 2, "matchedCapabilities": ["single-axis-quantity", "ranked-comparison"]},
-      "caption": "日本の女性役員割合が最も低い",
-      "certainty": [{"id": "b-cert", "level": "confirmed", "statement": "公開統計に基づく。"}],
-      "sources": [{"id": "b-src", "label": "役員統計 2021"}],
-      "accessibility": {"label": "棒グラフ", "summary": "各国の女性役員割合を横棒で比較する。"},
-      "bars": {
-        "title": "各国の女性役員割合（2021年）",
-        "unitLabel": "%",
-        "highlightId": "b2",
-        "items": [
-          {"id": "b1", "label": "フランス", "value": "45.3", "valueText": "45.3%"},
-          {"id": "b2", "label": "日本", "value": "7.5", "valueText": "7.5%"}
-        ]
+  "document": {
+    "id": "doc-bars",
+    "title": "棒グラフ比較",
+    "summary": "2系列の定量比較を示す。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-bars",
+        "relationship": {
+          "kind": "quantitative-comparison",
+          "capabilities": [
+            "single-axis-quantity",
+            "ranked-comparison"
+          ]
+        },
+        "selection": {
+          "component": "bars",
+          "version": 2,
+          "matchedCapabilities": [
+            "single-axis-quantity",
+            "ranked-comparison"
+          ]
+        },
+        "caption": "日本の女性役員割合が最も低い",
+        "certainty": [
+          {
+            "id": "b-cert",
+            "level": "confirmed",
+            "statement": "公開統計に基づく。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "b-src",
+            "label": "役員統計 2021"
+          }
+        ],
+        "accessibility": {
+          "label": "棒グラフ",
+          "summary": "各国の女性役員割合を横棒で比較する。"
+        },
+        "bars": {
+          "title": "各国の女性役員割合（2021年）",
+          "unitLabel": "%",
+          "highlightId": "b2",
+          "items": [
+            {
+              "id": "b1",
+              "label": "フランス",
+              "value": "45.3",
+              "valueText": "45.3%"
+            },
+            {
+              "id": "b2",
+              "label": "日本",
+              "value": "7.5",
+              "valueText": "7.5%"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }
 ```
 
@@ -661,24 +1550,79 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-kpi", "title": "KPI 指標", "summary": "リング型の主要指標を示す。"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-doc-kpi",
-      "relationship": {"kind": "headline-metrics", "capabilities": ["metric-highlight"]},
-      "selection": {"component": "kpi", "version": 2, "matchedCapabilities": ["metric-highlight"]},
-      "caption": "プログラム満足度の主要指標",
-      "certainty": [{"id": "k-cert", "level": "confirmed", "statement": "アンケート集計に基づく。"}],
-      "sources": [{"id": "k-src", "label": "満足度調査 2024"}],
-      "accessibility": {"label": "KPI 指標", "summary": "満足度をリング型の数値で示す。"},
-      "kpi": {
-        "items": [
-          {"id": "k1", "value": "88", "unit": "%", "caption": "本プログラムの満足度"}
-        ]
+  "document": {
+    "id": "doc-kpi",
+    "title": "KPI 指標",
+    "summary": "リング型の主要指標を示す。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-doc-kpi",
+        "relationship": {
+          "kind": "headline-metrics",
+          "capabilities": [
+            "metric-highlight"
+          ]
+        },
+        "selection": {
+          "component": "kpi",
+          "version": 2,
+          "matchedCapabilities": [
+            "metric-highlight"
+          ]
+        },
+        "caption": "プログラム満足度の主要指標",
+        "certainty": [
+          {
+            "id": "k-cert",
+            "level": "confirmed",
+            "statement": "アンケート集計に基づく。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "k-src",
+            "label": "満足度調査 2024"
+          }
+        ],
+        "accessibility": {
+          "label": "KPI 指標",
+          "summary": "満足度をリング型の数値で示す。"
+        },
+        "kpi": {
+          "items": [
+            {
+              "id": "k1",
+              "value": "88",
+              "unit": "%",
+              "caption": "本プログラムの満足度"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }
 ```
 
@@ -689,23 +1633,76 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-mixed", "title": "混在資料", "summary": "canonical と互換を並べる。"},
+  "document": {
+    "id": "doc-mixed",
+    "title": "混在資料",
+    "summary": "canonical と互換を並べる。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-mx",
-        "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification"]},
-        "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification"]},
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": [
+            "two-axis-classification"
+          ]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-axis-classification"
+          ]
+        },
         "caption": "管理者は読み取りを許可される",
         "takeawayScope": "whole",
-        "certainty": [{"id": "mx-c", "level": "confirmed", "statement": "確定。"}],
-        "sources": [{"id": "mx-s", "label": "権限仕様"}],
-        "accessibility": {"label": "許可マトリクス", "summary": "行が役割、列が操作。"},
+        "certainty": [
+          {
+            "id": "mx-c",
+            "level": "confirmed",
+            "statement": "確定。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "mx-s",
+            "label": "権限仕様"
+          }
+        ],
+        "accessibility": {
+          "label": "許可マトリクス",
+          "summary": "行が役割、列が操作。"
+        },
         "matrix": {
-          "rows": [{"id": "mx-r", "label": "管理者"}],
-          "columns": [{"id": "mx-col", "label": "読み取り"}],
-          "cells": [{"id": "mx-cell", "rowId": "mx-r", "columnId": "mx-col", "content": "許可"}]
+          "rows": [
+            {
+              "id": "mx-r",
+              "label": "管理者"
+            }
+          ],
+          "columns": [
+            {
+              "id": "mx-col",
+              "label": "読み取り"
+            }
+          ],
+          "cells": [
+            {
+              "id": "mx-cell",
+              "rowId": "mx-r",
+              "columnId": "mx-col",
+              "content": "許可"
+            }
+          ]
         }
       }
     },
@@ -713,25 +1710,82 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
       "kind": "compatibility",
       "id": "sec-legacy",
       "markup": "<div class=\"layers\"><div class=\"lane\"><span class=\"lane-label\">入力</span><div class=\"lane-nodes\"><div class=\"flow-node\">受付</div></div></div></div>",
-      "provenance": {"source": "legacy-html-insertion", "reason": "unmigrated-format", "format": "layers"}
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "unmigrated-format",
+        "format": "layers"
+      }
     },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-fl",
-        "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition"]},
-        "selection": {"component": "flow", "version": 2, "matchedCapabilities": ["ordered-transition"]},
+        "relationship": {
+          "kind": "directed-graph",
+          "capabilities": [
+            "ordered-transition"
+          ]
+        },
+        "selection": {
+          "component": "flow",
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition"
+          ]
+        },
         "caption": "起案は承認へ進む",
         "takeawayScope": "whole",
-        "certainty": [{"id": "fl-c", "level": "confirmed", "statement": "確定。"}],
-        "sources": [{"id": "fl-s", "label": "運用手順"}],
-        "accessibility": {"label": "承認フロー", "summary": "起案・承認の順。"},
+        "certainty": [
+          {
+            "id": "fl-c",
+            "level": "confirmed",
+            "statement": "確定。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "fl-s",
+            "label": "運用手順"
+          }
+        ],
+        "accessibility": {
+          "label": "承認フロー",
+          "summary": "起案・承認の順。"
+        },
         "flow": {
-          "nodes": [{"id": "fl-a", "label": "起案"}, {"id": "fl-b", "label": "承認"}],
-          "edges": [{"id": "fl-e", "from": "fl-a", "to": "fl-b", "relation": "ordered-transition"}],
+          "nodes": [
+            {
+              "id": "fl-a",
+              "label": "起案"
+            },
+            {
+              "id": "fl-b",
+              "label": "承認"
+            }
+          ],
+          "edges": [
+            {
+              "id": "fl-e",
+              "from": "fl-a",
+              "to": "fl-b",
+              "relation": "ordered-transition"
+            }
+          ],
           "startId": "fl-a"
         }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }
@@ -744,28 +1798,78 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 ```json
 {
   "schemaVersion": 1,
-  "document": {"id": "doc-narrative-mixed", "title": "3施策の同時実施判断", "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。"},
+  "document": {
+    "id": "doc-narrative-mixed",
+    "title": "3施策の同時実施判断",
+    "summary": "narrative の前後を canonical enumeration と compatibility layers で挟んだ混在資料。",
+    "type": "system",
+    "profile": "strict"
+  },
   "sections": [
     {
-      "kind": "narrative",
-      "id": "sec-narr-first-screen",
-      "markup": "<section class=\"first-screen\"><h1>3つの並列施策を同時に進める</h1><p class=\"subtitle decision\"><strong>あなたが決めること:</strong> 福利厚生・監査ログ・通知チャネルの3施策を同時に進めるか、優先順位をつけて順に進めるか決めます。</p></section>"
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
       "ir": {
         "id": "sec-narr-enum",
-        "relationship": {"kind": "parallel-enumeration", "capabilities": ["parallel-itemization"]},
-        "selection": {"component": "enumeration", "version": 2, "matchedCapabilities": ["parallel-itemization"]},
+        "relationship": {
+          "kind": "parallel-enumeration",
+          "capabilities": [
+            "parallel-itemization"
+          ]
+        },
+        "selection": {
+          "component": "enumeration",
+          "version": 2,
+          "matchedCapabilities": [
+            "parallel-itemization"
+          ]
+        },
         "caption": "検討対象の並列項目",
-        "certainty": [{"id": "narr-e-cert", "level": "confirmed", "statement": "3項目は同一会議で合意された範囲。"}],
-        "sources": [{"id": "narr-e-src", "label": "議事録 2026-06"}],
-        "accessibility": {"label": "並列項目の列挙", "summary": "番号付きの縦リストで3項目を並列に示す。"},
+        "certainty": [
+          {
+            "id": "narr-e-cert",
+            "level": "confirmed",
+            "statement": "3項目は同一会議で合意された範囲。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "narr-e-src",
+            "label": "議事録 2026-06"
+          }
+        ],
+        "accessibility": {
+          "label": "並列項目の列挙",
+          "summary": "番号付きの縦リストで3項目を並列に示す。"
+        },
         "enumeration": {
           "items": [
-            {"id": "narr-item-a", "title": "福利厚生", "description": ["従業員向けに無料のフィットネス利用券を配布する"], "descriptionEmphasis": "無料のフィットネス利用券"},
-            {"id": "narr-item-b", "title": "監査ログ", "description": ["必要な保持期間を決定する"]},
-            {"id": "narr-item-c", "title": "通知チャネル", "description": ["通知経路を一つに統合する"]}
+            {
+              "id": "narr-item-a",
+              "title": "福利厚生",
+              "description": [
+                "従業員向けに無料のフィットネス利用券を配布する"
+              ],
+              "descriptionEmphasis": "無料のフィットネス利用券"
+            },
+            {
+              "id": "narr-item-b",
+              "title": "監査ログ",
+              "description": [
+                "必要な保持期間を決定する"
+              ]
+            },
+            {
+              "id": "narr-item-c",
+              "title": "通知チャネル",
+              "description": [
+                "通知経路を一つに統合する"
+              ]
+            }
           ],
           "presentation": "list",
           "blockContent": "number"
@@ -776,12 +1880,23 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
       "kind": "compatibility",
       "id": "sec-narr-legacy",
       "markup": "<div class=\"layers\" aria-label=\"レイヤ構成\"><div class=\"lane\"><span class=\"lane-label\">入力</span><div class=\"lane-nodes\"><div class=\"flow-node\">受付</div></div></div><div class=\"lane\"><span class=\"lane-label\">処理</span><div class=\"lane-nodes\"><div class=\"flow-node\">検証</div></div></div></div>",
-      "provenance": {"source": "legacy-html-insertion", "reason": "unmigrated-format", "format": "layers"}
+      "provenance": {
+        "source": "legacy-html-insertion",
+        "reason": "unmigrated-format",
+        "format": "layers"
+      }
     },
     {
-      "kind": "narrative",
-      "id": "sec-narr-closing",
-      "markup": "<section class=\"closing-section\"><h2>リスクと弱い前提</h2><p>検証量が不足する可能性があります。</p></section>"
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
   ]
 }

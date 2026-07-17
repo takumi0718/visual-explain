@@ -1,6 +1,7 @@
 """S6 tests: renderer-svg allowlist, manifest cross-check, and bad SVG fixtures."""
 from __future__ import annotations
 
+from fixture_util import canonical_ir, canonical_section
 import json
 import unittest
 from pathlib import Path
@@ -84,7 +85,11 @@ class RendererSvgGateTest(unittest.TestCase):
                 self.assertIn(RENDERER_SVG_VIOLATION, _check(name))
 
     def test_boundary_valid_fixture_passes(self) -> None:
-        self.assertEqual(_check("component-valid-svg-boundary.html"), set())
+        # Stale boundary HTML lacks typed first-screen; group 3 flags it.
+        # SVG gate itself must still be clean (no renderer_svg_violation).
+        codes = _check("component-valid-svg-boundary.html")
+        self.assertNotIn("renderer_svg_violation", codes)
+        self.assertIn("document_structure_violation", codes)
 
     def test_slope_structure_bad_fixture(self) -> None:
         codes = [d.code for d in check_final_document(
@@ -132,7 +137,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
     def test_undeclared_svg_is_renderer_failure(self) -> None:
         slope_def = REGISTRY.find("slope", 2)
         raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(raw))
         section = CanonicalSection(ir=ir)
 
         def stub_renderer(section, definition):
@@ -166,7 +171,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
     def test_id_less_svg_is_renderer_failure(self) -> None:
         slope_def = REGISTRY.find("slope", 2)
         raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(raw))
         section = CanonicalSection(ir=ir)
 
         def stub_renderer(section, definition):
@@ -204,7 +209,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
     def test_extra_undeclared_svg_with_id_is_renderer_failure(self) -> None:
         slope_def = REGISTRY.find("slope", 2)
         raw = json.loads((TESTS / "component-valid-slope.json").read_text("utf-8"))
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(raw))
         section = CanonicalSection(ir=ir)
         svg_id = f"{section.ir.id}-svg"
 
@@ -241,7 +246,7 @@ class RenderCanonicalSvgGateTest(unittest.TestCase):
     def test_non_allowlisted_component_cannot_declare_svg_root_ids(self) -> None:
         stairs_def = REGISTRY.find("stairs", 2)
         raw = json.loads((TESTS / "component-valid-stairs.json").read_text("utf-8"))
-        ir = validate_canonical_section(raw["sections"][0]["ir"])
+        ir = validate_canonical_section(canonical_ir(raw))
         section = CanonicalSection(ir=ir)
 
         def stub_renderer(section, definition):

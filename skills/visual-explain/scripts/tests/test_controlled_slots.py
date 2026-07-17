@@ -82,11 +82,30 @@ class ContentMarkupTest(unittest.TestCase):
     def test_event_handler(self) -> None:
         self.bad('<button onclick="x()">x</button>')
 
-    def test_external_url(self) -> None:
-        self.bad('<a href="https://example.invalid/x">x</a>')
+    def test_https_href_allowed(self) -> None:
+        self.assertEqual(
+            validate_content_markup('<a href="https://example.invalid/x">x</a>'),
+            [],
+        )
+
+    def test_http_href_rejected(self) -> None:
+        diags = validate_content_markup('<a href="http://example.invalid/x">x</a>')
+        self.assertIn("forbidden_content_markup", codes(diags))
+        self.assertIn(
+            "外部リンクは https の絶対 URL か # アンカーだけ使えます: http://example.invalid/x",
+            diags[0].message,
+        )
 
     def test_javascript_url(self) -> None:
-        self.bad('<a href="javascript:alert(1)">x</a>')
+        diags = validate_content_markup('<a href="javascript:alert(1)">x</a>')
+        self.assertIn("forbidden_content_markup", codes(diags))
+        self.assertIn(
+            "外部リンクは https の絶対 URL か # アンカーだけ使えます: javascript:alert(1)",
+            diags[0].message,
+        )
+
+    def test_src_https_still_rejected(self) -> None:
+        self.bad('<img src="https://example.invalid/x.png" alt="">')
 
     def test_nested_controlled_marker(self) -> None:
         self.bad("<section><!-- VE-CONTROLLED:CONTENT:BEGIN --></section>")
@@ -180,8 +199,14 @@ class BadFixtureTest(unittest.TestCase):
         self.assertIn("invalid_controlled_asset", self.check("component-bad-asset-hash.html"))
 
     def test_skeleton_itself_passes_safety(self) -> None:
-        # The empty skeleton has no assets and matches itself: no diagnostics.
-        self.assertEqual(check_final_document(SKELETON, SKELETON, REGISTRY), [])
+        # Empty skeleton matches itself on fixed regions / assets. Group-3
+        # structure checks still fire on the blank CONTENT slot.
+        diags = check_final_document(SKELETON, SKELETON, REGISTRY)
+        self.assertTrue(diags)
+        self.assertTrue(all(d.code == "document_structure_violation" for d in diags))
+        msgs = {d.message for d in diags}
+        self.assertIn("文書型の自己表明がありません", msgs)
+        self.assertIn("closing セクションがありません", msgs)
 
 
 if __name__ == "__main__":

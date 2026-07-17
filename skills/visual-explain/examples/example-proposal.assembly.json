@@ -3,18 +3,24 @@
   "document": {
     "id": "example-proposal",
     "title": "顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。",
-    "summary": "未確認の契約例外を含む料金改定を、承認地図で照合し限定対象で段階公開するかを判断するための説明用シナリオ。"
+    "summary": "未確認の契約例外を含む料金改定を、承認地図で照合し限定対象で段階公開するかを判断するための説明用シナリオ。",
+    "type": "proposal",
+    "profile": "strict"
   },
   "sections": [
     {
-      "kind": "narrative",
+      "kind": "first-screen",
       "id": "sec-first-screen",
-      "markup": "<section class=\"first-screen\" aria-label=\"最初に伝えること\">\n  <h1>顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。</h1>\n  <p class=\"subtitle decision\"><strong>あなたが決めること:</strong> 未確認の契約例外を含む料金改定を、限定対象で開始するか決めます。</p>\n  <ul class=\"conditions\"><li>契約根拠・請求計算・告知対象が同じ顧客群を指していること</li><li>撤回条件と承認責任者を公開前に合意できること</li></ul>\n</section>"
+      "decision": "未確認の契約例外を含む料金改定を、限定対象で開始するか決めます。",
+      "conditions": [
+        "契約根拠・請求計算・告知対象が同じ顧客群を指していること",
+        "撤回条件と承認責任者を公開前に合意できること"
+      ]
     },
     {
       "kind": "narrative",
       "id": "sec-current-problem",
-      "markup": "<section aria-labelledby=\"current-problem\">\n  <h1 id=\"current-problem\">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h1>\n  <p class=\"claim\">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class=\"certainty unverified\">未確認</span></p>\n  <p class=\"evidence\">これは正規見本のための想定です。実在する料金改定の状況を示すものではありません。</p>\n  <details class=\"source-note\"><summary>出所</summary><p>この canonical proposal example の説明用シナリオ。外部の顧客、契約、請求データは使用していません。</p></details>\n</section>"
+      "markup": "<section aria-labelledby=\"current-problem\">\n  <h2 id=\"current-problem\">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>\n  <p class=\"claim\">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class=\"certainty unverified\">未確認</span></p>\n  <p class=\"evidence\">これは正規見本のための想定です。実在する料金改定の状況を示すものではありません。</p>\n  <details class=\"source-note\"><summary>出所</summary><p>この canonical proposal example の説明用シナリオ。外部の顧客、契約、請求データは使用していません。</p></details>\n</section>"
     },
     {
       "kind": "narrative",
@@ -163,9 +169,53 @@
       }
     },
     {
-      "kind": "narrative",
+      "kind": "ask",
+      "id": "sec-ask-hypothesis",
+      "askType": "hypothesis",
+      "claim": {
+        "text": "承認地図での照合は、部門別の確認より前に例外と顧客影響の不整合を見つけられる",
+        "certainty": "inferred"
+      },
+      "verify": "検証方法: 限定対象の1グループで承認地図の照合と従来の部門別確認を並行し、見つかる不整合の件数と発見時点を比べる"
+    },
+    {
+      "kind": "ask",
+      "id": "sec-ask-decision",
+      "askType": "decision",
+      "question": "未確認の契約例外を含む料金改定を、限定対象で開始しますか？",
+      "options": [
+        {
+          "id": "limited",
+          "label": "限定対象で段階公開する",
+          "tradeoff": "対象選定と承認・顧客対応の運用を追加で用意する必要がある"
+        },
+        {
+          "id": "all",
+          "label": "全顧客へ一斉公開する",
+          "tradeoff": "例外や計算誤りの影響範囲が最初から全顧客に及ぶ"
+        }
+      ],
+      "defaultId": "limited"
+    },
+    {
+      "kind": "closing",
       "id": "sec-closing",
-      "markup": "<section class=\"closing-section\" aria-label=\"判断材料\">\n  <h2>リスクと弱い前提</h2>\n  <p>限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。</p>\n  <div class=\"ask\" data-ask=\"hypothesis\">\n    <p class=\"ask-kind\">検証待ちの仮説</p>\n    <p class=\"ask-claim\">承認地図での照合は、部門別の確認より前に例外と顧客影響の不整合を見つけられる <span class=\"certainty inferred\">推論</span></p>\n    <p class=\"ask-verify\">検証方法: 限定対象の1グループで承認地図の照合と従来の部門別確認を並行し、見つかる不整合の件数と発見時点を比べる</p>\n  </div>\n\n  <h2>不確かな点</h2>\n  <p>実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。開始判断の前に、それぞれの担当者と確認が必要です。<span class=\"certainty unverified\">未確認</span></p>\n\n  <div class=\"ask\" data-ask=\"decision\">\n    <p class=\"ask-kind\">判断してください</p>\n    <p class=\"ask-question\">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>\n    <ul class=\"ask-options\">\n      <li data-ask-option data-ask-default><span>限定対象で段階公開する</span><span class=\"ask-tradeoff\">対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li>\n      <li data-ask-option><span>全顧客へ一斉公開する</span><span class=\"ask-tradeoff\">例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>\n    </ul>\n  </div>\n</section>"
+      "blocks": [
+        {
+          "heading": "リスクと弱い前提",
+          "items": [
+            "限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。",
+            "この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。"
+          ]
+        },
+        {
+          "heading": "不確かな点",
+          "items": [
+            "実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。",
+            "開始判断の前に、それぞれの担当者と確認が必要です。"
+          ]
+        }
+      ]
     }
   ]
 }

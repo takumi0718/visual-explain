@@ -1,30 +1,85 @@
 {
   "schemaVersion": 1,
-  "document": {"id": "bad", "title": "bad", "summary": "bad"},
-  "sections": [{
-    "kind": "canonical",
-    "ir": {
-      "id": "sec-bad",
-      "relationship": {"kind": "two-point-change", "capabilities": ["two-point-comparison"]},
-      "selection": {"component": "slope", "version": 2, "matchedCapabilities": ["two-point-comparison"]},
-      "caption": "c",
-      "certainty": [{"id": "c1", "level": "confirmed", "statement": "s"}],
-      "sources": [{"id": "s1", "label": "出"}],
-      "accessibility": {"label": "l", "summary": "s"},
-      "slope": {
-        "title": "図表",
-        "axes": {"fromLabel": "前", "toLabel": "後"},
-        "unitLabel": "件",
-        "items": [{
-          "id": "i1",
-          "label": "A",
-          "fromValue": 0.1,
-          "toValue": 2,
-          "fromValueText": "0.1",
-          "toValueText": "2",
-          "tone": "neutral"
-        }]
+  "document": {
+    "id": "bad",
+    "title": "bad",
+    "summary": "bad",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-bad",
+        "relationship": {
+          "kind": "two-point-change",
+          "capabilities": [
+            "two-point-comparison"
+          ]
+        },
+        "selection": {
+          "component": "slope",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-point-comparison"
+          ]
+        },
+        "caption": "c",
+        "certainty": [
+          {
+            "id": "c1",
+            "level": "confirmed",
+            "statement": "s"
+          }
+        ],
+        "sources": [
+          {
+            "id": "s1",
+            "label": "出"
+          }
+        ],
+        "accessibility": {
+          "label": "l",
+          "summary": "s"
+        },
+        "slope": {
+          "title": "図表",
+          "axes": {
+            "fromLabel": "前",
+            "toLabel": "後"
+          },
+          "unitLabel": "件",
+          "items": [
+            {
+              "id": "i1",
+              "label": "A",
+              "fromValue": 0.1,
+              "toValue": 2,
+              "fromValueText": "0.1",
+              "toValueText": "2",
+              "tone": "neutral"
+            }
+          ]
+        }
       }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "推論を含む"
+          ]
+        }
+      ]
     }
-  }]
+  ]
 }
