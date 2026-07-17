@@ -325,7 +325,7 @@ def compose_sections(items) -> CompositionResult:
         elif isinstance(item, WrappedNarrative):
             narrative.append(item)
         elif hasattr(item, "instance_id") and hasattr(item, "markup"):
-            # Duck-typed typed document sections (first-screen / closing / ask / toc):
+            # Duck-typed typed document sections (first-screen / closing / ask / toc / decision-panel):
             # markup already recorded; not aggregated into specialized tuples.
             pass
         else:

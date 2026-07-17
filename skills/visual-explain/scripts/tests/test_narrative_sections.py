@@ -101,7 +101,7 @@ def _mixed_narrative_assembly():
 
 def test_build_document_orders_narrative_and_canonical_sections():
     raw = _mixed_narrative_assembly()
-    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
     i_first = doc.index('data-ve-section-kind="first-screen"')
     i_canonical = doc.index('data-ve-instance="sec-enum-list"')
     i_body = doc.index('data-ve-instance="sec-body"')
@@ -178,7 +178,7 @@ def test_manifest_to_dom_flags_narrative_section_removed_from_final_dom():
 
 def test_narrative_mixed_fixture_passes_check_sh():
     raw = json.loads((TESTS_DIR / "component-valid-narrative-mixed.json").read_text("utf-8"))
-    document = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+    document = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
     out = Path(tempfile.gettempdir()) / "ve-narrative-mixed-doc.html"
     out.write_text(document, "utf-8")
     try:

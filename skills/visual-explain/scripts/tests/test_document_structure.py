@@ -45,6 +45,7 @@ _RESERVED_CLASS_CASES = (
     "closing-section",
     "ask",
     "link-domain",
+    "decision-panel",
 )
 
 

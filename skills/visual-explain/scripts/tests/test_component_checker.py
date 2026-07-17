@@ -29,7 +29,7 @@ CHECK = SKILL / "scripts" / "check.sh"
 
 def build(name: str) -> str:
     raw = json.loads((TESTS / name).read_text("utf-8"))
-    return build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS)
+    return build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS, document_path="doc.html")
 
 
 class LayerTwoBuildRejectionTest(unittest.TestCase):
@@ -609,12 +609,12 @@ class TrustedAssetTamperTest(unittest.TestCase):
             registry = load_registry(tmp / "registry.json")
             raw = json.loads((TESTS / "component-valid-matrix.json").read_text("utf-8"))
             # Baseline build succeeds against the copied assets.
-            build_document(raw, registry, TRUSTED_RENDERERS, SKELETON, tmp)
+            build_document(raw, registry, TRUSTED_RENDERERS, SKELETON, tmp, document_path="doc.html")
             # Tamper one byte of the isolated copy; the digest gate must fail.
             css = tmp / "matrix.css"
             css.write_text(css.read_text("utf-8") + "/* x */", "utf-8")
             with self.assertRaises(ContractError):
-                build_document(raw, registry, TRUSTED_RENDERERS, SKELETON, tmp)
+                build_document(raw, registry, TRUSTED_RENDERERS, SKELETON, tmp, document_path="doc.html")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

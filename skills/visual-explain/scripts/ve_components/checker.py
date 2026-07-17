@@ -618,6 +618,10 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
         elif kind == "toc":
             # Build-time TOC: trusted renderer output; no author provenance fields.
             pass
+        elif kind == "decision-panel":
+            # Build-time decision-recovery panel: trusted renderer output; no
+            # author provenance fields.
+            pass
         else:
             diagnostics.append(Diagnostic(MISSING_PROVENANCE, f"未知の section-kind '{kind}'"))
     return diagnostics

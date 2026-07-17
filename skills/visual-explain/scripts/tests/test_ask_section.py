@@ -181,6 +181,7 @@ class AskSectionTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS_DIR,
+            document_path="doc.html",
         )
         self.assertIn('data-ve-section-kind="ask"', html)
         self.assertIn('data-ve-ask-type="decision"', html)

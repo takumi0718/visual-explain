@@ -97,6 +97,7 @@ class FirstScreenRenderTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS_DIR,
+            document_path="doc.html",
         )
         self.assertIn('data-ve-section-kind="first-screen"', html)
         self.assertIn("<h1>料金改定は限定対象で段階公開する</h1>", html)

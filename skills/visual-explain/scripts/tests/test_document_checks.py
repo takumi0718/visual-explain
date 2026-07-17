@@ -171,6 +171,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS,
+            document_path="doc.html",
         )
         content, title = _content_and_title(html)
         self.assertEqual(check_document_structure(content, title=title), [])
@@ -186,6 +187,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS,
+            document_path="doc.html",
         )
         b = html.index(CONTENT_BEGIN) + len(CONTENT_BEGIN)
         e = html.index(CONTENT_END)
@@ -209,6 +211,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS,
+            document_path="doc.html",
         )
         content, title = _content_and_title(html)
         # Remove the summary paragraph (plain subtitle, not .decision).
@@ -227,6 +230,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             TRUSTED_RENDERERS,
             SKELETON,
             COMPONENTS,
+            document_path="doc.html",
         )
         content, title = _content_and_title(html)
         broken = content.replace(

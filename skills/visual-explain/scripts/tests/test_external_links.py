@@ -231,7 +231,7 @@ class DomainMarkerTest(unittest.TestCase):
                 },
             ],
         }
-        doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
+        doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
         self.assertIn('href="https://docs.example.org/guide"', doc)
         self.assertIn('<span class="link-domain">‹docs.example.org›</span>', doc)
 

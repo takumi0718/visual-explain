@@ -36,6 +36,7 @@ from ve_components.document_sections import (  # noqa: E402
     extract_first_h2_h3,
     render_ask,
     render_closing,
+    render_decision_panel,
     render_first_screen,
 )
 from ve_components.flatten import flatten_document  # noqa: E402
@@ -91,7 +92,7 @@ def _collect_toc_entries(sections) -> tuple[TocEntry, ...]:
 
 
 def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: str,
-                   components_dir: Path) -> CompositionResult | str:
+                   components_dir: Path, *, document_path: str) -> CompositionResult | str:
     """Validate, compose, flatten, and finally check. Raises on any failure."""
     request = validate_assembly(raw_assembly)
     occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
@@ -112,6 +113,12 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
             items.append(render_ask(section))
         else:
             items.append(process_compatibility_section(section))
+    panel = render_decision_panel(
+        tuple(s for s in request.sections if isinstance(s, AskSection)),
+        request.document, request.schema_version, document_path,
+        occupied_ids=occupied_ids | ({toc.instance_id} if toc is not None else frozenset()))
+    if panel is not None:
+        items.append(panel)
     if toc is not None:
         # Insert immediately after first-screen (always at index 0).
         items.insert(1, toc)
@@ -127,7 +134,8 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
 def build_to_path(raw_assembly, paths: BuildPaths, renderers=TRUSTED_RENDERERS) -> BuildResult:
     registry = load_registry(paths.registry)
     skeleton_text = paths.skeleton.read_text("utf-8")
-    document = build_document(raw_assembly, registry, renderers, skeleton_text, paths.components_dir)
+    document = build_document(raw_assembly, registry, renderers, skeleton_text, paths.components_dir,
+                              document_path=str(paths.output))
     # Atomic write: temp file in the output directory, then rename.
     paths.output.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(paths.output.parent), suffix=".tmp")
