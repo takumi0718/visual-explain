@@ -97,6 +97,48 @@ class DocumentStructureBadFixtureTest(unittest.TestCase):
         self.assertIn("closing セクションがありません", msgs)
 
 
+class DocumentStructureParserHardeningTest(unittest.TestCase):
+    """Group-3 must not trust raw regex against comment-spoofed markup."""
+
+    def test_comment_spoofed_first_screen_does_not_satisfy_declaration(self) -> None:
+        # Fake first-screen / closing only inside HTML comments — real body has neither.
+        content = (
+            '<!-- <section data-ve-section-kind="first-screen"'
+            ' data-ve-document-type="proposal" data-ve-profile="strict"> -->\n'
+            '<section data-ve-section-kind="narrative" data-ve-instance="sec-body">\n'
+            '<section class="first-screen" aria-label="最初に伝えること">\n'
+            '  <h1>T</h1>\n'
+            '  <p class="subtitle decision"><strong>あなたが決めること:</strong> 決めます。</p>\n'
+            '  <p class="subtitle">要約。</p>\n'
+            '</section>\n'
+            '</section>\n'
+            '<!-- </section> -->\n'
+            '<!-- <section data-ve-section-kind="closing" id="sec-closing">'
+            '<h2>リスクと弱い前提</h2><h2>不確かな点</h2></section> -->\n'
+        )
+        msgs = _msgs(check_document_structure(content, title="T"))
+        self.assertIn("文書型の自己表明がありません", msgs)
+        self.assertIn("closing セクションがありません", msgs)
+
+    def test_title_and_h1_charrefs_compare_equal_after_dom_normalize(self) -> None:
+        content = (
+            '<section data-ve-section-kind="first-screen"'
+            ' data-ve-document-type="proposal" data-ve-profile="strict" id="sec-first">\n'
+            '<section class="first-screen" aria-label="最初に伝えること">\n'
+            '  <h1>A &amp; B</h1>\n'
+            '  <p class="subtitle decision"><strong>あなたが決めること:</strong> 決めます。</p>\n'
+            '  <p class="subtitle">要約。</p>\n'
+            '</section>\n</section>\n'
+            '<section data-ve-section-kind="closing" id="sec-closing">\n'
+            '<section class="closing-section" aria-label="判断材料">\n'
+            '  <h2>リスクと弱い前提</h2>\n  <ul><li>a</li></ul>\n'
+            '  <h2>不確かな点</h2>\n  <ul><li>b</li></ul>\n'
+            '</section>\n</section>\n'
+        )
+        # title slot text still contains the entity; both sides must decode alike.
+        self.assertEqual(check_document_structure(content, title="A &amp; B"), [])
+
+
 class DocumentStructureValidTest(unittest.TestCase):
     def test_built_typed_document_has_no_structure_diagnostics(self) -> None:
         html = build_document(
@@ -180,6 +222,22 @@ class DocumentStructureValidTest(unittest.TestCase):
         # pre-migration legacy: no VE-CONTROLLED / data-ve → check_final_document 素通し
         legacy = "<!doctype html><html><head><title>t</title></head><body><p>x</p></body></html>"
         self.assertEqual(check_final_document(legacy, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
+
+    def test_example_proposal_passes_group3_when_typed_migration_present(self) -> None:
+        # TODO(Task 9): example-proposal.html を型付き IR で再生成したら、このテストは
+        # SKIP せずに常時実行される。移行前は first-screen 自己表明が無いため skip。
+        example = SKILL / "examples" / "example-proposal.html"
+        if not example.is_file():
+            self.skipTest("example-proposal.html is missing")
+        html = example.read_text("utf-8")
+        if 'data-ve-section-kind="first-screen"' not in html:
+            self.skipTest(
+                "example-proposal.html not yet migrated to typed first-screen (Task 9)"
+            )
+        self.assertEqual(
+            check_final_document(html, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
 
 
 if __name__ == "__main__":

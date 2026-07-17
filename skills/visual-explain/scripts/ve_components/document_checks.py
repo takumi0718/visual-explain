@@ -4,10 +4,13 @@ Reads first-screen self-declaration (``data-ve-document-type`` /
 ``data-ve-profile``) and enforces honesty/structure invariants on the
 flattened content markup. Invoked from ``check_final_document`` for
 component documents only; pre-migration legacy documents never reach here.
+
+Structure is discovered via ``HTMLParser`` so HTML comments and the text
+content of ``script`` / ``style`` cannot spoof section wrappers.
 """
 from __future__ import annotations
 
-import re
+from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
@@ -18,50 +21,231 @@ _VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
 })
+_OPAQUE_TAGS = frozenset({"script", "style"})
 
 # Phase 3 extended-only section kinds. Phase 1 has none in the wild; presence
 # under profile=strict is still rejected so the gate is ready.
 _EXTENDED_ONLY_KINDS = frozenset({"freeform", "image"})
 
-_FIRST_SCREEN_KIND_RE = re.compile(
-    r'<section\b([^>]*\bdata-ve-section-kind\s*=\s*["\']first-screen["\'][^>]*)>',
-    re.IGNORECASE,
-)
-_ATTR_RE = lambda name: re.compile(  # noqa: E731 — local attr matcher factory
-    rf'\b{re.escape(name)}\s*=\s*["\']([^"\']*)["\']', re.IGNORECASE,
-)
-_CLOSING_KIND_RE = re.compile(
-    r'<section\b[^>]*\bdata-ve-section-kind\s*=\s*["\']closing["\'][^>]*>',
-    re.IGNORECASE,
-)
-_SECTION_KIND_RE = re.compile(
-    r'<section\b[^>]*\bdata-ve-section-kind\s*=\s*["\']([^"\']+)["\'][^>]*>',
-    re.IGNORECASE,
-)
+
+@dataclass
+class _SectionNode:
+    kind: str | None
+    attrs: dict[str, str]
+    h1_texts: list[str] = field(default_factory=list)
+    h2_texts: list[str] = field(default_factory=list)
+    has_summary: bool = False
+
+
+@dataclass
+class _DocStructure:
+    sections: list[_SectionNode] = field(default_factory=list)
+    h1_in_first_screen: int = 0
+    h1_total: int = 0
+
+
+class _StructureParser(HTMLParser):
+    """Collect real section / heading / summary nodes; skip comments & opaque text."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.structure = _DocStructure()
+        self._open: list[_SectionNode | None] = []  # None = non-section element frame
+        self._element_stack: list[str] = []
+        self._opaque: str | None = None
+        self._heading_tag: str | None = None
+        self._heading_parts: list[str] = []
+        self._paragraph_classes: set[str] | None = None
+        self._paragraph_parts: list[str] = []
+        # Outermost data-ve-section-kind="first-screen" currently open, if any.
+        self._first_screen_depth: int | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if self._opaque is not None:
+            return
+        if tag in _OPAQUE_TAGS:
+            self._opaque = tag
+            return
+        attr_map = {k.lower(): (v or "") for k, v in attrs}
+        if tag not in _VOID_TAGS:
+            self._element_stack.append(tag)
+
+        if tag == "section":
+            kind = attr_map.get("data-ve-section-kind") or None
+            node = _SectionNode(kind=kind, attrs=attr_map)
+            self._open.append(node)
+            if kind == "first-screen" and self._first_screen_depth is None:
+                self._first_screen_depth = len(self._open)
+            return
+
+        if tag == "h1" and self._heading_tag is None:
+            self._heading_tag = "h1"
+            self._heading_parts = []
+            return
+        if tag == "h2" and self._heading_tag is None:
+            self._heading_tag = "h2"
+            self._heading_parts = []
+            return
+        if tag == "p" and self._paragraph_classes is None:
+            classes = {tok for tok in attr_map.get("class", "").split() if tok}
+            self._paragraph_classes = classes
+            self._paragraph_parts = []
+            return
+
+        if self._heading_tag and tag not in _VOID_TAGS:
+            # Nested tags inside heading: still collect text via handle_data.
+            pass
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # Void / self-closing: no stack push beyond start handling for voids.
+        tag = tag.lower()
+        if self._opaque is not None or tag in _OPAQUE_TAGS:
+            return
+        # No structural effect for void tags we care about.
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if self._opaque is not None:
+            if tag == self._opaque:
+                self._opaque = None
+            return
+
+        if self._heading_tag == tag:
+            text = "".join(self._heading_parts).strip()
+            self._finish_heading(tag, text)
+            self._heading_tag = None
+            self._heading_parts = []
+            self._pop_element(tag)
+            return
+
+        if self._paragraph_classes is not None and tag == "p":
+            text = "".join(self._paragraph_parts).strip()
+            classes = self._paragraph_classes
+            self._paragraph_classes = None
+            self._paragraph_parts = []
+            if "subtitle" in classes and "decision" not in classes and text:
+                # Attribute summary to the innermost open first-screen section.
+                target = self._current_first_screen()
+                if target is not None:
+                    target.has_summary = True
+            self._pop_element(tag)
+            return
+
+        if tag == "section" and self._open:
+            node = self._open.pop()
+            if node is not None:
+                self.structure.sections.append(node)
+            if self._first_screen_depth is not None and len(self._open) < self._first_screen_depth:
+                self._first_screen_depth = None
+            self._pop_element(tag)
+            return
+
+        self._pop_element(tag)
+
+    def handle_data(self, data: str) -> None:
+        if self._opaque is not None:
+            return
+        if self._heading_tag is not None:
+            self._heading_parts.append(data)
+        elif self._paragraph_classes is not None:
+            self._paragraph_parts.append(data)
+
+    def _pop_element(self, tag: str) -> None:
+        if self._element_stack and self._element_stack[-1] == tag:
+            self._element_stack.pop()
+        elif tag in self._element_stack:
+            # Tolerant pop for mildly broken markup in fixtures.
+            idx = len(self._element_stack) - 1
+            while idx >= 0 and self._element_stack[idx] != tag:
+                idx -= 1
+            if idx >= 0:
+                del self._element_stack[idx:]
+
+    def _current_first_screen(self) -> _SectionNode | None:
+        if self._first_screen_depth is None:
+            return None
+        if len(self._open) < self._first_screen_depth:
+            return None
+        node = self._open[self._first_screen_depth - 1]
+        return node
+
+    def _finish_heading(self, tag: str, text: str) -> None:
+        if tag == "h1":
+            self.structure.h1_total += 1
+            fs = self._current_first_screen()
+            if fs is not None:
+                self.structure.h1_in_first_screen += 1
+                if text:
+                    fs.h1_texts.append(text)
+        elif tag == "h2":
+            # Attribute to innermost open section with kind=closing, else any open section.
+            for node in reversed(self._open):
+                if node is not None and node.kind == "closing":
+                    if text:
+                        node.h2_texts.append(text)
+                    return
+            for node in reversed(self._open):
+                if node is not None:
+                    if text:
+                        node.h2_texts.append(text)
+                    return
+
+
+def _parse_structure(content: str) -> _DocStructure:
+    parser = _StructureParser()
+    parser.feed(content)
+    parser.close()
+    return parser.structure
+
+
+def _dom_text(fragment: str) -> str:
+    """Normalize a text fragment the same way heading text is collected."""
+    class _Text(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=True)
+            self.parts: list[str] = []
+
+        def handle_data(self, data: str) -> None:
+            self.parts.append(data)
+
+    p = _Text()
+    p.feed(fragment)
+    p.close()
+    return "".join(p.parts).strip()
 
 
 def check_document_structure(content_markup: str, *, title: str | None = None) -> list[Diagnostic]:
     """Inspect flattened content markup for group-3 structure invariants.
 
-    ``title`` is the document ``<title>`` text (from the TITLE slot). When
-    omitted, the title↔h1 equality check is skipped.
+    ``title`` is the document ``<title>`` text (from the TITLE slot; may still
+    contain character references). When omitted, the title↔h1 equality check
+    is skipped.
     """
     diagnostics: list[Diagnostic] = []
-    first = _find_first_screen(content_markup)
-    if first is None:
+    structure = _parse_structure(content_markup)
+    first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
+    if not first_nodes:
         diagnostics.append(Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             "文書型の自己表明がありません",
             "content",
         ))
-        # Without a declared type the remaining type-scoped checks cannot run.
-        diagnostics.extend(_check_h1_without_first_screen(content_markup))
+        if structure.h1_total != 0:
+            diagnostics.append(Diagnostic(
+                DOCUMENT_STRUCTURE_VIOLATION,
+                "h1 は first-screen 内にちょうど1個必要です",
+                "content",
+            ))
         diagnostics.extend(_check_external_link_markers(content_markup))
+        # closing check still useful when first-screen is missing
+        diagnostics.extend(_check_closing_from_structure(structure, None))
         return diagnostics
 
-    attrs, inner = first
-    doc_type = _attr(attrs, "data-ve-document-type")
-    profile = _attr(attrs, "data-ve-profile")
+    # Use the first real first-screen wrapper (document invariant: exactly one).
+    first = first_nodes[0]
+    doc_type = first.attrs.get("data-ve-document-type") or None
+    profile = first.attrs.get("data-ve-profile") or None
 
     if doc_type is None:
         diagnostics.append(Diagnostic(
@@ -89,68 +273,31 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
             "content",
         ))
 
-    diagnostics.extend(_check_h1(content_markup, inner, title))
-    diagnostics.extend(_check_summary(inner))
-    diagnostics.extend(_check_closing(content_markup, doc_type if doc_type in _DOCUMENT_TYPES else None))
+    diagnostics.extend(_check_h1_from_structure(structure, first, title))
+    if not first.has_summary:
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "first-screen に summary がありません",
+            "content",
+        ))
+    diagnostics.extend(
+        _check_closing_from_structure(
+            structure, doc_type if doc_type in _DOCUMENT_TYPES else None,
+        )
+    )
     diagnostics.extend(_check_external_link_markers(content_markup))
     if profile == "strict":
-        diagnostics.extend(_check_strict_excludes_extended(content_markup))
+        diagnostics.extend(_check_strict_excludes_extended(structure))
     return diagnostics
 
 
-def _attr(attrs: str, name: str) -> str | None:
-    m = _ATTR_RE(name).search(attrs)
-    return m.group(1) if m else None
-
-
-def _find_first_screen(content: str) -> tuple[str, str] | None:
-    """Return (opening-tag attrs, inner HTML) of the first first-screen section."""
-    m = _FIRST_SCREEN_KIND_RE.search(content)
-    if m is None:
-        return None
-    attrs = m.group(1)
-    start = m.end()
-    # Balance nested <section>…</section> from the opening we matched.
-    # The match is the outer wrapper's open tag; walk from there.
-    open_tag_start = m.start()
-    depth = 0
-    i = open_tag_start
-    inner_start = start
-    while i < len(content):
-        if content.startswith("<section", i):
-            depth += 1
-            gt = content.find(">", i)
-            if gt < 0:
-                break
-            i = gt + 1
-            continue
-        if content.startswith("</section>", i):
-            depth -= 1
-            if depth == 0:
-                return attrs, content[inner_start:i]
-            i += len("</section>")
-            continue
-        i += 1
-    # Unbalanced: treat the remainder as inner so other checks still run.
-    return attrs, content[inner_start:]
-
-
-def _check_h1_without_first_screen(content: str) -> list[Diagnostic]:
-    count = len(re.findall(r"<h1\b", content, re.IGNORECASE))
-    if count != 0:
-        return [Diagnostic(
-            DOCUMENT_STRUCTURE_VIOLATION,
-            "h1 は first-screen 内にちょうど1個必要です",
-            "content",
-        )]
-    return []
-
-
-def _check_h1(content: str, first_inner: str, title: str | None) -> list[Diagnostic]:
+def _check_h1_from_structure(
+    structure: _DocStructure,
+    first: _SectionNode,
+    title: str | None,
+) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    total = len(re.findall(r"<h1\b", content, re.IGNORECASE))
-    inside = len(re.findall(r"<h1\b", first_inner, re.IGNORECASE))
-    if total != 1 or inside != 1:
+    if structure.h1_total != 1 or structure.h1_in_first_screen != 1:
         diagnostics.append(Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             "h1 は first-screen 内にちょうど1個必要です",
@@ -159,8 +306,9 @@ def _check_h1(content: str, first_inner: str, title: str | None) -> list[Diagnos
         return diagnostics
     if title is None:
         return diagnostics
-    h1_text = _extract_h1_text(first_inner)
-    if h1_text is None or h1_text != title:
+    h1_text = first.h1_texts[0] if first.h1_texts else None
+    title_text = _dom_text(title)
+    if h1_text is None or h1_text != title_text:
         diagnostics.append(Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             "title と h1 が一致しません",
@@ -169,74 +317,12 @@ def _check_h1(content: str, first_inner: str, title: str | None) -> list[Diagnos
     return diagnostics
 
 
-class _H1TextParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self._depth = 0
-        self._parts: list[str] = []
-        self.text: str | None = None
-        self._done = False
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if self._done:
-            return
-        tag = tag.lower()
-        if tag == "h1" and self._depth == 0 and self.text is None:
-            self._depth = 1
-            self._parts = []
-            return
-        if self._depth and tag not in _VOID_TAGS:
-            self._depth += 1
-
-    def handle_endtag(self, tag: str) -> None:
-        if self._done or not self._depth:
-            return
-        if tag.lower() == "h1" and self._depth == 1:
-            self.text = "".join(self._parts).strip()
-            self._done = True
-            self._depth = 0
-            return
-        if self._depth:
-            self._depth -= 1
-
-    def handle_data(self, data: str) -> None:
-        if self._depth:
-            self._parts.append(data)
-
-
-def _extract_h1_text(markup: str) -> str | None:
-    parser = _H1TextParser()
-    parser.feed(markup)
-    parser.close()
-    return parser.text
-
-
-def _check_summary(first_inner: str) -> list[Diagnostic]:
-    """Require a non-decision ``p.subtitle`` text block inside first-screen."""
-    # Match <p class="subtitle">…</p> that does NOT also carry class "decision".
-    for m in re.finditer(r"<p\b([^>]*)>(.*?)</p>", first_inner, re.IGNORECASE | re.S):
-        attrs, body = m.group(1), m.group(2)
-        classes = _class_tokens(attrs)
-        if "subtitle" in classes and "decision" not in classes:
-            text = re.sub(r"<[^>]+>", "", body).strip()
-            if text:
-                return []
-    return [Diagnostic(
-        DOCUMENT_STRUCTURE_VIOLATION,
-        "first-screen に summary がありません",
-        "content",
-    )]
-
-
-def _class_tokens(attrs: str) -> set[str]:
-    m = _ATTR_RE("class").search(attrs)
-    if m is None:
-        return set()
-    return {tok for tok in m.group(1).split() if tok}
-
-
-def _check_closing(content: str, doc_type: str | None) -> list[Diagnostic]:
-    if not _CLOSING_KIND_RE.search(content):
+def _check_closing_from_structure(
+    structure: _DocStructure,
+    doc_type: str | None,
+) -> list[Diagnostic]:
+    closing_nodes = [s for s in structure.sections if s.kind == "closing"]
+    if not closing_nodes:
         return [Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             "closing セクションがありません",
@@ -245,7 +331,9 @@ def _check_closing(content: str, doc_type: str | None) -> list[Diagnostic]:
     if doc_type is None:
         return []
     required = _CLOSING_REQUIRED.get(doc_type, ())
-    headings = _extract_closing_h2(content)
+    headings = set()
+    for node in closing_nodes:
+        headings.update(node.h2_texts)
     diagnostics: list[Diagnostic] = []
     for heading in required:
         if heading not in headings:
@@ -257,71 +345,47 @@ def _check_closing(content: str, doc_type: str | None) -> list[Diagnostic]:
     return diagnostics
 
 
-def _extract_closing_h2(content: str) -> set[str]:
-    """Collect h2 text inside the closing section wrapper."""
-    m = _CLOSING_KIND_RE.search(content)
-    if m is None:
-        return set()
-    start = m.start()
-    depth = 0
-    i = start
-    end = len(content)
-    while i < len(content):
-        if content.startswith("<section", i):
-            depth += 1
-            i = content.find(">", i) + 1
-            continue
-        if content.startswith("</section>", i):
-            depth -= 1
-            i += len("</section>")
-            if depth == 0:
-                end = i
-                break
-            continue
-        i += 1
-    block = content[start:end]
-    headings: set[str] = set()
-    for hm in re.finditer(r"<h2\b[^>]*>(.*?)</h2>", block, re.IGNORECASE | re.S):
-        text = re.sub(r"<[^>]+>", "", hm.group(1)).strip()
-        if text:
-            headings.add(text)
-    return headings
-
-
 class _LinkMarkerParser(HTMLParser):
     """Verify every https <a> carries a matching link-domain hostname marker."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.diagnostics: list[Diagnostic] = []
-        # stack of (href_or_None_for_non_https, collected_html_fragments_inside)
         self._anchor_stack: list[tuple[str | None, list[str]]] = []
+        self._opaque: str | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
+        if self._opaque is not None:
+            return
+        if tag in _OPAQUE_TAGS:
+            self._opaque = tag
+            return
         attr_map = {k.lower(): (v or "") for k, v in attrs}
         if tag == "a":
             href = attr_map.get("href", "")
             track = href if href.lower().startswith("https://") else None
             self._anchor_stack.append((track, []))
         if self._anchor_stack:
-            # Record nested markup for marker inspection (self-closing included).
-            rendered = _render_start(tag, attrs)
-            self._anchor_stack[-1][1].append(rendered)
+            self._anchor_stack[-1][1].append(_render_start(tag, attrs))
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs)
-        if tag.lower() not in _VOID_TAGS:
+        if tag.lower() not in _VOID_TAGS and tag.lower() not in _OPAQUE_TAGS:
             self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
+        if self._opaque is not None:
+            if tag == self._opaque:
+                self._opaque = None
+            return
         if tag != "a" or not self._anchor_stack:
             if self._anchor_stack:
                 self._anchor_stack[-1][1].append(f"</{tag}>")
             return
         href, parts = self._anchor_stack.pop()
-        inner = "".join(parts[1:])  # drop the opening <a …> we recorded
+        inner = "".join(parts[1:])
         if href is None:
             return
         try:
@@ -336,8 +400,8 @@ class _LinkMarkerParser(HTMLParser):
             ))
             return
         expected = f'<span class="link-domain">‹{host}›</span>'
-        # Also accept HTML-escaped host in marker body.
-        if expected not in inner and f'<span class="link-domain">‹{_html_escape_minimal(host)}›</span>' not in inner:
+        escaped = f'<span class="link-domain">‹{_html_escape_minimal(host)}›</span>'
+        if expected not in inner and escaped not in inner:
             if 'class="link-domain"' not in inner and "class='link-domain'" not in inner:
                 self.diagnostics.append(Diagnostic(
                     DOCUMENT_STRUCTURE_VIOLATION,
@@ -352,12 +416,12 @@ class _LinkMarkerParser(HTMLParser):
                 ))
 
     def handle_data(self, data: str) -> None:
+        if self._opaque is not None:
+            return
         if self._anchor_stack:
             self._anchor_stack[-1][1].append(data)
 
     def close(self) -> None:
-        # Unclosed https anchors: treat as missing marker (assembly should reject,
-        # but final docs may be hand-broken fixtures).
         while self._anchor_stack:
             href, _ = self._anchor_stack.pop()
             if href is not None:
@@ -396,14 +460,13 @@ def _check_external_link_markers(content: str) -> list[Diagnostic]:
     return parser.diagnostics
 
 
-def _check_strict_excludes_extended(content: str) -> list[Diagnostic]:
+def _check_strict_excludes_extended(structure: _DocStructure) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    for m in _SECTION_KIND_RE.finditer(content):
-        kind = m.group(1)
-        if kind in _EXTENDED_ONLY_KINDS:
+    for node in structure.sections:
+        if node.kind in _EXTENDED_ONLY_KINDS:
             diagnostics.append(Diagnostic(
                 DOCUMENT_STRUCTURE_VIOLATION,
-                f"strict プロファイルに extended 限定要素は置けません: {kind}",
+                f"strict プロファイルに extended 限定要素は置けません: {node.kind}",
                 "content",
             ))
     return diagnostics
