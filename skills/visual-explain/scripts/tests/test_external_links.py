@@ -250,6 +250,23 @@ class T07EdgeCaseTest(unittest.TestCase):
             '<span class="link-domain">‹example.com›</span></a></p>',
         )
 
+    def test_crlf_line_endings_do_not_shift_marker(self) -> None:
+        # Windows 改行 (\r\n) が複数回はさまる markup でも、マーカーが </a> の
+        # 直前へ正しく入ることを完全一致で固定する（単独 CR とは別の回帰）。
+        from ve_components.assembly import insert_link_domain_markers
+
+        markup = (
+            '<p>line1\r\nline2\r\n'
+            '<a href="https://example.com">x\r\ny</a></p>'
+        )
+        result = insert_link_domain_markers(markup)
+        self.assertEqual(
+            result,
+            '<p>line1\r\nline2\r\n'
+            '<a href="https://example.com">x\r\ny'
+            '<span class="link-domain">‹example.com›</span></a></p>',
+        )
+
     def test_namespaced_external_href_rejected_in_narrative(self) -> None:
         from ve_components.checker import validate_content_markup
 
