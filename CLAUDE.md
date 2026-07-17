@@ -54,6 +54,7 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 ```
 
 - セクションは `first-screen`（先頭・ちょうど1）/ `narrative`（限定 HTML の散文）/ `canonical`（IR 宣言の図）/ `compatibility`（legacy HTML・`provenance` 必須）/ `ask` / `closing`（末尾・ちょうど1）で、読み順に並ぶ。`document.type` / `document.profile` は IR 必須で、first-screen wrapper の data 属性として自己表明する。
+- `askType: "decision"` の ask を1件以上含む資料は、`document_sections.py` が closing の後に「判断の回収」パネル（`decision-panel`）を自動生成する。パネルは IR に書かず、DOM 上の decision ask option-id から `compute_ask_digest_from_pairs` で計算した digest を自己保持し、検査群③（後述）が最終文書段階で再照合する。
 - canonical 12 形式: `matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`。定義は `assets/components/registry.json`、CSS は `assets/components/*.css`。
 - 設計判断: 関係（`relationship.kind`）と `capabilities` は IR で明示宣言する。散文からの推測・自動選択・ランキングはしない。canonical 生成の失敗は診断を返して報告し、compatibility へ暗黙に縮退しない。first-screen / closing / ask を narrative 生 HTML で書く旧方式は受理しない。
 - 数値の扱い: waterfall は Decimal ＋ `displayPrecision` 必須で、binary float は fail-closed（`numeric.py`）。
@@ -61,7 +62,7 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 
 ### 検証（`check.sh` — 四層）
 
-依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・summary 描画・外部リンクのドメインマーカーを検証する。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
+依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・summary 描画・外部リンクのドメインマーカーに加え、decision-panel の存在（decision ask の有無との整合）・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）を検証する。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
 
 ### テスト構成（`scripts/tests/`）
 
@@ -80,3 +81,4 @@ fixture は命名規約を持つ: `component-valid-*.json` / `component-bad-*.js
 - 生成資料の出力先はリポジトリ内 `.visual-explain/`（git 管理外）。
 - コミットは conventional commits ＋ `(ve)` スコープ（例: `feat(ve): ...`）。
 - コードのコメント/docstring は英語、checker 診断とスキル文書は日本語。
+- スキル利用時の外部依存ゼロは不変。Playwright / Selenium / Puppeteer / jsdom・npm パッケージ・pip パッケージを追加しない。開発時の JS テストは node 標準のみで実行する。

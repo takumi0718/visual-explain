@@ -214,6 +214,10 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 レンダラ出力の HTML 契約（`.ask` / `data-ask` / `.ask-options` 等）は checker が検証する。モデルは HTML を手書きせず IR だけを書く。
 
+### decision ask の回収パネル（Phase 2）
+
+`askType: "decision"` の ask を1件以上含む資料は、末尾節の後にビルドが「判断の回収」パネルを自動生成する。**Phase 2 で ask の IR は変わらない**。上の `decision` サンプルのように ask を書けば、回収は `build_explainer.py` と骨格の固定 JavaScript だけが担い、パネル自体を IR に書く必要はない。decision ask が0件の資料にはパネルは現れない。
+
 ## 図フォーマット
 
 ### flow — 順序・有向遷移・分岐
