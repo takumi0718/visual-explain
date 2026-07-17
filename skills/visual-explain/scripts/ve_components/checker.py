@@ -153,16 +153,22 @@ _HREF_HTTPS_OR_ANCHOR_MSG = "外部リンクは https の絶対 URL か # アン
 def _is_absolute_https(url: str) -> bool:
     """True when url is an absolute https: URL with a non-empty hostname.
 
-    Malformed https URLs that make ``urlsplit`` / ``.hostname`` raise
-    ``ValueError`` (e.g. broken IPv6 brackets, fullwidth ``＠`` in netloc)
-    return False so callers emit the standard href diagnostic instead of crashing.
+    Malformed https URLs that make ``urlsplit`` / ``.hostname`` / ``.port`` raise
+    ``ValueError`` (e.g. broken IPv6 brackets, fullwidth ``＠`` in netloc,
+    non-integer or out-of-range port) return False so callers emit the standard
+    href diagnostic instead of crashing or accepting an unusable absolute URL.
     """
     from urllib.parse import urlsplit
 
     if not url.lower().startswith("https://"):
         return False
     try:
-        return bool(urlsplit(url).hostname)
+        parsed = urlsplit(url)
+        if not parsed.hostname:
+            return False
+        # Access .port to reject :bad / :99999 etc. (raises ValueError).
+        _ = parsed.port
+        return True
     except ValueError:
         return False
 
@@ -219,6 +225,13 @@ class _ContentSafetyParser(HTMLParser):
         self._check(tag, attrs)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # <a> is not a void element; self-closing form leaves an unannotated
+        # external link in browsers. Reject at input so markers are never skipped.
+        if tag.lower() == "a":
+            self.diagnostics.append(
+                Diagnostic(FORBIDDEN_CONTENT_MARKUP, "self-closing の <a> は使えません")
+            )
+            return
         self._check(tag, attrs)
 
     def handle_comment(self, data: str) -> None:

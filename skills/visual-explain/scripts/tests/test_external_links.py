@@ -115,6 +115,26 @@ class NarrativeHttpsHrefTest(unittest.TestCase):
         self.assertTrue(diags)
         self.assertIn(f"{_DIAG}: {url}", diags[0].message)
 
+    def test_non_integer_port_rejected(self) -> None:
+        url = "https://example.com:bad/x"
+        diags = _diags(f'<p><a href="{url}">x</a></p>', section_kind="narrative")
+        self.assertTrue(diags)
+        self.assertIn(f"{_DIAG}: {url}", diags[0].message)
+
+    def test_port_out_of_range_rejected(self) -> None:
+        url = "https://example.com:99999/x"
+        diags = _diags(f'<p><a href="{url}">x</a></p>', section_kind="narrative")
+        self.assertTrue(diags)
+        self.assertIn(f"{_DIAG}: {url}", diags[0].message)
+
+    def test_self_closing_anchor_rejected(self) -> None:
+        diags = _diags(
+            '<p><a href="https://example.com/x"/></p>',
+            section_kind="narrative",
+        )
+        self.assertTrue(diags)
+        self.assertIn("self-closing の <a> は使えません", diags[0].message)
+
 
 class CompatibilityKeepsLegacyTest(unittest.TestCase):
     def test_compatibility_still_rejects_https_href(self) -> None:
