@@ -550,6 +550,37 @@ class DecisionPanelStructureTest(unittest.TestCase):
         msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
         self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
 
+    def test_void_self_closing_option_id_is_detected_as_tampering(self) -> None:
+        """An option carried on a genuinely void, self-closing element (e.g.
+        ``<input data-ask-option-id="opt-c"/>``) must still count toward the
+        enclosing decision ask's digest. ``handle_startendtag`` is the only
+        callback ``HTMLParser`` fires for self-closing syntax — it never
+        calls ``handle_starttag`` too — so a parser whose ``handle_startendtag``
+        skips attribute collection for void tags would silently drop this
+        option, letting a forged panel digest (computed as if the option
+        never existed) pass.
+        """
+        ask_with_void_option = (
+            '<section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">\n'
+            '<div class="ask" data-ask="decision">\n'
+            '  <ul class="ask-options">'
+            '<li data-ask-option data-ask-option-id="opt-a"><span>opt-a</span></li>'
+            '<li data-ask-option data-ask-option-id="opt-b"><span>opt-b</span></li>'
+            '<input data-ask-option-id="opt-c"/>'
+            '</ul>\n'
+            '</div>\n</section>\n'
+        )
+        # Digest recorded in the panel reflects only opt-a/opt-b, as a
+        # checker blind to void self-closing option ids would compute.
+        stale_digest = compute_ask_digest_from_pairs(
+            (("sec-ask-decision", ("opt-a", "opt-b")),)
+        )
+        content = (
+            _FIRST_BLOCK + ask_with_void_option + _CLOSING_BLOCK + _panel_block(stale_digest)
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+
     def test_empty_option_id_attribute_still_counts_toward_digest(self) -> None:
         """``data-ask-option-id=""`` is attribute *presence*, not absence —
         a parser using truthiness (``if option_id:``) instead of

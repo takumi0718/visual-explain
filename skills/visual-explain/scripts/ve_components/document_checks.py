@@ -127,6 +127,16 @@ class _StructureParser(HTMLParser):
             return
         if tag not in _VOID_TAGS:
             self.structure.self_closing_tags.append(tag)
+            return
+        # Void elements (e.g. ``<input .../>``) never reach handle_starttag
+        # — HTMLParser fires handle_startendtag exclusively for self-closing
+        # syntax. Collect data-ask-option-id here too, or an option carried
+        # on a void tag silently evades the decision-panel digest.
+        attr_map = {k.lower(): (v or "") for k, v in attrs}
+        if "data-ask-option-id" in attr_map:
+            ask_node = self._current_ask_decision()
+            if ask_node is not None:
+                ask_node.option_ids.append(attr_map["data-ask-option-id"])
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
