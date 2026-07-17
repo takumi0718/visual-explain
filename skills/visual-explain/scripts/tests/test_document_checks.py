@@ -307,11 +307,7 @@ class DocumentStructureValidTest(unittest.TestCase):
         html = example.read_text("utf-8")
         self.assertIn('data-ve-section-kind="first-screen"', html)
         msgs = _msgs(check_final_document(html, SKELETON, REGISTRY, components_dir=COMPONENTS))
-        # example-proposal.html predates the decision-recovery panel; it has a
-        # decision ask (sec-ask-decision) with no panel yet. Rebuilding the
-        # example from its .assembly.json is tracked separately (out of scope
-        # here) and will restore a clean pass.
-        self.assertEqual(msgs, ["decision ask があるのに回収パネルがありません"])
+        self.assertEqual(msgs, [])
 
 
 _FIRST_BLOCK = (
