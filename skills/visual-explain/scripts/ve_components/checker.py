@@ -1722,13 +1722,27 @@ def validate_notation_rules(content: str) -> list[Diagnostic]:
     return diagnostics
 
 
+def _extract_title_text(document: str) -> str | None:
+    """Return the text inside the TITLE:BEGIN/END slot, or None if markers absent."""
+    begin, end = "<!-- TITLE:BEGIN -->", "<!-- TITLE:END -->"
+    if document.count(begin) != 1 or document.count(end) != 1:
+        return None
+    body = document[document.index(begin) + len(begin):document.index(end)].strip()
+    lower = body.lower()
+    if lower.startswith("<title>") and lower.endswith("</title>"):
+        return body[len("<title>"):-len("</title>")].strip()
+    m = re.search(r"<title\b[^>]*>(.*?)</title>", body, re.IGNORECASE | re.S)
+    return m.group(1).strip() if m else (body or None)
+
+
 def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expected=None,
                          components_dir: Path | None = None) -> list[Diagnostic]:
     """Run the four-layer checker. Legacy documents pass unchanged.
 
     Layers: (1) safety/fixed regions, (2) IR/selection is enforced at build time,
     (3) component/manifest — manifest-to-DOM when ``expected`` is present, final
-    provenance/semantic attributes otherwise, (4) flattened-document safety.
+    provenance/semantic attributes otherwise, plus group-3 document structure,
+    (4) flattened-document safety.
     """
     text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
     skel = skeleton.decode("utf-8") if isinstance(skeleton, bytes) else skeleton
@@ -1745,6 +1759,11 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_artifact_semantics(content)
         diagnostics += validate_renderer_svg(content)
         diagnostics += validate_notation_rules(content)
+        # Group 3: honesty/structure. Skip on an empty content slot (e.g. raw
+        # skeleton) — finished component documents always carry body markup.
+        if content.strip():
+            from .document_checks import check_document_structure
+            diagnostics += check_document_structure(content, title=_extract_title_text(text))
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

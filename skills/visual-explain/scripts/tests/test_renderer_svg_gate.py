@@ -85,7 +85,11 @@ class RendererSvgGateTest(unittest.TestCase):
                 self.assertIn(RENDERER_SVG_VIOLATION, _check(name))
 
     def test_boundary_valid_fixture_passes(self) -> None:
-        self.assertEqual(_check("component-valid-svg-boundary.html"), set())
+        # Stale boundary HTML lacks typed first-screen; group 3 flags it.
+        # SVG gate itself must still be clean (no renderer_svg_violation).
+        codes = _check("component-valid-svg-boundary.html")
+        self.assertNotIn("renderer_svg_violation", codes)
+        self.assertIn("document_structure_violation", codes)
 
     def test_slope_structure_bad_fixture(self) -> None:
         codes = [d.code for d in check_final_document(
