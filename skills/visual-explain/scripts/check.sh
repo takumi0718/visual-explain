@@ -381,6 +381,8 @@ def run_selftest(script_dir: Path) -> int:
         ("structure-bad-duplicate-h1.html", ("h1 は first-screen 内にちょうど1個必要です",)),
         ("structure-bad-title-mismatch.html", ("title と h1 が一致しません",)),
         ("structure-bad-no-closing.html", ("closing セクションがありません",)),
+        ("structure-bad-panel-missing.html", ("decision ask があるのに回収パネルがありません",)),
+        ("structure-bad-panel-digest.html", ("回収パネルの ask 契約ダイジェストが一致しません",)),
     ]
     for filename, expected_errors in structure_cases:
         raw = (fixtures / filename).read_text("utf-8")

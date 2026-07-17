@@ -15,6 +15,7 @@ from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
+from .document_sections import compute_ask_digest_from_pairs
 from .validation import _CLOSING_REQUIRED, _DOCUMENT_PROFILES, _DOCUMENT_TYPES
 
 _VOID_TAGS = frozenset({
@@ -35,6 +36,7 @@ class _SectionNode:
     h1_texts: list[str] = field(default_factory=list)
     h2_texts: list[str] = field(default_factory=list)
     has_summary: bool = False
+    option_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -92,6 +94,12 @@ class _StructureParser(HTMLParser):
             self._paragraph_classes = classes
             self._paragraph_parts = []
             return
+
+        option_id = attr_map.get("data-ask-option-id")
+        if option_id:
+            ask_node = self._current_ask_decision()
+            if ask_node is not None:
+                ask_node.option_ids.append(option_id)
 
         if self._heading_tag and tag not in _VOID_TAGS:
             # Nested tags inside heading: still collect text via handle_data.
@@ -169,6 +177,15 @@ class _StructureParser(HTMLParser):
             return None
         node = self._open[self._first_screen_depth - 1]
         return node
+
+    def _current_ask_decision(self) -> _SectionNode | None:
+        """Innermost currently-open decision-typed ask wrapper, if any."""
+        if not self._open:
+            return None
+        node = self._open[-1]
+        if node is not None and node.kind == "ask" and node.attrs.get("data-ve-ask-type") == "decision":
+            return node
+        return None
 
     def _finish_heading(self, tag: str, text: str) -> None:
         if tag == "h1":
@@ -296,6 +313,7 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
     diagnostics.extend(_check_external_link_markers(content_markup))
     if profile == "strict":
         diagnostics.extend(_check_strict_excludes_extended(structure))
+    diagnostics.extend(_check_decision_panel(structure))
     return diagnostics
 
 
@@ -466,6 +484,75 @@ def _check_external_link_markers(content: str) -> list[Diagnostic]:
     parser.feed(content)
     parser.close()
     return parser.diagnostics
+
+
+def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
+    """Group-3: decision-recovery panel presence, position, and digest integrity.
+
+    Only typed ask wrappers (``data-ve-section-kind="ask"`` with
+    ``data-ve-ask-type="decision"``) count toward the decision-ask tally; the
+    panel's own summary ``<li>`` elements use a distinct attribute name and
+    never leak into ``option_ids``.
+    """
+    ask_nodes = [
+        s for s in structure.sections
+        if s.kind == "ask" and s.attrs.get("data-ve-ask-type") == "decision"
+    ]
+    panel_nodes = [s for s in structure.sections if s.kind == "decision-panel"]
+
+    if not ask_nodes:
+        if panel_nodes:
+            return [Diagnostic(
+                DOCUMENT_STRUCTURE_VIOLATION,
+                "decision ask がないのに回収パネルがあります",
+                "content",
+            )]
+        return []
+
+    if not panel_nodes:
+        return [Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "decision ask があるのに回収パネルがありません",
+            "content",
+        )]
+    if len(panel_nodes) != 1:
+        return [Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルはちょうど1個必要です",
+            "content",
+        )]
+
+    diagnostics: list[Diagnostic] = []
+    panel = panel_nodes[0]
+    panel_index = next(i for i, node in enumerate(structure.sections) if node is panel)
+    closing_indices = [
+        i for i, node in enumerate(structure.sections) if node.kind == "closing"
+    ]
+    if closing_indices and panel_index < max(closing_indices):
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルは closing の後に必要です",
+            "content",
+        ))
+
+    pairs = tuple((node.attrs.get("id", ""), tuple(node.option_ids)) for node in ask_nodes)
+    expected_digest = compute_ask_digest_from_pairs(pairs)
+    if panel.attrs.get("data-ve-ask-digest") != expected_digest:
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルの ask 契約ダイジェストが一致しません",
+            "content",
+        ))
+
+    required_attrs = ("data-ve-document-id", "data-ve-schema-version", "data-ve-document-path")
+    if any(not panel.attrs.get(attr) for attr in required_attrs):
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "回収パネルの自己表明属性が不足しています",
+            "content",
+        ))
+
+    return diagnostics
 
 
 def _check_strict_excludes_extended(structure: _DocStructure) -> list[Diagnostic]:
