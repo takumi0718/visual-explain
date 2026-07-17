@@ -175,7 +175,7 @@ matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/eviden
 
 `layers`・`compare`・`timeline`・`terms`・`details`・`stepper` は引き続き旧ルールの HTML マークアップとして互換節から始まる。`bars` と `kpi` は canonical に昇格済みであり、通常経路は canonical IR である（legacy HTML 節は互換用）。互換は決して canonical 成功ではなく、provenance の `reason` で区別される。
 
-skeleton 直編集（`assets/skeleton.html` をコピーして CONTENT を手書きする方式）は正規経路ではない。`build_explainer.py` を実行できない環境での最終手段としてだけ許され、その場合も `scripts/check.sh <絶対パス> --type <proposal|system|research>` を通し、資料が canonical 成功ではないことを利用者に報告する。同梱の `examples/example-proposal.html` は `examples/example-proposal.assembly.json` からの IR ビルド生成物であり、直編集の見本ではない。`--output` にそのまま渡した文字列が `data-ve-document-path` としてビルド生成物に自己記録されるため、この checked-in な見本を再ビルドするときは、リポジトリルートを cwd として `--output examples/example-proposal.html`（`skills/visual-explain/` からの相対パス）のように必ず相対パスで指定する。絶対パスで再ビルドすると、その時のワークツリー固有の絶対パスが `data-ve-document-path` に焼き込まれてコミットされてしまう（`.visual-explain/` に出力するユーザー生成文書では絶対パス指定のままでよい）。
+skeleton 直編集（`assets/skeleton.html` をコピーして CONTENT を手書きする方式）は正規経路ではない。`build_explainer.py` を実行できない環境での最終手段としてだけ許され、その場合も `scripts/check.sh <絶対パス> --type <proposal|system|research>` を通し、資料が canonical 成功ではないことを利用者に報告する。同梱の `examples/example-proposal.html` は `examples/example-proposal.assembly.json` からの IR ビルド生成物であり、直編集の見本ではない。`--output` にそのまま渡した文字列が `data-ve-document-path` としてビルド生成物に自己記録されるため、この checked-in な見本を再ビルドするときは、リポジトリルートを cwd として `--output skills/visual-explain/examples/example-proposal.html`（リポジトリルートからの相対パス）のように必ず相対パスで指定する。絶対パスで再ビルドすると、その時のワークツリー固有の絶対パスが `data-ve-document-path` に焼き込まれてコミットされてしまう（`.visual-explain/` に出力するユーザー生成文書では絶対パス指定のままでよい）。
 
 Attribution: visual-explainer (MIT) の固定図フォーマット、デザイン規則、目視確認の設計要素を参照した。
 Attribution: obra/superpowers 由来の提案ゲートと承認後ワークフローの設計要素を参照した。
