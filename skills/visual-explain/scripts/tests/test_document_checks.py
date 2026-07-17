@@ -637,7 +637,8 @@ class DecisionPanelStructureTest(unittest.TestCase):
         )
         content = _FIRST_BLOCK + fake_ask + _CLOSING_BLOCK
         msgs = _msgs(check_document_structure(content, title=None))
-        self.assertNotEqual(msgs, [])
+        expected_diagnostic = "自己閉じタグは許容されません（ブラウザとの解釈差異のため）: <section/>"
+        self.assertIn(expected_diagnostic, msgs)
 
     def test_self_closing_fake_panel_section_is_rejected(self) -> None:
         """A genuine, correctly-closed decision panel is present and valid,
@@ -657,7 +658,8 @@ class DecisionPanelStructureTest(unittest.TestCase):
             _FIRST_BLOCK + _ask_block() + _CLOSING_BLOCK + _panel_block(digest) + fake_panel
         )
         msgs = _msgs(check_document_structure(content, title=None))
-        self.assertNotEqual(msgs, [])
+        expected_diagnostic = "自己閉じタグは許容されません（ブラウザとの解釈差異のため）: <section/>"
+        self.assertIn(expected_diagnostic, msgs)
 
     def test_self_closing_fake_panel_fails_final_check(self) -> None:
         """End-to-end: a genuinely built decision document (real ask + real
