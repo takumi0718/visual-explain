@@ -365,7 +365,7 @@ _SAFE_ID_TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 
 
 def _is_safe_id_token(value: object) -> bool:
-    return isinstance(value, str) and _SAFE_ID_TOKEN_RE.match(value) is not None
+    return isinstance(value, str) and _SAFE_ID_TOKEN_RE.fullmatch(value) is not None
 
 
 def _is_single_sentence(value: str) -> bool:

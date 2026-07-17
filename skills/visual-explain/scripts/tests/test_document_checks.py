@@ -435,6 +435,55 @@ class DecisionPanelStructureTest(unittest.TestCase):
         msgs = _msgs(check_document_structure(content, title=None))
         self.assertNotEqual(msgs, [])
 
+    def test_option_id_with_quote_character_is_detected_as_unsafe(self) -> None:
+        """An option id is read by the fixed decision-panel binder script via
+        ``item.dataset.askOptionId`` and used as a selection-state key; the
+        same safe-token contract that protects the ask wrapper id must also
+        cover option ids. A hand-crafted final document can carry a
+        tampered, unsafe option id alongside a digest recomputed to match it
+        exactly — a checker that only re-derives the digest from whatever
+        option ids it collected, without validating their shape, would wave
+        this through. It must fail closed instead.
+        """
+        digest = compute_ask_digest_from_pairs((("sec-ask-decision", ('opt"a', "opt-b")),))
+        content = (
+            _FIRST_BLOCK
+            + _ask_block(option_ids=("opt&quot;a", "opt-b"))
+            + _CLOSING_BLOCK
+            + _panel_block(digest)
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertNotEqual(msgs, [])
+
+    def test_ask_id_with_trailing_newline_is_detected_as_unsafe(self) -> None:
+        """Python's ``$`` anchor matches just before a string-final newline
+        under ``re.match``, so a naive safe-token check using ``match``
+        would accept 'sec-ask-decision\\n' as if the trailing newline were
+        not there. A hand-crafted final document can render that newline as
+        ``&#10;`` inside the id attribute; the checker must reject it.
+        """
+        digest = compute_ask_digest_from_pairs((("sec-ask-decision\n", ("opt-a", "opt-b")),))
+        content = (
+            _FIRST_BLOCK
+            + _ask_block(section_id="sec-ask-decision&#10;")
+            + _CLOSING_BLOCK
+            + _panel_block(digest)
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertNotEqual(msgs, [])
+
+    def test_option_id_with_trailing_newline_is_detected_as_unsafe(self) -> None:
+        """Same trailing-newline gap as the ask id, but on an option id."""
+        digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("opt-a\n", "opt-b")),))
+        content = (
+            _FIRST_BLOCK
+            + _ask_block(option_ids=("opt-a&#10;", "opt-b"))
+            + _CLOSING_BLOCK
+            + _panel_block(digest)
+        )
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertNotEqual(msgs, [])
+
     def test_option_id_hidden_in_nested_section_is_detected_as_tampering(self) -> None:
         """An option tucked inside a plain nested <section> must still count
         toward the enclosing decision ask's digest — otherwise an option
@@ -505,7 +554,9 @@ class DecisionPanelStructureTest(unittest.TestCase):
         """``data-ask-option-id=""`` is attribute *presence*, not absence —
         a parser using truthiness (``if option_id:``) instead of
         ``"data-ask-option-id" in attr_map`` would silently drop it,
-        letting a forged digest computed without that option pass.
+        letting a forged digest computed without that option pass. (The
+        blank id is also, separately, an unsafe id shape — that diagnostic
+        is expected too and is not what this test is about.)
         """
         ask = (
             '<section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">\n'
@@ -521,7 +572,7 @@ class DecisionPanelStructureTest(unittest.TestCase):
         stale_digest = compute_ask_digest_from_pairs((("sec-ask-decision", ("opt-b",)),))
         content = _FIRST_BLOCK + ask + _CLOSING_BLOCK + _panel_block(stale_digest)
         msgs = _msgs(check_document_structure(content, title=None))
-        self.assertEqual(msgs, ["回収パネルの ask 契約ダイジェストが一致しません"])
+        self.assertIn("回収パネルの ask 契約ダイジェストが一致しません", msgs)
 
     def test_self_closing_fake_ask_section_is_rejected(self) -> None:
         """A self-closing ``<section .../>`` is invisible to a naive HTMLParser

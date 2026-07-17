@@ -530,11 +530,14 @@ def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
 
     # The fixed decision-panel binder script reads each ask's DOM ``.id``
     # property and splices it, unescaped, into a CSS attribute selector
-    # (``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``). An id
-    # shaped outside the safe token contract (e.g. containing a quote)
-    # breaks that selector's syntax at runtime. ``validate_assembly``
-    # already rejects this shape for freshly authored IR, but a
-    # hand-crafted final document must be caught here too.
+    # (``panel.querySelector(`[data-ve-panel-ask="${ask.id}"]`)``), and reads
+    # each option's id via ``item.dataset.askOptionId`` as a selection-state
+    # key. An id shaped outside the safe token contract (e.g. containing a
+    # quote or a trailing newline) breaks that selector's syntax, or the key
+    # comparison, at runtime. ``validate_assembly`` already rejects this
+    # shape for freshly authored IR, but a hand-crafted final document must
+    # be caught here too — for both the ask wrapper id and every option id,
+    # regardless of whether the digest happens to match.
     id_shape_diagnostics = [
         Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
@@ -543,6 +546,15 @@ def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
         )
         for node in ask_nodes
         if not _is_safe_id_token(node.attrs.get("id", ""))
+    ] + [
+        Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"decision ask の option id は安全な ID 形式ではありません: '{option_id}'",
+            "content",
+        )
+        for node in ask_nodes
+        for option_id in node.option_ids
+        if not _is_safe_id_token(option_id)
     ]
 
     if not ask_nodes:
