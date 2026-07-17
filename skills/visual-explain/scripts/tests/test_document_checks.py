@@ -317,6 +317,17 @@ class DocumentStructureValidTest(unittest.TestCase):
         msgs = _msgs(check_final_document(html, SKELETON, REGISTRY, components_dir=COMPONENTS))
         self.assertEqual(msgs, [])
 
+    def test_example_proposal_document_path_is_repo_relative(self) -> None:
+        # data-ve-document-path is the checked-in artifact's stable self-identity;
+        # it must not leak the absolute path of whatever machine/worktree it was
+        # last built on (regression: 95a3491 baked in a worktree absolute path).
+        example = SKILL / "examples" / "example-proposal.html"
+        html = example.read_text("utf-8")
+        match = re.search(r'data-ve-document-path="([^"]*)"', html)
+        self.assertIsNotNone(match, "data-ve-document-path missing from example-proposal.html")
+        self.assertEqual(
+            match.group(1), "skills/visual-explain/examples/example-proposal.html")
+
 
 _FIRST_BLOCK = (
     '<section data-ve-section-kind="first-screen"'
