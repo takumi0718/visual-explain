@@ -1,0 +1,16 @@
+--- ir-bad-no-first-screen.json ---
+FAIL: invalid_component_payload: first-screen は先頭にちょうど1個必要です [assembly.sections]
+exit:1
+no_output:ok
+--- ir-bad-no-closing.json ---
+FAIL: invalid_component_payload: closing は最後にちょうど1個必要です [assembly.sections]
+exit:1
+no_output:ok
+--- ir-bad-duplicate-h1.json ---
+FAIL: invalid_narrative_section: narrative に <h1> は置けません（h1 は first-screen 専有） [assembly.sections[1]]
+exit:1
+no_output:ok
+--- ir-bad-title-mismatch.json ---
+FAIL: invalid_narrative_section: narrative に <h1> は置けません（h1 は first-screen 専有） [assembly.sections[1]]
+exit:1
+no_output:ok

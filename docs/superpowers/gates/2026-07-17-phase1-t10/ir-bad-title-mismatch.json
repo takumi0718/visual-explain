@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "gate-title-mismatch",
+    "title": "構造なしすり抜け: title 不一致を試みる",
+    "summary": "Phase1 ゲート用。narrative で別 h1 を書いて title≠h1 を試みる。",
+    "type": "proposal",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "決めます。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-body",
+      "markup": "<h1>title と違う見出し</h1><p>本文。</p>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "リスクと弱い前提", "items": ["前提が弱い"]},
+        {"heading": "不確かな点", "items": ["未確認"]}
+      ]
+    }
+  ]
+}

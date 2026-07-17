@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "gate-no-closing",
+    "title": "構造なしすり抜け: closing 欠落",
+    "summary": "Phase1 ゲート用。closing なし。",
+    "type": "proposal",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "決めます。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-body",
+      "markup": "<p>本文のみ。</p>"
+    }
+  ]
+}

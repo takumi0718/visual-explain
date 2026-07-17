@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "gate-no-first",
+    "title": "構造なしすり抜け: first-screen 欠落",
+    "summary": "Phase1 ゲート用。first-screen なし。",
+    "type": "proposal",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "narrative",
+      "id": "sec-body",
+      "markup": "<p>本文のみ。</p>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "リスクと弱い前提", "items": ["前提が弱い"]},
+        {"heading": "不確かな点", "items": ["未確認"]}
+      ]
+    }
+  ]
+}

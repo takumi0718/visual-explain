@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "gate-research-external-link",
+    "title": "出典リンク付き最小調査報告",
+    "summary": "Phase1 ゲート用。https 出典とドメインマーカー描画を実証する。",
+    "type": "research",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "出典マーカー付きの調査報告がビルドできることを確認する。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-finding",
+      "markup": "<section aria-labelledby=\"finding\"><h2 id=\"finding\">見出しが自己完結な資料は差し戻しが減る</h2><p class=\"claim\">1発見1ブロックに出典を近傍へ置く。<a href=\"https://docs.example.org/page\">調査メモ</a></p></section>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "限界・反証・確度", "items": ["一次資料は架空ドメイン", "ゲート実証用の最小構成"]}
+      ]
+    }
+  ]
+}
