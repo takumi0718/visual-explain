@@ -197,6 +197,44 @@ class DecisionEngineEmbedTest(unittest.TestCase):
         self.assertIn("/* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */", SKELETON)
 
 
+class DecisionOptionCardInteractionTest(unittest.TestCase):
+    """選択肢の枠全体を選択操作面にする改修。旧・個別「この案を選ぶ」ボタン方式を廃止する。"""
+
+    def _collection_block(self):
+        begin = "/* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */"
+        end = "</script>"
+        return SKELETON.split(begin, 1)[1].split(end, 1)[0]
+
+    def test_no_legacy_select_button_is_created(self):
+        block = self._collection_block()
+        self.assertNotIn("この案を選ぶ", block)
+        self.assertNotIn("'data-ask-select'", block)
+        self.assertNotIn("'ask-select'", block)
+
+    def test_option_item_becomes_the_interactive_surface(self):
+        block = self._collection_block()
+        self.assertIn("item.setAttribute('role', 'button')", block)
+        self.assertIn("item.setAttribute('tabindex', '0')", block)
+        self.assertIn("item.addEventListener('click', select)", block)
+
+    def test_option_item_responds_to_enter_and_space(self):
+        block = self._collection_block()
+        self.assertIn("item.addEventListener('keydown'", block)
+        self.assertIn("event.key !== 'Enter'", block)
+        self.assertIn("event.key !== ' '", block)
+        self.assertIn("event.preventDefault()", block)
+
+    def test_aria_pressed_syncs_on_the_item_itself(self):
+        block = self._collection_block()
+        self.assertIn("item.setAttribute('aria-pressed', String(selected))", block)
+        self.assertNotIn("querySelector('button[data-ask-select]')", block)
+
+    def test_option_focus_style_extends_to_the_option_card(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(".ask-options [data-ask-option]:focus-visible", style)
+        self.assertNotIn(".ask-select {", style)
+
+
 class ResponsiveLayoutTest(unittest.TestCase):
     """design spec 2026-07-13: 流体ルートスケールと二層幅の骨格規則を固定する。"""
 

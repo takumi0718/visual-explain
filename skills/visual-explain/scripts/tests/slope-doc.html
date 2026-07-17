@@ -102,7 +102,7 @@
     h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
     a { color: var(--accent-strong); }
     button, summary, a { outline-offset: 3px; }
-    button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); }
+    button:focus-visible, summary:focus-visible, a:focus-visible, .ask-options [data-ask-option]:focus-visible { outline: 3px solid var(--focus); }
     button { font: inherit; color: inherit; background: var(--surface); border: 0; border-radius: .4rem; padding: var(--space-1) var(--space-2); cursor: pointer; }
     button:hover:not(:disabled) { background: var(--border); }
     button:disabled { color: var(--text-dim); cursor: not-allowed; }
@@ -206,7 +206,6 @@
     /* 図表記法 */
     .dg-em { color: var(--dg-emphasis); font-weight: 700; }
 
-    .ask-select { justify-self: start; margin-top: var(--space-1); }
     .ask-options [data-ask-option][data-ask-selected] { outline: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
     .ask-memo { display: grid; gap: var(--space-1); margin-top: var(--space-2); }
     .ask-memo textarea, .decision-panel textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; max-width: 100%; }
@@ -690,8 +689,7 @@ figure[data-ve-component="slope"] .ve-fig-unit {
           const selected = state.selections[ask.id] === item.dataset.askOptionId;
           if (selected) item.setAttribute('data-ask-selected', '');
           else item.removeAttribute('data-ask-selected');
-          const button = item.querySelector('button[data-ask-select]');
-          if (button) button.setAttribute('aria-pressed', String(selected));
+          item.setAttribute('aria-pressed', String(selected));
         });
         const row = engine.findPanelRow(
           Array.from(panel.querySelectorAll('li[data-ve-panel-ask]')), ask.id);
@@ -709,18 +707,19 @@ figure[data-ve-component="slope"] .ve-fig-unit {
     };
     askSections.forEach((section) => {
       section.querySelectorAll('[data-ask-option]').forEach((item) => {
-        const label = (item.querySelector('span')?.textContent || '').trim();
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'ask-select';
-        button.setAttribute('data-ask-select', '');
-        button.setAttribute('aria-pressed', 'false');
-        button.textContent = `この案を選ぶ（${label}）`;
-        button.addEventListener('click', () => {
+        item.setAttribute('role', 'button');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('aria-pressed', 'false');
+        const select = () => {
           state = engine.selectOption(state, section.id, item.dataset.askOptionId, contract);
           persist(); render();
+        };
+        item.addEventListener('click', select);
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          select();
         });
-        item.append(button);
       });
       const memoField = section.querySelector('textarea[data-ask-memo]');
       if (memoField) {
