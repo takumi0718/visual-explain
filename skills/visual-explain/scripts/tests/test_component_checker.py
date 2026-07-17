@@ -649,22 +649,19 @@ class MixedAndWeakModelFinalTest(unittest.TestCase):
 
 
 class VerificationMatrixTest(unittest.TestCase):
-    """Verification documents must pass group-3 structure checks.
+    """Verification documents must pass group-3 structure checks."""
 
-    Pre-typed committed HTML (matrix-doc-*.html) is intentionally rejected by
-    group 3 until Task 9 resplices fixtures. Fresh IR builds must pass.
-    """
-
-    STALE_DOCS = ["matrix-doc-long-titles.html", "matrix-doc-mixed-density.html",
+    TYPED_DOCS = ["matrix-doc-long-titles.html", "matrix-doc-mixed-density.html",
                   "matrix-doc-all-notations.html"]
 
-    def test_stale_verification_docs_fail_group3_structure(self) -> None:
-        for name in self.STALE_DOCS:
+    def test_typed_verification_docs_pass_group3_structure(self) -> None:
+        for name in self.TYPED_DOCS:
             with self.subTest(doc=name):
                 raw = (TESTS / name).read_text("utf-8")
-                msgs = [d.message for d in check_final_document(
-                    raw, SKELETON, REGISTRY, components_dir=COMPONENTS)]
-                self.assertIn("文書型の自己表明がありません", msgs)
+                self.assertEqual(
+                    check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS),
+                    [],
+                )
 
     def test_fresh_matrix_assembly_passes_checker_and_check_sh(self) -> None:
         html_doc = build("component-valid-matrix.json")
@@ -714,11 +711,12 @@ class EnumerationDocRegressionTest(unittest.TestCase):
             [],
         )
 
-    def test_stale_enumeration_doc_fails_group3(self) -> None:
+    def test_enumeration_doc_passes_group3(self) -> None:
         raw = (TESTS / "enumeration-doc.html").read_text("utf-8")
-        msgs = [d.message for d in check_final_document(
-            raw, SKELETON, REGISTRY, components_dir=COMPONENTS)]
-        self.assertIn("文書型の自己表明がありません", msgs)
+        self.assertEqual(
+            check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS),
+            [],
+        )
 
 
 class ChevronDocRegressionTest(unittest.TestCase):
@@ -753,13 +751,14 @@ class ChevronDocRegressionTest(unittest.TestCase):
                     [],
                 )
 
-    def test_stale_chevron_docs_fail_group3(self) -> None:
-        for stale, _assembly in self.ASSEMBLIES:
-            with self.subTest(name=stale):
-                raw = (TESTS / stale).read_text("utf-8")
-                msgs = [d.message for d in check_final_document(
-                    raw, SKELETON, REGISTRY, components_dir=COMPONENTS)]
-                self.assertIn("文書型の自己表明がありません", msgs)
+    def test_chevron_docs_pass_group3(self) -> None:
+        for name, _assembly in self.ASSEMBLIES:
+            with self.subTest(name=name):
+                raw = (TESTS / name).read_text("utf-8")
+                self.assertEqual(
+                    check_final_document(raw, SKELETON, REGISTRY, components_dir=COMPONENTS),
+                    [],
+                )
 
 
 class PyramidDocRegressionTest(unittest.TestCase):

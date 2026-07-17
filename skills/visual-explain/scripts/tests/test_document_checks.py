@@ -254,17 +254,11 @@ class DocumentStructureValidTest(unittest.TestCase):
         self.assertIn("文書型の自己表明がありません", msgs)
         self.assertIn("closing セクションがありません", msgs)
 
-    def test_example_proposal_passes_group3_when_typed_migration_present(self) -> None:
-        # TODO(Task 9): example-proposal.html を型付き IR で再生成したら、このテストは
-        # SKIP せずに常時実行される。移行前は first-screen 自己表明が無いため skip。
+    def test_example_proposal_passes_group3(self) -> None:
         example = SKILL / "examples" / "example-proposal.html"
-        if not example.is_file():
-            self.skipTest("example-proposal.html is missing")
+        self.assertTrue(example.is_file(), "example-proposal.html is missing")
         html = example.read_text("utf-8")
-        if 'data-ve-section-kind="first-screen"' not in html:
-            self.skipTest(
-                "example-proposal.html not yet migrated to typed first-screen (Task 9)"
-            )
+        self.assertIn('data-ve-section-kind="first-screen"', html)
         self.assertEqual(
             check_final_document(html, SKELETON, REGISTRY, components_dir=COMPONENTS),
             [],
