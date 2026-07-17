@@ -1,43 +1,142 @@
 # 構成と図フォーマットの契約
 
-この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（provenance 必須）の section として一つの assembly に読み順で並べる。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
+この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
 ## 共通契約
 
-- **見出しはアクションタイトル**にする。述語を持つ自己完結した主張だけを見出しにし、トピック名（「性能について」「代替案」）を禁じる。「案Aは案Bより速いが検証が要る」のように、見出しだけで何を判断すべきかが分かる一文にする。1見出し＝1洞察、40〜50字を目安にする。資料型テンプレートが必須と定める末尾の固定セクション見出し（「リスクと弱い前提」「不確かな点」「限界・確度」「限界・反証・確度」）は構造上のランドマークであり、アクションタイトル契約の適用外とする。それ以外の全セクション見出しには契約を適用する。
+- **見出しはアクションタイトル**にする。述語を持つ自己完結した主張だけを見出しにし、トピック名（「性能について」「代替案」）を禁じる。「案Aは案Bより速いが検証が要る」のように、見出しだけで何を判断すべきかが分かる一文にする。1見出し＝1洞察、40〜50字を目安にする。資料型テンプレートが必須と定める末尾の固定セクション見出し（「リスクと弱い前提」「不確かな点」「限界・確度」「限界・反証・確度」）は構造上のランドマークであり、アクションタイトル契約の適用外とする。それ以外の全セクション見出しには契約を適用する。h1 は `first-screen`（`document.title` 由来）専有であり、narrative に `<h1>` は置けない。
 - **horizontal logic 自己検査**: 資料を完成させる前に、見出しだけを上から順に読め。見出しの列だけで承認/却下を判断できなければ、見出しを書き直す。
 - **キャプションは takeaway**にする。図のキャプションはその図から持ち帰る1文にし、図の説明文・操作手順・凡例の言い換えを書かない（下記「図のキャプション規約」）。
 
 ## Pi/Katsura Qwen 固有の保守的縮退
 
-Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文どおりに保持するか引用する。順序が明示的な必須事実でない限り矢印や連番を描かず、許される推論は対象の直近で **推論** と明記する。因果・順序が不確かなら、flow ではなく `matrix`、`terms`、または文章を使う。この追加制約は同モデル専用であり、一般の図契約を緩めない。
+Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文どおりに保持するか引用する。順序が明示的な必須事実でない限り矢印や連番を描かず、許される推論は対象の直近で **推論** と明記する。因果・順序が不確かなら、flow ではなく `matrix`、`terms`、または文章を使う。この追加制約は同モデル専用であり、一般の図契約を緩めない。`profile` は `strict` を既定にする。
 
-## 資料型の構成テンプレート
+## 資料型の構成テンプレート（型付き IR）
 
 ### 提案承認型
 
-1. 第一画面は `first-screen` を使い、`h1` タイトルに資料全体の主張を1文で置く（述語を持つ1文にしてトピック名を禁じ、40字目安。`<title>` 要素と同文にする）。続けて `subtitle` に**あなたが決めること**を1文で置く（判断のない資料型では「この資料が答える問い」を1文にする）。最後に判断を左右する条件を最大2件だけ置く。同じ判断文を末尾に重複させない。第三者が第一画面を3秒見て「何の話か」「何を判断するか」を答えられる状態にする。
-2. 新出用語が多いときだけ、先に用語表を置く。
-3. 現状と問題を図で示す。
-4. 提案は before/after を等しい大きさで並べる。
-5. 検討した代替案とトレードオフを比較表にする。単一案を決め打ちしない。
-6. 末尾に「リスクと弱い前提」と「不確かな点」を必ず置く。
+```json
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "proposal-example",
+    "title": "料金改定は限定対象で段階公開する",
+    "summary": "未確認の例外を含む改定を、限定対象で開始するか判断する。",
+    "type": "proposal",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "限定対象で開始するか決めます。",
+      "conditions": [
+        "撤回条件を公開前に合意できること",
+        "対象顧客群が根拠と一致していること"
+      ]
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-problem",
+      "markup": "<section aria-labelledby=\"problem\"><h2 id=\"problem\">部門別確認のままでは影響範囲を一度に検証できない</h2><p class=\"claim\">同じ顧客群への例外と撤回条件を横断できない。</p></section>"
+    },
+    {
+      "kind": "ask",
+      "id": "sec-ask-decision",
+      "askType": "decision",
+      "question": "限定対象で開始しますか？",
+      "options": [
+        {"id": "limited", "label": "限定対象で公開する", "tradeoff": "運用が追加で必要"},
+        {"id": "all", "label": "一斉公開する", "tradeoff": "影響範囲が最初から広い"}
+      ],
+      "defaultId": "limited"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "リスクと弱い前提", "items": ["例外分類が誤ると不利益が残る"]},
+        {"heading": "不確かな点", "items": ["撤回に要する時間は未検証"]}
+      ]
+    }
+  ]
+}
+```
+
+読み順の要点: 新出用語が多いときだけ用語表（narrative）を先に置く。現状と問題・before/after・代替案比較は narrative / canonical / compatibility で続ける。同じ判断文を末尾に重複させない。
 
 ### 仕組み理解型
 
-1. TL;DR で仕組みを一言で示す。`subtitle` を使う場合は、あなたが決めることの代わりに「この資料が答える問い」を1文で示す。
-2. 新出用語が多いときだけ、先に用語表を置く。
-3. 全体地図で zoom-out の構造を示す。
-4. 主要フローでデータまたは処理の流れを示す。動きが核心ならステッパーを使う。
-5. 判断に不要な検証過程と補足だけを `deep-dive` に入れる。
-6. 末尾に「限界・確度」を置き、推論で補った箇所を明示する。
+```json
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "system-example",
+    "title": "承認地図は根拠と顧客影響を一つの経路で照合する",
+    "summary": "共同承認の経路を理解するための仕組み説明。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "この仕組みはなぜ安全か。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-map",
+      "markup": "<section aria-labelledby=\"map\"><h2 id=\"map\">全体地図で責務の境界を一度に見渡せる</h2><p class=\"claim\">根拠・影響・承認・撤回が一つの経路につながる。</p></section>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "限界・確度", "items": ["推論で補った箇所がある"]}
+      ]
+    }
+  ]
+}
+```
+
+読み順の要点: 全体地図 → 主要フロー（動きが核心ならステッパー）→ 判断に不要な検証は `deep-dive`。
 
 ### 調査報告型
 
-1. 結論または推奨を最初に示す。`subtitle` を使う場合は、あなたが決めることの代わりに「この資料が答える問い」を1文で示す。
-2. 主要な発見は、1発見につき1ブロックにし、近傍に出典リンクを置く。
-3. 定量データが必要なときだけ可視化する。
-4. 末尾に「限界・反証・確度」を置く。
+```json
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "research-example",
+    "title": "見出し列だけで判断できる資料は承認が速い",
+    "summary": "見出し品質と承認速度の関係を調べた結果。",
+    "type": "research",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "decision": "見出し品質は承認速度を左右するか。"
+    },
+    {
+      "kind": "narrative",
+      "id": "sec-finding",
+      "markup": "<section aria-labelledby=\"finding\"><h2 id=\"finding\">見出しが自己完結な資料は差し戻しが減る</h2><p class=\"claim\">1発見1ブロックに出典を近傍へ置く。<a href=\"https://example.com/report\">調査メモ</a></p></section>"
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {"heading": "限界・反証・確度", "items": ["サンプルが小さいため一般化は未確認"]}
+      ]
+    }
+  ]
+}
+```
+
+読み順の要点: 主要な発見は 1 発見 1 ブロック。定量が必要なときだけ可視化する。外部 `href` は `https:` のみ（レンダラが `link-domain` マーカーを付与する）。
 
 ## 図のキャプション規約
 
@@ -63,48 +162,57 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 </section>
 ```
 
-### ask ブロック — 未決事項・依頼・検証待ち主張
+### ask セクション — 未決事項・依頼・検証待ち主張
 
-読み手に判断・行動・検証を求める箇所は ask ブロックで明示する。使い分けは次の1行ずつ。
+読み手に判断・行動・検証を求める箇所は `kind: "ask"` で明示する（narrative に `.ask` 生 HTML を書かない）。使い分けは次の1行ずつ。
 
-- **未決事項は `decision`**: これから決める選択。選択肢を2件以上並べ、各選択肢にトレードオフを添える。
-- **ユーザーへの依頼は `request`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
-- **検証待ち主張は `hypothesis`**: まだ確証がない主張と、その検証方法。
+- **未決事項は `askType: "decision"`**: これから決める選択。選択肢を2件以上並べ、各選択肢にトレードオフを添える。
+- **ユーザーへの依頼は `askType: "request"`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
+- **検証待ち主張は `askType: "hypothesis"`**: まだ確証がない主張と、その検証方法。
 
-`decision`。選択肢は2件以上。既定案（推奨）は1件が原則で、`data-ask-default` を付ける。既定案を0件にするなら `.ask-no-default-reason` で理由を書け（既定を示さない理由の明示が必須）。選択チップは青（`--accent`）、既定案は緑（`--positive`）で示される。
+`decision`。選択肢は2件以上。既定案は `defaultId`（options の id）か、既定なし理由の `noDefaultReason` のどちらか一方。レンダラ出力では選択チップは青（`--accent`）、既定案は緑（`--positive`）。
 
-```html
-<div class="ask" data-ask="decision">
-  <p class="ask-kind">判断してください</p>
-  <p class="ask-question">注釈を今回に含めますか？</p>
-  <ul class="ask-options">
-    <li data-ask-option data-ask-default><span>含める</span><span class="ask-tradeoff">変更量が増える</span></li>
-    <li data-ask-option><span>次フェーズ</span><span class="ask-tradeoff">効果が遅れる</span></li>
-  </ul>
-</div>
+```json
+{
+  "kind": "ask",
+  "id": "sec-ask-decision",
+  "askType": "decision",
+  "question": "注釈を今回に含めますか？",
+  "options": [
+    {"id": "include", "label": "含める", "tradeoff": "変更量が増える"},
+    {"id": "later", "label": "次フェーズ", "tradeoff": "効果が遅れる"}
+  ],
+  "defaultId": "include"
+}
 ```
 
-`request`。各手順に `data-ask-role`（`user` / `agent` などの意味ロール）と、表示名の `data-ask-role-label` を付ける。ロールは日本語表示名ではなく意味的な値にする。ask-kind チップはモノクロで、警告色にしない。
+`request`。各手順に意味ロール（`user` / `agent` / `third-party`）と表示名を付ける。
 
-```html
-<div class="ask" data-ask="request">
-  <p class="ask-kind">お願いする動作</p>
-  <ol class="ask-steps">
-    <li data-ask-role="user" data-ask-role-label="あなた">specをレビューする</li>
-    <li data-ask-role="agent" data-ask-role-label="Claude">planを執筆する</li>
-  </ol>
-</div>
+```json
+{
+  "kind": "ask",
+  "id": "sec-ask-request",
+  "askType": "request",
+  "steps": [
+    {"role": "user", "roleLabel": "あなた", "text": "specをレビューする"},
+    {"role": "agent", "roleLabel": "Claude", "text": "planを執筆する"}
+  ]
+}
 ```
 
-`hypothesis`。主張には確度バッジ（`certainty` の3値）を `ask-claim` の中に置き、`ask-verify` で検証方法を書く。ask-kind チップはモノクロ。
+`hypothesis`。主張テキストと確度（`confirmed` / `inferred` / `unverified`）、検証方法を書く。
 
-```html
-<div class="ask" data-ask="hypothesis">
-  <p class="ask-kind">検証待ちの仮説</p>
-  <p class="ask-claim">見出しだけで判断できる <span class="certainty inferred">推論</span></p>
-  <p class="ask-verify">検証方法: 見出し列のみで判断内容を言えるか確認する</p>
-</div>
+```json
+{
+  "kind": "ask",
+  "id": "sec-ask-hypothesis",
+  "askType": "hypothesis",
+  "claim": {"text": "見出しだけで判断できる", "certainty": "inferred"},
+  "verify": "検証方法: 見出し列のみで判断内容を言えるか確認する"
+}
 ```
+
+レンダラ出力の HTML 契約（`.ask` / `data-ask` / `.ask-options` 等）は checker が検証する。モデルは HTML を手書きせず IR だけを書く。
 
 ## 図フォーマット
 

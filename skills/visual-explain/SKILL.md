@@ -43,8 +43,8 @@ license: MIT
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
 4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
-5. **構成する:** assembly IR（JSON）を書く。`document`（id / title / summary）と `sections[]` に、散文（第一画面、主張と根拠、末尾節）は `kind: "narrative"`、図は `kind: "canonical"` を読み順で置き、`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し・段落・リスト・`details`・`.ask` など。`style` / `script` / `meta` / `iframe` / `form` / `link` / `base` / `object` / `embed`、インライン `style` 属性、`on*` イベント属性、外部 URL は禁止）で、結論先行、必要時の用語表、型ごとの本文、必須の末尾節を入れる。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
-6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
+5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
+6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・summary 描画・外部リンクのドメインマーカーを検証する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
 8. **保存する:** 下の保存規約に従い、衝突を避けて資料を保存する。
 9. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
@@ -52,23 +52,25 @@ license: MIT
 
 ## 型と第一画面
 
-### 提案承認型
+`document.type` / `document.profile` を IR で宣言する。第一画面・末尾節・ask は型付きセクション（`first-screen` / `closing` / `ask`）で書き、レンダラが構成する。h1 と `<title>` の正本は `document.title` のみ（first-screen が描画する）。`document.summary` も first-screen に描画される。
 
-第一画面は次の **3 要素だけ**に固定する。
+### 提案承認型（`type: "proposal"`）
 
-1. 提案または推奨を 1 文。
-2. **あなたが決めること**を 1 文。
-3. 判断を左右する条件を最大 2 件。
+`first-screen` は次の **3 要素だけ**に固定する。
 
-同じ判断文を末尾に重複させない。第三者が第一画面を 3 秒見て「何の話か」「何を判断するか」を答えられなければ作り直す。新出用語が多いときだけ用語表を先に置き、現状と問題、等サイズで並べた before/after、代替案とトレードオフの比較を続ける。末尾の「リスクと弱い前提」「不確かな点」は省略しない。
+1. `document.title`（提案または推奨を 1 文。トピック名禁止）。
+2. `decision`（**あなたが決めること**を 1 文）。
+3. `conditions`（判断を左右する条件を最大 2 件）。
 
-### 仕組み理解型
+同じ判断文を末尾に重複させない。第三者が第一画面を 3 秒見て「何の話か」「何を判断するか」を答えられなければ作り直す。新出用語が多いときだけ用語表を先に置き、現状と問題、等サイズで並べた before/after、代替案とトレードオフの比較を続ける。`closing` の「リスクと弱い前提」「不確かな点」は省略しない。
 
-TL;DR、必要時の用語表、全体地図、主要フロー、判断に不要な補足の `details`、末尾の「限界・確度」を置く。推論で補った箇所を明示する。
+### 仕組み理解型（`type: "system"`）
 
-### 調査報告型
+`first-screen` の `decision` は「この資料が答える問い」として 1 文。必要時の用語表、全体地図、主要フロー、判断に不要な補足の `details`、`closing` の「限界・確度」を置く。推論で補った箇所を明示する。
 
-結論または推奨を最初に置く。主要な発見は 1 発見 1 ブロックとし、出典リンクを近傍に置く。定量データが必要な場合だけ可視化し、末尾に「限界・反証・確度」を置く。
+### 調査報告型（`type: "research"`）
+
+結論または推奨を `document.title` と本文の先頭に置く。主要な発見は 1 発見 1 ブロックとし、出典リンク（`https:`）を近傍に置く（レンダラがドメインマーカーを付与する）。定量データが必要な場合だけ可視化し、`closing` に「限界・反証・確度」を置く。
 
 ## 図と説明の文法
 
@@ -128,9 +130,11 @@ TL;DR、必要時の用語表、全体地図、主要フロー、判断に不要
 
 ## 保存規約と縮退規則
 
+保存前に、assembly の `document.type` / `document.profile` と型付きセクション（先頭 `first-screen`・末尾 `closing`・必要なら `ask`）が揃っていることを確認する。生成 HTML は文書型と profile を data 属性で自己表明し、`check.sh` の検査群③がそれを読む。
+
 git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外では `~/.visual-explain/` に保存する。ファイル名は `YYYY-MM-DD-<slug>.html` とする。同名があるときは上書きせず `-HHMM` を付ける。
 
-リポジトリ内では `.gitignore` を編集しない。`git rev-parse --git-path info/exclude` で取得したファイルに `.visual-explain/` を追記してローカル除外する。書き込めない場合は、生成時にコミット対象に入らないよう注意を添える。自動削除はしない。生成時に 30 日超のファイルが 20 件を超えていたら一言知らせ、削除はユーザーに委ねる。恒久保存はユーザーが別の保管場所へ昇格する。
+リポジトリ内では `.gitignore` を編集しない。`git rev-parse --git-path info/exclude` で取得したファイルに `.visual-explain/` を追記してローカル除外する。書き込めない場合は、生成時にコミット対象に入らないよう注意を添える。自動削除はしない。生成時に 30 日超のファイルが 20 件を超えていたら一言知らせ、削除はユーザーに委ねる。恒久保存はユーザーが別の保管場所へ昇格する。弱モデル（Pi/Katsura 等）では `profile: "strict"` を既定にし、extended 限定の表現へ逃げない。
 
 利用可能なモデルが固定ライブラリ、説明文法、正確性、無操作の不変条件を満たす資料を安定して作れない場合は、図を諦める。`matrix`、`terms`、または簡潔な文章へ縮退し、見栄えのために自由 SVG や動きを追加しない。縮退の具体的な適用基準は、別途の評価結果に従って確定する。
 
@@ -153,7 +157,7 @@ enumeration / chevron ではコンセプト（`label` または番号＋必須`t
 2. **レジストリで発見する** — 宣言した関係とケイパビリティで候補を絞る（集合包含のみ、ランキングなし）。
 3. **決定的な候補から明示選択する** — `selection.component` と `version` を候補集合から明示的に選ぶ。
 4. **一致ケイパビリティの理由を記録する** — `selection.matchedCapabilities` は宣言とレジストリの両方に存在する必要がある。
-5. **ビルドして検証する** — 散文は同じ assembly 内に `kind: "narrative"` セクションとして共存させる。`python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>`（`--type` 不要、経路自動検出）で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書）を検証する。
+5. **ビルドして検証する** — 型付きセクション（`first-screen` / `closing` / `ask`）と散文（`narrative`）・図（`canonical`）を同じ assembly に読み順で共存させる。`python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>`（`--type` 不要、経路自動検出）で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書＝検査群③を含む）を検証する。
 
 matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
 
