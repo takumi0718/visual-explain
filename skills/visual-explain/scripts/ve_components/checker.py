@@ -151,12 +151,20 @@ _HREF_HTTPS_OR_ANCHOR_MSG = "外部リンクは https の絶対 URL か # アン
 
 
 def _is_absolute_https(url: str) -> bool:
-    """True when url is an absolute https: URL with a non-empty hostname."""
+    """True when url is an absolute https: URL with a non-empty hostname.
+
+    Malformed https URLs that make ``urlsplit`` / ``.hostname`` raise
+    ``ValueError`` (e.g. broken IPv6 brackets, fullwidth ``＠`` in netloc)
+    return False so callers emit the standard href diagnostic instead of crashing.
+    """
     from urllib.parse import urlsplit
 
     if not url.lower().startswith("https://"):
         return False
-    return bool(urlsplit(url).hostname)
+    try:
+        return bool(urlsplit(url).hostname)
+    except ValueError:
+        return False
 
 
 class _ContentSafetyParser(HTMLParser):

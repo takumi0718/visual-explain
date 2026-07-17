@@ -103,6 +103,18 @@ class NarrativeHttpsHrefTest(unittest.TestCase):
         self.assertTrue(diags)
         self.assertIn("外部参照は禁止です: https://example.com/a.png", diags[0].message)
 
+    def test_malformed_ipv6_https_rejected_as_diagnostic(self) -> None:
+        """urlsplit ValueError must become the standard href diagnostic, not a crash."""
+        diags = _diags('<p><a href="https://[">x</a></p>', section_kind="narrative")
+        self.assertTrue(diags)
+        self.assertIn(f"{_DIAG}: https://[", diags[0].message)
+
+    def test_fullwidth_at_in_netloc_rejected_as_diagnostic(self) -> None:
+        url = "https://example＠evil.com/x"
+        diags = _diags(f'<p><a href="{url}">x</a></p>', section_kind="narrative")
+        self.assertTrue(diags)
+        self.assertIn(f"{_DIAG}: {url}", diags[0].message)
+
 
 class CompatibilityKeepsLegacyTest(unittest.TestCase):
     def test_compatibility_still_rejects_https_href(self) -> None:
