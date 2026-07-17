@@ -184,6 +184,19 @@ class ColorDisciplineAuditTest(unittest.TestCase):
                                 f"意味色が判断状態以外のセレクタに使われています: {selector.strip()[:80]}")
 
 
+class DecisionEngineEmbedTest(unittest.TestCase):
+    def test_skeleton_embeds_engine_core_verbatim(self):
+        core = (Path(__file__).resolve().parent / "runtime" / "decision_engine.js").read_text("utf-8")
+        begin = "/* FIXED DECISION ENGINE CORE:BEGIN"
+        end = "/* FIXED DECISION ENGINE CORE:END */"
+        self.assertIn(begin, SKELETON)
+        embedded = SKELETON.split(begin, 1)[1].split("*/", 1)[1].split(end, 1)[0]
+        self.assertEqual(embedded.strip(), core.strip())
+
+    def test_skeleton_has_decision_collection_block(self):
+        self.assertIn("/* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */", SKELETON)
+
+
 class ResponsiveLayoutTest(unittest.TestCase):
     """design spec 2026-07-13: 流体ルートスケールと二層幅の骨格規則を固定する。"""
 

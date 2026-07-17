@@ -143,7 +143,10 @@ class BuildDocumentDecisionPanelTest(unittest.TestCase):
             _assembly(decision_ask=False), REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR,
             document_path="out.html",
         )
-        self.assertNotIn('data-ve-section-kind="decision-panel"', doc)
+        # The skeleton's fixed decision-collection JS embeds this attribute string
+        # inside a querySelector call regardless of panel presence (Task 5), so the
+        # section-tag assertion checks the opening tag rather than a bare substring.
+        self.assertNotIn('<section data-ve-section-kind="decision-panel"', doc)
 
 
 class BuildCliDocumentPathTest(unittest.TestCase):
