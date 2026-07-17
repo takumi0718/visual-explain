@@ -205,11 +205,15 @@ def process_compatibility_section(section: CompatibilitySection) -> WrappedCompa
 
 
 def _linecol_to_index(text: str, lineno: int, col: int) -> int:
-    """Convert 1-based lineno + 0-based col (HTMLParser.getpos) to a string index."""
-    if lineno <= 1:
-        return col
-    lines = text.splitlines(keepends=True)
-    return sum(len(lines[i]) for i in range(lineno - 1)) + col
+    """Convert 1-based lineno + 0-based col (HTMLParser.getpos) to a string index.
+
+    HTMLParser counts lines by "\n" only; splitting on universal newlines
+    (splitlines) would also break on lone "\r" and desynchronize offsets.
+    """
+    offset = 0
+    for _ in range(lineno - 1):
+        offset = text.index("\n", offset) + 1
+    return offset + col
 
 
 def insert_link_domain_markers(markup: str) -> str:

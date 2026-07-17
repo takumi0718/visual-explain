@@ -234,3 +234,32 @@ class DomainMarkerTest(unittest.TestCase):
         doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR)
         self.assertIn('href="https://docs.example.org/guide"', doc)
         self.assertIn('<span class="link-domain">‹docs.example.org›</span>', doc)
+
+
+class T07EdgeCaseTest(unittest.TestCase):
+    def test_lone_cr_before_lf_does_not_shift_marker(self) -> None:
+        # HTMLParser は \n だけを行として数えるが、splitlines は \r も分割する。
+        # 単独 CR を含む markup でマーカーが </a> の直前に入ることを固定する。
+        from ve_components.assembly import insert_link_domain_markers
+
+        markup = '<p>\rfoo\n<a href="https://example.com">x</a></p>'
+        result = insert_link_domain_markers(markup)
+        self.assertEqual(
+            result,
+            '<p>\rfoo\n<a href="https://example.com">x'
+            '<span class="link-domain">‹example.com›</span></a></p>',
+        )
+
+    def test_namespaced_external_href_rejected_in_narrative(self) -> None:
+        from ve_components.checker import validate_content_markup
+
+        markup = '<svg viewBox="0 0 10 10"><a xlink:href="https://example.com">x</a></svg>'
+        diags = validate_content_markup(markup, section_kind="narrative")
+        self.assertTrue(any("名前空間つき href では外部リンクを使えません" in d.message for d in diags))
+
+    def test_namespaced_anchor_href_still_allowed(self) -> None:
+        from ve_components.checker import validate_content_markup
+
+        markup = '<svg viewBox="0 0 10 10"><a xlink:href="#sec-a">x</a></svg>'
+        diags = validate_content_markup(markup, section_kind="narrative")
+        self.assertFalse(any("名前空間つき" in d.message for d in diags))

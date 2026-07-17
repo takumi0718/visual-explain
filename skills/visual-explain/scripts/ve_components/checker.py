@@ -204,6 +204,15 @@ class _ContentSafetyParser(HTMLParser):
             Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"{_HREF_HTTPS_OR_ANCHOR_MSG}: {v}")
         )
 
+    def _check_namespaced_href(self, v: str) -> None:
+        if self.href_policy == "legacy_no_external":
+            self._check_href(v)  # compatibility は従来規則のまま（外部は既に拒否）
+            return
+        if v.startswith("#"):
+            return
+        self.diagnostics.append(Diagnostic(
+            FORBIDDEN_CONTENT_MARKUP, f"名前空間つき href では外部リンクを使えません: {v}"))
+
     def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
         if tag in FORBIDDEN_CONTENT_TAGS:
@@ -219,6 +228,8 @@ class _ContentSafetyParser(HTMLParser):
                 v = value.strip()
                 if local == "src":
                     self._check_src(v)
+                elif ":" in name:
+                    self._check_namespaced_href(v)
                 else:
                     self._check_href(v)
 
