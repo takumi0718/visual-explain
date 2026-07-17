@@ -234,6 +234,29 @@ class DecisionOptionCardInteractionTest(unittest.TestCase):
         self.assertIn(".ask-options [data-ask-option]:focus-visible", style)
         self.assertNotIn(".ask-select {", style)
 
+    def test_selected_ring_never_competes_with_the_focus_ring(self):
+        """``[data-ask-option]:focus-visible`` and
+        ``[data-ask-option][data-ask-selected]`` share equal specificity
+        (class + attribute + pseudo-class/attribute, 0-3-0 either way), so a
+        card that is both selected and keyboard-focused would have only one
+        of the two ``outline`` declarations survive the cascade — whichever
+        is declared later wins, silently hiding the focus ring on an
+        already-selected card. Pinning the selected rule to a different
+        property (``box-shadow``, not ``outline``) makes both rings render
+        at once regardless of source order or any future specificity
+        change, instead of relying on a fragile tie-break.
+        """
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        selected_rule = re.search(
+            r"\.ask-options \[data-ask-option\]\[data-ask-selected\] \{([^}]*)\}", style)
+        self.assertIsNotNone(selected_rule, "selected 状態のルールが見つかりません")
+        self.assertNotIn("outline", selected_rule.group(1))
+        self.assertIn("box-shadow", selected_rule.group(1))
+        focus_rule = re.search(
+            r"\.ask-options \[data-ask-option\]:focus-visible \{([^}]*)\}", style)
+        self.assertIsNotNone(focus_rule, "option card の focus-visible ルールが見つかりません")
+        self.assertIn("outline", focus_rule.group(1))
+
 
 class ResponsiveLayoutTest(unittest.TestCase):
     """design spec 2026-07-13: 流体ルートスケールと二層幅の骨格規則を固定する。"""

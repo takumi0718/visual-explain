@@ -117,6 +117,11 @@ class DocumentStructureBadFixtureTest(unittest.TestCase):
         msgs = _msgs(self._structure_diags("structure-bad-no-closing.html"))
         self.assertIn("closing セクションがありません", msgs)
 
+    def test_multiple_closing_reports_cardinality(self) -> None:
+        content = _FIRST_BLOCK + _CLOSING_BLOCK + _CLOSING_BLOCK
+        msgs = _msgs(check_document_structure(content, title=None))
+        self.assertEqual(msgs, ["closing はちょうど1個必要です"])
+
     def test_panel_missing_reports_decision_ask_without_panel(self) -> None:
         msgs = _msgs(self._structure_diags("structure-bad-panel-missing.html"))
         self.assertEqual(msgs, ["decision ask があるのに回収パネルがありません"])
@@ -734,6 +739,56 @@ class CompatibilityReservedAttrSpoofTest(unittest.TestCase):
             document_path="doc.html",
         )
         tampered = html.replace(CONTENT_END, self._SPOOF_DIV + CONTENT_END, 1)
+        msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
+        self.assertIn(self._EXPECTED_DIAGNOSTIC, msgs)
+
+
+class ClosingCardinalityCompatibilitySpoofTest(unittest.TestCase):
+    """A ``<section data-ve-section-kind="closing">`` is a legitimately-tagged
+    placement (``_RESERVED_ATTR_REQUIRED_TAG`` only requires the attribute
+    land on ``<section>``), so smuggling one into ``compatibility`` raw
+    markup — the one place author-controlled content legitimately reaches
+    final output with reserved data attributes unchallenged — is invisible
+    to the reserved-attr-placement backstop. Without an explicit cardinality
+    check, ``_check_closing_from_structure`` only verified "at least one"
+    closing node and unioned required headings across every closing-kind
+    node found, so a second, spoofed closing section (real or empty) would
+    silently coexist with the genuine one instead of being rejected.
+    """
+
+    _SPOOF_CLOSING = (
+        '<section data-ve-section-kind="closing" id="sec-closing-spoof">'
+        '<section class="closing-section" aria-label="判断材料"><h2>スプーフ</h2></section>'
+        '</section>'
+    )
+    _EXPECTED_DIAGNOSTIC = "closing はちょうど1個必要です"
+
+    def test_compatibility_section_spoofed_closing_fails_ir_build(self) -> None:
+        assembly = _valid_assembly()
+        assembly["sections"].insert(-1, {
+            "kind": "compatibility",
+            "id": "sec-compat-spoof",
+            "markup": self._SPOOF_CLOSING,
+            "provenance": {
+                "source": "legacy-html-insertion",
+                "reason": "weak-model-degradation",
+                "format": "html",
+            },
+        })
+        with self.assertRaises(ContractError) as ctx:
+            build_document(
+                assembly, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS,
+                document_path="doc.html",
+            )
+        msgs = _msgs(ctx.exception.diagnostics)
+        self.assertIn(self._EXPECTED_DIAGNOSTIC, msgs)
+
+    def test_compatibility_section_spoofed_closing_fails_final_check(self) -> None:
+        html = build_document(
+            _valid_assembly(), REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS,
+            document_path="doc.html",
+        )
+        tampered = html.replace(CONTENT_END, self._SPOOF_CLOSING + CONTENT_END, 1)
         msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
         self.assertIn(self._EXPECTED_DIAGNOSTIC, msgs)
 

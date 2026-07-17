@@ -460,12 +460,16 @@ def _check_closing_from_structure(
             "closing セクションがありません",
             "content",
         )]
+    if len(closing_nodes) != 1:
+        return [Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            "closing はちょうど1個必要です",
+            "content",
+        )]
     if doc_type is None:
         return []
     required = _CLOSING_REQUIRED.get(doc_type, ())
-    headings = set()
-    for node in closing_nodes:
-        headings.update(node.h2_texts)
+    headings = set(closing_nodes[0].h2_texts)
     diagnostics: list[Diagnostic] = []
     for heading in required:
         if heading not in headings:
