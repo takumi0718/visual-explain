@@ -199,8 +199,14 @@ class BadFixtureTest(unittest.TestCase):
         self.assertIn("invalid_controlled_asset", self.check("component-bad-asset-hash.html"))
 
     def test_skeleton_itself_passes_safety(self) -> None:
-        # The empty skeleton has no assets and matches itself: no diagnostics.
-        self.assertEqual(check_final_document(SKELETON, SKELETON, REGISTRY), [])
+        # Empty skeleton matches itself on fixed regions / assets. Group-3
+        # structure checks still fire on the blank CONTENT slot.
+        diags = check_final_document(SKELETON, SKELETON, REGISTRY)
+        self.assertTrue(diags)
+        self.assertTrue(all(d.code == "document_structure_violation" for d in diags))
+        msgs = {d.message for d in diags}
+        self.assertIn("文書型の自己表明がありません", msgs)
+        self.assertIn("closing セクションがありません", msgs)
 
 
 if __name__ == "__main__":

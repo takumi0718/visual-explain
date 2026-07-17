@@ -247,6 +247,13 @@ class DocumentStructureValidTest(unittest.TestCase):
         legacy = "<!doctype html><html><head><title>t</title></head><body><p>x</p></body></html>"
         self.assertEqual(check_final_document(legacy, SKELETON, REGISTRY, components_dir=COMPONENTS), [])
 
+    def test_blank_content_component_document_still_runs_group3(self) -> None:
+        # Whitespace-only CONTENT must not skip structure checks (canonical bypass).
+        # The empty skeleton is a component document with blank content slots.
+        msgs = _msgs(check_final_document(SKELETON, SKELETON, REGISTRY, components_dir=COMPONENTS))
+        self.assertIn("文書型の自己表明がありません", msgs)
+        self.assertIn("closing セクションがありません", msgs)
+
     def test_example_proposal_passes_group3_when_typed_migration_present(self) -> None:
         # TODO(Task 9): example-proposal.html を型付き IR で再生成したら、このテストは
         # SKIP せずに常時実行される。移行前は first-screen 自己表明が無いため skip。
