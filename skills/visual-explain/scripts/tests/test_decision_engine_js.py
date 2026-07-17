@@ -32,6 +32,40 @@ HEADER = [
     "(examples/demo.html / id: doc-1 / schema: 1 / asks: 0123456789abcdef)",
 ]
 
+CONTRACT_PROTO = {
+    "documentId": "doc-2", "schemaVersion": 1, "digest": "fedcba9876543210",
+    "title": "プロトタイプ汚染耐性テスト",
+    "documentPath": "examples/proto.html",
+    "riskHeadings": [],
+    "asks": [
+        {"id": "__proto__", "question": "プロトタイプ汚染に耐性がありますか。", "defaultId": None,
+         "options": [{"id": "opt-p", "label": "はい", "tradeoff": "対応コストが増える"}]},
+    ],
+}
+
+HEADER_PROTO = [
+    "[visual-explain 判断結果]",
+    "資料: プロトタイプ汚染耐性テスト",
+    "(examples/proto.html / id: doc-2 / schema: 1 / asks: fedcba9876543210)",
+]
+
+CONTRACT_DELIM = {
+    "documentId": "doc-3", "schemaVersion": 1, "digest": "aaaa1111bbbb2222",
+    "title": "境界文字 ID テスト",
+    "documentPath": "examples/delim.html",
+    "riskHeadings": [],
+    "asks": [
+        {"id": "ask,1", "question": "境界文字を含む ID でも動きますか。", "defaultId": None,
+         "options": [{"id": "opt=1", "label": "動く", "tradeoff": "検証コストが増える"}]},
+    ],
+}
+
+HEADER_DELIM = [
+    "[visual-explain 判断結果]",
+    "資料: 境界文字 ID テスト",
+    "(examples/delim.html / id: doc-3 / schema: 1 / asks: aaaa1111bbbb2222)",
+]
+
 
 def run_calls(calls: list[dict]) -> list:
     proc = subprocess.run([NODE, str(DRIVER)], input=json.dumps(calls).encode("utf-8"),
@@ -127,6 +161,69 @@ class DecisionEngineJsTest(unittest.TestCase):
             {"fn": "formatCopyText", "args": [CONTRACT, "$state"]},
         ]
         self.assertNotIn("→ メモ:", run_calls(calls)[-1])
+
+    def test_proto_ask_id_select_and_memo_survive(self) -> None:
+        # Terra review: {} ベースの map に "__proto__" を代入すると Object.prototype
+        # の setter に横取りされて選択・メモが黙って消える（プロトタイプ汚染の罠）。
+        results = run_calls([
+            {"fn": "selectOption", "args": ["$state", "__proto__", "opt-p", CONTRACT_PROTO], "assign": True},
+            {"fn": "setMemo", "args": ["$state", "__proto__", "懸念あり"], "assign": True},
+        ])
+        state = results[-1]
+        self.assertEqual(state["selections"], {"__proto__": "opt-p"})
+        self.assertEqual(state["memos"], {"__proto__": "懸念あり"})
+
+    def test_proto_ask_id_round_trips_through_serialize_restore(self) -> None:
+        results = run_calls([
+            {"fn": "selectOption", "args": ["$state", "__proto__", "opt-p", CONTRACT_PROTO], "assign": True},
+            {"fn": "setMemo", "args": ["$state", "__proto__", "懸念あり"], "assign": True},
+            {"fn": "serializeState", "args": ["$state"]},
+        ])
+        (restored,) = run_calls([{"fn": "restoreState", "args": [results[-1], CONTRACT_PROTO]}])
+        self.assertEqual(restored["selections"], {"__proto__": "opt-p"})
+        self.assertEqual(restored["memos"], {"__proto__": "懸念あり"})
+
+    def test_proto_ask_id_copy_text_reflects_selection(self) -> None:
+        calls = [
+            {"fn": "selectOption", "args": ["$state", "__proto__", "opt-p", CONTRACT_PROTO], "assign": True},
+            {"fn": "setMemo", "args": ["$state", "__proto__", "懸念あり"], "assign": True},
+            {"fn": "formatCopyText", "args": [CONTRACT_PROTO, "$state"]},
+        ]
+        expected = "\n".join(HEADER_PROTO + [
+            "問い: プロトタイプ汚染に耐性がありますか。",
+            "→ 選択: はい（既定案なし） — トレードオフ: 対応コストが増える",
+            "→ メモ: 懸念あり",
+        ])
+        self.assertEqual(run_calls(calls)[-1], expected)
+
+    def test_delimiter_char_ids_round_trip_through_serialize_restore(self) -> None:
+        # Task 2 checker は生成物の option id に "," "=" を拒否するが（境界文字の予約）、
+        # engine 自体は foreign/plain contract を壊さない回帰を確認する。validator の
+        # 重複実装はしない — engine は常に JSON 経由でエンコードする。
+        results = run_calls([
+            {"fn": "selectOption", "args": ["$state", "ask,1", "opt=1", CONTRACT_DELIM], "assign": True},
+            {"fn": "setMemo", "args": ["$state", "ask,1", "境界=文字,メモ"], "assign": True},
+            {"fn": "serializeState", "args": ["$state"]},
+        ])
+        state = results[1]
+        self.assertEqual(state["selections"], {"ask,1": "opt=1"})
+        self.assertEqual(state["memos"], {"ask,1": "境界=文字,メモ"})
+        (restored,) = run_calls([{"fn": "restoreState", "args": [results[-1], CONTRACT_DELIM]}])
+        self.assertEqual(restored["selections"], {"ask,1": "opt=1"})
+        self.assertEqual(restored["memos"], {"ask,1": "境界=文字,メモ"})
+
+    def test_delimiter_char_ids_copy_text_reflects_selection(self) -> None:
+        calls = [
+            {"fn": "selectOption", "args": ["$state", "ask,1", "opt=1", CONTRACT_DELIM], "assign": True},
+            {"fn": "setMemo", "args": ["$state", "ask,1", "境界=文字,メモ"], "assign": True},
+            {"fn": "formatCopyText", "args": [CONTRACT_DELIM, "$state"]},
+        ]
+        expected = "\n".join(HEADER_DELIM + [
+            "問い: 境界文字を含む ID でも動きますか。",
+            "→ 選択: 動く（既定案なし） — トレードオフ: 検証コストが増える",
+            "→ メモ: 境界=文字,メモ",
+        ])
+        self.assertEqual(run_calls(calls)[-1], expected)
 
     def test_engine_sources_pass_node_check(self) -> None:
         for name in ("decision_engine.js", "decision_engine_driver.js"):

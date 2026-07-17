@@ -9,8 +9,15 @@
     return "ve-decision:" + contract.documentId + ":" + contract.schemaVersion + ":" + contract.digest;
   }
 
+  function emptyMap() {
+    // Object.create(null) keeps ask ids like "__proto__" as ordinary own
+    // properties instead of tripping the Object.prototype accessor, which
+    // would otherwise silently drop the assignment for such ids.
+    return Object.create(null);
+  }
+
   function emptyState() {
-    return { selections: {}, memos: {}, globalMemo: "" };
+    return { selections: emptyMap(), memos: emptyMap(), globalMemo: "" };
   }
 
   function findAsk(contract, askId) {
@@ -25,8 +32,8 @@
 
   function cloneWith(state, patch) {
     return {
-      selections: Object.assign({}, state.selections, patch.selections || {}),
-      memos: Object.assign({}, state.memos, patch.memos || {}),
+      selections: Object.assign(emptyMap(), state.selections, patch.selections || emptyMap()),
+      memos: Object.assign(emptyMap(), state.memos, patch.memos || emptyMap()),
       globalMemo: patch.globalMemo !== undefined ? patch.globalMemo : state.globalMemo,
     };
   }
@@ -34,13 +41,13 @@
   function selectOption(state, askId, optionId, contract) {
     const ask = findAsk(contract, askId);
     if (!ask || !findOption(ask, optionId)) return state;
-    const patch = { selections: {} };
+    const patch = { selections: emptyMap() };
     patch.selections[askId] = optionId;
     return cloneWith(state, patch);
   }
 
   function setMemo(state, askId, text) {
-    const patch = { memos: {} };
+    const patch = { memos: emptyMap() };
     patch.memos[askId] = String(text);
     return cloneWith(state, patch);
   }
