@@ -492,7 +492,7 @@
   }
 
   function findPanelRow(rows, askId) {
-    // Candidates come from the unparameterized ``[data-ve-panel-ask]``
+    // Candidates come from the unparameterized ``li[data-ve-panel-ask]``
     // selector; matching by ``dataset`` equality here (instead of splicing
     // askId into a CSS attribute selector at the call site) keeps arbitrary
     // non-empty ask ids — quotes, whitespace, Japanese text, leading
@@ -615,7 +615,7 @@
   /* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */
   (() => {
     const engine = globalThis.veDecisionEngine;
-    const panel = document.querySelector('[data-ve-section-kind="decision-panel"]');
+    const panel = document.querySelector('section[data-ve-section-kind="decision-panel"]');
     if (!engine || !panel) return;
     const askSections = Array.from(document.querySelectorAll(
       'section[data-ve-section-kind="ask"][data-ve-ask-type="decision"][id]'));
@@ -626,7 +626,7 @@
       title: document.title,
       documentPath: panel.dataset.veDocumentPath || "",
       riskHeadings: Array.from(document.querySelectorAll(
-        '[data-ve-section-kind="closing"] h2')).map((h) => h.textContent.trim()),
+        'section[data-ve-section-kind="closing"] h2')).map((h) => h.textContent.trim()),
       asks: askSections.map((section) => {
         const defaultItem = section.querySelector('[data-ask-default]');
         return {
@@ -665,7 +665,7 @@
           if (button) button.setAttribute('aria-pressed', String(selected));
         });
         const row = engine.findPanelRow(
-          Array.from(panel.querySelectorAll('[data-ve-panel-ask]')), ask.id);
+          Array.from(panel.querySelectorAll('li[data-ve-panel-ask]')), ask.id);
         if (!row) return;
         const status = row.querySelector('[data-ve-panel-status]');
         const option = ask.options.find((o) => o.id === state.selections[ask.id]);

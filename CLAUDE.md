@@ -62,7 +62,7 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 
 ### 検証（`check.sh` — 四層）
 
-依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・summary 描画・外部リンクのドメインマーカーに加え、decision-panel の存在（decision ask の有無との整合）・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）を検証する。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
+依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・summary 描画・外部リンクのドメインマーカーに加え、decision-panel の存在（decision ask の有無との整合）・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）に加え、構造予約属性（`data-ve-section-kind` / `data-ve-ask-type` は `section`、`data-ve-panel-ask` は `li`）が指定タグ以外に付与されていないかを検証する（compatibility 等の非構造セクションに紛れ込んだ偽装パネル/ask の fail-closed）。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
 
 ### テスト構成（`scripts/tests/`）
 

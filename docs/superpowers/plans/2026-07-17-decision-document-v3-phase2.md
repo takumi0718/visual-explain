@@ -1023,3 +1023,13 @@ REJECTED:
 - なし
 
 STATUS: complete
+
+## レビュー r2 反映記録
+
+ADOPTED:
+- C1': 検査群③（`document_checks.py`）が `data-ve-section-kind` / `data-ve-ask-type` を `<section>` 限定、`data-ve-panel-ask` を `<li>` 限定として検証していなかった。compatibility セクションは `forbid_reserved=False`（意図的・provenance 追跡前提）により予約 data 属性の禁止対象外なので、正しく閉じた `<div data-ve-section-kind="decision-panel" ...>` を compatibility markup に紛れ込ませると、IR ビルド（`build_document`）・最終 HTML 再検査（`check_final_document`）の両経路をすり抜けていた（`_StructureParser` が `<section>` 以外の要素を構造ノードとして追跡しないため）。一方 skeleton の JS バインダは `document.querySelector('[data-ve-section-kind="decision-panel"]')` のようにタグ非限定の属性セレクタでパネルを取得しており、実ブラウザでは spoof した div が実際にライブパネルとしてマッチしてしまう非対称があった。`_StructureParser` に構造予約属性のタグ限定チェックを追加し、指定タグ以外での出現を `DOCUMENT_STRUCTURE_VIOLATION` で fail-closed（自己閉じタグ検知と同じ早期 return の優先度）。RED（違反が素通りする）→ 実装 → GREEN（IR path・最終 HTML path 双方で FAIL する）の回帰テスト2件を `test_document_checks.py` に追加。対称化として skeleton.html バインダの該当 `querySelector`/`querySelectorAll` を `section[data-ve-section-kind=...]` / `li[data-ve-panel-ask]` へタグ限定し、`decision_engine.js`（source of truth）のコメントも追従、fixture 一括 resplice（`tests/tools/resplice.py` ＋ `KEEP_AS_IS` 6件の手動テキスト置換＋`examples/example-proposal.html`）で固定領域を揃えた。
+
+REJECTED:
+- なし
+
+STATUS: complete

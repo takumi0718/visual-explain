@@ -31,7 +31,7 @@
   }
 
   function findPanelRow(rows, askId) {
-    // Candidates come from the unparameterized ``[data-ve-panel-ask]``
+    // Candidates come from the unparameterized ``li[data-ve-panel-ask]``
     // selector; matching by ``dataset`` equality here (instead of splicing
     // askId into a CSS attribute selector at the call site) keeps arbitrary
     // non-empty ask ids — quotes, whitespace, Japanese text, leading

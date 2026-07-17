@@ -32,6 +32,22 @@ _OPAQUE_TAGS = frozenset({"script", "style"})
 # under profile=strict is still rejected so the gate is ready.
 _EXTENDED_ONLY_KINDS = frozenset({"freeform", "image"})
 
+# Structural reserved attributes and the single tag each may legitimately
+# appear on. The skeleton's JS binder and this checker both key document
+# structure off these attributes via bare `[attr]` DOM queries (not
+# `tag[attr]`), so an attacker who smuggles one onto the wrong tag — e.g. a
+# `<div data-ve-section-kind="decision-panel">` inside otherwise-permitted
+# compatibility markup, which `_StructureParser` below only tracks on
+# `<section>` — is invisible to `structure.sections` yet still matched by a
+# real browser's `document.querySelector('[data-ve-section-kind=...]')`.
+# Fail-closed on any occurrence outside its designated tag, mirroring the
+# self-closing-tag divergence guard above.
+_RESERVED_ATTR_REQUIRED_TAG = {
+    "data-ve-section-kind": "section",
+    "data-ve-ask-type": "section",
+    "data-ve-panel-ask": "li",
+}
+
 
 @dataclass
 class _SectionNode:
@@ -49,6 +65,7 @@ class _DocStructure:
     h1_in_first_screen: int = 0
     h1_total: int = 0
     self_closing_tags: list[str] = field(default_factory=list)
+    misplaced_reserved_attrs: list[tuple[str, str]] = field(default_factory=list)
 
 
 class _StructureParser(HTMLParser):
@@ -80,6 +97,7 @@ class _StructureParser(HTMLParser):
             self._svg_depth += 1
         attr_map = {k.lower(): (v or "") for k, v in attrs}
         self._collect_option_id(attr_map)
+        self._check_reserved_attr_placement(tag, attr_map)
         if tag not in _VOID_TAGS:
             self._element_stack.append(tag)
 
@@ -149,6 +167,7 @@ class _StructureParser(HTMLParser):
         # silently evades the decision-panel digest.
         attr_map = {k.lower(): (v or "") for k, v in attrs}
         self._collect_option_id(attr_map)
+        self._check_reserved_attr_placement(tag, attr_map)
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
@@ -231,6 +250,18 @@ class _StructureParser(HTMLParser):
             if ask_node is not None:
                 ask_node.option_ids.append(attr_map["data-ask-option-id"])
 
+    def _check_reserved_attr_placement(self, tag: str, attr_map: dict[str, str]) -> None:
+        """Fail-closed on a structural reserved attribute borne by the wrong tag.
+
+        Shared by ``handle_starttag`` and ``handle_startendtag`` so a bare
+        ``[data-ve-section-kind]``-style DOM query (as the skeleton's JS
+        binder and ``document.querySelector`` calls use) can never match an
+        element this parser silently ignored as non-structural.
+        """
+        for attr, required_tag in _RESERVED_ATTR_REQUIRED_TAG.items():
+            if tag != required_tag and attr in attr_map:
+                self.structure.misplaced_reserved_attrs.append((tag, attr))
+
     def _current_ask_decision(self) -> _SectionNode | None:
         """Innermost currently-open decision-typed ask wrapper, if any.
 
@@ -303,6 +334,16 @@ def check_document_structure(content_markup: str, *, title: str | None = None) -
         diagnostics.append(Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,
             f"自己閉じタグは許容されません（ブラウザとの解釈差異のため）: {tags}",
+            "content",
+        ))
+        return diagnostics
+    if structure.misplaced_reserved_attrs:
+        offenders = ", ".join(
+            f"<{tag} {attr}>" for tag, attr in structure.misplaced_reserved_attrs
+        )
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"構造予約属性が許可されない要素にあります: {offenders}",
             "content",
         ))
         return diagnostics

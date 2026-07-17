@@ -8,6 +8,7 @@ from pathlib import Path
 
 from build_explainer import build_document
 from ve_components.checker import CONTENT_BEGIN, CONTENT_END, check_final_document, extract_controlled_slots
+from ve_components.diagnostics import ContractError
 from ve_components.document_checks import check_document_structure
 from ve_components.document_sections import compute_ask_digest_from_pairs
 from ve_components.registry import load_registry
@@ -680,6 +681,61 @@ class DecisionPanelStructureTest(unittest.TestCase):
         tampered = html.replace(CONTENT_END, fake_panel + CONTENT_END, 1)
         msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
         self.assertNotEqual(msgs, [])
+
+
+class CompatibilityReservedAttrSpoofTest(unittest.TestCase):
+    """Structural reserved attributes (``data-ve-section-kind`` etc.) are keyed
+    off bare ``[attr]`` DOM queries by both the skeleton's JS binder and a
+    real browser's ``document.querySelector`` — never ``tag[attr]`` — so they
+    must only ever land on their designated tag. ``compatibility`` sections
+    are the one place author-controlled markup legitimately reaches final
+    content with reserved data attributes unchallenged
+    (``forbid_reserved=False`` there, by design, since compatibility embeds
+    provenance-tracked legacy HTML), which makes a correctly-closed
+    ``<div data-ve-section-kind="decision-panel">`` inside compatibility
+    markup the sharpest test of the fail-closed backstop: ``_StructureParser``
+    only tracks this attribute on ``<section>``, so without the backstop the
+    div is invisible to ``structure.sections`` while a real browser's
+    ``document.querySelector('[data-ve-section-kind="decision-panel"]')``
+    still matches it as the live decision-recovery panel.
+    """
+
+    _SPOOF_DIV = (
+        '<div data-ve-section-kind="decision-panel"'
+        ' data-ve-document-id="spoof" data-ve-schema-version="1"'
+        ' data-ve-ask-digest="deadbeefdeadbeef" data-ve-document-path="spoof.html">'
+        "spoofed</div>"
+    )
+    _EXPECTED_DIAGNOSTIC = "構造予約属性が許可されない要素にあります: <div data-ve-section-kind>"
+
+    def test_compatibility_div_spoofed_panel_fails_ir_build(self) -> None:
+        assembly = _decision_assembly()
+        assembly["sections"].insert(-1, {
+            "kind": "compatibility",
+            "id": "sec-compat-spoof",
+            "markup": self._SPOOF_DIV,
+            "provenance": {
+                "source": "legacy-html-insertion",
+                "reason": "weak-model-degradation",
+                "format": "html",
+            },
+        })
+        with self.assertRaises(ContractError) as ctx:
+            build_document(
+                assembly, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS,
+                document_path="doc.html",
+            )
+        msgs = _msgs(ctx.exception.diagnostics)
+        self.assertIn(self._EXPECTED_DIAGNOSTIC, msgs)
+
+    def test_compatibility_div_spoofed_panel_fails_final_check(self) -> None:
+        html = build_document(
+            _decision_assembly(), REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS,
+            document_path="doc.html",
+        )
+        tampered = html.replace(CONTENT_END, self._SPOOF_DIV + CONTENT_END, 1)
+        msgs = _msgs(check_final_document(tampered, SKELETON, REGISTRY, components_dir=COMPONENTS))
+        self.assertIn(self._EXPECTED_DIAGNOSTIC, msgs)
 
 
 class SelfClosingForeignContentTest(unittest.TestCase):
