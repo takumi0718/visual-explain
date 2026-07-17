@@ -114,26 +114,70 @@
       }
     },
     "askSection": {
+      "oneOf": [
+        {"$ref": "#/$defs/askDecisionWithDefault"},
+        {"$ref": "#/$defs/askDecisionNoDefault"},
+        {"$ref": "#/$defs/askRequestSection"},
+        {"$ref": "#/$defs/askHypothesisSection"}
+      ]
+    },
+    "askDecisionWithDefault": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "id", "askType"],
+      "required": ["kind", "id", "askType", "question", "options", "defaultId"],
       "properties": {
         "kind": {"const": "ask"},
         "id": {"type": "string", "minLength": 1},
-        "askType": {"enum": ["decision", "request", "hypothesis"]},
+        "askType": {"const": "decision"},
         "question": {"type": "string", "minLength": 1},
         "options": {
           "type": "array",
           "minItems": 2,
           "items": {"$ref": "#/$defs/askOption"}
         },
-        "defaultId": {"type": "string", "minLength": 1},
-        "noDefaultReason": {"type": "string", "minLength": 1},
+        "defaultId": {"type": "string", "minLength": 1}
+      }
+    },
+    "askDecisionNoDefault": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "question", "options", "noDefaultReason"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "decision"},
+        "question": {"type": "string", "minLength": 1},
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/askOption"}
+        },
+        "noDefaultReason": {"type": "string", "minLength": 1}
+      }
+    },
+    "askRequestSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "steps"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "request"},
         "steps": {
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/askStep"}
-        },
+        }
+      }
+    },
+    "askHypothesisSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "askType", "claim", "verify"],
+      "properties": {
+        "kind": {"const": "ask"},
+        "id": {"type": "string", "minLength": 1},
+        "askType": {"const": "hypothesis"},
         "claim": {"$ref": "#/$defs/askClaim"},
         "verify": {"type": "string", "minLength": 1}
       }
