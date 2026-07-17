@@ -147,10 +147,47 @@ def normalized_fixed_regions(candidate: str, skeleton: str) -> list[Diagnostic]:
     return []
 
 
+_HREF_HTTPS_OR_ANCHOR_MSG = "外部リンクは https の絶対 URL か # アンカーだけ使えます"
+
+
+def _is_absolute_https(url: str) -> bool:
+    """True when url is an absolute https: URL with a non-empty hostname."""
+    from urllib.parse import urlsplit
+
+    if not url.lower().startswith("https://"):
+        return False
+    return bool(urlsplit(url).hostname)
+
+
 class _ContentSafetyParser(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, *, href_policy: str = "https_or_anchor") -> None:
         super().__init__(convert_charrefs=True)
         self.diagnostics: list[Diagnostic] = []
+        # "https_or_anchor": narrative / typed / final — https absolute + # only.
+        # "legacy_no_external": compatibility — reject all external http(s)/protocol-relative.
+        self.href_policy = href_policy
+
+    def _check_src(self, v: str) -> None:
+        scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
+        if v.startswith("//") or v.lower().startswith(("http://", "https://")):
+            self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"外部参照は禁止です: {v}"))
+        elif scheme not in {"", "file"} and not v.startswith("#"):
+            self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"許可されない URL スキームです: {v}"))
+
+    def _check_href(self, v: str) -> None:
+        if self.href_policy == "legacy_no_external":
+            scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
+            if v.startswith("//") or v.lower().startswith(("http://", "https://")):
+                self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"外部参照は禁止です: {v}"))
+            elif scheme not in {"", "file"} and not v.startswith("#"):
+                self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"許可されない URL スキームです: {v}"))
+            return
+        # https_or_anchor (default for narrative / typed / final document)
+        if v.startswith("#") or _is_absolute_https(v):
+            return
+        self.diagnostics.append(
+            Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"{_HREF_HTTPS_OR_ANCHOR_MSG}: {v}")
+        )
 
     def _check(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
@@ -165,11 +202,10 @@ class _ContentSafetyParser(HTMLParser):
             local = name.rsplit(":", 1)[-1]
             if local in {"href", "src"} and value is not None:
                 v = value.strip()
-                scheme = v.split(":", 1)[0].lower() if ":" in v.split("/", 1)[0] else ""
-                if v.startswith("//") or v.lower().startswith(("http://", "https://")):
-                    self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"外部参照は禁止です: {v}"))
-                elif scheme not in {"", "file"} and not v.startswith("#"):
-                    self.diagnostics.append(Diagnostic(FORBIDDEN_CONTENT_MARKUP, f"許可されない URL スキームです: {v}"))
+                if local == "src":
+                    self._check_src(v)
+                else:
+                    self._check_href(v)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._check(tag, attrs)
@@ -194,8 +230,13 @@ def validate_content_markup(
     author-markup bans (h1/title; reserved class/data for narrative only). Final
     document content must call this with ``section_kind=None`` so rendered
     wrappers (first-screen / ask / data-ve-*) are not false-positive rejected.
+
+    href policy: narrative / typed / final allow ``https:`` absolute URLs and ``#``
+    anchors only; compatibility keeps the legacy ban on all external hrefs. src
+    always rejects external references.
     """
-    parser = _ContentSafetyParser()
+    href_policy = "legacy_no_external" if section_kind == "compatibility" else "https_or_anchor"
+    parser = _ContentSafetyParser(href_policy=href_policy)
     parser.feed(content_markup)
     parser.close()
     diagnostics = list(parser.diagnostics)

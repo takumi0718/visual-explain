@@ -82,11 +82,30 @@ class ContentMarkupTest(unittest.TestCase):
     def test_event_handler(self) -> None:
         self.bad('<button onclick="x()">x</button>')
 
-    def test_external_url(self) -> None:
-        self.bad('<a href="https://example.invalid/x">x</a>')
+    def test_https_href_allowed(self) -> None:
+        self.assertEqual(
+            validate_content_markup('<a href="https://example.invalid/x">x</a>'),
+            [],
+        )
+
+    def test_http_href_rejected(self) -> None:
+        diags = validate_content_markup('<a href="http://example.invalid/x">x</a>')
+        self.assertIn("forbidden_content_markup", codes(diags))
+        self.assertIn(
+            "外部リンクは https の絶対 URL か # アンカーだけ使えます: http://example.invalid/x",
+            diags[0].message,
+        )
 
     def test_javascript_url(self) -> None:
-        self.bad('<a href="javascript:alert(1)">x</a>')
+        diags = validate_content_markup('<a href="javascript:alert(1)">x</a>')
+        self.assertIn("forbidden_content_markup", codes(diags))
+        self.assertIn(
+            "外部リンクは https の絶対 URL か # アンカーだけ使えます: javascript:alert(1)",
+            diags[0].message,
+        )
+
+    def test_src_https_still_rejected(self) -> None:
+        self.bad('<img src="https://example.invalid/x.png" alt="">')
 
     def test_nested_controlled_marker(self) -> None:
         self.bad("<section><!-- VE-CONTROLLED:CONTENT:BEGIN --></section>")
