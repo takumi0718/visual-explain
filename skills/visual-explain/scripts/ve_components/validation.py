@@ -12,6 +12,7 @@ import re
 from decimal import Decimal
 from html.parser import HTMLParser
 from pathlib import Path
+from types import MappingProxyType
 
 from .diagnostics import (
     CHEVRON_STRUCTURE_VIOLATION,
@@ -144,7 +145,30 @@ _SEQUENCE_KEYS = {"mode", "steps"}
 _SEQUENCE_STEP_KEYS = {"id", "label", "targetIds"}
 _ASSERTION_KEYS = {"id", "text", "coverIds"}
 _STAGE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
-_SEQUENCE_MODES = frozenset(VOCABULARY["sequenceModes"])
+SEQUENCE_MODES = frozenset(VOCABULARY["sequenceModes"])
+# Single source of truth for panel DOM-ID rewriting and later normalization.
+# Attributes absent from this map are opaque and must not be rewritten.
+SEQUENCE_REFERENCE_ATTRIBUTES = MappingProxyType({
+    "id": "dom-id",
+    "href": "fragment",
+    "xlink:href": "fragment",
+    "for": "single-idref",
+    "aria-labelledby": "idref-list",
+    "aria-describedby": "idref-list",
+    "aria-owns": "idref-list",
+    "data-ve-node-id": "single-idref",
+    "data-ve-from": "single-idref",
+    "data-ve-to": "single-idref",
+    "clip-path": "url-reference",
+    "mask": "url-reference",
+    "filter": "url-reference",
+    "marker-start": "url-reference",
+    "marker-mid": "url-reference",
+    "marker-end": "url-reference",
+    "fill": "url-reference",
+    "stroke": "url-reference",
+    "style": "inline-url-reference",
+})
 _SEQUENCE_COMPONENTS = {
     "path-spotlight": frozenset({"flow"}),
     "state-lens": frozenset({"flow", "matrix", "stairs"}),
@@ -528,7 +552,7 @@ def _parse_sequence(raw: object, path: str, col: DiagnosticCollector) -> Sequenc
     steps_raw = raw.get("steps")
     if "mode" not in raw:
         col.add(MISSING_REQUIRED_SLOT, "sequence.mode は必須です", path)
-    elif not isinstance(mode, str) or mode not in _SEQUENCE_MODES:
+    elif not isinstance(mode, str) or mode not in SEQUENCE_MODES:
         col.add(INVALID_COMPONENT_PAYLOAD, f"未知の sequence.mode '{mode}'", path)
     if "steps" not in raw:
         col.add(MISSING_REQUIRED_SLOT, "sequence.steps は必須です", path)
@@ -584,7 +608,7 @@ def _parse_sequence(raw: object, path: str, col: DiagnosticCollector) -> Sequenc
             label=label if isinstance(label, str) else "",
             target_ids=tuple(clean_target_ids),
         ))
-    if not isinstance(mode, str) or mode not in _SEQUENCE_MODES:
+    if not isinstance(mode, str) or mode not in SEQUENCE_MODES:
         return None
     return SequenceDeclaration(mode=mode, steps=tuple(steps))
 
