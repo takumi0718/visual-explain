@@ -33,58 +33,152 @@
   );
 
   const pointPair = (from, to, scope) => {
-    const a = from.getBoundingClientRect();
-    const b = to.getBoundingClientRect();
     const box = scope.getBoundingClientRect();
-    const ax = a.left + a.width / 2;
-    const ay = a.top + a.height / 2;
-    const bx = b.left + b.width / 2;
-    const by = b.top + b.height / 2;
-    if (Math.abs(bx - ax) >= Math.abs(by - ay)) {
-      return [bx >= ax ? a.right : a.left, ay, bx >= ax ? b.left : b.right, by, box];
-    }
-    return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
+    const relative = (node) => {
+      const bounds = node.getBoundingClientRect();
+      return {
+        left: bounds.left - box.left,
+        right: bounds.right - box.left,
+        top: bounds.top - box.top,
+        bottom: bounds.bottom - box.top,
+        width: bounds.width,
+        height: bounds.height
+      };
+    };
+    return [relative(from), relative(to), box];
   };
 
   /* TESTABLE_GEOMETRY:BEGIN */
-  const outerPath = (start, end, boxes, declarationIndex) => {
-    const top = Math.min(...boxes.map((box) => box.top));
-    const bottom = Math.max(...boxes.map((box) => box.bottom));
-    const minimumHeight = Math.min(...boxes.map((box) => box.bottom - box.top));
-    const laneGap = Math.max(8, minimumHeight * .25);
-    const laneDepth = Math.floor(declarationIndex / 2) + 1;
-    const laneY = declarationIndex % 2 === 0
-      ? top - laneGap * laneDepth
-      : bottom + laneGap * laneDepth;
-    const midpoint = (start.x + end.x) / 2;
-    return `M ${start.x} ${start.y} C ${start.x} ${laneY}, ${start.x} ${laneY}, ${midpoint} ${laneY} C ${end.x} ${laneY}, ${end.x} ${laneY}, ${end.x} ${end.y}`;
+  const segmentClear = (start, end, boxes) => boxes.every((box) => {
+    if (start.y === end.y) {
+      const overlapsX = Math.max(Math.min(start.x, end.x), box.left)
+        < Math.min(Math.max(start.x, end.x), box.right);
+      return !(start.y > box.top && start.y < box.bottom && overlapsX);
+    }
+    if (start.x === end.x) {
+      const overlapsY = Math.max(Math.min(start.y, end.y), box.top)
+        < Math.min(Math.max(start.y, end.y), box.bottom);
+      return !(start.x > box.left && start.x < box.right && overlapsY);
+    }
+    return false;
+  });
+  const routeClear = (points, boxes) => points.slice(1)
+    .every((point, index) => segmentClear(points[index], point, boxes));
+  const pathData = (points) => points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${Number(point.x.toFixed(3))} ${Number(point.y.toFixed(3))}`)
+    .join(' ');
+  const directRoute = (from, to, boxes, gap) => {
+    const rowTop = Math.max(from.top, to.top);
+    const rowBottom = Math.min(from.bottom, to.bottom);
+    const columnLeft = Math.max(from.left, to.left);
+    const columnRight = Math.min(from.right, to.right);
+    let start;
+    let end;
+    let dx = 0;
+    let dy = 0;
+    if (rowBottom > rowTop && (from.right <= to.left || to.right <= from.left)) {
+      const y = (rowTop + rowBottom) / 2;
+      dx = from.right <= to.left ? 1 : -1;
+      start = {x: dx > 0 ? from.right : from.left, y};
+      end = {x: dx > 0 ? to.left : to.right, y};
+    } else if (columnRight > columnLeft && (from.bottom <= to.top || to.bottom <= from.top)) {
+      const x = (columnLeft + columnRight) / 2;
+      dy = from.bottom <= to.top ? 1 : -1;
+      start = {x, y: dy > 0 ? from.bottom : from.top};
+      end = {x, y: dy > 0 ? to.top : to.bottom};
+    } else {
+      return null;
+    }
+    const points = [
+      start,
+      {x: start.x + dx * gap, y: start.y + dy * gap},
+      {x: end.x - dx * gap, y: end.y - dy * gap},
+      end
+    ];
+    return routeClear(points, boxes) ? points : null;
+  };
+  const gate = (box, direction, gap) => {
+    const x = (box.left + box.right) / 2;
+    const y = (box.top + box.bottom) / 2;
+    if (direction === 'right') return {anchor: {x: box.right, y}, stub: {x: box.right + gap, y}};
+    if (direction === 'bottom') return {anchor: {x, y: box.bottom}, stub: {x, y: box.bottom + gap}};
+    if (direction === 'left') return {anchor: {x: box.left, y}, stub: {x: box.left - gap, y}};
+    return {anchor: {x, y: box.top}, stub: {x, y: box.top - gap}};
+  };
+  const outerRoute = (from, to, boxes, gap, declarationIndex) => {
+    const baseDirections = ['right', 'bottom', 'left', 'top'];
+    const offset = declarationIndex % baseDirections.length;
+    const directions = baseDirections.slice(offset).concat(baseDirections.slice(0, offset));
+    const otherBoxes = boxes.filter((box) => box !== from && box !== to);
+    const sourceGates = directions.map((direction) => gate(from, direction, gap))
+      .filter((item) => routeClear([item.anchor, item.stub], otherBoxes));
+    const targetGates = directions.map((direction) => gate(to, direction, gap))
+      .filter((item) => routeClear([item.stub, item.anchor], otherBoxes));
+    const laneXs = boxes.flatMap((box) => [box.left - gap, box.right + gap]);
+    const laneYs = boxes.flatMap((box) => [box.top - gap, box.bottom + gap]);
+    let best = null;
+    let bestScore = Infinity;
+    sourceGates.forEach((source) => targetGates.forEach((target) => {
+      const start = source.stub;
+      const end = target.stub;
+      const candidates = [
+        [start, end],
+        [start, {x: end.x, y: start.y}, end],
+        [start, {x: start.x, y: end.y}, end]
+      ];
+      laneXs.forEach((x) => candidates.push(
+        [start, {x, y: start.y}, {x, y: end.y}, end]
+      ));
+      laneYs.forEach((y) => candidates.push(
+        [start, {x: start.x, y}, {x: end.x, y}, end]
+      ));
+      laneXs.forEach((x) => laneYs.forEach((y) => candidates.push(
+        [start, {x, y: start.y}, {x, y}, {x: end.x, y}, end],
+        [start, {x: start.x, y}, {x, y}, {x, y: end.y}, end]
+      )));
+      candidates.forEach((candidate) => {
+        if (!routeClear(candidate, boxes)) return;
+        const points = [source.anchor, ...candidate, target.anchor];
+        const length = points.slice(1).reduce((total, point, index) => (
+          total + Math.abs(point.x - points[index].x) + Math.abs(point.y - points[index].y)
+        ), 0);
+        const score = length + candidate.length * gap;
+        if (score < bestScore) {
+          best = points;
+          bestScore = score;
+        }
+      });
+    }));
+    return best;
   };
   /* TESTABLE_GEOMETRY:END */
 
   const pathFor = (from, to, scope, declarationIndex) => {
-    const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
-    const x1 = sx - box.left;
-    const y1 = sy - box.top;
-    const x2 = ex - box.left;
-    const y2 = ey - box.top;
+    const [fromBox, toBox, scopeBox] = pointPair(from, to, scope);
     const stations = Array.from(scope.querySelectorAll('.ve-flow-path-canvas > .ve-flow-station[id]'));
+    const boxes = stations.map((station) => {
+      const bounds = station.getBoundingClientRect();
+      return {
+        left: bounds.left - scopeBox.left,
+        right: bounds.right - scopeBox.left,
+        top: bounds.top - scopeBox.top,
+        bottom: bounds.bottom - scopeBox.top,
+        width: bounds.width,
+        height: bounds.height
+      };
+    });
     const fromIndex = stations.indexOf(from);
     const toIndex = stations.indexOf(to);
-    if (fromIndex >= 0 && toIndex >= 0 && Math.abs(toIndex - fromIndex) > 1) {
-      const first = Math.min(fromIndex, toIndex);
-      const last = Math.max(fromIndex, toIndex);
-      const boxes = stations.slice(first, last + 1).map((station) => {
-        const bounds = station.getBoundingClientRect();
-        return {top: bounds.top - box.top, bottom: bounds.bottom - box.top};
-      });
-      return outerPath({x: x1, y: y1}, {x: x2, y: y2}, boxes, declarationIndex);
-    }
-    const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
-    const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1;
-    const c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
-    const c2x = horizontal ? x2 - (x2 - x1) * .45 : x2;
-    const c2y = horizontal ? y2 : y2 - (y2 - y1) * .45;
-    return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+    if (fromIndex >= 0) Object.assign(boxes[fromIndex], fromBox);
+    if (toIndex >= 0) Object.assign(boxes[toIndex], toBox);
+    const source = fromIndex >= 0 ? boxes[fromIndex] : fromBox;
+    const target = toIndex >= 0 ? boxes[toIndex] : toBox;
+    const minimumSize = Math.min(...boxes.flatMap((box) => [box.width, box.height]));
+    const gap = Math.max(6, Math.min(12, minimumSize * .12));
+    const obstacles = boxes.filter((box) => box !== source && box !== target);
+    const points = directRoute(source, target, obstacles, gap)
+      || outerRoute(source, target, boxes, gap, declarationIndex);
+    return pathData(points || [{x: source.right, y: source.top}, {x: target.left, y: target.top}]);
   };
 
   const warning = (scope, message) => {

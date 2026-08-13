@@ -223,34 +223,129 @@ def test_flow_runtime_draws_every_declaration_with_edge_identity_and_state() -> 
     assert "url(#${markerId})" in source
 
 
-def test_non_adjacent_geometry_routes_through_a_literal_outer_lane() -> None:
+def _production_geometry_cases() -> dict[str, object]:
     source = (
         SKILL / "assets" / "components" / "visual-stage-flow.js"
     ).read_text("utf-8")
-    geometry = source.split("/* TESTABLE_GEOMETRY:BEGIN */", 1)[1].split(
-        "/* TESTABLE_GEOMETRY:END */", 1,
-    )[0]
+    start = source.index("  const pointPair")
+    end = source.index("  const warning", start)
+    geometry = source[start:end]
     program = geometry + """
-process.stdout.write(outerPath(
-  {x: 100, y: 50},
-  {x: 400, y: 50},
-  [
-    {top: 20, bottom: 80},
-    {top: 20, bottom: 80},
-    {top: 20, bottom: 80}
-  ],
-  0
-));
+const box = (left, top) => ({left, top, right: left + 100, bottom: top + 60, width: 100, height: 60});
+const stationBoxes = [
+  box(0, 0), box(120, 0), box(240, 0), box(360, 0),
+  box(0, 100), box(120, 100), box(240, 100), box(360, 100)
+];
+const stations = stationBoxes.map((bounds, index) => ({
+  id: `node-${index + 1}`,
+  getBoundingClientRect: () => bounds
+}));
+const scope = {
+  getBoundingClientRect: () => ({left: 0, top: 0, right: 460, bottom: 160, width: 460, height: 160}),
+  querySelectorAll: () => stations
+};
+const definitions = {
+  'same-row-adjacent': [0, 1, 0],
+  'same-row-skip': [0, 2, 1],
+  'wrap-boundary-adjacent': [3, 4, 3],
+  'same-column-cross-row': [0, 4, 4]
+};
+
+const samples = (d) => {
+  const tokens = d.match(/[MLC]|-?\\d+(?:\\.\\d+)?/g);
+  const points = [];
+  let index = 0;
+  let current;
+  while (index < tokens.length) {
+    const command = tokens[index++];
+    if (command === 'M') {
+      current = {x: Number(tokens[index++]), y: Number(tokens[index++])};
+      points.push(current);
+    } else if (command === 'L') {
+      const end = {x: Number(tokens[index++]), y: Number(tokens[index++])};
+      for (let step = 1; step <= 40; step += 1) {
+        const t = step / 40;
+        points.push({x: current.x + (end.x - current.x) * t, y: current.y + (end.y - current.y) * t});
+      }
+      current = end;
+    } else if (command === 'C') {
+      const p0 = current;
+      const p1 = {x: Number(tokens[index++]), y: Number(tokens[index++])};
+      const p2 = {x: Number(tokens[index++]), y: Number(tokens[index++])};
+      const p3 = {x: Number(tokens[index++]), y: Number(tokens[index++])};
+      for (let step = 1; step <= 100; step += 1) {
+        const t = step / 100;
+        const u = 1 - t;
+        points.push({
+          x: u ** 3 * p0.x + 3 * u ** 2 * t * p1.x + 3 * u * t ** 2 * p2.x + t ** 3 * p3.x,
+          y: u ** 3 * p0.y + 3 * u ** 2 * t * p1.y + 3 * u * t ** 2 * p2.y + t ** 3 * p3.y
+        });
+      }
+      current = p3;
+    }
+  }
+  return points;
+};
+const strictlyInside = (point, bounds) => (
+  point.x > bounds.left + .01 && point.x < bounds.right - .01
+  && point.y > bounds.top + .01 && point.y < bounds.bottom - .01
+);
+
+const results = {};
+Object.entries(definitions).forEach(([name, [fromIndex, toIndex, declarationIndex]]) => {
+  const d = pathFor(stations[fromIndex], stations[toIndex], scope, declarationIndex);
+  const points = samples(d);
+  results[name] = {
+    d,
+    hits: stationBoxes.flatMap((bounds, index) => (
+      points.some((point) => strictlyInside(point, bounds)) ? [`node-${index + 1}`] : []
+    )),
+    minX: Math.min(...points.map((point) => point.x)),
+    maxX: Math.max(...points.map((point) => point.x)),
+    minY: Math.min(...points.map((point) => point.y)),
+    maxY: Math.max(...points.map((point) => point.y))
+  };
+});
+process.stdout.write(JSON.stringify(results));
 """
 
     completed = subprocess.run(
         ["node", "-e", program], capture_output=True, text=True, check=True,
     )
+    return json.loads(completed.stdout)
 
-    assert completed.stdout == "M 100 50 C 100 5, 100 5, 250 5 C 400 5, 400 5, 400 50"
-    assert " 5" in completed.stdout
-    assert " 20" not in completed.stdout
-    assert " 80" not in completed.stdout
+
+@pytest.mark.parametrize(
+    ("case", "axis"),
+    [
+        ("same-row-adjacent", "horizontal"),
+        ("same-row-skip", "outer-horizontal"),
+        ("wrap-boundary-adjacent", "outer-wrap"),
+        ("same-column-cross-row", "vertical"),
+    ],
+)
+def test_production_path_geometry_avoids_every_station_rectangle(
+    case: str, axis: str,
+) -> None:
+    result = _production_geometry_cases()[case]
+
+    assert result["hits"] == [], f'{case}: {result["d"]}'
+    assert result["d"].count(" L ") >= 3, "route must expose endpoint stubs"
+    if axis == "horizontal":
+        assert (result["minY"], result["maxY"]) == (30, 30)
+    elif axis == "outer-horizontal":
+        assert result["minY"] < 0 or result["maxY"] > 60
+    elif axis == "outer-wrap":
+        coordinates = [
+            (float(x), float(y))
+            for x, y in re.findall(r'[ML] (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)', result["d"])
+        ]
+        assert any(
+            first[1] == second[1] and 60 < first[1] < 100
+            for first, second in zip(coordinates, coordinates[1:])
+        ), "route must use a horizontal segment in the empty inter-row lane"
+    else:
+        assert (result["minX"], result["maxX"]) == (50, 50)
 
 
 def test_flow_runtime_marker_uses_the_actual_edge_path_stroke() -> None:
