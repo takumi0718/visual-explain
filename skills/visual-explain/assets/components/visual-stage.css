@@ -10,11 +10,15 @@
   --ve-path-spotlight-content-width: var(--w-narrative);
 }
 
+script[data-ve-asset~="visual-stage-flow"] {
+  display: none;
+}
+
 .ve-seq-dim {
   opacity: 0.42;
 }
 
-.ve-seq-spot {
+.ve-seq-spot:not(path) {
   outline: 0.15rem solid var(--focus);
   outline-offset: 0.15rem;
   box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--focus) 22%, transparent);
@@ -51,6 +55,11 @@
 
 [data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-connector-layer path.ve-seq-spot {
   stroke: var(--focus);
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-connectors .ve-flow-link.ve-seq-spot {
+  outline: none;
+  box-shadow: none;
 }
 
 /* T8 emits this class only on the ordered station list; flow edges stay outside it. */
