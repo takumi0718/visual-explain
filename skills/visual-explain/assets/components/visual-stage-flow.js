@@ -1,11 +1,31 @@
 /* Opt-in path-spotlight connector runtime. The fixed runtime remains unchanged. */
 (() => {
   const SVG_NS = 'http:' + '//www.w3.org/2000/svg';
-  const SCOPE_SELECTOR = '[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-connect-scope]';
+  const INITIAL_SCOPE_SELECTOR = '[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-connect-scope]';
+  const SCOPE_SELECTOR = '[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-flow-connect-scope]';
   let resizeObserver;
   let scheduled = false;
 
   const scopes = () => Array.from(document.querySelectorAll(SCOPE_SELECTOR));
+  const suspendScope = (scope) => {
+    scope.setAttribute('data-ve-flow-connect-scope', '');
+    scope.removeAttribute('data-connect-scope');
+    scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+      const value = declaration.getAttribute('data-connect');
+      declaration.setAttribute('data-ve-flow-connect', value);
+      declaration.removeAttribute('data-connect');
+    });
+  };
+  const restoreScope = (scope) => {
+    scope.setAttribute('data-connect-scope', '');
+    scope.removeAttribute('data-ve-flow-connect-scope');
+    scope.querySelectorAll('[data-ve-flow-connect]').forEach((declaration) => {
+      declaration.setAttribute('data-connect', declaration.getAttribute('data-ve-flow-connect'));
+      declaration.removeAttribute('data-ve-flow-connect');
+    });
+  };
+  const suspendScopes = () => document.querySelectorAll(INITIAL_SCOPE_SELECTOR)
+    .forEach(suspendScope);
   const directChild = (parent, className) => Array.from(parent.children)
     .find((node) => node.classList && node.classList.contains(className));
   const nodeMap = (scope) => new Map(
@@ -26,12 +46,39 @@
     return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
   };
 
-  const pathFor = (from, to, scope) => {
+  /* TESTABLE_GEOMETRY:BEGIN */
+  const outerPath = (start, end, boxes, declarationIndex) => {
+    const top = Math.min(...boxes.map((box) => box.top));
+    const bottom = Math.max(...boxes.map((box) => box.bottom));
+    const minimumHeight = Math.min(...boxes.map((box) => box.bottom - box.top));
+    const laneGap = Math.max(8, minimumHeight * .25);
+    const laneDepth = Math.floor(declarationIndex / 2) + 1;
+    const laneY = declarationIndex % 2 === 0
+      ? top - laneGap * laneDepth
+      : bottom + laneGap * laneDepth;
+    const midpoint = (start.x + end.x) / 2;
+    return `M ${start.x} ${start.y} C ${start.x} ${laneY}, ${start.x} ${laneY}, ${midpoint} ${laneY} C ${end.x} ${laneY}, ${end.x} ${laneY}, ${end.x} ${end.y}`;
+  };
+  /* TESTABLE_GEOMETRY:END */
+
+  const pathFor = (from, to, scope, declarationIndex) => {
     const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
     const x1 = sx - box.left;
     const y1 = sy - box.top;
     const x2 = ex - box.left;
     const y2 = ey - box.top;
+    const stations = Array.from(scope.querySelectorAll('.ve-flow-path-canvas > .ve-flow-station[id]'));
+    const fromIndex = stations.indexOf(from);
+    const toIndex = stations.indexOf(to);
+    if (fromIndex >= 0 && toIndex >= 0 && Math.abs(toIndex - fromIndex) > 1) {
+      const first = Math.min(fromIndex, toIndex);
+      const last = Math.max(fromIndex, toIndex);
+      const boxes = stations.slice(first, last + 1).map((station) => {
+        const bounds = station.getBoundingClientRect();
+        return {top: bounds.top - box.top, bottom: bounds.bottom - box.top};
+      });
+      return outerPath({x: x1, y: y1}, {x: x2, y: y2}, boxes, declarationIndex);
+    }
     const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
     const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1;
     const c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
@@ -58,7 +105,7 @@
     arrow.setAttribute('orient', 'auto');
     const shape = document.createElementNS(SVG_NS, 'path');
     shape.setAttribute('d', 'M0,0 L8,4 L0,8 Z');
-    shape.setAttribute('fill', 'currentColor');
+    shape.setAttribute('fill', 'context-stroke');
     arrow.append(shape);
     defs.append(arrow);
     return defs;
@@ -81,7 +128,7 @@
     const nodes = nodeMap(scope);
     let hasLine = false;
 
-    scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+    scope.querySelectorAll('[data-connect]').forEach((declaration, declarationIndex) => {
       declaration.dataset.connect.split(',').map((item) => item.trim()).filter(Boolean)
         .forEach((item) => {
           const [fromId, toId] = item.split('->').map((id) => id && id.trim());
@@ -94,7 +141,7 @@
           }
 
           const path = document.createElementNS(SVG_NS, 'path');
-          path.setAttribute('d', pathFor(from, to, scope));
+          path.setAttribute('d', pathFor(from, to, scope, declarationIndex));
           path.setAttribute('fill', 'none');
           path.setAttribute('stroke', 'currentColor');
           path.setAttribute('stroke-width', '2');
@@ -116,7 +163,14 @@
     if (hasLine) scope.append(svg);
   };
 
-  const renderAll = () => scopes().forEach(render);
+  const renderAll = () => scopes().forEach((scope, scopeIndex) => {
+    restoreScope(scope);
+    try {
+      render(scope, scopeIndex);
+    } finally {
+      suspendScope(scope);
+    }
+  });
   const schedule = () => {
     if (scheduled) return;
     scheduled = true;
@@ -127,14 +181,20 @@
       renderAll();
     });
   };
-
-  window.addEventListener('load', () => {
+  const suspendAndSchedule = () => {
+    suspendScopes();
     schedule();
-    resizeObserver = new ResizeObserver(schedule);
+  };
+
+  suspendScopes();
+  schedule();
+  window.addEventListener('load', suspendAndSchedule);
+  window.addEventListener('load', () => {
+    resizeObserver = new ResizeObserver(suspendAndSchedule);
     scopes().forEach((scope) => resizeObserver.observe(scope));
   });
-  document.addEventListener('visual-explain:stepchange', schedule);
+  document.addEventListener('visual-explain:stepchange', suspendAndSchedule);
   document.addEventListener('toggle', (event) => {
-    if (event.target.matches('details')) schedule();
+    if (event.target.matches('details')) suspendAndSchedule();
   }, true);
 })();

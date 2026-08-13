@@ -11,7 +11,7 @@ from ve_components.registry import load_registry
 REPO_ROOT = Path(__file__).resolve().parents[4]
 COMPONENTS = REPO_ROOT / "skills" / "visual-explain" / "assets" / "components"
 REGISTRY_PATH = COMPONENTS / "registry.json"
-VISUAL_STAGE_DIGEST = "4255cc1ea799cbfe7e83ae9ece7feaf028a7d5cd0d7c665557787f91e72febe5"
+VISUAL_STAGE_DIGEST = "d699e8c8d91a2a79e32c76341f88ad8a542d105097ea6b2cd60689d066ff91c7"
 
 EXISTING_ASSETS = {
     "matrix": ("matrix.css", "fe9fd5f86063dcb93790a9549a7630a162d674082446e2dd5f86c540bd6b692c"),

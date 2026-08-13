@@ -41,6 +41,10 @@
   position: relative;
 }
 
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-scroll[data-ve-flow-connect-scope] {
+  position: relative;
+}
+
 [data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-connector-layer path.ve-seq-dim {
   opacity: 0.42;
 }

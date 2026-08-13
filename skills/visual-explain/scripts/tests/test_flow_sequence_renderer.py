@@ -5,6 +5,7 @@ from hashlib import sha256
 import html
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -184,6 +185,28 @@ def test_flow_runtime_is_path_only_and_replaces_fixed_output_after_each_trigger(
     assert "connection-text visually-hidden" in source
 
 
+def test_flow_runtime_suspends_opted_in_scopes_before_fixed_handlers_can_see_them() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+
+    initial_suspend = source.rindex("\n  suspendScopes();")
+    assert initial_suspend < source.index("window.addEventListener('load'")
+    assert initial_suspend < source.index("schedule();", initial_suspend)
+    assert "scope.removeAttribute('data-connect-scope')" in source
+    assert "declaration.removeAttribute('data-connect')" in source
+    assert "scope.setAttribute('data-ve-flow-connect-scope', '')" in source
+    assert "declaration.setAttribute('data-ve-flow-connect', value)" in source
+    assert "const suspendAndSchedule" in source
+    assert "new ResizeObserver(suspendAndSchedule)" in source
+    assert "window.addEventListener('load', suspendAndSchedule)" in source
+    assert "document.addEventListener('visual-explain:stepchange', suspendAndSchedule)" in source
+    toggle = source.split("document.addEventListener('toggle'", 1)[1]
+    assert "suspendAndSchedule();" in toggle
+    assert "finally" in source
+    assert "suspendScope(scope)" in source.split("finally", 1)[1]
+
+
 def test_flow_runtime_draws_every_declaration_with_edge_identity_and_state() -> None:
     source = (
         SKILL / "assets" / "components" / "visual-stage-flow.js"
@@ -200,11 +223,54 @@ def test_flow_runtime_draws_every_declaration_with_edge_identity_and_state() -> 
     assert "url(#${markerId})" in source
 
 
+def test_non_adjacent_geometry_routes_through_a_literal_outer_lane() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+    geometry = source.split("/* TESTABLE_GEOMETRY:BEGIN */", 1)[1].split(
+        "/* TESTABLE_GEOMETRY:END */", 1,
+    )[0]
+    program = geometry + """
+process.stdout.write(outerPath(
+  {x: 100, y: 50},
+  {x: 400, y: 50},
+  [
+    {top: 20, bottom: 80},
+    {top: 20, bottom: 80},
+    {top: 20, bottom: 80}
+  ],
+  0
+));
+"""
+
+    completed = subprocess.run(
+        ["node", "-e", program], capture_output=True, text=True, check=True,
+    )
+
+    assert completed.stdout == "M 100 50 C 100 5, 100 5, 250 5 C 400 5, 400 5, 400 50"
+    assert " 5" in completed.stdout
+    assert " 20" not in completed.stdout
+    assert " 80" not in completed.stdout
+
+
+def test_flow_runtime_marker_uses_the_actual_edge_path_stroke() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+
+    assert "shape.setAttribute('fill', 'context-stroke')" in source
+
+
 def test_path_scope_and_actual_connector_paths_have_scoped_paint_rules() -> None:
     css = (SKILL / "assets" / "components" / "visual-stage.css").read_text("utf-8")
 
     assert re.search(
         r'\[data-ve-sequence-mode="path-spotlight"\].*?\.ve-flow-scroll\[data-connect-scope\]\s*\{[^}]*position:\s*relative;',
+        css,
+        re.DOTALL,
+    )
+    assert re.search(
+        r'\[data-ve-sequence-mode="path-spotlight"\].*?\.ve-flow-scroll\[data-ve-flow-connect-scope\]\s*\{[^}]*position:\s*relative;',
         css,
         re.DOTALL,
     )
