@@ -16,8 +16,14 @@ import html
 
 from ..diagnostics import RENDERER_FAILURE, Diagnostic
 from ..flow_layout import MAX_SPINE_ROWS, assign_rails, edge_spans, order_index
-from ..model import CanonicalSection, RenderManifest, RenderResult
-from .common import claim_before_body, select_style_assets
+from ..model import (
+    CanonicalSection,
+    FlowPayload,
+    RenderManifest,
+    RenderResult,
+    SequenceDeclaration,
+)
+from .common import SequencePanel, claim_before_body, expand_sequence, select_style_assets
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 _RELATION_LABEL = {
@@ -34,11 +40,30 @@ _RELATION_LABEL = {
 MAX_ROWS = MAX_SPINE_ROWS
 
 
+def _path_edge_ids(
+    flow: FlowPayload,
+    sequence: SequenceDeclaration,
+    step_index: int,
+) -> tuple[str, ...]:
+    """Derive current within-step edges followed by the incoming bridge."""
+    step = sequence.steps[step_index]
+    pairs = list(zip(step.target_ids, step.target_ids[1:]))
+    if step_index:
+        previous = sequence.steps[step_index - 1]
+        pairs.append((previous.target_ids[-1], step.target_ids[0]))
+    edge_by_pair = {(edge.source, edge.target): edge.id for edge in flow.edges}
+    return tuple(edge_by_pair[pair] for pair in pairs if pair in edge_by_pair)
+
+
 def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
-def render_flow(section: CanonicalSection, definition) -> RenderResult:
+def _render_flow_panel(
+    section: CanonicalSection,
+    definition,
+    panel: SequencePanel,
+) -> RenderResult:
     ir = section.ir
     flow = ir.flow
     assert flow is not None
@@ -67,25 +92,30 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
 
     def annotate(nid: str) -> tuple[str, str, str]:
         cls = " ve-takeaway-target" if nid in takeaway else ""
+        if panel.step is not None:
+            cls += " ve-seq-spot" if nid in panel.highlight_ids else " ve-seq-dim"
         attr = ' data-ve-takeaway="true"' if nid in takeaway else ""
         emphasis = (f'<span class="ve-emphasis">{_esc(emphasis_by_id[nid])}</span>'
                     if nid in emphasis_by_id else "")
         return cls, attr, emphasis
 
-    def station_li(nid: str, in_group: bool) -> str:
+    def station_li(nid: str, in_group: bool, *, connector_node: bool = False) -> str:
         cls, attr, emphasis = annotate(nid)
         group_cls = " in-group" if in_group else ""
-        return (f'<li class="ve-flow-station{group_cls}">'
+        dom_id = f' id="{_esc(nid)}"' if connector_node else ""
+        return (f'<li class="ve-flow-station{group_cls}"{dom_id}>'
                 f'<span class="ve-flow-node{cls}" data-ve-semantic-id="{_esc(nid)}"'
                 f' data-ve-node-id="{_esc(nid)}"{attr}>{_esc(node_by_id[nid].label)}{emphasis}</span></li>')
 
-    def link_li(edge) -> str:
+    def link_li(edge, *, connector: bool = False) -> str:
         cls, attr, emphasis = annotate(edge.id)
         relation = _RELATION_LABEL.get(edge.relation, edge.relation)
         label = f'<span class="ve-flow-edge-label">{_esc(edge.label)}</span>' if edge.label else ""
+        connect = (f' data-connect="{_esc(edge.source)}-&gt;{_esc(edge.target)}"'
+                   if connector else "")
         return (f'<li class="ve-flow-link{cls}" data-ve-semantic-id="{_esc(edge.id)}"'
                 f' data-ve-from="{_esc(edge.source)}" data-ve-to="{_esc(edge.target)}"'
-                f' data-ve-relation="{_esc(edge.relation)}"{attr}>'
+                f' data-ve-relation="{_esc(edge.relation)}"{connect}{attr}>'
                 f'<span class="ve-flow-arrow" aria-hidden="true">↓</span>{label}'
                 f'<span class="ve-flow-rel">{_esc(relation)}</span>{emphasis}</li>')
 
@@ -135,8 +165,29 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
             f' data-ve-to="{_esc(edge.target)}" data-ve-relation="{_esc(edge.relation)}"{attr}>'
             f'{label}{emphasis}</li>')
 
-    canvas = (f'<div class="ve-flow-scroll"><ol class="ve-flow-canvas">'
-              f'{"".join(spine_items)}{"".join(rail_items)}</ol></div>')
+    if ir.sequence is not None and ir.sequence.mode == "path-spotlight":
+        path_stations = [
+            station_li(nid, in_group=node_by_id[nid].group is not None, connector_node=True)
+            for nid in ordered
+        ]
+        path_edges = [link_li(edge, connector=True) for edge in flow.edges]
+        path_groups = [
+            f'<li data-ve-semantic-id="{_esc(group.id)}">{_esc(group.label)}</li>'
+            for group in flow.groups
+        ]
+        group_markup = (
+            f'<ul class="ve-flow-groups visually-hidden">{"".join(path_groups)}</ul>'
+            if path_groups else ""
+        )
+        canvas = (
+            f'<div class="ve-flow-scroll" data-connect-scope>'
+            f'<ol class="ve-flow-canvas ve-flow-path-canvas">{"".join(path_stations)}</ol>'
+            f'<ol class="ve-flow-connectors">{"".join(path_edges)}</ol>'
+            f'{group_markup}</div>'
+        )
+    else:
+        canvas = (f'<div class="ve-flow-scroll"><ol class="ve-flow-canvas">'
+                  f'{"".join(spine_items)}{"".join(rail_items)}</ol></div>')
 
     # Visually-hidden edge sentences carry NO data attributes: the visible spine
     # and rails are the single semantic layer.
@@ -195,3 +246,20 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
         manifest=manifest,
         diagnostics=tuple(diagnostics),
     )
+
+
+def render_flow(section: CanonicalSection, definition) -> RenderResult:
+    """Render a legacy figure or expand complete static sequence panels."""
+    ir = section.ir
+    flow = ir.flow
+    assert flow is not None
+
+    def render_panel(panel: SequencePanel) -> RenderResult:
+        return _render_flow_panel(section, definition, panel)
+
+    path_edges = None
+    if ir.sequence is not None and ir.sequence.mode == "path-spotlight":
+        path_edges = lambda sequence, step_index: _path_edge_ids(
+            flow, sequence, step_index,
+        )
+    return expand_sequence(ir.sequence, render_panel, path_edges=path_edges)
