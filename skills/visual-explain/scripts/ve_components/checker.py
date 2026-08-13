@@ -553,6 +553,18 @@ def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, compon
         except ValueError:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"{slot_type} 資産の contract-version が不正です"))
             continue
+        declared_digests = {
+            candidate.digest
+            for registered_component in registry.components
+            for candidate in registered_component.assets
+            if candidate.id == asset_id
+        }
+        if len(declared_digests) > 1:
+            diagnostics.append(Diagnostic(
+                INVALID_CONTROLLED_ASSET,
+                f"資産 '{asset_id}' の registry 宣言ダイジェストが一致しません",
+            ))
+            continue
         component = registry.find(component_id, version)
         if component is None:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"未登録のコンポーネント資産です: {component_id}@{version}"))
@@ -1790,7 +1802,10 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_renderer_svg(content)
         diagnostics += validate_notation_rules(content)
         from .document_checks import check_document_structure
-        diagnostics += check_document_structure(content, title=_extract_title_text(text))
+        expected_records = expected.expected_records if expected is not None else None
+        diagnostics += check_document_structure(
+            content, title=_extract_title_text(text), expected=expected_records,
+        )
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

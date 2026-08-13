@@ -280,9 +280,9 @@ class WaterfallManifestTest(unittest.TestCase):
     def test_registry_entry_is_complete(self) -> None:
         self.assertIsNotNone(WATERFALL_DEF)
         self.assertEqual(WATERFALL_DEF.relationship_kind, "additive-bridge")
-        self.assertEqual(WATERFALL_DEF.capabilities, ("additive-bridging",))
+        self.assertEqual(WATERFALL_DEF.capabilities, ("additive-bridging", "typed-sequence"))
         self.assertEqual(WATERFALL_DEF.renderer, "waterfall@2")
-        self.assertEqual([a.id for a in WATERFALL_DEF.assets], ["waterfall.css"])
+        self.assertEqual([a.id for a in WATERFALL_DEF.assets], ["waterfall.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         raw = json.loads((TESTS / "component-valid-waterfall.json").read_text("utf-8"))

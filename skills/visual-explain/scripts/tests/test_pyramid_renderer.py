@@ -132,7 +132,7 @@ class PyramidManifestTest(unittest.TestCase):
         self.assertEqual(PYRAMID_DEF.relationship_kind, "layered-priority")
         self.assertEqual(PYRAMID_DEF.capabilities, ("priority-layering",))
         self.assertEqual(PYRAMID_DEF.renderer, "pyramid@2")
-        self.assertEqual([a.id for a in PYRAMID_DEF.assets], ["pyramid.css"])
+        self.assertEqual([a.id for a in PYRAMID_DEF.assets], ["pyramid.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir, result = render_fixture("component-valid-pyramid.json")

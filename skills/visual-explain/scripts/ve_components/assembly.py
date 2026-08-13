@@ -14,7 +14,14 @@ from dataclasses import dataclass
 
 from .checker import extract_flow_dom, validate_content_markup, RENDERER_SVG_ALLOWLIST
 from .diagnostics import DUPLICATE_SECTION_ID, RENDERER_FAILURE, ContractError, Diagnostic
-from .model import CanonicalSection, CompatibilitySection, NarrativeSection, RenderManifest
+from .model import (
+    Assertion,
+    CanonicalSection,
+    CompatibilitySection,
+    NarrativeSection,
+    RenderManifest,
+    SequenceDeclaration,
+)
 from .registry import (
     AssetDefinition,
     Registry,
@@ -33,12 +40,24 @@ class AssetRef:
 
 
 @dataclass(frozen=True)
+class ExpectedCanonicalRecord:
+    """Validated IR facts retained for later final-document checks."""
+    component_id: str
+    instance_id: str
+    payload_semantic_ids: frozenset[str]
+    claim: str | None
+    assertions: tuple[Assertion, ...] | None
+    sequence: SequenceDeclaration | None
+
+
+@dataclass(frozen=True)
 class RenderedCanonical:
     instance_id: str
     markup: str
     style_assets: tuple[AssetRef, ...]
     script_assets: tuple[AssetRef, ...]
     manifest: RenderManifest
+    expected_record: ExpectedCanonicalRecord | None = None
 
 
 @dataclass(frozen=True)
@@ -63,6 +82,7 @@ class CompositionResult:
     manifests: tuple[RenderManifest, ...]
     compatibility: tuple[WrappedCompatibility, ...]
     narrative: tuple[WrappedNarrative, ...]
+    expected_records: tuple[ExpectedCanonicalRecord, ...] = ()
 
 
 def _attr(value: str) -> str:
@@ -80,6 +100,21 @@ def _svg_open_tags(markup: str) -> tuple[str | None, ...]:
         id_match = re.search(r'\bid="([^"]+)"', attrs)
         roots.append(id_match.group(1) if id_match else None)
     return tuple(roots)
+
+
+def _expected_record(section: CanonicalSection, component_id: str) -> ExpectedCanonicalRecord:
+    ir = section.ir
+    non_payload_ids = {ir.id}
+    non_payload_ids.update(item.id for item in ir.certainty)
+    non_payload_ids.update(item.id for item in ir.sources)
+    return ExpectedCanonicalRecord(
+        component_id=component_id,
+        instance_id=ir.id,
+        payload_semantic_ids=frozenset(ir.semantic_ids()) - non_payload_ids,
+        claim=ir.claim,
+        assertions=ir.assertions,
+        sequence=ir.sequence,
+    )
 
 
 def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
@@ -177,6 +212,7 @@ def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
     return RenderedCanonical(
         instance_id=section.ir.id, markup=wrapper,
         style_assets=style_assets, script_assets=script_assets, manifest=manifest,
+        expected_record=_expected_record(section, component.id),
     )
 
 
@@ -300,6 +336,7 @@ def compose_sections(items) -> CompositionResult:
     manifests: list[RenderManifest] = []
     compatibility: list[WrappedCompatibility] = []
     narrative: list[WrappedNarrative] = []
+    expected_records: list[ExpectedCanonicalRecord] = []
     seen_instances: set[str] = set()
     seen_styles: set[tuple] = set()
     seen_scripts: set[tuple] = set()
@@ -310,13 +347,15 @@ def compose_sections(items) -> CompositionResult:
         markup.append(item.markup)
         if isinstance(item, RenderedCanonical):
             manifests.append(item.manifest)
+            if item.expected_record is not None:
+                expected_records.append(item.expected_record)
             for ref in item.style_assets:
-                key = (ref.component_id, ref.version, ref.asset.id, ref.asset.digest)
+                key = (ref.asset.id, ref.asset.digest)
                 if key not in seen_styles:
                     seen_styles.add(key)
                     style_assets.append(ref)
             for ref in item.script_assets:
-                key = (ref.component_id, ref.version, ref.asset.id, ref.asset.digest)
+                key = (ref.asset.id, ref.asset.digest)
                 if key not in seen_scripts:
                     seen_scripts.add(key)
                     script_assets.append(ref)
@@ -334,4 +373,5 @@ def compose_sections(items) -> CompositionResult:
         sections_markup=tuple(markup), style_assets=tuple(style_assets),
         script_assets=tuple(script_assets), manifests=tuple(manifests),
         compatibility=tuple(compatibility), narrative=tuple(narrative),
+        expected_records=tuple(expected_records),
     )

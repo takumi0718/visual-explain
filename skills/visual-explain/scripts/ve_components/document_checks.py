@@ -320,12 +320,18 @@ def _dom_text(fragment: str) -> str:
     return "".join(p.parts).strip()
 
 
-def check_document_structure(content_markup: str, *, title: str | None = None) -> list[Diagnostic]:
+def check_document_structure(
+    content_markup: str,
+    *,
+    title: str | None = None,
+    expected=None,
+) -> list[Diagnostic]:
     """Inspect flattened content markup for group-3 structure invariants.
 
     ``title`` is the document ``<title>`` text (from the TITLE slot; may still
     contain character references). When omitted, the title↔h1 equality check
-    is skipped.
+    is skipped. ``expected`` is reserved for profile-specific checks and is not
+    interpreted by this task.
     """
     diagnostics: list[Diagnostic] = []
     structure = _parse_structure(content_markup)

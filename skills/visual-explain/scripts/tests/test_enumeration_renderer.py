@@ -52,7 +52,7 @@ class EnumerationManifestTest(unittest.TestCase):
         self.assertEqual(ENUM_DEF.relationship_kind, "parallel-enumeration")
         self.assertEqual(ENUM_DEF.capabilities, ("parallel-itemization",))
         self.assertEqual(ENUM_DEF.renderer, "enumeration@2")
-        self.assertEqual([a.id for a in ENUM_DEF.assets], ["enumeration.css"])
+        self.assertEqual([a.id for a in ENUM_DEF.assets], ["enumeration.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir, result = render_fixture()

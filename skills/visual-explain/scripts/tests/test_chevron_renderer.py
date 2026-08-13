@@ -264,7 +264,7 @@ class ChevronManifestTest(unittest.TestCase):
         self.assertEqual(CHEVRON_DEF.relationship_kind, "ordered-sequence")
         self.assertEqual(CHEVRON_DEF.capabilities, ("linear-sequence", "closed-loop"))
         self.assertEqual(CHEVRON_DEF.renderer, "chevron@2")
-        self.assertEqual([a.id for a in CHEVRON_DEF.assets], ["chevron.css"])
+        self.assertEqual([a.id for a in CHEVRON_DEF.assets], ["chevron.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir, result = render_fixture("component-valid-chevron.json")
