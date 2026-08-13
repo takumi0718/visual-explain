@@ -1,13 +1,19 @@
 """Static, accessible renderer for the semantic ``waterfall`` component (v2 SVG)."""
 from __future__ import annotations
 
+from dataclasses import replace
 import html
 import re
 from decimal import Decimal
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 from ..numeric import to_decimal, waterfall_axis_max, waterfall_scale_values, waterfall_y
-from .common import claim_before_body, select_style_assets
+from .common import (
+    SequencePanel,
+    claim_before_body,
+    expand_sequence,
+    select_style_assets,
+)
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
@@ -35,7 +41,11 @@ def _largest_decrease_step_id(steps) -> str | None:
     return max(negatives, key=lambda item: item[1])[0]
 
 
-def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
+def _render_waterfall_panel(
+    section: CanonicalSection,
+    definition,
+    panel: SequencePanel,
+) -> RenderResult:
     ir = section.ir
     wf = ir.waterfall
     assert wf is not None
@@ -150,8 +160,16 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
         value_y = y_top + max(12, height // 2 + 4)
         factor_y = y_top - 8 if kind == "plus" else y_bottom + 16
 
+        sequence_class = ""
+        if panel.step is not None:
+            state = (
+                "ve-seq-spot"
+                if bar["semantic_id"] in panel.highlight_ids
+                else "ve-seq-dim"
+            )
+            sequence_class = f' class="{state}"'
         svg_parts.append(
-            f'<g data-ve-semantic-id="{_esc(bar["semantic_id"])}">'
+            f'<g{sequence_class} data-ve-semantic-id="{_esc(bar["semantic_id"])}">'
             f'<rect class="{bar_cls}" x="{x}" y="{y_top}" width="{bar_w}" height="{height}"></rect>'
             f'<text class="{value_cls}" x="{cx}" y="{value_y}" text-anchor="middle">'
             f'{_esc(bar["value_text"])}</text>'
@@ -205,8 +223,6 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-waterfall-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
-    markup = claim_before_body(ir, body_markup)
-
     style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
@@ -222,8 +238,19 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
         svg_root_ids=(svg_id,),
     )
     return RenderResult(
-        markup=markup,
+        markup=body_markup,
         style_asset_ids=tuple(a.id for a in style_assets),
         script_asset_ids=(),
         manifest=manifest,
     )
+
+
+def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
+    """Render a legacy figure or expand complete cumulative delta panels."""
+    ir = section.ir
+
+    def render_panel(panel: SequencePanel) -> RenderResult:
+        return _render_waterfall_panel(section, definition, panel)
+
+    expanded = expand_sequence(ir.sequence, render_panel)
+    return replace(expanded, markup=claim_before_body(ir, expanded.markup))
