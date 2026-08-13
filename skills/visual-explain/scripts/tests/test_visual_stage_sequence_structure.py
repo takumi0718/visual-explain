@@ -205,9 +205,11 @@ def test_css_scanner_rejects_layout_properties_in_compound_nested_highlight_rule
     assert any("paint-only" in item.message for item in check_visual_stage_css(css, SKELETON))
 
 
-def test_css_scanner_ignores_layout_in_claim_and_path_layout_blocks_and_comments_strings() -> None:
+def test_css_scanner_ignores_claim_and_non_sizing_path_blocks_comments_and_strings() -> None:
     css = VISUAL_STAGE_CSS + (
-        '\n.ve-claim, .ve-flow-path-canvas { width: 100%; display: flex; '
+        '\n.ve-claim { width: 100%; display: flex; '
+        'content: ".ve-seq-spot { transform: scale(2) }"; } '
+        '.ordinary .ve-flow-path-canvas { overflow-wrap: anywhere; '
         'content: ".ve-seq-spot { transform: scale(2) }"; '
         '/* .ve-seq-dim { margin: 2rem; } */ }'
     )
@@ -295,12 +297,18 @@ def test_css_scanner_recognizes_class_attribute_highlight_selectors(selector: st
         '[class|="ve-seq-spot"]',
         '[class="VE-SEQ-SPOT" \\69]',
         '[class*="prefix-ve-seq-spot-suffix"]',
+        '[class^="ve-seq"]',
     ),
 )
 def test_css_scanner_conservatively_recognizes_every_matching_class_operator(
     selector: str,
 ) -> None:
     css = VISUAL_STAGE_CSS + f"\n.card{selector} {{ width: 1px; }}"
+    assert any("paint-only" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+def test_css_scanner_decodes_hex_escape_whitespace_terminators_before_selector_parsing() -> None:
+    css = VISUAL_STAGE_CSS + '\n[cl\\61 ss^="ve-seq-\\73 pot" s] { width: 1px; }'
     assert any("paint-only" in item.message for item in check_visual_stage_css(css, SKELETON))
 
 
@@ -314,6 +322,22 @@ def test_css_scanner_conservatively_recognizes_every_matching_class_operator(
     ),
 )
 def test_width_contract_rejects_closed_set_interfering_visual_stage_sources(css: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+@pytest.mark.parametrize(
+    "css",
+    (
+        VISUAL_STAGE_CSS + "\n.ve-flow-station { inline-size: 30rem; }",
+        VISUAL_STAGE_CSS + "\n.ve-flow-station { border-inline-width: 1rem; }",
+        VISUAL_STAGE_CSS + "\n[data-stepper] * { flex-basis: 30rem; }",
+        VISUAL_STAGE_CSS + "\n[data-stepper] .ve-flow-node { padding-inline-start: 2rem; }",
+        VISUAL_STAGE_CSS + "\n.ve-flow-station { margin-inline: 1rem; }",
+        VISUAL_STAGE_CSS + "\n.ve-flow-path-canvas { display: grid; }",
+        VISUAL_STAGE_CSS + '\n[class^="ve-flow"] { inline-size: 30rem; }',
+    ),
+)
+def test_width_contract_rejects_logical_and_ancestor_sizing_sources(css: str) -> None:
     assert any("1212" in item.message for item in check_visual_stage_css(css, SKELETON))
 
 
@@ -332,6 +356,11 @@ def test_width_contract_rejects_closed_set_interfering_visual_stage_sources(css:
             "main { width: min(100% - var(--space-4), var(--w-narrative));",
             "main { box-sizing: content-box; width: min(100% - var(--space-4), var(--w-narrative));",
         ),
+        SKELETON.replace(
+            "main { width: min(100% - var(--space-4), var(--w-narrative));",
+            "main { padding-inline-start: 5rem; width: min(100% - var(--space-4), var(--w-narrative));",
+        ),
+        SKELETON.replace("body { margin: 0;", "body { margin: 5rem;"),
     ),
 )
 def test_content_width_contract_includes_padding_border_and_box_sizing(skeleton: str) -> None:
@@ -351,6 +380,32 @@ def test_content_width_contract_includes_padding_border_and_box_sizing(skeleton:
     ),
 )
 def test_closed_reference_attributes_reject_malformed_or_trailing_grammar(
+    bad_attribute: str,
+) -> None:
+    panel_two = _panel(2).replace(
+        'aria-describedby="desc--p2"',
+        f'aria-describedby="desc--p2" {bad_attribute}',
+    )
+    messages = _messages(_content(body=_stepper(
+        panels=(_panel(1), panel_two, _panel(3)),
+    )))
+    assert any("参照属性" in message and "形式" in message for message in messages)
+
+
+@pytest.mark.parametrize(
+    "bad_attribute",
+    (
+        'href=""',
+        'href="https://example.invalid/#desc--p2"',
+        'href="desc--p2"',
+        'xlink:href="none"',
+        'filter="none"',
+        'mask="garbage"',
+        'fill="currentColor"',
+        'stroke="https://example.invalid/paint"',
+    ),
+)
+def test_every_designated_reference_attribute_has_closed_local_grammar(
     bad_attribute: str,
 ) -> None:
     panel_two = _panel(2).replace(
@@ -396,6 +451,17 @@ def test_visual_stage_diagnostics_share_one_document_wide_stable_cap() -> None:
 
     first = check_visual_stage_document_css(_content(), style, SKELETON)
     second = check_visual_stage_document_css(_content(), style, SKELETON)
+    assert first == second
+    assert len(first) == 32
+
+
+def test_css_only_public_checker_has_the_same_stable_cap() -> None:
+    css = VISUAL_STAGE_CSS + "\n" + "\n".join(
+        f'.bad-{index}[class*="ve-seq-spot"] {{ width: {index + 1}px; }}'
+        for index in range(40)
+    )
+    first = check_visual_stage_css(css, SKELETON)
+    second = check_visual_stage_css(css, SKELETON)
     assert first == second
     assert len(first) == 32
 
@@ -447,6 +513,24 @@ def test_user_controlled_identifiers_are_bounded_in_diagnostics() -> None:
     structure_messages = [
         item.message
         for item in check_document_structure(_content(), title="Title", expected=(record,))
+        if item.message.startswith("visual-stage ")
+    ]
+    assert structure_messages
+    assert max(map(len, structure_messages)) <= 512
+
+
+def test_every_user_controlled_diagnostic_field_uses_the_common_length_bound() -> None:
+    huge = "z" * 5000
+    css = VISUAL_STAGE_CSS + f'\n[class*="ve-seq-spot"] {{ {huge}: 1; }}'
+    css_messages = [item.message for item in check_visual_stage_css(css, SKELETON)]
+    assert css_messages
+    assert max(map(len, css_messages)) <= 512
+
+    expected = replace(_record(component=huge), instance_id="diagram")
+    content = _content(body=_stepper(mode=huge))
+    structure_messages = [
+        item.message
+        for item in check_document_structure(content, title="Title", expected=(expected,))
         if item.message.startswith("visual-stage ")
     ]
     assert structure_messages

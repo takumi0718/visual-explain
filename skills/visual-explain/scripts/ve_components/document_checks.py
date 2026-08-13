@@ -62,6 +62,7 @@ _MAX_VISUAL_STAGE_DIAGNOSTICS = 32
 _MAX_DIAGNOSTIC_IDS = 8
 _MAX_DIAGNOSTIC_IDENTIFIER_CHARS = 96
 _MAX_DIAGNOSTIC_ID_LIST_CHARS = 256
+_MAX_DIAGNOSTIC_MESSAGE_CHARS = 384
 _MIN_VISUAL_STAGE_OVERLAP_CHARS = 10
 _SEQUENCE_HIGHLIGHT_CLASSES = frozenset({
     "ve-seq-spot", "ve-seq-dim", "ve-takeaway-target",
@@ -91,6 +92,10 @@ _SKELETON_CONTENT_WIDTH_TOKEN = "--w-narrative"
 _PATH_CANVAS_SELECTOR = (
     '[data-stepper][data-ve-sequence-mode="path-spotlight"] '
     '[data-ve-component="flow"] .ve-flow-path-canvas'
+)
+_PATH_SCROLL_SELECTOR = (
+    '[data-stepper][data-ve-sequence-mode="path-spotlight"] '
+    '[data-ve-component="flow"] .ve-flow-scroll'
 )
 _PATH_STATION_SELECTOR = f"{_PATH_CANVAS_SELECTOR} .ve-flow-station"
 _PATH_NODE_SELECTOR = f"{_PATH_CANVAS_SELECTOR} .ve-flow-node"
@@ -484,10 +489,19 @@ def _bounded_id_list(values) -> str:
     return rendered[:_MAX_DIAGNOSTIC_ID_LIST_CHARS - 1] + "…"
 
 
+def _bounded_diagnostic_message(prefix: str, message: object) -> str:
+    """Apply one stable bound to every visual-stage diagnostic field."""
+    body = str(message)
+    available = max(1, _MAX_DIAGNOSTIC_MESSAGE_CHARS - len(prefix))
+    if len(body) > available:
+        body = body[:available - 1] + "…"
+    return prefix + body
+
+
 def _visual_stage_diagnostic(message: str, path: str) -> Diagnostic:
     return Diagnostic(
         DOCUMENT_STRUCTURE_VIOLATION,
-        f"visual-stage 情報完全性: {message}",
+        _bounded_diagnostic_message("visual-stage 情報完全性: ", message),
         path,
     )
 
@@ -495,7 +509,7 @@ def _visual_stage_diagnostic(message: str, path: str) -> Diagnostic:
 def _sequence_diagnostic(message: str, path: str = "content") -> Diagnostic:
     return Diagnostic(
         DOCUMENT_STRUCTURE_VIOLATION,
-        f"visual-stage sequence: {message}",
+        _bounded_diagnostic_message("visual-stage sequence: ", message),
         path,
     )
 
@@ -510,9 +524,10 @@ def _normalize_reference_value(name: str, value: str, panel_number: int) -> str:
     if kind == "dom-id":
         return _strip_panel_suffix(value, panel_number)
     if kind == "fragment":
+        trimmed = value.strip()
         return (
-            "#" + _strip_panel_suffix(value[1:], panel_number)
-            if value.startswith("#") else value
+            "#" + _strip_panel_suffix(trimmed[1:], panel_number)
+            if trimmed.startswith("#") else trimmed
         )
     if kind == "single-idref":
         return _strip_panel_suffix(value, panel_number)
@@ -580,6 +595,8 @@ def _panel_reference_analysis(node: _DomNode) -> tuple[tuple[str, ...], tuple[st
                         targets.append(target)
                     else:
                         malformed.append(name)
+                else:
+                    malformed.append(name)
             elif kind == "single-idref":
                 if value and not any(char.isspace() for char in value):
                     targets.append(value)
@@ -611,7 +628,7 @@ def _panel_reference_analysis(node: _DomNode) -> tuple[tuple[str, ...], tuple[st
                 match = _EXACT_URL_REF_RE.fullmatch(decoded_value)
                 if match is not None:
                     targets.append(match.group(1))
-                elif re.search(r"url\s*\(", decoded_value, re.I):
+                else:
                     malformed.append(name)
             elif kind == "inline-url-reference":
                 decoded_value = _decode_css_identifier(value)
@@ -910,7 +927,7 @@ def _check_visual_stage_sequences(content_markup: str, expected) -> list[Diagnos
 def _css_diagnostic(message: str) -> Diagnostic:
     return Diagnostic(
         DOCUMENT_STRUCTURE_VIOLATION,
-        f"visual-stage CSS: {message}",
+        _bounded_diagnostic_message("visual-stage CSS: ", message),
         "assets.visual-stage",
     )
 
@@ -1129,14 +1146,19 @@ def _attribute_selector_targets_highlight(content: str) -> bool:
         value = value.lower()
     if operator == "~=":
         return value in _HIGHLIGHT_CLASS_NAMES
-    return any(class_name in value for class_name in _HIGHLIGHT_CLASS_NAMES)
+    if operator == "=":
+        return any(class_name in value.split() for class_name in _HIGHLIGHT_CLASS_NAMES)
+    return bool(value) and any(
+        class_name in value or value in class_name
+        for class_name in _HIGHLIGHT_CLASS_NAMES
+    )
 
 
 def _selector_may_target_class(selector: str, class_name: str) -> bool:
     decoded = _decode_css_identifier(selector)
     if re.search(rf"\.{re.escape(class_name)}(?![-_a-zA-Z0-9])", decoded):
         return True
-    for content in _selector_attribute_contents(selector):
+    for content in _selector_attribute_contents(decoded):
         name_pattern = r"((?:\\.|[-_a-zA-Z0-9])+?)"
         value_pattern = r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|(?:\\.|[^\s])+?)'
         match = re.fullmatch(
@@ -1154,21 +1176,110 @@ def _selector_may_target_class(selector: str, class_name: str) -> bool:
         target = class_name
         if flag == "i":
             value, target = value.lower(), target.lower()
-        if target in value:
+        operator = match.group(2)
+        if operator == "~=" and value == target:
+            return True
+        if operator == "=" and target in value.split():
+            return True
+        if operator not in {"~=", "="} and value and (target in value or value in target):
             return True
     return False
 
 
+def _selector_has_universal_target(selector: str) -> bool:
+    """Recognize a universal selector without confusing attribute ``*=``."""
+    decoded = _decode_css_identifier(selector)
+    quote: str | None = None
+    brackets = 0
+    index = 0
+    while index < len(decoded):
+        char = decoded[index]
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "[":
+            brackets += 1
+        elif char == "]" and brackets:
+            brackets -= 1
+        elif char == "*" and brackets == 0:
+            return True
+        index += 1
+    return False
+
+
+def _selector_attribute_name(content: str) -> str:
+    match = re.match(r"\s*([-_a-zA-Z0-9]+)", content)
+    return match.group(1).lower() if match is not None else ""
+
+
+def _selector_may_affect_path_sizing(selector: str) -> bool:
+    """Conservatively classify controlled selectors that can size path mode."""
+    if _selector_has_universal_target(selector):
+        return True
+    if any(
+        _selector_may_target_class(selector, class_name)
+        for class_name in (
+            "ve-flow-scroll", "ve-flow-path-canvas", "ve-flow-station", "ve-flow-node",
+        )
+    ):
+        return True
+    decoded = _decode_css_identifier(selector)
+    attributes = _selector_attribute_contents(decoded)
+    if any(_selector_attribute_name(content) == "data-stepper" for content in attributes):
+        return True
+    return any(
+        _selector_attribute_name(content) == "data-ve-component"
+        and "flow" in content.lower()
+        for content in attributes
+    )
+
+
+def _selector_may_affect_main_sizing(selector: str) -> bool:
+    if _selector_has_universal_target(selector):
+        return True
+    decoded = _decode_css_identifier(selector)
+    # Remove attribute contents and strings before looking for type selectors.
+    syntax = decoded
+    for content in _selector_attribute_contents(decoded):
+        syntax = syntax.replace(f"[{content}]", " ")
+    syntax = re.sub(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', " ", syntax)
+    return re.search(
+        r"(?<![-_a-zA-Z0-9])(html|body|main)(?![-_a-zA-Z0-9])|:root\b",
+        syntax,
+        re.I,
+    ) is not None
+
+
+def _is_sizing_property(name: str) -> bool:
+    if name in {
+        "width", "min-width", "max-width", "height", "min-height", "max-height",
+        "inline-size", "min-inline-size", "max-inline-size",
+        "block-size", "min-block-size", "max-block-size",
+        "gap", "row-gap", "column-gap", "grid-gap", "grid-row-gap", "grid-column-gap",
+        "flex", "box-sizing", "display", "margin",
+    }:
+        return True
+    return name.startswith(("flex-", "padding-", "border-", "margin-")) or name in {
+        "padding", "border",
+    }
+
+
 def _selector_targets_highlight(selector: str) -> bool:
+    decoded_selector = _decode_css_identifier(selector)
     if any(
         _attribute_selector_targets_highlight(content)
-        for content in _selector_attribute_contents(selector)
+        for content in _selector_attribute_contents(decoded_selector)
     ):
         return True
     index = 0
     quote: str | None = None
-    while index < len(selector):
-        char = selector[index]
+    while index < len(decoded_selector):
+        char = decoded_selector[index]
         if quote is not None:
             if char == "\\":
                 index += 2
@@ -1189,12 +1300,12 @@ def _selector_targets_highlight(selector: str) -> bool:
             continue
         index += 1
         raw: list[str] = []
-        while index < len(selector):
-            char = selector[index]
-            if char == "\\" and index + 1 < len(selector):
+        while index < len(decoded_selector):
+            char = decoded_selector[index]
+            if char == "\\" and index + 1 < len(decoded_selector):
                 start = index
-                _decoded, index = _decode_css_escape(selector, index + 1)
-                raw.append(selector[start:index])
+                _decoded, index = _decode_css_escape(decoded_selector, index + 1)
+                raw.append(decoded_selector[start:index])
                 continue
             if char.isalnum() or char in {"-", "_"} or ord(char) >= 128:
                 raw.append(char)
@@ -1419,6 +1530,10 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         ))
 
     _require_layout_declaration(
+        diagnostics, css_rules, _PATH_SCROLL_SELECTOR, "max-width",
+        "var(--ve-path-spotlight-content-width)",
+    )
+    _require_layout_declaration(
         diagnostics, css_rules, _PATH_CANVAS_SELECTOR, "gap",
         "var(--ve-path-spotlight-gap)",
     )
@@ -1439,39 +1554,29 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         "var(--ve-path-spotlight-node-width)",
     )
     permitted_path_layout = {
+        (_PATH_SCROLL_SELECTOR, "max-width", "var(--ve-path-spotlight-content-width)"),
         (_PATH_CANVAS_SELECTOR, "gap", "var(--ve-path-spotlight-gap)"),
         (_PATH_CANVAS_SELECTOR, "max-width", "var(--ve-path-spotlight-content-width)"),
+        (_PATH_CANVAS_SELECTOR, "width", "100%"),
+        (_PATH_CANVAS_SELECTOR, "min-width", "0"),
+        (_PATH_CANVAS_SELECTOR, "box-sizing", "border-box"),
+        (_PATH_CANVAS_SELECTOR, "display", "flex"),
+        (_PATH_CANVAS_SELECTOR, "flex-wrap", "wrap"),
         (_PATH_STATION_SELECTOR, "flex", "0 0 var(--ve-path-spotlight-node-width)"),
         (_PATH_STATION_SELECTOR, "max-width", "var(--ve-path-spotlight-node-width)"),
+        (_PATH_STATION_SELECTOR, "min-width", "0"),
+        (_PATH_STATION_SELECTOR, "box-sizing", "border-box"),
         (_PATH_NODE_SELECTOR, "max-width", "var(--ve-path-spotlight-node-width)"),
-    }
-    safe_path_layout_values = {
-        "width": frozenset({"100%"}),
-        "min-width": frozenset({"0"}),
-        "box-sizing": frozenset({"border-box"}),
-    }
-    relevant_layout_properties = {
-        "gap", "grid-gap", "row-gap", "column-gap", "flex", "flex-basis",
-        "width", "min-width", "max-width", "padding", "padding-inline",
-        "padding-left", "padding-right", "border", "border-inline",
-        "border-left", "border-right", "box-sizing",
+        (_PATH_NODE_SELECTOR, "width", "100%"),
+        (_PATH_NODE_SELECTOR, "min-width", "0"),
+        (_PATH_NODE_SELECTOR, "box-sizing", "border-box"),
+        (_PATH_NODE_SELECTOR, "display", "block"),
     }
     for selector, declarations in css_rules:
-        affects_path = any(
-            _selector_may_target_class(selector, class_name)
-            for class_name in ("ve-flow-path-canvas", "ve-flow-station", "ve-flow-node")
-        )
-        if not affects_path:
+        if not _selector_may_affect_path_sizing(selector):
             continue
         for name, value in declarations:
-            if name not in relevant_layout_properties:
-                continue
-            compact_value = _compact_css_value(value)
-            if (
-                name in safe_path_layout_values
-                and compact_value in safe_path_layout_values[name]
-                and "!important" not in compact_value
-            ):
+            if not _is_sizing_property(name):
                 continue
             candidate = (selector, name, value)
             if not any(
@@ -1485,34 +1590,33 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
                     f" {name} を契約外で上書きしています",
                 ))
 
-    skeleton_critical = {
-        "width", "min-width", "max-width", "padding", "padding-inline",
-        "padding-left", "padding-right", "border", "border-inline",
-        "border-left", "border-right", "box-sizing",
+    permitted_skeleton_layout = {
+        ("*", "box-sizing", "border-box"),
+        ("main", "width", expected_main_width),
+        ("main", "width", "min(100% - var(--space-2), var(--w-narrative))"),
+        ("main", "padding", "var(--space-4) 0 var(--space-6)"),
+        ("main", "padding-top", "var(--space-2)"),
+        ("main", "margin", "0 auto"),
+        ("body", "margin", "0"),
     }
     universal_border_box = 0
     for selector, declarations in skeleton_rules:
         decoded_selector = _decode_css_identifier(selector).strip()
-        targets_main = decoded_selector == "main" or re.search(
-            r"(?<![-_a-zA-Z0-9])main(?![-_a-zA-Z0-9])",
-            decoded_selector,
-        ) is not None
-        targets_everything = "*" in decoded_selector
+        affects_main = _selector_may_affect_main_sizing(selector)
         for name, value in declarations:
-            if name not in skeleton_critical:
+            if not _is_sizing_property(name):
                 continue
             compact = _compact_css_value(value)
             if decoded_selector == "*" and name == "box-sizing" and compact == "border-box":
                 universal_border_box += 1
-                continue
-            if decoded_selector == "main":
-                allowed = (
-                    name == "width" and compact in allowed_main_widths
-                    or name == "padding" and "!important" not in compact
-                )
-                if allowed:
-                    continue
-            if targets_main or targets_everything:
+            candidate = (decoded_selector, name, value)
+            allowed = any(
+                candidate[0] == permitted[0]
+                and candidate[1] == permitted[1]
+                and _compact_css_value(candidate[2]) == _compact_css_value(permitted[2])
+                for permitted in permitted_skeleton_layout
+            )
+            if affects_main and not allowed:
                 diagnostics.append(_css_diagnostic(
                     f"1212px skeleton selector {_bounded_identifier(selector)!r} の {name} は"
                     " content width/padding/border/box-sizing の閉じた宣言元に違反します",
@@ -1521,7 +1625,7 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         diagnostics.append(_css_diagnostic(
             "1212px skeleton は exact '*' で box-sizing:border-box を一意に宣言する必要があります",
         ))
-    return diagnostics
+    return diagnostics[:_MAX_VISUAL_STAGE_DIAGNOSTICS]
 
 
 class _StyleAssetParser(HTMLParser):
