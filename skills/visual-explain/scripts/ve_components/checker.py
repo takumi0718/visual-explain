@@ -2587,10 +2587,13 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_artifact_semantics(content)
         diagnostics += validate_renderer_svg(content)
         diagnostics += validate_notation_rules(content)
-        from .document_checks import check_document_structure
+        from .document_checks import check_document_structure, check_visual_stage_document_css
         expected_records = expected.expected_records if expected is not None else None
         diagnostics += check_document_structure(
             content, title=_extract_title_text(text), expected=expected_records,
+        )
+        diagnostics += check_visual_stage_document_css(
+            content, slots.get("styles", ""), skel,
         )
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:

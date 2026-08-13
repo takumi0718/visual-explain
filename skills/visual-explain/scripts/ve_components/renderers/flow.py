@@ -13,6 +13,7 @@ without creating a second semantic layer.
 from __future__ import annotations
 
 import html
+from dataclasses import replace
 
 from ..diagnostics import RENDERER_FAILURE, Diagnostic
 from ..flow_layout import MAX_SPINE_ROWS, assign_rails, edge_spans, order_index
@@ -224,8 +225,6 @@ def _render_flow_panel(
         f'<ul class="ve-flow-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
-    markup = claim_before_body(ir, body_markup)
-
     style_assets = select_style_assets(ir, definition.assets)
     script_assets = tuple(
         asset for asset in definition.assets
@@ -247,7 +246,7 @@ def _render_flow_panel(
         fallback_mode=definition.fallback,
     )
     return RenderResult(
-        markup=markup,
+        markup=body_markup,
         style_asset_ids=tuple(a.id for a in style_assets),
         script_asset_ids=tuple(a.id for a in script_assets),
         manifest=manifest,
@@ -269,4 +268,5 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
         path_edges = lambda sequence, step_index: _path_edge_ids(
             flow, sequence, step_index,
         )
-    return expand_sequence(ir.sequence, render_panel, path_edges=path_edges)
+    expanded = expand_sequence(ir.sequence, render_panel, path_edges=path_edges)
+    return replace(expanded, markup=claim_before_body(ir, expanded.markup))

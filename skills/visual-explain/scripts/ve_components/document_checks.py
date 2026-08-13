@@ -11,8 +11,10 @@ content of ``script`` / ``style`` cannot spoof section wrappers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation
 from html import unescape
 from html.parser import HTMLParser
+import re
 import unicodedata
 from urllib.parse import urlsplit
 
@@ -24,6 +26,8 @@ from .validation import (
     _DOCUMENT_TYPES,
     MAX_VISUAL_STAGE_NARRATIVE_CHARS,
     MAX_VISUAL_STAGE_NARRATIVE_SECTIONS,
+    SEQUENCE_REFERENCE_ATTRIBUTES,
+    _SEQUENCE_COMPONENTS,
     _plain_text_character_count,
 )
 
@@ -57,6 +61,113 @@ _VISUAL_STAGE_PROFILE = "visual-stage"
 _MAX_VISUAL_STAGE_DIAGNOSTICS = 32
 _MAX_DIAGNOSTIC_IDS = 8
 _MIN_VISUAL_STAGE_OVERLAP_CHARS = 10
+_SEQUENCE_HIGHLIGHT_CLASSES = frozenset({
+    "ve-seq-spot", "ve-seq-dim", "ve-takeaway-target",
+})
+_SEQUENCE_STATE_CLASSES = _SEQUENCE_HIGHLIGHT_CLASSES | frozenset({"is-current"})
+_SEQUENCE_STATE_ATTRIBUTES = frozenset({
+    "hidden", "aria-hidden", "aria-current", "tabindex",
+})
+_SEQUENCE_ACTIONS = ("previous", "next", "all")
+_CONNECT_PAIR_RE = re.compile(r"\s*([^\s>]+)\s*->\s*([^\s>]+)\s*")
+_EXACT_URL_REF_RE = re.compile(r"^url\(\s*#([^\s)]+)\s*\)$", re.IGNORECASE)
+_INLINE_URL_REF_RE = re.compile(r"url\(\s*#([^\s)]+)\s*\)", re.IGNORECASE)
+
+_HIGHLIGHT_PAINT_PROPERTIES = frozenset({
+    "opacity", "outline", "outline-offset", "box-shadow", "color",
+    "background-color", "fill", "stroke",
+})
+_HIGHLIGHT_CLASS_NAMES = frozenset({
+    "ve-seq-spot", "ve-seq-dim", "ve-takeaway-target",
+})
+_PATH_WIDTH_VARIABLES = (
+    "--ve-path-spotlight-node-width",
+    "--ve-path-spotlight-gap",
+    "--ve-path-spotlight-content-width",
+)
+_SKELETON_CONTENT_WIDTH_TOKEN = "--w-narrative"
+
+
+@dataclass
+class _DomNode:
+    tag: str
+    attrs: dict[str, str]
+    children: list["_DomNode | str"] = field(default_factory=list)
+
+
+class _DomTreeParser(HTMLParser):
+    """Build the small element/text tree needed for sequence comparison."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.root = _DomNode("#document", {})
+        self._stack = [self.root]
+        self._opaque: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        node = _DomNode(tag, {name.lower(): (value or "") for name, value in attrs})
+        self._stack[-1].children.append(node)
+        if tag not in _VOID_TAGS:
+            self._stack.append(node)
+        if tag in _OPAQUE_TAGS:
+            self._opaque = tag
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        self._stack[-1].children.append(
+            _DomNode(tag, {name.lower(): (value or "") for name, value in attrs}),
+        )
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if self._opaque == tag:
+            self._opaque = None
+        for index in range(len(self._stack) - 1, 0, -1):
+            if self._stack[index].tag == tag:
+                del self._stack[index:]
+                return
+
+    def handle_data(self, data: str) -> None:
+        if self._opaque is None:
+            self._stack[-1].children.append(data)
+
+
+def _parse_dom_tree(markup: str) -> _DomNode:
+    parser = _DomTreeParser()
+    parser.feed(markup)
+    parser.close()
+    return parser.root
+
+
+def _element_children(node: _DomNode) -> list[_DomNode]:
+    return [child for child in node.children if isinstance(child, _DomNode)]
+
+
+def _descendants(node: _DomNode, *, include_self: bool = False):
+    if include_self:
+        yield node
+    for child in node.children:
+        if isinstance(child, _DomNode):
+            yield child
+            yield from _descendants(child)
+
+
+def _classes(node: _DomNode) -> set[str]:
+    return {token for token in node.attrs.get("class", "").split() if token}
+
+
+def _has_ancestor(root: _DomNode, target: _DomNode, predicate) -> bool:
+    def visit(node: _DomNode, ancestors: tuple[_DomNode, ...]) -> bool:
+        if node is target:
+            return any(predicate(item) for item in ancestors)
+        return any(
+            visit(child, ancestors + (node,))
+            for child in node.children
+            if isinstance(child, _DomNode)
+        )
+
+    return visit(root, ())
 
 
 @dataclass
@@ -360,6 +471,667 @@ def _visual_stage_diagnostic(message: str, path: str) -> Diagnostic:
         f"visual-stage 情報完全性: {message}",
         path,
     )
+
+
+def _sequence_diagnostic(message: str, path: str = "content") -> Diagnostic:
+    return Diagnostic(
+        DOCUMENT_STRUCTURE_VIOLATION,
+        f"visual-stage sequence: {message}",
+        path,
+    )
+
+
+def _strip_panel_suffix(value: str, panel_number: int) -> str:
+    suffix = f"--p{panel_number}"
+    return value[:-len(suffix)] if value.endswith(suffix) else value
+
+
+def _normalize_reference_value(name: str, value: str, panel_number: int) -> str:
+    kind = SEQUENCE_REFERENCE_ATTRIBUTES.get(name)
+    if kind == "dom-id":
+        return _strip_panel_suffix(value, panel_number)
+    if kind == "fragment":
+        return (
+            "#" + _strip_panel_suffix(value[1:], panel_number)
+            if value.startswith("#") else value
+        )
+    if kind == "single-idref":
+        return _strip_panel_suffix(value, panel_number)
+    if kind == "idref-list":
+        return " ".join(_strip_panel_suffix(token, panel_number) for token in value.split())
+    if kind == "connector-declaration":
+        normalized: list[str] = []
+        for declaration in value.split(","):
+            match = _CONNECT_PAIR_RE.fullmatch(declaration)
+            if match is None:
+                return value
+            normalized.append(
+                f"{_strip_panel_suffix(match.group(1), panel_number)}->"
+                f"{_strip_panel_suffix(match.group(2), panel_number)}"
+            )
+        return ",".join(normalized)
+    if kind == "url-reference":
+        match = _EXACT_URL_REF_RE.fullmatch(value)
+        if match is None:
+            return value
+        return f"url(#{_strip_panel_suffix(match.group(1), panel_number)})"
+    if kind == "inline-url-reference":
+        return _INLINE_URL_REF_RE.sub(
+            lambda match: f"url(#{_strip_panel_suffix(match.group(1), panel_number)})",
+            value,
+        )
+    return value
+
+
+def _normalized_panel_dom(node: _DomNode, panel_number: int, *, forecast: bool = False):
+    classes = _classes(node)
+    is_forecast = forecast or "ve-seq-next" in classes
+    normalized_attrs: list[tuple[str, str]] = []
+    for name, value in node.attrs.items():
+        if name == "data-step" or name in _SEQUENCE_STATE_ATTRIBUTES:
+            continue
+        if name == "class":
+            remaining = sorted(classes - _SEQUENCE_STATE_CLASSES)
+            if remaining:
+                normalized_attrs.append((name, " ".join(remaining)))
+            continue
+        normalized_attrs.append((name, _normalize_reference_value(name, value, panel_number)))
+    normalized_children = []
+    for child in node.children:
+        if isinstance(child, str):
+            normalized_children.append("" if is_forecast else child)
+        else:
+            normalized_children.append(
+                _normalized_panel_dom(child, panel_number, forecast=is_forecast),
+            )
+    return (node.tag, tuple(sorted(normalized_attrs)), tuple(normalized_children))
+
+
+def _panel_reference_targets(node: _DomNode) -> tuple[str, ...]:
+    targets: list[str] = []
+    for element in _descendants(node, include_self=True):
+        for name, value in element.attrs.items():
+            kind = SEQUENCE_REFERENCE_ATTRIBUTES.get(name)
+            if kind == "fragment":
+                if value.startswith("#"):
+                    targets.append(value[1:])
+            elif kind == "single-idref":
+                if value:
+                    targets.append(value)
+            elif kind == "idref-list":
+                targets.extend(value.split())
+            elif kind == "connector-declaration":
+                for declaration in value.split(","):
+                    match = _CONNECT_PAIR_RE.fullmatch(declaration)
+                    if match is not None:
+                        targets.extend(match.groups())
+            elif kind == "url-reference":
+                match = _EXACT_URL_REF_RE.fullmatch(value)
+                if match is not None:
+                    targets.append(match.group(1))
+            elif kind == "inline-url-reference":
+                targets.extend(match.group(1) for match in _INLINE_URL_REF_RE.finditer(value))
+    return tuple(targets)
+
+
+def _check_panel_namespace(panel: _DomNode, panel_number: int, path: str) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    suffix = f"--p{panel_number}"
+    ids = [
+        element.attrs["id"]
+        for element in _descendants(panel, include_self=True)
+        if "id" in element.attrs
+    ]
+    for dom_id in ids:
+        if not dom_id.endswith(suffix):
+            diagnostics.append(_sequence_diagnostic(
+                f"panel {panel_number} の DOM id '{dom_id}' は {suffix} で終わる必要があります",
+                path,
+            ))
+    id_set = set(ids)
+    for target in _panel_reference_targets(panel):
+        if target not in id_set:
+            diagnostics.append(_sequence_diagnostic(
+                f"panel {panel_number} の参照 '{target}' は同一 panel 内の id を指す必要があります",
+                path,
+            ))
+    return diagnostics
+
+
+def _check_sequence_stepper(
+    canonical: _DomNode,
+    stepper: _DomNode,
+    *,
+    instance_id: str,
+    component_id: str,
+    expected_sequence,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    path = f"content.canonical[{instance_id}]"
+    mode = stepper.attrs.get("data-ve-sequence-mode", "")
+    if component_id not in _SEQUENCE_COMPONENTS.get(mode, frozenset()):
+        diagnostics.append(_sequence_diagnostic(
+            f"mode '{mode}' は component '{component_id}' では使用できません",
+            path,
+        ))
+    expected_steps = None
+    if expected_sequence is not None:
+        expected_mode = getattr(expected_sequence, "mode", None)
+        if mode != expected_mode:
+            diagnostics.append(_sequence_diagnostic(
+                f"描画 mode '{mode}' が expected mode '{expected_mode}' と一致しません",
+                path,
+            ))
+        steps = getattr(expected_sequence, "steps", None)
+        if isinstance(steps, tuple):
+            expected_steps = len(steps)
+            if expected_steps > 8:
+                diagnostics.append(_sequence_diagnostic(
+                    f"sequence step 数は8以下です（実測 {expected_steps}）",
+                    path,
+                ))
+        else:
+            diagnostics.append(_sequence_diagnostic("expected sequence steps が不正です", path))
+
+    panels = [
+        child for child in _element_children(stepper)
+        if "data-step" in child.attrs
+    ]
+    panel_numbers = [panel.attrs.get("data-step", "") for panel in panels]
+    required_numbers = [str(index) for index in range(1, len(panels) + 1)]
+    if panel_numbers != required_numbers:
+        diagnostics.append(_sequence_diagnostic(
+            f"data-step は1からの連番である必要があります（実測 {panel_numbers}）",
+            path,
+        ))
+    if len(panels) - 1 > 8:
+        diagnostics.append(_sequence_diagnostic(
+            f"描画 sequence step 数は8以下です（実測 {max(0, len(panels) - 1)}）",
+            path,
+        ))
+    if expected_steps is not None and len(panels) != expected_steps + 1:
+        diagnostics.append(_sequence_diagnostic(
+            f"panel 数は steps+1 必要です（期待 {expected_steps + 1}, 実測 {len(panels)}）",
+            path,
+        ))
+    total = stepper.attrs.get("data-total-steps")
+    if total != str(len(panels)):
+        diagnostics.append(_sequence_diagnostic(
+            f"data-total-steps は panel 数と一致する必要があります（値 {total!r}, panel {len(panels)}）",
+            path,
+        ))
+
+    buttons = [node for node in _descendants(stepper) if node.tag == "button"]
+    for action in _SEQUENCE_ACTIONS:
+        matching = [node for node in buttons if node.attrs.get("data-step-action") == action]
+        if len(matching) != 1:
+            diagnostics.append(_sequence_diagnostic(
+                f"stepper は data-step-action='{action}' button をちょうど1個必要とします",
+                path,
+            ))
+        elif _has_ancestor(stepper, matching[0], lambda item: "data-step" in item.attrs):
+            diagnostics.append(_sequence_diagnostic(
+                f"data-step-action='{action}' button は panel 外に置く必要があります",
+                path,
+            ))
+    next_buttons = [node for node in buttons if node.attrs.get("data-step-action") == "next"]
+    if len(next_buttons) == 1 and not next_buttons[0].attrs.get("data-next-label"):
+        diagnostics.append(_sequence_diagnostic("next button に data-next-label が必要です", path))
+
+    if panels:
+        first_highlights = [
+            element for element in _descendants(panels[0], include_self=True)
+            if _classes(element) & _SEQUENCE_HIGHLIGHT_CLASSES
+        ]
+        if first_highlights:
+            diagnostics.append(_sequence_diagnostic(
+                "panel 1 は強調 class を持たない完成図である必要があります",
+                path,
+            ))
+
+    normalized = []
+    for index, panel in enumerate(panels, 1):
+        diagnostics.extend(_check_panel_namespace(panel, index, path))
+        normalized.append(_normalized_panel_dom(panel, index))
+    if normalized and any(item != normalized[0] for item in normalized[1:]):
+        diagnostics.append(_sequence_diagnostic(
+            "全 panel の DOM は許可された状態差を正規化した後に同一である必要があります",
+            path,
+        ))
+    return diagnostics
+
+
+def _check_visual_stage_sequences(content_markup: str, expected) -> list[Diagnostic]:
+    root = _parse_dom_tree(content_markup)
+    canonicals = [
+        node for node in _descendants(root)
+        if node.tag == "section" and node.attrs.get("data-ve-section-kind") == "canonical"
+    ]
+    expected_by_instance = {}
+    if expected is not None:
+        try:
+            expected_by_instance = {
+                str(record.instance_id): record
+                for record in expected
+                if hasattr(record, "instance_id")
+            }
+        except TypeError:
+            expected_by_instance = {}
+
+    diagnostics: list[Diagnostic] = []
+    for canonical in canonicals:
+        instance_id = canonical.attrs.get("data-ve-instance", "<unknown>")
+        path = f"content.canonical[{instance_id}]"
+        record = expected_by_instance.get(instance_id)
+        component_id = (
+            str(record.component_id) if record is not None
+            else canonical.attrs.get("data-ve-component", "")
+        )
+        if record is not None and canonical.attrs.get("data-ve-component", "") != component_id:
+            diagnostics.append(_sequence_diagnostic(
+                f"描画 component が expected component '{component_id}' と一致しません",
+                path,
+            ))
+
+        direct_children = _element_children(canonical)
+        claims = [node for node in _descendants(canonical) if "ve-claim" in _classes(node)]
+        outside_claims = [
+            node for node in claims
+            if not _has_ancestor(canonical, node, lambda item: "data-step" in item.attrs)
+        ]
+        if len(claims) != 1 or len(outside_claims) != 1:
+            diagnostics.append(_sequence_diagnostic(
+                "claim は sequence panel 外にちょうど1個必要です",
+                path,
+            ))
+        direct_claims = [node for node in direct_children if "ve-claim" in _classes(node)]
+
+        steppers = [node for node in _descendants(canonical) if "data-stepper" in node.attrs]
+        expected_sequence = getattr(record, "sequence", None) if record is not None else None
+        if record is not None:
+            required = expected_sequence is not None
+            if required and len(steppers) != 1:
+                diagnostics.append(_sequence_diagnostic(
+                    f"expected sequence には stepper がちょうど1個必要です（実測 {len(steppers)}）",
+                    path,
+                ))
+            elif not required and steppers:
+                diagnostics.append(_sequence_diagnostic(
+                    "expected に sequence がない canonical は stepper を持てません",
+                    path,
+                ))
+        elif len(steppers) > 1:
+            diagnostics.append(_sequence_diagnostic(
+                f"canonical の stepper は最大1個です（実測 {len(steppers)}）",
+                path,
+            ))
+        if len(steppers) == 1:
+            direct_steppers = [node for node in direct_children if "data-stepper" in node.attrs]
+            if len(direct_claims) != 1 or direct_steppers != steppers:
+                diagnostics.append(_sequence_diagnostic(
+                    "claim と stepper は canonical 直下で隣接し、claim が直前である必要があります",
+                    path,
+                ))
+            else:
+                claim_index = direct_children.index(direct_claims[0])
+                stepper_index = direct_children.index(steppers[0])
+                if stepper_index != claim_index + 1:
+                    diagnostics.append(_sequence_diagnostic(
+                        "claim は canonical 直下の stepper 直前に必要です",
+                        path,
+                    ))
+            diagnostics.extend(_check_sequence_stepper(
+                canonical,
+                steppers[0],
+                instance_id=instance_id,
+                component_id=component_id,
+                expected_sequence=expected_sequence,
+            ))
+        if len(diagnostics) >= _MAX_VISUAL_STAGE_DIAGNOSTICS:
+            return diagnostics[:_MAX_VISUAL_STAGE_DIAGNOSTICS]
+    return diagnostics[:_MAX_VISUAL_STAGE_DIAGNOSTICS]
+
+
+def _css_diagnostic(message: str) -> Diagnostic:
+    return Diagnostic(
+        DOCUMENT_STRUCTURE_VIOLATION,
+        f"visual-stage CSS: {message}",
+        "assets.visual-stage",
+    )
+
+
+def _remove_css_comments(source: str) -> str:
+    """Remove comments while preserving strings and CSS token adjacency."""
+    out: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(source):
+        char = source[index]
+        if quote is not None:
+            out.append(char)
+            if char == "\\" and index + 1 < len(source):
+                out.append(source[index + 1])
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'"}:
+            quote = char
+            out.append(char)
+            index += 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = len(source) if end == -1 else end + 2
+            continue
+        out.append(char)
+        index += 1
+    return "".join(out)
+
+
+def _css_matching_brace(source: str, opening: int) -> int | None:
+    depth = 1
+    quote: str | None = None
+    index = opening + 1
+    while index < len(source):
+        char = source[index]
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+        index += 1
+    return None
+
+
+def _css_rule_blocks(source: str):
+    """Yield selector/declaration blocks, descending through grouping at-rules."""
+    source = _remove_css_comments(source)
+    index = 0
+    start = 0
+    quote: str | None = None
+    parens = 0
+    brackets = 0
+    while index < len(source):
+        char = source[index]
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'"}:
+            quote = char
+        elif char == "(":
+            parens += 1
+        elif char == ")" and parens:
+            parens -= 1
+        elif char == "[":
+            brackets += 1
+        elif char == "]" and brackets:
+            brackets -= 1
+        elif char == ";" and parens == 0 and brackets == 0:
+            start = index + 1
+        elif char == "{" and parens == 0 and brackets == 0:
+            header = source[start:index].strip()
+            closing = _css_matching_brace(source, index)
+            if closing is None:
+                return
+            body = source[index + 1:closing]
+            if header.startswith("@"):
+                yield from _css_rule_blocks(body)
+            else:
+                yield header, body
+            index = closing
+            start = closing + 1
+        index += 1
+
+
+def _decode_css_escape(source: str, index: int) -> tuple[str, int]:
+    if index >= len(source):
+        return "", index
+    match = re.match(r"[0-9a-fA-F]{1,6}", source[index:])
+    if match is not None:
+        digits = match.group(0)
+        end = index + len(digits)
+        if end < len(source) and source[end].isspace():
+            end += 1
+        value = int(digits, 16)
+        return (chr(value) if 0 < value <= 0x10FFFF else "\ufffd"), end
+    if source[index] in "\r\n\f":
+        return "", index + 1
+    return source[index], index + 1
+
+
+def _decode_css_identifier(source: str) -> str:
+    out: list[str] = []
+    index = 0
+    while index < len(source):
+        if source[index] == "\\":
+            decoded, index = _decode_css_escape(source, index + 1)
+            out.append(decoded)
+        else:
+            out.append(source[index])
+            index += 1
+    return "".join(out)
+
+
+def _selector_targets_highlight(selector: str) -> bool:
+    index = 0
+    quote: str | None = None
+    while index < len(selector):
+        char = selector[index]
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'"}:
+            quote = char
+            index += 1
+            continue
+        if char != ".":
+            if char == "\\":
+                index += 2
+            else:
+                index += 1
+            continue
+        index += 1
+        raw: list[str] = []
+        while index < len(selector):
+            char = selector[index]
+            if char == "\\" and index + 1 < len(selector):
+                start = index
+                _decoded, index = _decode_css_escape(selector, index + 1)
+                raw.append(selector[start:index])
+                continue
+            if char.isalnum() or char in {"-", "_"} or ord(char) >= 128:
+                raw.append(char)
+                index += 1
+                continue
+            break
+        if _decode_css_identifier("".join(raw)).lower() in _HIGHLIGHT_CLASS_NAMES:
+            return True
+    return False
+
+
+def _css_declarations(body: str) -> tuple[tuple[str, str], ...]:
+    declarations: list[tuple[str, str]] = []
+    start = 0
+    index = 0
+    quote: str | None = None
+    parens = 0
+    segments: list[str] = []
+    while index <= len(body):
+        char = body[index] if index < len(body) else ";"
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "(":
+            parens += 1
+        elif char == ")" and parens:
+            parens -= 1
+        elif char == ";" and parens == 0:
+            segments.append(body[start:index])
+            start = index + 1
+        index += 1
+    for segment in segments:
+        if ":" not in segment:
+            continue
+        name, value = segment.split(":", 1)
+        decoded_name = _decode_css_identifier(_remove_css_comments(name).strip()).lower()
+        if decoded_name:
+            declarations.append((decoded_name, value.strip()))
+    return tuple(declarations)
+
+
+def _css_custom_properties(source: str) -> dict[str, str]:
+    properties: dict[str, str] = {}
+    for selector, body in _css_rule_blocks(source):
+        if ":root" not in selector:
+            continue
+        for name, value in _css_declarations(body):
+            if name.startswith("--"):
+                properties[name] = value
+    return properties
+
+
+def _skeleton_css(skeleton_markup: str) -> str:
+    match = re.search(r"<style\b[^>]*>(.*?)</style>", skeleton_markup, re.I | re.S)
+    return match.group(1) if match is not None else ""
+
+
+def _rem_value(value: str) -> Decimal | None:
+    match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)rem", value.strip(), re.I)
+    if match is None:
+        return None
+    try:
+        return Decimal(match.group(1))
+    except InvalidOperation:
+        return None
+
+
+def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
+    """Enforce emphasis paint-only rules and the skeleton-linked width equation."""
+    diagnostics: list[Diagnostic] = []
+    for selector, body in _css_rule_blocks(css):
+        if not _selector_targets_highlight(selector):
+            continue
+        for property_name, _value in _css_declarations(body):
+            if property_name not in _HIGHLIGHT_PAINT_PROPERTIES:
+                diagnostics.append(_css_diagnostic(
+                    f"強調 selector の '{property_name}' は paint-only allowlist 外です",
+                ))
+
+    css_vars = _css_custom_properties(css)
+    skeleton_vars = _css_custom_properties(_skeleton_css(skeleton_markup))
+    for name in _PATH_WIDTH_VARIABLES:
+        if name not in css_vars:
+            diagnostics.append(_css_diagnostic(f"幅定数 '{name}' がありません"))
+    width = _rem_value(css_vars.get(_PATH_WIDTH_VARIABLES[0], ""))
+    gap = _rem_value(css_vars.get(_PATH_WIDTH_VARIABLES[1], ""))
+    content_decl = css_vars.get(_PATH_WIDTH_VARIABLES[2], "")
+    source_link = re.fullmatch(
+        rf"var\(\s*{re.escape(_SKELETON_CONTENT_WIDTH_TOKEN)}\s*\)",
+        content_decl,
+        re.I,
+    )
+    if source_link is None:
+        diagnostics.append(_css_diagnostic(
+            "content width C は skeleton の --w-narrative token を var() で参照する必要があります",
+        ))
+    content = _rem_value(skeleton_vars.get(_SKELETON_CONTENT_WIDTH_TOKEN, ""))
+    if width is None or gap is None or content is None:
+        diagnostics.append(_css_diagnostic(
+            "W・gap・skeleton content token C は rem の固定値として解決できる必要があります",
+        ))
+    elif width * 4 + gap * 3 > content:
+        diagnostics.append(_css_diagnostic(
+            f"幅式 4W + 3gap <= C に違反します（{width * 4 + gap * 3}rem > {content}rem）",
+        ))
+    return diagnostics
+
+
+class _StyleAssetParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=False)
+        self.visual_stage_bodies: list[str] = []
+        self._collecting = False
+        self._body: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "style":
+            return
+        values = {name.lower(): (value or "") for name, value in attrs}
+        self._collecting = values.get("data-ve-asset") == "visual-stage"
+        self._body = []
+
+    def handle_data(self, data: str) -> None:
+        if self._collecting:
+            self._body.append(data)
+
+    def handle_entityref(self, name: str) -> None:
+        if self._collecting:
+            self._body.append(f"&{name};")
+
+    def handle_charref(self, name: str) -> None:
+        if self._collecting:
+            self._body.append(f"&#{name};")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "style" and self._collecting:
+            self.visual_stage_bodies.append("".join(self._body))
+            self._collecting = False
+            self._body = []
+
+
+def _check_visual_stage_style_slot(styles_markup: str, skeleton_markup: str) -> list[Diagnostic]:
+    parser = _StyleAssetParser()
+    parser.feed(styles_markup)
+    parser.close()
+    if len(parser.visual_stage_bodies) != 1:
+        return [_css_diagnostic(
+            f"visual-stage style asset はちょうど1個必要です（実測 {len(parser.visual_stage_bodies)}）",
+        )]
+    return check_visual_stage_css(parser.visual_stage_bodies[0], skeleton_markup)
+
+
+def check_visual_stage_document_css(
+    content_markup: str,
+    styles_markup: str,
+    skeleton_markup: str,
+) -> list[Diagnostic]:
+    """Profile-gated CSS contract entry point for the final-document checker."""
+    structure = _parse_structure(content_markup)
+    first_nodes = [node for node in structure.sections if node.kind == "first-screen"]
+    if len(first_nodes) != 1:
+        return []
+    if first_nodes[0].attrs.get("data-ve-profile") != _VISUAL_STAGE_PROFILE:
+        return []
+    return _check_visual_stage_style_slot(styles_markup, skeleton_markup)
 
 
 def _rendered_narrative_text_length(
@@ -745,6 +1517,7 @@ def check_document_structure(
     diagnostics.extend(_check_decision_panel(structure))
     if profile == _VISUAL_STAGE_PROFILE:
         diagnostics.extend(_check_visual_stage_completeness(structure, expected))
+        diagnostics.extend(_check_visual_stage_sequences(content_markup, expected))
     return diagnostics
 
 
