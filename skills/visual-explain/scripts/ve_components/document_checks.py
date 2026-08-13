@@ -20,6 +20,8 @@ from .validation import (
     _CLOSING_REQUIRED,
     _DOCUMENT_PROFILES,
     _DOCUMENT_TYPES,
+    MAX_VISUAL_STAGE_NARRATIVE_CHARS,
+    MAX_VISUAL_STAGE_NARRATIVE_SECTIONS,
 )
 
 _VOID_TAGS = frozenset({
@@ -48,6 +50,10 @@ _RESERVED_ATTR_REQUIRED_TAG = {
     "data-ve-panel-ask": "li",
 }
 
+_VISUAL_STAGE_PROFILE = "visual-stage"
+_MAX_VISUAL_STAGE_DIAGNOSTICS = 32
+_MAX_DIAGNOSTIC_IDS = 8
+
 
 @dataclass
 class _SectionNode:
@@ -57,6 +63,8 @@ class _SectionNode:
     h2_texts: list[str] = field(default_factory=list)
     has_summary: bool = False
     option_ids: list[str] = field(default_factory=list)
+    claim_texts: list[str] = field(default_factory=list)
+    text_parts: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -196,6 +204,10 @@ class _StructureParser(HTMLParser):
                 target = self._current_first_screen()
                 if target is not None:
                     target.has_summary = True
+            if "ve-claim" in classes:
+                target = self._current_section("canonical")
+                if target is not None:
+                    target.claim_texts.append(text)
             self._pop_element(tag)
             return
 
@@ -213,6 +225,9 @@ class _StructureParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._opaque is not None:
             return
+        for node in self._open:
+            if node is not None and node.kind == "narrative":
+                node.text_parts.append(data)
         if self._heading_tag is not None:
             self._heading_parts.append(data)
         elif self._paragraph_classes is not None:
@@ -236,6 +251,12 @@ class _StructureParser(HTMLParser):
             return None
         node = self._open[self._first_screen_depth - 1]
         return node
+
+    def _current_section(self, kind: str) -> _SectionNode | None:
+        for node in reversed(self._open):
+            if node is not None and node.kind == kind:
+                return node
+        return None
 
     def _collect_option_id(self, attr_map: dict[str, str]) -> None:
         """Record ``data-ask-option-id`` on the innermost open decision ask.
@@ -320,6 +341,201 @@ def _dom_text(fragment: str) -> str:
     return "".join(p.parts).strip()
 
 
+def _bounded_id_list(values) -> str:
+    """Render a stable, bounded identifier list for diagnostics."""
+    ordered = sorted({str(value) for value in values})
+    shown = ordered[:_MAX_DIAGNOSTIC_IDS]
+    suffix = f", …(+{len(ordered) - len(shown)})" if len(ordered) > len(shown) else ""
+    return ", ".join(shown) + suffix
+
+
+def _visual_stage_diagnostic(message: str, path: str) -> Diagnostic:
+    return Diagnostic(
+        DOCUMENT_STRUCTURE_VIOLATION,
+        f"visual-stage 情報完全性: {message}",
+        path,
+    )
+
+
+def _check_visual_stage_completeness(
+    structure: _DocStructure,
+    expected,
+) -> list[Diagnostic]:
+    """Recheck rendered visual-stage completeness against immutable IR facts.
+
+    ``expected is None`` denotes the documented artifact-only checking route;
+    the IR-dependent checks are unavailable there.  If the build route supplies
+    an expected collection, an empty or malformed collection fails closed.
+    """
+    diagnostics: list[Diagnostic] = []
+
+    def add(message: str, path: str = "content") -> None:
+        if len(diagnostics) < _MAX_VISUAL_STAGE_DIAGNOSTICS:
+            diagnostics.append(_visual_stage_diagnostic(message, path))
+
+    narrative_nodes = [node for node in structure.sections if node.kind == "narrative"]
+    if len(narrative_nodes) > MAX_VISUAL_STAGE_NARRATIVE_SECTIONS:
+        add(
+            f"narrative section は最大{MAX_VISUAL_STAGE_NARRATIVE_SECTIONS}件です"
+            f"（実測 {len(narrative_nodes)}件）",
+            "content.narrative",
+        )
+    for node in narrative_nodes:
+        # Rendered wrappers add formatting whitespace around author markup.
+        # Trim only the outer boundary; HTMLParser already entity-decodes text.
+        text_length = len("".join(node.text_parts).strip())
+        if text_length > MAX_VISUAL_STAGE_NARRATIVE_CHARS:
+            instance_id = node.attrs.get("data-ve-instance", "<unknown>")
+            add(
+                f"narrative '{instance_id}' の plain text は"
+                f"{MAX_VISUAL_STAGE_NARRATIVE_CHARS}字以内です（実測 {text_length}字）",
+                f"content.narrative[{instance_id}]",
+            )
+
+    # Standalone HTML checking deliberately has no immutable IR inventory.
+    if expected is None:
+        return diagnostics
+
+    try:
+        records = tuple(expected)
+    except TypeError:
+        add("expected record collection が不正です", "expected")
+        return diagnostics
+    if not records:
+        add("canonical の expected record がありません", "expected")
+        return diagnostics
+
+    canonical_nodes = [node for node in structure.sections if node.kind == "canonical"]
+    nodes_by_instance: dict[str, list[_SectionNode]] = {}
+    for node in canonical_nodes:
+        instance_id = node.attrs.get("data-ve-instance", "")
+        nodes_by_instance.setdefault(instance_id, []).append(node)
+
+    records_by_instance: dict[str, object] = {}
+    required_fields = (
+        "component_id", "instance_id", "payload_semantic_ids",
+        "claim", "assertions", "sequence",
+    )
+    for index, record in enumerate(records):
+        if any(not hasattr(record, name) for name in required_fields):
+            add(f"expected record[{index}] が必要フィールドを欠いています", f"expected[{index}]")
+            continue
+        instance_id = str(record.instance_id)
+        if instance_id in records_by_instance:
+            add(f"canonical '{instance_id}' の expected record が重複しています", f"expected[{index}]")
+            continue
+        records_by_instance[instance_id] = record
+
+    for instance_id in sorted(set(nodes_by_instance) - set(records_by_instance)):
+        label = instance_id or "<missing-instance-id>"
+        add(f"canonical '{label}' に対応する expected record がありません", f"content.canonical[{label}]")
+
+    seen_step_ids: set[str] = set()
+    for instance_id, record in records_by_instance.items():
+        path = f"content.canonical[{instance_id}]"
+        matching_nodes = nodes_by_instance.get(instance_id, [])
+        if len(matching_nodes) != 1:
+            add(
+                f"expected canonical '{instance_id}' に対応する描画 canonical は1件必要です"
+                f"（実測 {len(matching_nodes)}件）",
+                path,
+            )
+            node = None
+        else:
+            node = matching_nodes[0]
+
+        claim = record.claim
+        assertions = record.assertions
+        if not isinstance(claim, str) or not claim:
+            add(f"canonical '{instance_id}' の claim は必須です", path)
+        if not isinstance(assertions, tuple) or not assertions:
+            add(f"canonical '{instance_id}' の assertions は必須です", path)
+            assertion_items = ()
+        else:
+            assertion_items = assertions
+
+        assertion_texts = {
+            assertion.text for assertion in assertion_items
+            if isinstance(getattr(assertion, "text", None), str)
+        }
+        if isinstance(claim, str) and claim and claim not in assertion_texts:
+            add(
+                f"canonical '{instance_id}' の claim は assertion.text のいずれかと一致する必要があります",
+                path,
+            )
+
+        if isinstance(claim, str) and claim and node is not None:
+            # T12 checks lossless transfer. T14 owns the separate structural
+            # cardinality/placement rule for the claim element.
+            if claim not in node.claim_texts:
+                add(
+                    f"canonical '{instance_id}' の IR claim と .ve-claim が一致しません"
+                    f"（描画件数 {len(node.claim_texts)}件）",
+                    path,
+                )
+
+        try:
+            payload_ids = frozenset(str(value) for value in record.payload_semantic_ids)
+        except TypeError:
+            add(f"canonical '{instance_id}' の payload semantic id 集合が不正です", path)
+            payload_ids = frozenset()
+
+        covered_ids: set[str] = set()
+        for assertion in assertion_items:
+            assertion_id = str(getattr(assertion, "id", "<unknown>"))
+            cover_ids = getattr(assertion, "cover_ids", None)
+            if not isinstance(cover_ids, tuple) or not cover_ids:
+                add(
+                    f"canonical '{instance_id}' assertion '{assertion_id}' の coverIds は必須です",
+                    path,
+                )
+                continue
+            normalized_cover_ids = {str(value) for value in cover_ids}
+            covered_ids.update(normalized_cover_ids)
+            dangling = normalized_cover_ids - payload_ids
+            if dangling:
+                add(
+                    f"canonical '{instance_id}' assertion '{assertion_id}' の coverIds が"
+                    f" payload に存在しません: {_bounded_id_list(dangling)}",
+                    path,
+                )
+
+        uncovered = payload_ids - covered_ids
+        if uncovered:
+            add(
+                f"canonical '{instance_id}' の payload semantic id が assertions で未カバーです: "
+                f"{_bounded_id_list(uncovered)}",
+                path,
+            )
+
+        sequence = record.sequence
+        if sequence is None:
+            continue
+        steps = getattr(sequence, "steps", None)
+        if not isinstance(steps, tuple):
+            add(f"canonical '{instance_id}' の sequence steps が不正です", path)
+            continue
+        for step in steps:
+            step_id = str(getattr(step, "id", "<unknown>"))
+            if step_id in seen_step_ids:
+                add(f"sequence step id '{step_id}' が文書内で重複しています", path)
+            else:
+                seen_step_ids.add(step_id)
+            target_ids = getattr(step, "target_ids", None)
+            if not isinstance(target_ids, tuple):
+                add(f"sequence step '{step_id}' の targetIds が不正です", path)
+                continue
+            dangling = {str(value) for value in target_ids} - payload_ids
+            if dangling:
+                add(
+                    f"sequence step '{step_id}' の targetIds が payload に存在しません: "
+                    f"{_bounded_id_list(dangling)}",
+                    path,
+                )
+
+    return diagnostics
+
+
 def check_document_structure(
     content_markup: str,
     *,
@@ -330,8 +546,8 @@ def check_document_structure(
 
     ``title`` is the document ``<title>`` text (from the TITLE slot; may still
     contain character references). When omitted, the title↔h1 equality check
-    is skipped. ``expected`` is reserved for profile-specific checks and is not
-    interpreted by this task.
+    is skipped. ``expected`` carries immutable canonical IR facts on the build
+    path; standalone HTML checks pass ``None``.
     """
     diagnostics: list[Diagnostic] = []
     structure = _parse_structure(content_markup)
@@ -426,6 +642,8 @@ def check_document_structure(
     if profile == "strict":
         diagnostics.extend(_check_strict_excludes_extended(structure))
     diagnostics.extend(_check_decision_panel(structure))
+    if profile == _VISUAL_STAGE_PROFILE:
+        diagnostics.extend(_check_visual_stage_completeness(structure, expected))
     return diagnostics
 
 

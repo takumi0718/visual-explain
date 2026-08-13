@@ -114,7 +114,16 @@
           {
             "id": "assertion-branch",
             "text": "通常経路と即時承認の分岐を一つの図で追跡できる。",
-            "coverIds": ["node-draft", "edge-draft-approve"]
+            "coverIds": [
+              "node-draft",
+              "node-review",
+              "node-approve",
+              "node-publish",
+              "edge-draft-review",
+              "edge-review-approve",
+              "edge-approve-publish",
+              "edge-draft-approve"
+            ]
           }
         ]
       }
