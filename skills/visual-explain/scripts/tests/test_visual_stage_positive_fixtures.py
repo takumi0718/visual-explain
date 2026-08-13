@@ -201,6 +201,22 @@ def _semantic_state(panel: _Element, state_class: str) -> set[str]:
     }
 
 
+def _assert_panel_semantics(
+    panel: _Element,
+    eligible: set[str],
+    expected_spot: set[str],
+) -> None:
+    actual_spot = _semantic_state(panel, "ve-seq-spot")
+    actual_dim = _semantic_state(panel, "ve-seq-dim")
+    assert actual_spot == expected_spot
+    assert actual_dim == eligible - expected_spot
+    assert not actual_spot & actual_dim
+    for node in panel.descendants():
+        semantic_id = node.attrs.get("data-ve-semantic-id")
+        if semantic_id is not None and semantic_id not in eligible:
+            assert not ({"ve-seq-spot", "ve-seq-dim"} & node.classes)
+
+
 def test_flow_state_lens_uses_panel_local_refs_without_changing_semantic_ids() -> None:
     raw = _load_fixture("vs-flow-state-lens.assembly.json")
     html = _render(raw, "vs-flow-state-lens.html")
@@ -231,6 +247,24 @@ def test_flow_state_lens_uses_panel_local_refs_without_changing_semantic_ids() -
             (f"node-review--p{number}", f"node-approve--p{number}"),
             (f"node-approve--p{number}", f"node-publish--p{number}"),
         }
+
+
+def test_sequence_semantics_reject_highlight_classes_on_noneligible_notes() -> None:
+    raw = _load_fixture("vs-flow-state-lens.assembly.json")
+    html = _render(raw, "vs-flow-state-lens.html")
+    section = _canonical(_tree(html), canonical_ir(raw)["id"])
+    stepper = next(node for node in section.children if "data-stepper" in node.attrs)
+    panels = [node for node in stepper.children if "data-step" in node.attrs]
+    case = SEQUENCE_CASES["vs-flow-state-lens.assembly.json"]
+
+    for panel, expected_spot in zip(panels[1:], case["spots"]):
+        certainty = next(
+            node for node in panel.descendants()
+            if node.attrs.get("data-ve-semantic-id") == "flow-state-cert"
+        )
+        certainty.attrs["class"] = f'{certainty.attrs.get("class", "")} ve-seq-spot'.strip()
+        with pytest.raises(AssertionError):
+            _assert_panel_semantics(panel, case["eligible"], expected_spot)
 
 
 @pytest.mark.parametrize("fixture_name", SEQUENCE_CASES)
@@ -305,11 +339,7 @@ def test_sequence_fixture_panels_have_exact_mode_semantics(
         assert all(dom_id.endswith(f"--p{panel_number}") for dom_id in ids)
 
     for panel_number, (panel, expected_spot) in enumerate(zip(panels[1:], case["spots"]), start=2):
-        actual_spot = _semantic_state(panel, "ve-seq-spot") & case["eligible"]
-        actual_dim = _semantic_state(panel, "ve-seq-dim") & case["eligible"]
-        assert actual_spot == expected_spot
-        assert actual_dim == case["eligible"] - expected_spot
-        assert not actual_spot & actual_dim
+        _assert_panel_semantics(panel, case["eligible"], expected_spot)
 
     assert html.count('data-ve-asset="visual-stage"') == 1
     assert html.count(f'data-ve-asset="{case["component"]}.css"') == 1
