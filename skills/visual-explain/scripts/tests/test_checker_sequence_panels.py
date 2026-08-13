@@ -183,6 +183,32 @@ def test_controlled_script_scan_rejects_static_network_url_concatenation() -> No
         assert _has_external_asset_reference(source, "scripts") is True
 
 
+def test_svg_namespace_allowance_requires_the_closed_document_call_shape() -> None:
+    blocked = (
+        "evil.createElementNS('http:' + '//www.w3.org/2000/svg', 'svg')",
+        "evil.document.createElementNS('http:' + '//www.w3.org/2000/svg', 'svg')",
+        "const document = evil; document.createElementNS('http:' + '//www.w3.org/2000/svg', 'svg')",
+        "function build(document) { return document.createElementNS('http:' + '//www.w3.org/2000/svg', 'svg'); }",
+        "const createElementNS = fetch; createElementNS('http:' + '//www.w3.org/2000/svg')",
+        "createElementNS('http:' + '//www.w3.org/2000/svg', 'svg')",
+    )
+
+    for source in blocked:
+        assert _has_external_asset_reference(source, "scripts") is True
+
+
+def test_controlled_script_scan_fails_closed_on_dynamic_or_aliased_network_arguments() -> None:
+    blocked = (
+        "fetch(`ht${'tp'}${'s:'}${'/'}${'/host/x'}`)",
+        r"fetch('\u{68}ttps:\u{2f}\u{2f}host/x')",
+        "const a='ht'; const b='tps:'; const c='/'; const d='/host/x'; fetch(a+b+c+d)",
+        "fetch(('ht' + 'tps:' + '/' + '/host/x'))",
+    )
+
+    for source in blocked:
+        assert _has_external_asset_reference(source, "scripts") is True
+
+
 def test_controlled_style_scan_ignores_comment_urls_but_rejects_live_ones() -> None:
     assert _has_external_asset_reference(
         "/* background: url(https://comment.invalid/image.png) */ .card { color: red; }",
@@ -195,6 +221,10 @@ def test_controlled_style_scan_ignores_comment_urls_but_rejects_live_ones() -> N
     assert _has_external_asset_reference(
         '.card::before { content: "/*"; background: url(https://example.invalid/x);'
         ' content: "*/"; }',
+        "styles",
+    ) is True
+    assert _has_external_asset_reference(
+        r".card { background: url(https:\2f\2f bad.invalid/x); }",
         "styles",
     ) is True
 

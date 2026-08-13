@@ -127,3 +127,39 @@ Fix-round verification:
 - Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
 - Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
 - `python3 -m py_compile` and `git diff --check`: clean.
+
+## Fix Round 2
+
+Two fix-derived review findings were reproduced and closed with additional RED
+tests.
+
+1. SVG namespace call spoofing
+   - RED: member spoofing (`evil.createElementNS` and
+     `evil.document.createElementNS`), a locally rebound `document`, and an
+     aliased bare `createElementNS` could all reuse the namespace exception.
+   - GREEN: the exception now requires the exact unshadowed global receiver
+     shape `document.createElementNS(namespace, ...)`. A namespace binding is
+     allowed only when every later occurrence is that exact call argument. The
+     committed runtime satisfies this closed shape; arbitrary receivers,
+     rebinding, and acquisition contexts fail.
+2. Static URL obfuscation
+   - RED: interpolated templates, `\u{...}` code-point escapes, const aliases,
+     parenthesized concatenation, and CSS escaped slashes bypassed the scan.
+   - GREEN: the tokenizer decodes code-point escapes; a bounded static string
+     evaluator folds parentheses, `+`, and simple const/let bindings. Known
+     acquisition calls (`fetch`, `WebSocket`, `EventSource`, `sendBeacon`, and
+     `importScripts`) fail closed when their first argument cannot be evaluated,
+     and reject evaluated external URLs. Dynamic templates therefore cannot
+     hide a network target. Any backslash inside a live CSS `url(...)` is
+     rejected fail-closed, while comment-only URLs and the existing assets
+     remain accepted.
+
+Fix-round verification:
+
+- Focused adversarial file: `19 passed`.
+- Related checker/SVG/asset/flow suites: `194 passed, 56 subtests passed`.
+- Full canonical suite: `931 passed, 153 subtests passed`.
+- Checker selftest: `31 passed, 0 failed`.
+- Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
+- Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
+- `python3 -m py_compile` and `git diff --check`: clean.

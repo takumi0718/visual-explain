@@ -542,10 +542,9 @@ _EXTERNAL_CSS_LITERAL_RE = re.compile(
 )
 _NAMESPACE_ONLY_CALLS = frozenset({
     "createElementNS",
-    "createAttributeNS",
-    "getElementsByTagNameNS",
-    "setAttributeNS",
 })
+_NETWORK_CALLS = frozenset({"fetch", "WebSocket", "EventSource", "sendBeacon", "importScripts"})
+_CSS_URL_BODY_RE = re.compile(r"url\((.*?)\)", re.IGNORECASE | re.DOTALL)
 
 
 @dataclass(frozen=True)
@@ -565,6 +564,13 @@ def _decode_js_escape(source: str, index: int) -> tuple[str, int]:
         return chr(int(source[index + 1:index + 3], 16)), index + 3
     if char == "u" and re.fullmatch(r"[0-9a-fA-F]{4}", source[index + 1:index + 5]):
         return chr(int(source[index + 1:index + 5], 16)), index + 5
+    if char == "u" and source[index + 1:index + 2] == "{":
+        end = source.find("}", index + 2)
+        digits = source[index + 2:end] if end != -1 else ""
+        if end != -1 and re.fullmatch(r"[0-9a-fA-F]{1,6}", digits):
+            value = int(digits, 16)
+            if value <= 0x10FFFF:
+                return chr(value), end + 1
     if char in "\r\n":
         if char == "\r" and index + 1 < len(source) and source[index + 1] == "\n":
             return "", index + 2
@@ -631,11 +637,32 @@ def _namespace_expression_is_non_fetching(
     tokens: tuple[_JsToken, ...],
     expression_start: int,
 ) -> bool:
-    if (expression_start >= 2
+    def global_document_receiver(index: int) -> bool:
+        if index > 0 and tokens[index - 1].value == ".":
+            return False
+        for candidate, token in enumerate(tokens):
+            if token.kind != "identifier" or token.value != "document":
+                continue
+            if candidate + 1 >= len(tokens) or tokens[candidate + 1].value != ".":
+                return False
+            if candidate > 0 and tokens[candidate - 1].value == ".":
+                return False
+            if candidate > 0 and tokens[candidate - 1].value in {"const", "let", "var"}:
+                return False
+            if candidate + 1 < len(tokens) and tokens[candidate + 1].value == "=":
+                return False
+        return True
+
+    if (expression_start >= 4
             and tokens[expression_start - 1].value == "("
             and tokens[expression_start - 2].kind == "identifier"
             and tokens[expression_start - 2].value in _NAMESPACE_ONLY_CALLS):
-        return True
+        return (
+            tokens[expression_start - 3].value == "."
+            and tokens[expression_start - 4].kind == "identifier"
+            and tokens[expression_start - 4].value == "document"
+            and global_document_receiver(expression_start - 4)
+        )
     if (expression_start < 2
             or tokens[expression_start - 1].value != "="
             or tokens[expression_start - 2].kind != "identifier"):
@@ -645,16 +672,84 @@ def _namespace_expression_is_non_fetching(
     for index, token in enumerate(tokens):
         if token.kind != "identifier" or token.value != binding or index == binding_index:
             continue
-        if (index < 2
+        if (index < 4
                 or tokens[index - 1].value != "("
                 or tokens[index - 2].kind != "identifier"
-                or tokens[index - 2].value not in _NAMESPACE_ONLY_CALLS):
+                or tokens[index - 2].value not in _NAMESPACE_ONLY_CALLS
+                or tokens[index - 3].value != "."
+                or tokens[index - 4].kind != "identifier"
+                or tokens[index - 4].value != "document"
+                or not global_document_receiver(index - 4)):
             return False
     return True
 
 
+def _eval_static_string(
+    tokens: tuple[_JsToken, ...],
+    start: int,
+    environment: dict[str, str],
+) -> tuple[str | None, int]:
+    def term(index: int) -> tuple[str | None, int]:
+        if index >= len(tokens):
+            return None, index
+        token = tokens[index]
+        if token.kind == "string":
+            return token.value, index + 1
+        if token.kind == "identifier" and token.value in environment:
+            return environment[token.value], index + 1
+        if token.value == "(":
+            value, next_index = expression(index + 1)
+            if value is None or next_index >= len(tokens) or tokens[next_index].value != ")":
+                return None, next_index
+            return value, next_index + 1
+        return None, index
+
+    def expression(index: int) -> tuple[str | None, int]:
+        value, index = term(index)
+        if value is None:
+            return None, index
+        while index < len(tokens) and tokens[index].value == "+":
+            right, next_index = term(index + 1)
+            if right is None:
+                return None, next_index
+            value += right
+            index = next_index
+        return value, index
+
+    return expression(start)
+
+
+def _static_string_environment(tokens: tuple[_JsToken, ...]) -> dict[str, str]:
+    environment: dict[str, str] = {}
+    index = 0
+    while index + 3 < len(tokens):
+        if (tokens[index].kind == "identifier"
+                and tokens[index].value in {"const", "let"}
+                and tokens[index + 1].kind == "identifier"
+                and tokens[index + 2].value == "="):
+            value, end = _eval_static_string(tokens, index + 3, environment)
+            if value is not None and end < len(tokens) and tokens[end].value == ";":
+                environment[tokens[index + 1].value] = value
+                index = end + 1
+                continue
+        index += 1
+    return environment
+
+
 def _script_has_external_reference(source: str) -> bool:
     tokens = _js_tokens(source)
+    environment = _static_string_environment(tokens)
+    for index, token in enumerate(tokens[:-1]):
+        if (token.kind == "identifier"
+                and token.value in _NETWORK_CALLS
+                and tokens[index + 1].value == "("):
+            argument, end = _eval_static_string(tokens, index + 2, environment)
+            if argument is None:
+                return True
+            if end >= len(tokens) or tokens[end].value not in {",", ")"}:
+                return True
+            if _NETWORK_URL_RE.match(argument.strip()):
+                return True
     index = 0
     while index < len(tokens):
         if tokens[index].kind not in {"string", "dynamic-string"}:
@@ -711,6 +806,8 @@ def _has_external_asset_reference(body: str, slot_type: str) -> bool:
     if slot_type == "scripts":
         return _script_has_external_reference(body)
     scanned = _strip_css_comments(body)
+    if any("\\" in match.group(1) for match in _CSS_URL_BODY_RE.finditer(scanned)):
+        return True
     return bool(
         _EXTERNAL_CSS_URL_RE.search(scanned)
         or _EXTERNAL_CSS_LITERAL_RE.search(scanned)
