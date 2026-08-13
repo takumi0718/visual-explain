@@ -530,6 +530,32 @@ def validate_controlled_assets(slots: dict[str, str], registry, components_dir: 
     return diagnostics
 
 
+_SVG_NAMESPACE_CONCAT = "'http:' + '//www.w3.org/2000/svg'"
+_EXTERNAL_LITERAL_RE = re.compile(
+    r"https?://|(?:['\"]\s*)//[^/'\"\s]",
+    re.IGNORECASE,
+)
+_EXTERNAL_CSS_URL_RE = re.compile(
+    r"url\(\s*['\"]?\s*(?:https?:)?//",
+    re.IGNORECASE,
+)
+
+
+def _has_external_asset_reference(body: str) -> bool:
+    """Reject network URL literals without mistaking JS comments for URLs.
+
+    The controlled flow runtime's one URL-shaped value is the standard SVG DOM
+    namespace passed to ``createElementNS``. It identifies nodes and never
+    performs a network request, so remove that exact closed literal before the
+    URL scan. Asset digest verification still guarantees the trusted source.
+    """
+    scanned = body.replace(_SVG_NAMESPACE_CONCAT, "")
+    return bool(
+        _EXTERNAL_CSS_URL_RE.search(scanned)
+        or _EXTERNAL_LITERAL_RE.search(scanned)
+    )
+
+
 def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, components_dir: Path | None) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     collector = _StrictSlotParser(tag)
@@ -581,7 +607,7 @@ def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, compon
         if digest != asset.digest or body_digest != asset.digest:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"資産 '{asset_id}' のダイジェストが一致しません"))
             continue
-        if "//" in body or re.search(r"url\(\s*['\"]?\s*(?:https?:)?//", body, re.IGNORECASE):
+        if _has_external_asset_reference(body):
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"資産 '{asset_id}' に外部参照があります"))
         if components_dir is not None:
             file_path = components_dir / asset.path
@@ -675,7 +701,7 @@ class _DomSemanticParser(HTMLParser):
     shape and so can never anchor an edge endpoint.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, panel_number: str | None = None) -> None:
         super().__init__(convert_charrefs=True)
         self.semantic_ids: set[str] = set()
         self.node_ids: set[str] = set()
@@ -684,14 +710,31 @@ class _DomSemanticParser(HTMLParser):
         self.row_refs: list[str] = []
         self.col_refs: list[str] = []
         self.cell_incomplete = False
-        self._stack: list[tuple[str, frozenset[str]]] = []
+        self._stack: list[tuple[str, frozenset[str], str | None, bool]] = []
+        self._panel_context = panel_number
+
+    def _panel_number(self) -> str | None:
+        for _tag, _classes, panel_number, _is_stepper in reversed(self._stack):
+            if panel_number is not None:
+                return panel_number
+        return self._panel_context
+
+    def _normalize_panel_id(self, value: str) -> str:
+        """Normalize only an exact suffix matching the enclosing data-step panel."""
+        panel_number = self._panel_number()
+        if panel_number is None:
+            return value
+        suffix = f"--p{panel_number}"
+        if value.endswith(suffix) and len(value) > len(suffix):
+            return value[:-len(suffix)]
+        return value
 
     def _is_station_in_canvas(self) -> bool:
         # Parent must be li.ve-flow-station whose own parent is ol.ve-flow-canvas.
         if len(self._stack) < 2:
             return False
-        ptag, pclasses = self._stack[-1]
-        gtag, gclasses = self._stack[-2]
+        ptag, pclasses, _ppanel, _pstepper = self._stack[-1]
+        gtag, gclasses, _gpanel, _gstepper = self._stack[-2]
         return (ptag == "li" and _STATION_CLASS in pclasses
                 and gtag == "ol" and bool(gclasses & _NODE_LIST_CLASSES))
 
@@ -700,13 +743,18 @@ class _DomSemanticParser(HTMLParser):
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
         node_id = d.get("data-ve-node-id")
-        if (node_id and d.get("data-ve-semantic-id") == node_id
+        normalized_node_id = self._normalize_panel_id(node_id) if node_id else None
+        if (normalized_node_id and d.get("data-ve-semantic-id") == normalized_node_id
                 and _NODE_CLASS in _class_tokens(attrs)
                 and self._is_station_in_canvas()):
-            self.node_ids.add(node_id)
+            self.node_ids.add(normalized_node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):
-            self.edges.append((d["data-ve-from"], d["data-ve-to"], d["data-ve-relation"]))
+            self.edges.append((
+                self._normalize_panel_id(d["data-ve-from"]),
+                self._normalize_panel_id(d["data-ve-to"]),
+                d["data-ve-relation"],
+            ))
         elif any(has.values()):
             self.incomplete_edge = True
         has_row = "data-ve-row-id" in d
@@ -722,7 +770,19 @@ class _DomSemanticParser(HTMLParser):
         tag = tag.lower()
         self._check(tag, attrs)
         if tag not in _VOID_TAGS:
-            self._stack.append((tag, _class_tokens(attrs)))
+            values = {key.lower(): (value or "") for key, value in attrs}
+            inside_stepper = any(frame[3] for frame in self._stack)
+            panel_number = (
+                values.get("data-step")
+                if inside_stepper and tag == "div" and "data-step" in values
+                else None
+            )
+            self._stack.append((
+                tag,
+                _class_tokens(attrs),
+                panel_number,
+                "data-stepper" in values,
+            ))
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._check(tag.lower(), attrs)
@@ -735,8 +795,8 @@ class _DomSemanticParser(HTMLParser):
                 return
 
 
-def _parse_dom(fragment: str) -> _DomSemanticParser:
-    parser = _DomSemanticParser()
+def _parse_dom(fragment: str, *, panel_number: str | None = None) -> _DomSemanticParser:
+    parser = _DomSemanticParser(panel_number=panel_number)
     parser.feed(fragment)
     parser.close()
     return parser
@@ -1360,6 +1420,98 @@ def _section_attr(attrs: str, name: str) -> str | None:
     return match.group(1) if match else None
 
 
+@dataclass(frozen=True)
+class _SequencePanelFragment:
+    number: str
+    markup: str
+
+
+@dataclass(frozen=True)
+class _OpenPanelElement:
+    tag: str
+    start: int
+    panel_number: str | None
+    is_stepper: bool
+
+
+class _SequencePanelParser(HTMLParser):
+    """Slice panel subtrees without repairing or reserializing trusted markup."""
+
+    def __init__(self, fragment: str) -> None:
+        super().__init__(convert_charrefs=False)
+        self.fragment = fragment
+        self.line_starts = [0]
+        self.line_starts.extend(
+            match.end() for match in re.finditer("\n", fragment)
+        )
+        self.stack: list[_OpenPanelElement] = []
+        self.panels: list[_SequencePanelFragment] = []
+        self.has_stepper = False
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self.line_starts[line - 1] + column
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = {name.lower(): (value or "") for name, value in attrs}
+        inside_stepper = any(frame.is_stepper for frame in self.stack)
+        is_stepper = "data-stepper" in values
+        self.has_stepper = self.has_stepper or is_stepper
+        panel_number = values.get("data-step") if inside_stepper and "data-step" in values else None
+        self.stack.append(_OpenPanelElement(
+            tag=tag.lower(),
+            start=self._offset(),
+            panel_number=panel_number,
+            is_stepper=is_stepper,
+        ))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        frame = self.stack.pop()
+        if frame.panel_number is not None:
+            end = self.fragment.find(">", self._offset()) + 1
+            self.panels.append(_SequencePanelFragment(
+                number=frame.panel_number,
+                markup=self.fragment[frame.start:end],
+            ))
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index].tag != tag:
+                continue
+            end = self.fragment.find(">", self._offset())
+            end = len(self.fragment) if end == -1 else end + 1
+            closed = self.stack[index:]
+            del self.stack[index:]
+            for frame in closed:
+                if frame.panel_number is not None:
+                    self.panels.append(_SequencePanelFragment(
+                        number=frame.panel_number,
+                        markup=self.fragment[frame.start:end],
+                    ))
+            return
+
+
+def _sequence_panels(fragment: str) -> tuple[bool, tuple[_SequencePanelFragment, ...]]:
+    parser = _SequencePanelParser(fragment)
+    parser.feed(fragment)
+    parser.close()
+    return parser.has_stepper, tuple(sorted(parser.panels, key=lambda panel: fragment.index(panel.markup)))
+
+
+def _panel_diagnostics(
+    diagnostics: list[Diagnostic],
+    panel_number: str | None,
+) -> list[Diagnostic]:
+    if panel_number is None:
+        return diagnostics
+    return [
+        Diagnostic(item.code, f"panel {panel_number}: {item.message}", item.path)
+        for item in diagnostics
+    ]
+
+
 def _validate_svg_subtree(fragment: str, component_key: str = "slope@2") -> list[Diagnostic]:
     parser = _SvgSubtreeParser(component_key=component_key)
     parser.feed(fragment)
@@ -1377,43 +1529,70 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
         component = _section_attr(attrs, "data-ve-component")
         version = _section_attr(attrs, "data-ve-contract-version")
         instance = _section_attr(attrs, "data-ve-instance")
-        svg_matches = list(_SVG_OPEN_RE.finditer(body))
-        if not svg_matches:
-            continue
         component_key = f"{component}@{version}" if component and version else ""
         allowed = (
             kind == "canonical"
             and component_key in RENDERER_SVG_ALLOWLIST
         )
         if not allowed:
-            diagnostics.append(Diagnostic(
-                RENDERER_SVG_VIOLATION,
-                f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
-            ))
-            continue
-        if len(svg_matches) != 1:
-            diagnostics.append(Diagnostic(
-                RENDERER_SVG_VIOLATION,
-                "slope セクションの <svg> は1個である必要があります",
-            ))
-        for svg_match in svg_matches:
-            svg_attrs = svg_match.group(1)
-            if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
-                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "xmlns 宣言は許可されていません"))
-            expected_id = f"{instance}-svg" if instance else ""
-            sid = _section_attr(svg_attrs, "id")
-            if sid != expected_id:
+            if _SVG_OPEN_RE.search(body):
                 diagnostics.append(Diagnostic(
                     RENDERER_SVG_VIOLATION,
-                    f"<svg> id は '{expected_id}' である必要があります",
+                    f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
                 ))
-            start = svg_match.start()
-            end = body.find("</svg>", svg_match.end())
-            if end == -1:
-                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "<svg> が閉じられていません"))
+            continue
+        has_stepper, panels = _sequence_panels(body)
+        units: tuple[tuple[str | None, str], ...]
+        if has_stepper:
+            if not panels:
+                diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"{component or 'canonical'} sequence に panel がありません",
+                ))
                 continue
-            subtree = body[start:end + len("</svg>")]
-            diagnostics.extend(_validate_svg_subtree(subtree, component_key))
+            units = tuple((panel.number, panel.markup) for panel in panels)
+        else:
+            units = ((None, body),)
+
+        for panel_number, unit in units:
+            unit_diagnostics: list[Diagnostic] = []
+            if panel_number is not None and not re.fullmatch(r"[1-9][0-9]*", panel_number):
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"data-step '{panel_number}' は正の10進整数である必要があります",
+                ))
+            svg_matches = list(_SVG_OPEN_RE.finditer(unit))
+            if len(svg_matches) != 1:
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"{component} セクションの <svg> は1個である必要があります",
+                ))
+            for svg_match in svg_matches:
+                svg_attrs = svg_match.group(1)
+                if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        "xmlns 宣言は許可されていません",
+                    ))
+                suffix = f"--p{panel_number}" if panel_number is not None else ""
+                expected_id = f"{instance}-svg{suffix}" if instance else ""
+                sid = _section_attr(svg_attrs, "id")
+                if sid != expected_id:
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        f"<svg> id は '{expected_id}' である必要があります",
+                    ))
+                start = svg_match.start()
+                end = unit.find("</svg>", svg_match.end())
+                if end == -1:
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        "<svg> が閉じられていません",
+                    ))
+                    continue
+                subtree = unit[start:end + len("</svg>")]
+                unit_diagnostics.extend(_validate_svg_subtree(subtree, component_key))
+            diagnostics.extend(_panel_diagnostics(unit_diagnostics, panel_number))
     outside = content
     for match in _WRAPPER_SECTION_RE.finditer(content):
         outside = outside.replace(match.group(0), "")
@@ -1686,6 +1865,56 @@ _CANONICAL_SECTION_RE = re.compile(
     r'<section\b[^>]*data-ve-section-kind="canonical"[^>]*>(.*?)</section>', re.DOTALL)
 
 
+def _validate_artifact_unit(
+    body: str,
+    component: str,
+    *,
+    panel_number: str | None = None,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    component_ids = {cid for cid in _COMPONENTS}
+    parser = _parse_dom(body, panel_number=panel_number)
+    if component == "flow":
+        if parser.incomplete_edge:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+        for frm, to, _rel in parser.edges:
+            if frm not in parser.node_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
+            if to not in parser.node_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
+    elif component == "matrix":
+        if parser.cell_incomplete:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+        for ref in parser.row_refs:
+            if ref not in parser.semantic_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
+        for ref in parser.col_refs:
+            if ref not in parser.semantic_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+        diagnostics.extend(_check_matrix_artifact(body, parser))
+    elif component in component_ids:
+        if parser.incomplete_edge or parser.edges:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"{component} セクションに flow 辺属性は許可されていません"))
+        if parser.cell_incomplete or parser.row_refs or parser.col_refs:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"{component} セクションに matrix セル属性は許可されていません"))
+        checker = COMPONENT_ARTIFACT_CHECKS.get(component)
+        if checker is not None:
+            diagnostics.extend(checker(body, parser))
+    if "<figcaption" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
+    if "data-ve-semantic-id=" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
+    if component in component_ids:
+        if f"ve-{component}-notes" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"canonical セクションに確度/出典の注記がありません"))
+    elif "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
+    return diagnostics
+
+
 def validate_artifact_semantics(content: str) -> list[Diagnostic]:
     """Artifact-only static/semantic integrity, usable without an in-memory manifest.
 
@@ -1696,49 +1925,33 @@ def validate_artifact_semantics(content: str) -> list[Diagnostic]:
     notes must survive.
     """
     diagnostics: list[Diagnostic] = []
-    component_ids = {cid for cid in _COMPONENTS}
     for body in _CANONICAL_SECTION_RE.findall(content):
         component_match = _COMPONENT_RE.search(body)
         component = component_match.group(1) if component_match else ""
-        parser = _parse_dom(body)
-        if component == "flow":
-            if parser.incomplete_edge:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
-            for frm, to, _rel in parser.edges:
-                if frm not in parser.node_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
-                if to not in parser.node_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
-        elif component == "matrix":
-            if parser.cell_incomplete:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
-            for ref in parser.row_refs:
-                if ref not in parser.semantic_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
-            for ref in parser.col_refs:
-                if ref not in parser.semantic_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
-            diagnostics.extend(_check_matrix_artifact(body, parser))
-        elif component in component_ids:
-            if parser.incomplete_edge or parser.edges:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"{component} セクションに flow 辺属性は許可されていません"))
-            if parser.cell_incomplete or parser.row_refs or parser.col_refs:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"{component} セクションに matrix セル属性は許可されていません"))
-            checker = COMPONENT_ARTIFACT_CHECKS.get(component)
-            if checker is not None:
-                diagnostics.extend(checker(body, parser))
-        if "<figcaption" not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
-        if "data-ve-semantic-id=" not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
-        if component in component_ids:
-            if f"ve-{component}-notes" not in body:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"canonical セクションに確度/出典の注記がありません"))
-        elif "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
+        has_stepper, panels = _sequence_panels(body)
+        if not has_stepper:
+            diagnostics.extend(_validate_artifact_unit(body, component))
+            continue
+        if not panels:
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                "canonical sequence に panel がありません",
+            ))
+            continue
+        for panel in panels:
+            unit_diagnostics: list[Diagnostic] = []
+            panel_components = _COMPONENT_RE.findall(panel.markup)
+            if panel_components != [component]:
+                unit_diagnostics.append(Diagnostic(
+                    ARTIFACT_SEMANTIC_MISMATCH,
+                    f"{component} component instance が1個必要です",
+                ))
+            unit_diagnostics.extend(_validate_artifact_unit(
+                panel.markup,
+                component,
+                panel_number=panel.number,
+            ))
+            diagnostics.extend(_panel_diagnostics(unit_diagnostics, panel.number))
     return diagnostics
 
 

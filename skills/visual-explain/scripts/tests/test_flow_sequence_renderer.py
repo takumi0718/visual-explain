@@ -12,7 +12,6 @@ import pytest
 
 from fixture_util import canonical_ir
 from ve_components.assembly import render_canonical
-from ve_components.diagnostics import ContractError
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry, resolve_component
 from ve_components.renderers.flow import _path_edge_ids, render_flow
@@ -611,15 +610,11 @@ def test_legacy_flow_remains_byte_exact_and_passes_the_trust_boundary() -> None:
     assert result.markup in rendered.markup
 
 
-def test_path_sequence_render_canonical_waits_for_panel_aware_t11() -> None:
+def test_path_sequence_render_canonical_accepts_panel_local_flow_references() -> None:
     section = _sequence_section("path-spotlight")
     resolved = resolve_component(section.ir.selection, REGISTRY)
 
-    try:
-        render_canonical(section, resolved)
-    except ContractError as exc:
-        assert [diagnostic.message for diagnostic in exc.diagnostics] == [
-            "renderer 'flow@2' の flow ノードが IR と不一致です",
-            "renderer 'flow@2' の flow 端点/関係が IR と不一致です",
-        ]
-        pytest.xfail("T11 will normalize panel suffixes in the flow trust check")
+    rendered = render_canonical(section, resolved)
+
+    assert rendered.manifest.instance_id == section.ir.id
+    assert 'data-ve-sequence-mode="path-spotlight"' in rendered.markup
