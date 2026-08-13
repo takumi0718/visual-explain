@@ -5,7 +5,12 @@ import dataclasses
 import hashlib
 from pathlib import Path
 
-from ve_components.assembly import AssetRef, RenderedCanonical, compose_sections
+from ve_components.assembly import (
+    AssetRef,
+    ExpectedCanonicalRecord,
+    RenderedCanonical,
+    compose_sections,
+)
 from ve_components.checker import validate_controlled_assets
 from ve_components.model import RenderManifest
 from ve_components.registry import AssetDefinition, Registry, load_registry
@@ -38,6 +43,14 @@ def _rendered(component_id: str, instance_id: str, asset: AssetDefinition) -> Re
         style_assets=(ref,),
         script_assets=(),
         manifest=_manifest(component_id, instance_id, asset.digest),
+        expected_record=ExpectedCanonicalRecord(
+            component_id=component_id,
+            instance_id=instance_id,
+            payload_semantic_ids=frozenset(),
+            claim=None,
+            assertions=None,
+            sequence=None,
+        ),
     )
 
 

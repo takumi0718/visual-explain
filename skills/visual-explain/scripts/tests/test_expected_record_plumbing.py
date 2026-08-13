@@ -10,6 +10,7 @@ import pytest
 
 from ve_components.assembly import compose_sections, process_canonical_section
 from ve_components.checker import check_final_document
+from ve_components.diagnostics import ContractError
 from ve_components.registry import Registry, load_registry
 from ve_components.renderers.matrix import render_matrix
 from ve_components.validation import validate_assembly
@@ -72,6 +73,21 @@ def test_compose_carries_immutable_validated_ir_facts_as_expected_records() -> N
     assert record.sequence == section.ir.sequence
     with pytest.raises(dataclasses.FrozenInstanceError):
         record.claim = "変更不可"
+
+
+def test_compose_rejects_canonical_manifest_without_expected_record() -> None:
+    section = _visual_stage_matrix_section()
+    registry = load_registry(COMPONENTS / "registry.json")
+    rendered = process_canonical_section(section, registry, {"matrix@2": render_matrix})
+    missing_record = dataclasses.replace(rendered, expected_record=None)
+
+    with pytest.raises(ContractError) as exc:
+        compose_sections((missing_record,))
+
+    assert {diagnostic.code for diagnostic in exc.value.diagnostics} == {"renderer_failure"}
+    assert "expected record" in " ".join(
+        diagnostic.message for diagnostic in exc.value.diagnostics
+    )
 
 
 def test_final_checker_passes_expected_records_to_document_structure(monkeypatch) -> None:

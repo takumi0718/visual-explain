@@ -346,9 +346,13 @@ def compose_sections(items) -> CompositionResult:
         seen_instances.add(item.instance_id)
         markup.append(item.markup)
         if isinstance(item, RenderedCanonical):
+            if item.expected_record is None:
+                raise ContractError([Diagnostic(
+                    RENDERER_FAILURE,
+                    f"canonical '{item.instance_id}' に expected record がありません",
+                )])
             manifests.append(item.manifest)
-            if item.expected_record is not None:
-                expected_records.append(item.expected_record)
+            expected_records.append(item.expected_record)
             for ref in item.style_assets:
                 key = (ref.asset.id, ref.asset.digest)
                 if key not in seen_styles:
