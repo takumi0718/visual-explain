@@ -577,7 +577,7 @@ def _decode_js_escape(source: str, index: int) -> tuple[str, int]:
 
 
 _JS_REGEX_PREFIX_PUNCTUATION = frozenset({
-    "(", "[", "{", "=", ":", ",", ";", "!", "?", "&", "|", "+", "-", "*", "%", "~", "<", ">",
+    "(", "[", "{", "=", ":", ",", ";", "!", "?", "&", "|", "+", "-", "*", "/", "%", "~", "<", ">",
 })
 _JS_REGEX_PREFIX_KEYWORDS = frozenset({
     "return", "throw", "case", "delete", "void", "typeof", "new", "in", "of", "yield", "await", "else", "do",
@@ -617,7 +617,128 @@ def _js_regex_end(source: str, start: int) -> int | None:
     return None
 
 
-def _js_tokens(source: str) -> tuple[_JsToken, ...]:
+_MAX_JS_TEMPLATE_DEPTH = 32
+
+
+def _js_quoted_string_end(source: str, start: int) -> int | None:
+    quote = source[start]
+    index = start + 1
+    while index < len(source):
+        if source[index] == "\\":
+            index += 2
+            continue
+        if source[index] == quote:
+            return index + 1
+        if source[index] in "\r\n":
+            return None
+        index += 1
+    return None
+
+
+def _js_template_expression_end(source: str, start: int, depth: int) -> int | None:
+    if depth > _MAX_JS_TEMPLATE_DEPTH:
+        return None
+    tokens: list[_JsToken] = []
+    braces = 1
+    index = start
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            index += 1
+            continue
+        if source.startswith("//", index):
+            newline = min(
+                (position for marker in ("\r", "\n")
+                 if (position := source.find(marker, index + 2)) != -1),
+                default=-1,
+            )
+            if newline == -1:
+                return None
+            index = newline + 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            if end == -1:
+                return None
+            index = end + 2
+            continue
+        if char in "'\"":
+            end = _js_quoted_string_end(source, index)
+            if end is None:
+                return None
+            tokens.append(_JsToken("string", source[index:end]))
+            index = end
+            continue
+        if char == "`":
+            nested = _js_template_tokens(source, index, depth + 1)
+            if nested is None:
+                return None
+            _, index = nested
+            tokens.append(_JsToken("string", ""))
+            continue
+        if char == "/" and _can_start_js_regex(tokens):
+            end = _js_regex_end(source, index)
+            if end is None:
+                return None
+            tokens.append(_JsToken("regex", source[index:end]))
+            index = end
+            continue
+        if char.isalpha() or char in "_$":
+            end = index + 1
+            while end < len(source) and (source[end].isalnum() or source[end] in "_$"):
+                end += 1
+            tokens.append(_JsToken("identifier", source[index:end]))
+            index = end
+            continue
+        if char == "{":
+            braces += 1
+        elif char == "}":
+            braces -= 1
+            if braces == 0:
+                return index
+        tokens.append(_JsToken("punctuation", char))
+        index += 1
+    return None
+
+
+def _js_template_tokens(
+    source: str,
+    start: int,
+    depth: int,
+) -> tuple[list[_JsToken], int] | None:
+    if depth > _MAX_JS_TEMPLATE_DEPTH:
+        return None
+    tokens: list[_JsToken] = []
+    chunk: list[str] = []
+    index = start + 1
+    while index < len(source):
+        char = source[index]
+        if char == "\\":
+            decoded, index = _decode_js_escape(source, index + 1)
+            chunk.append(decoded)
+            continue
+        if char == "`":
+            tokens.append(_JsToken("string", "".join(chunk)))
+            return tokens, index + 1
+        if source.startswith("${", index):
+            tokens.append(_JsToken("string", "".join(chunk)))
+            expression_start = index + 2
+            expression_end = _js_template_expression_end(source, expression_start, depth)
+            if expression_end is None:
+                return None
+            tokens.append(_JsToken(
+                "template-expression",
+                source[expression_start:expression_end],
+            ))
+            chunk = []
+            index = expression_end + 1
+            continue
+        chunk.append(char)
+        index += 1
+    return None
+
+
+def _js_tokens(source: str, template_depth: int = 0) -> tuple[_JsToken, ...]:
     """Tokenize controlled JS while keeping comments, strings, and regex opaque."""
     tokens: list[_JsToken] = []
     index = 0
@@ -643,28 +764,30 @@ def _js_tokens(source: str) -> tuple[_JsToken, ...]:
                 tokens.append(_JsToken("regex", source[index:end]))
                 index = end
                 continue
-        if char in "'\"`":
+        if char == "`":
+            template = _js_template_tokens(source, index, template_depth + 1)
+            if template is None:
+                tokens.append(_JsToken("invalid", "unterminated template"))
+                break
+            template_tokens, index = template
+            tokens.extend(template_tokens)
+            continue
+        if char in "'\"":
             quote = char
             index += 1
             value: list[str] = []
-            dynamic_template = False
             while index < len(source):
                 char = source[index]
                 if char == quote:
                     index += 1
                     break
-                if quote == "`" and source.startswith("${", index):
-                    dynamic_template = True
                 if char == "\\":
                     decoded, index = _decode_js_escape(source, index + 1)
                     value.append(decoded)
                     continue
                 value.append(char)
                 index += 1
-            tokens.append(_JsToken(
-                "dynamic-string" if dynamic_template else "string",
-                "".join(value),
-            ))
+            tokens.append(_JsToken("string", "".join(value)))
             continue
         if char.isalpha() or char in "_$":
             end = index + 1
@@ -676,6 +799,40 @@ def _js_tokens(source: str) -> tuple[_JsToken, ...]:
         tokens.append(_JsToken("punctuation", char))
         index += 1
     return tuple(tokens)
+
+
+def _known_global_computed_access(tokens: tuple[_JsToken, ...], index: int) -> bool:
+    token = tokens[index]
+    if token.kind != "identifier" or token.value not in {"window", "globalThis"}:
+        return False
+
+    left = index
+    while left > 0 and tokens[left - 1].value == "(":
+        left -= 1
+    wrappers = index - left
+    if left > 0:
+        previous = tokens[left - 1]
+        if (previous.value == "."
+                or (wrappers > 0
+                    and not (previous.kind == "punctuation"
+                             and previous.value in _JS_REGEX_PREFIX_PUNCTUATION)
+                    and not (previous.kind == "identifier"
+                             and previous.value in _JS_REGEX_PREFIX_KEYWORDS))):
+            return False
+
+    access = index + 1
+    for _ in range(wrappers):
+        if access >= len(tokens) or tokens[access].value != ")":
+            return False
+        access += 1
+    if access < len(tokens) and tokens[access].value == "[":
+        return True
+    return (
+        access + 2 < len(tokens)
+        and tokens[access].value == "?"
+        and tokens[access + 1].value == "."
+        and tokens[access + 2].value == "["
+    )
 
 
 def _namespace_expression_is_non_fetching(
@@ -729,26 +886,25 @@ def _namespace_expression_is_non_fetching(
     return True
 
 
-def _script_has_external_reference(source: str) -> bool:
-    tokens = _js_tokens(source)
+def _script_has_external_reference(source: str, template_depth: int = 0) -> bool:
+    if template_depth > _MAX_JS_TEMPLATE_DEPTH:
+        return True
+    tokens = _js_tokens(source, template_depth)
     for index, token in enumerate(tokens):
+        if token.kind == "invalid":
+            return True
+        if (token.kind == "template-expression"
+                and _script_has_external_reference(token.value, template_depth + 1)):
+            return True
         if token.kind == "identifier" and token.value in _FORBIDDEN_NETWORK_IDENTIFIERS:
             return True
         if token.kind == "punctuation" and token.value == "\\":
             return True
-        if (token.kind == "identifier"
-                and token.value in {"window", "globalThis"}
-                and (index == 0 or tokens[index - 1].value != ".")
-                and index + 1 < len(tokens)
-                and (tokens[index + 1].value == "["
-                     or (index + 3 < len(tokens)
-                         and tokens[index + 1].value == "?"
-                         and tokens[index + 2].value == "."
-                         and tokens[index + 3].value == "["))):
+        if _known_global_computed_access(tokens, index):
             return True
     index = 0
     while index < len(tokens):
-        if tokens[index].kind not in {"string", "dynamic-string"}:
+        if tokens[index].kind != "string":
             index += 1
             continue
         start = index

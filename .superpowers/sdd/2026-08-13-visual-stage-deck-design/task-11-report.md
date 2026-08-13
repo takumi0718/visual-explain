@@ -233,3 +233,44 @@ Fix-round verification:
 - Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
 - Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
 - `python3 -m py_compile` and `git diff --check`: clean.
+
+## Fix Round 5
+
+The final review probes exposed three lexer-boundary gaps. All exact cases were
+recorded as RED before the production change (`4 failed, 24 passed`).
+
+1. Transparent global-receiver parentheses
+   - RED: `(globalThis)['fetch'](...)` and nested/optional
+     `((window))?.['fetch'](...)` hid the receiver from the direct-member rule.
+   - GREEN: the token check now walks arbitrary immediately balanced wrapper
+     parentheses around a known global receiver, then applies the same closed
+     computed/optional-computed rule. Non-receiver array literals remain
+     unaffected.
+2. Division followed by a regex literal
+   - RED: the second slash in `total / /fetch/.test(s)` was tokenized as
+     punctuation, exposing the regex body as a forbidden code identifier.
+   - GREEN: binary `/` is now a valid regex-prefix token for the immediately
+     following slash. Ordinary chained division remains value-delimited, and
+     `//`/`/*...*/` are still removed before regex recognition.
+3. Executable template interpolation
+   - RED: forbidden calls in direct, labelled, and nested `${...}` expressions
+     were hidden inside one dynamic-string token; malformed templates were not
+     fail-closed.
+   - GREEN: template static chunks remain opaque string tokens, while every
+     balanced interpolation is emitted as executable source and recursively
+     passed through the normal scanner. Boundary recognition skips nested
+     templates, quoted strings, regex literals (including classes/escapes), and
+     comments; multiple/nested interpolations are covered. Unterminated
+     template, comment, and regex structure, or excessive nesting, fails
+     closed. The recursion is bounded at 32 template levels.
+
+Final fix-round verification, including the cumulative Round 1–5 adversarial
+checker coverage:
+
+- Focused adversarial file: `28 passed`.
+- Related checker/SVG/asset/flow suites: `203 passed, 56 subtests passed`.
+- Full canonical suite: `940 passed, 153 subtests passed`.
+- Checker selftest: `31 passed, 0 failed`.
+- Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
+- Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
+- `python3 -m py_compile` and `git diff --check`: clean.

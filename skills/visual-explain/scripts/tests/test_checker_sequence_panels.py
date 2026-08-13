@@ -244,6 +244,12 @@ def test_controlled_script_scan_rejects_all_known_global_computed_member_access(
         assert _has_external_asset_reference(source, "scripts") is True
 
 
+def test_controlled_script_scan_rejects_parenthesized_known_global_computed_access() -> None:
+    assert _has_external_asset_reference("(globalThis)['fetch']('/x')", "scripts") is True
+    assert _has_external_asset_reference("((window))?.['fetch']('/x')", "scripts") is True
+    assert _has_external_asset_reference("((((globalThis))))['anything']", "scripts") is True
+
+
 def test_controlled_script_scan_keeps_strings_and_regex_literals_opaque() -> None:
     allowed = (
         "const labels = ['fetch', 'WebSocket'];",
@@ -258,6 +264,35 @@ def test_controlled_script_scan_keeps_strings_and_regex_literals_opaque() -> Non
 def test_controlled_script_scan_distinguishes_division_from_regex_literal() -> None:
     assert _has_external_asset_reference("const ratio = total / count / 2;", "scripts") is False
     assert _has_external_asset_reference("const ratio = total / fetch / 2;", "scripts") is True
+    assert _has_external_asset_reference("const x = total / /fetch/.test(s);", "scripts") is False
+
+
+def test_controlled_script_scan_recurses_into_template_expressions() -> None:
+    blocked = (
+        "const text = `${fetch('/x')}`;",
+        "const text = `label ${globalThis['fetch']('/x')}`;",
+        "const text = `${`nested ${fetch('/x')}`}`;",
+        "const text = `${/* } */ fetch('/x')}`;",
+    )
+    allowed = (
+        "const text = `fetch ${label}`;",
+        "const text = `${label} WebSocket ${value}`;",
+        "const text = `${/fetch/.test(label)}`;",
+        "const text = `${'}'} ${/}/.test(label)}`;",
+        "const text = `${`nested ${/}/.test(label)}`}`;",
+    )
+
+    for source in blocked:
+        assert _has_external_asset_reference(source, "scripts") is True
+    for source in allowed:
+        assert _has_external_asset_reference(source, "scripts") is False
+
+
+def test_controlled_script_scan_rejects_unterminated_template_structure() -> None:
+    assert _has_external_asset_reference("const text = `label ${value`;", "scripts") is True
+    assert _has_external_asset_reference("const text = `${`nested`;", "scripts") is True
+    assert _has_external_asset_reference("const text = `${/* no close }`;", "scripts") is True
+    assert _has_external_asset_reference("const text = `${/local}`;", "scripts") is True
 
 
 def test_controlled_script_reserves_network_names_in_object_and_class_code() -> None:
