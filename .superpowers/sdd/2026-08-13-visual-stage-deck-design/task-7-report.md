@@ -61,3 +61,32 @@ All commands ran from `skills/visual-explain/scripts`.
 - The transformer uses a two-pass stdlib `HTMLParser` implementation: first collect panel-local DOM IDs, then rewrite only allowlisted references that resolve to those IDs. Unknown attributes, unknown reference forms, unresolved references, external href fragments, and semantic payload IDs are not rewritten.
 - SVG attribute case that HTML parsing normalizes (`viewBox`, `preserveAspectRatio`) is restored explicitly; text entities remain escaped and deterministic.
 - Expected follow-up boundary: Tasks 8–10 must render `ve-seq-spot`/`ve-seq-dim` from `SequencePanel.highlight_ids`; Task 8 must supply path edges and its station-only path canvas. No renderer was integrated here, as required, so end-to-end sequence canonical fixtures remain follow-up coverage.
+
+## Fix Round 1
+
+Review findings fixed:
+
+1. Added `data-connect: connector-declaration` to the shared closed reference allowlist. The panel transformer now parses the complete comma-separated declaration grammar and rewrites each resolvable `from->to` endpoint with the current panel suffix; malformed declarations remain untouched.
+2. Closed exact URL-reference handling. Attributes such as `filter` now rewrite only when the whole value is a `url(#id)` token; only inline `style` scans embedded URL tokens.
+3. Added fail-closed callback invariants. Every panel must match panel 1 for style/script asset IDs and every base `RenderManifest` field, including landmark/SVG base shapes. Divergence raises `ContractError` with `RENDERER_FAILURE` diagnostics naming the panel and field.
+
+Focused tests added/refactored:
+
+- `test_panel_namespacing_rewrites_each_data_connect_endpoint_in_the_same_panel`
+- `test_exact_url_reference_attributes_do_not_scan_embedded_tokens`
+- `test_expand_sequence_rejects_divergent_callback_contract_fields` (13 field cases)
+
+RED/GREEN evidence from `skills/visual-explain/scripts`:
+
+- Connector RED: `python3 -m pytest tests/test_sequence_renderer_common.py -q` → 1 failed, 6 passed; endpoint suffix expectation failed while `data-connect` stayed on base IDs. GREEN after the allowlist/grammar fix → 7 passed. The final named test was extracted from this failing real-behavior expectation during green refactor.
+- Exact URL RED: same command → 1 failed, 6 passed; `filter="junk url(#fx) junk"` was substring-rewritten. GREEN after full-value matching → 7 passed. The final named test was extracted from this failing expectation during green refactor.
+- Callback invariant RED: same command → 13 failed, 7 passed; every divergent field returned normally instead of raising `ContractError`. GREEN after invariant checks and final test refactor → 22 passed.
+
+Fix-round verification:
+
+- Focused: `python3 -m pytest tests/test_sequence_renderer_common.py -q` → 22 passed.
+- Full canonical suite: `python3 -m pytest tests/ -x -q` → 871 passed, 153 subtests passed.
+- Selftest: `./check.sh --selftest` → 31 passed, 0 failed.
+- `git diff --check` → clean.
+
+Remaining concern: the deferred SVG serializer future-case observation remains out of scope for this round, per review direction. No other Task 7 concern found in self-review.

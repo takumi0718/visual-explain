@@ -1,6 +1,11 @@
 """Focused contracts for the shared static sequence expansion core."""
 from __future__ import annotations
 
+from dataclasses import replace
+
+import pytest
+
+from ve_components.diagnostics import ContractError, RENDERER_FAILURE
 from ve_components.model import RenderManifest, RenderResult, SequenceDeclaration, SequenceStep
 from ve_components.renderers import common
 
@@ -81,8 +86,9 @@ def test_panel_namespacing_suffixes_dom_ids_and_only_allowed_same_panel_referenc
         ' data-ve-from="node-a" data-ve-to="node-b" clip-path="url(#fx)"'
         ' mask="url(#fx)" filter="url(#fx)" marker-start="url(#arrow)"'
         ' marker-mid="url(#arrow)" marker-end="url(#arrow)"'
-        ' fill="url(#fx)" stroke="url(#fx)" data-connect="node-a->node-b"></path>'
-        '<g id="node-b"></g><use href="#title" xlink:href="#desc"></use>'
+        ' fill="url(#fx)" stroke="url(#fx)"></path>'
+        '<g id="node-b"></g>'
+        '<use href="#title" xlink:href="#desc"></use>'
         '<label for="node-a" aria-describedby="desc absent"'
         ' aria-owns="node-a node-b">Node</label>'
         '<a href="https://example.com/#title">external</a></svg>'
@@ -107,9 +113,38 @@ def test_panel_namespacing_suffixes_dom_ids_and_only_allowed_same_panel_referenc
     assert 'for="node-a--p3" aria-describedby="desc--p3 absent"' in rewritten
     assert 'aria-owns="node-a--p3 node-b--p3"' in rewritten
     assert 'data-unknown-ref="node-a"' in rewritten
-    assert 'data-connect="node-a-&gt;node-b"' in rewritten
     assert 'href="https://example.com/#title"' in rewritten
     assert '<title id="title--p3">A &amp; B</title>' in rewritten
+
+
+def test_panel_namespacing_rewrites_each_data_connect_endpoint_in_the_same_panel() -> None:
+    markup = (
+        '<figure id="figure"><span id="node-a"></span><span id="node-b"></span>'
+        '<div data-connect="node-a->node-b, node-b -> absent"></div></figure>'
+    )
+
+    rewritten = common.expand_sequence(
+        _sequence("state-lens"), lambda panel: _result(markup),
+    ).markup
+
+    assert (
+        'data-connect="node-a--p3-&gt;node-b--p3, node-b--p3 -&gt; absent"'
+        in rewritten
+    )
+
+
+def test_exact_url_reference_attributes_do_not_scan_embedded_tokens() -> None:
+    markup = (
+        '<figure id="figure" style="filter: url(#fx)"><span id="fx"></span>'
+        '<div id="bad-url" filter="junk url(#fx) junk"></div></figure>'
+    )
+
+    rewritten = common.expand_sequence(
+        _sequence("state-lens"), lambda panel: _result(markup),
+    ).markup
+
+    assert 'id="figure--p3" style="filter: url(#fx--p3)"' in rewritten
+    assert 'id="bad-url--p3" filter="junk url(#fx) junk"' in rewritten
 
 
 def test_expand_sequence_emits_stepper_controls_and_escaped_panel_forecasts() -> None:
@@ -178,6 +213,58 @@ def test_expand_sequence_suffixes_panel_landmarks_and_svg_roots_only() -> None:
     )
     assert expanded.manifest.generated_relationship_ids == ("edge-ab",)
     assert expanded.markup.count('<svg id="diagram--p') == 3
+
+
+_DIVERGENT_PANEL_FIELDS = (
+    "style_asset_ids",
+    "script_asset_ids",
+    "component_id",
+    "component_version",
+    "instance_id",
+    "consumed_semantic_ids",
+    "generated_relationship_ids",
+    "generated_landmark_ids",
+    "asset_ids",
+    "asset_digests",
+    "declared_dependencies",
+    "fallback_mode",
+    "svg_root_ids",
+)
+
+
+def _diverge(result: RenderResult, field: str) -> RenderResult:
+    values = {
+        "style_asset_ids": ("other-style",),
+        "script_asset_ids": ("other-script",),
+        "component_id": "bars",
+        "component_version": 3,
+        "instance_id": "other-instance",
+        "consumed_semantic_ids": ("different-semantic",),
+        "generated_relationship_ids": ("different-edge",),
+        "generated_landmark_ids": ("different-landmark",),
+        "asset_ids": ("other-asset",),
+        "asset_digests": ("1" * 64,),
+        "declared_dependencies": ("other-dependency",),
+        "fallback_mode": "different-fallback",
+        "svg_root_ids": ("different-svg",),
+    }
+    if field in {"style_asset_ids", "script_asset_ids"}:
+        return replace(result, **{field: values[field]})
+    return replace(result, manifest=replace(result.manifest, **{field: values[field]}))
+
+
+@pytest.mark.parametrize("field", _DIVERGENT_PANEL_FIELDS)
+def test_expand_sequence_rejects_divergent_callback_contract_fields(field: str) -> None:
+    base = _result()
+
+    def render(panel: common.SequencePanel) -> RenderResult:
+        return _diverge(base, field) if panel.number == 3 else base
+
+    with pytest.raises(ContractError) as exc:
+        common.expand_sequence(_sequence("state-lens"), render)
+
+    assert {diagnostic.code for diagnostic in exc.value.diagnostics} == {RENDERER_FAILURE}
+    assert any(field in diagnostic.message for diagnostic in exc.value.diagnostics)
 
 
 def test_expand_sequence_is_an_exact_legacy_noop_without_a_sequence() -> None:

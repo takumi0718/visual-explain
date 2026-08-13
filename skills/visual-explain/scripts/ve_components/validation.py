@@ -156,6 +156,7 @@ SEQUENCE_REFERENCE_ATTRIBUTES = MappingProxyType({
     "aria-labelledby": "idref-list",
     "aria-describedby": "idref-list",
     "aria-owns": "idref-list",
+    "data-connect": "connector-declaration",
     "data-ve-node-id": "single-idref",
     "data-ve-from": "single-idref",
     "data-ve-to": "single-idref",

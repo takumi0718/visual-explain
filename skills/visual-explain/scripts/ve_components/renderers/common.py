@@ -4,10 +4,11 @@ from __future__ import annotations
 import html
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from html.parser import HTMLParser
 from typing import Callable
 
+from ..diagnostics import ContractError, Diagnostic, RENDERER_FAILURE
 from ..model import CanonicalIR, RenderResult, SequenceDeclaration, SequenceStep
 from ..registry import AssetDefinition
 from ..validation import SEQUENCE_MODES, SEQUENCE_REFERENCE_ATTRIBUTES
@@ -27,7 +28,10 @@ class SequencePanel:
 PathEdgeResolver = Callable[[SequenceDeclaration, int], Iterable[str]]
 PanelRenderer = Callable[[SequencePanel], RenderResult]
 
+_RESULT_INVARIANT_FIELDS = ("style_asset_ids", "script_asset_ids")
+
 _URL_ID_RE = re.compile(r"url\(\s*#([^\s)'\"#]+)\s*\)")
+_CONNECT_PAIR_RE = re.compile(r"(\s*)([^\s>]+)(\s*)->(\s*)([^\s>]+)(\s*)")
 _PRESERVED_ATTRIBUTE_CASE = {
     "viewbox": "viewBox",
     "preserveaspectratio": "preserveAspectRatio",
@@ -70,6 +74,28 @@ class _PanelNamespaceParser(HTMLParser):
 
         return _URL_ID_RE.sub(replace, value)
 
+    def _rewrite_exact_url(self, value: str) -> str:
+        match = _URL_ID_RE.fullmatch(value)
+        if match is None or match.group(1) not in self.dom_ids:
+            return value
+        target = match.group(1)
+        return value.replace(f"#{target}", f"#{target}{self.suffix}")
+
+    def _rewrite_connectors(self, value: str) -> str:
+        declarations = value.split(",")
+        matches = [_CONNECT_PAIR_RE.fullmatch(item) for item in declarations]
+        if any(match is None for match in matches):
+            return value
+        rewritten: list[str] = []
+        for match in matches:
+            assert match is not None
+            before, source, before_arrow, after_arrow, target, after = match.groups()
+            rewritten.append(
+                f"{before}{self._suffix_id(source)}{before_arrow}->"
+                f"{after_arrow}{self._suffix_id(target)}{after}"
+            )
+        return ",".join(rewritten)
+
     def _rewrite(self, name: str, value: str) -> str:
         kind = SEQUENCE_REFERENCE_ATTRIBUTES.get(name.lower())
         if kind == "dom-id":
@@ -80,7 +106,11 @@ class _PanelNamespaceParser(HTMLParser):
             return self._suffix_id(value)
         if kind == "idref-list":
             return " ".join(self._suffix_id(token) for token in value.split())
-        if kind in {"url-reference", "inline-url-reference"}:
+        if kind == "connector-declaration":
+            return self._rewrite_connectors(value)
+        if kind == "url-reference":
+            return self._rewrite_exact_url(value)
+        if kind == "inline-url-reference":
             return self._rewrite_urls(value)
         return value
 
@@ -134,6 +164,30 @@ def _namespace_panel_markup(markup: str, panel_number: int) -> str:
     return "".join(parser.parts)
 
 
+def _require_consistent_panel_contracts(
+    panels: tuple[SequencePanel, ...],
+    rendered: tuple[RenderResult, ...],
+) -> None:
+    first = rendered[0]
+    failures: list[Diagnostic] = []
+    for panel, result in zip(panels[1:], rendered[1:]):
+        for field in _RESULT_INVARIANT_FIELDS:
+            if getattr(result, field) != getattr(first, field):
+                failures.append(Diagnostic(
+                    RENDERER_FAILURE,
+                    f"sequence panel {panel.number} の {field} が panel 1 と不一致です",
+                ))
+        for manifest_field in fields(first.manifest):
+            field = manifest_field.name
+            if getattr(result.manifest, field) != getattr(first.manifest, field):
+                failures.append(Diagnostic(
+                    RENDERER_FAILURE,
+                    f"sequence panel {panel.number} の manifest.{field} が panel 1 と不一致です",
+                ))
+    if failures:
+        raise ContractError(failures)
+
+
 def sequence_panels(
     sequence: SequenceDeclaration,
     *,
@@ -176,6 +230,8 @@ def expand_sequence(
 
     panels = sequence_panels(sequence, path_edges=path_edges)
     rendered = tuple(render_panel(panel) for panel in panels)
+    _require_consistent_panel_contracts(panels, rendered)
+    first = rendered[0]
     panel_markup: list[str] = []
     for panel, result in zip(panels, rendered):
         body = _namespace_panel_markup(result.markup, panel.number)
@@ -201,7 +257,6 @@ def expand_sequence(
         f' data-total-steps="{len(panels)}">'
         f'{"".join(panel_markup)}{controls}</div>'
     )
-    first = rendered[0]
     manifest = replace(
         first.manifest,
         generated_landmark_ids=tuple(
