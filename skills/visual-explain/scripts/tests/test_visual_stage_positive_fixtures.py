@@ -258,6 +258,7 @@ def test_sequence_semantics_reject_highlight_classes_on_noneligible_notes() -> N
     case = SEQUENCE_CASES["vs-flow-state-lens.assembly.json"]
 
     for panel, expected_spot in zip(panels[1:], case["spots"]):
+        _assert_panel_semantics(panel, case["eligible"], expected_spot)
         certainty = next(
             node for node in panel.descendants()
             if node.attrs.get("data-ve-semantic-id") == "flow-state-cert"
