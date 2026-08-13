@@ -37,7 +37,8 @@
   overflow-x: visible;
 }
 
-[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-canvas {
+/* T8 emits this class only on the ordered station list; flow edges stay outside it. */
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-path-canvas {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ve-path-spotlight-gap);
@@ -47,14 +48,14 @@
   box-sizing: border-box;
 }
 
-[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-station {
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-path-canvas .ve-flow-station {
   flex: 0 0 var(--ve-path-spotlight-node-width);
   max-width: var(--ve-path-spotlight-node-width);
   min-width: 0;
   box-sizing: border-box;
 }
 
-[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-node {
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-path-canvas .ve-flow-node {
   display: block;
   width: 100%;
   max-width: var(--ve-path-spotlight-node-width);
