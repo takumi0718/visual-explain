@@ -209,6 +209,28 @@ def test_controlled_script_scan_fails_closed_on_dynamic_or_aliased_network_argum
         assert _has_external_asset_reference(source, "scripts") is True
 
 
+def test_controlled_script_scan_rejects_network_api_identifiers_in_every_code_shape() -> None:
+    blocked = (
+        "const request = fetch; request('/local')",
+        "fetch.call(window, '/local')",
+        "function local(fetch) { return fetch('/local'); }",
+        "fetch = localOnly",
+        "new XMLHttpRequest()",
+        "window.WebSocket",
+        "navigator.sendBeacon",
+        "importScripts.apply(null, files)",
+        r"f\u0065tch('/local')",
+    )
+
+    for source in blocked:
+        assert _has_external_asset_reference(source, "scripts") is True
+
+
+def test_controlled_script_scan_rejects_computed_api_names_without_rejecting_ui_strings() -> None:
+    assert _has_external_asset_reference("window['fetch']('/local')", "scripts") is True
+    assert _has_external_asset_reference('const label = "fetch";', "scripts") is False
+
+
 def test_controlled_style_scan_ignores_comment_urls_but_rejects_live_ones() -> None:
     assert _has_external_asset_reference(
         "/* background: url(https://comment.invalid/image.png) */ .card { color: red; }",
@@ -227,6 +249,19 @@ def test_controlled_style_scan_ignores_comment_urls_but_rejects_live_ones() -> N
         r".card { background: url(https:\2f\2f bad.invalid/x); }",
         "styles",
     ) is True
+    assert _has_external_asset_reference(
+        r'.card::before { content: "url(foo\\bar)"; }',
+        "styles",
+    ) is False
+    assert _has_external_asset_reference(
+        r".card { background: \75rl(https:\2f\2f bad.invalid/x); }",
+        "styles",
+    ) is True
+    for safe_url in ("data:image/svg+xml;base64,AA==", "#marker", "images/card.png"):
+        assert _has_external_asset_reference(
+            f".card {{ background: url({safe_url}); }}",
+            "styles",
+        ) is False
 
 
 def test_semantic_checker_rejects_a_panel_missing_its_component_instance() -> None:

@@ -532,19 +532,17 @@ def validate_controlled_assets(slots: dict[str, str], registry, components_dir: 
 
 _SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 _NETWORK_URL_RE = re.compile(r"^(?:(?:https?|wss?|ftp):)?//", re.IGNORECASE)
-_EXTERNAL_CSS_URL_RE = re.compile(
-    r"url\(\s*['\"]?\s*(?:(?:https?|wss?|ftp):)?//",
-    re.IGNORECASE,
-)
-_EXTERNAL_CSS_LITERAL_RE = re.compile(
-    r"(?:(?:https?|wss?|ftp):)?//[^/'\"\s]",
-    re.IGNORECASE,
-)
 _NAMESPACE_ONLY_CALLS = frozenset({
     "createElementNS",
 })
-_NETWORK_CALLS = frozenset({"fetch", "WebSocket", "EventSource", "sendBeacon", "importScripts"})
-_CSS_URL_BODY_RE = re.compile(r"url\((.*?)\)", re.IGNORECASE | re.DOTALL)
+_FORBIDDEN_NETWORK_IDENTIFIERS = frozenset({
+    "fetch",
+    "XMLHttpRequest",
+    "WebSocket",
+    "EventSource",
+    "sendBeacon",
+    "importScripts",
+})
 
 
 @dataclass(frozen=True)
@@ -684,72 +682,20 @@ def _namespace_expression_is_non_fetching(
     return True
 
 
-def _eval_static_string(
-    tokens: tuple[_JsToken, ...],
-    start: int,
-    environment: dict[str, str],
-) -> tuple[str | None, int]:
-    def term(index: int) -> tuple[str | None, int]:
-        if index >= len(tokens):
-            return None, index
-        token = tokens[index]
-        if token.kind == "string":
-            return token.value, index + 1
-        if token.kind == "identifier" and token.value in environment:
-            return environment[token.value], index + 1
-        if token.value == "(":
-            value, next_index = expression(index + 1)
-            if value is None or next_index >= len(tokens) or tokens[next_index].value != ")":
-                return None, next_index
-            return value, next_index + 1
-        return None, index
-
-    def expression(index: int) -> tuple[str | None, int]:
-        value, index = term(index)
-        if value is None:
-            return None, index
-        while index < len(tokens) and tokens[index].value == "+":
-            right, next_index = term(index + 1)
-            if right is None:
-                return None, next_index
-            value += right
-            index = next_index
-        return value, index
-
-    return expression(start)
-
-
-def _static_string_environment(tokens: tuple[_JsToken, ...]) -> dict[str, str]:
-    environment: dict[str, str] = {}
-    index = 0
-    while index + 3 < len(tokens):
-        if (tokens[index].kind == "identifier"
-                and tokens[index].value in {"const", "let"}
-                and tokens[index + 1].kind == "identifier"
-                and tokens[index + 2].value == "="):
-            value, end = _eval_static_string(tokens, index + 3, environment)
-            if value is not None and end < len(tokens) and tokens[end].value == ";":
-                environment[tokens[index + 1].value] = value
-                index = end + 1
-                continue
-        index += 1
-    return environment
-
-
 def _script_has_external_reference(source: str) -> bool:
     tokens = _js_tokens(source)
-    environment = _static_string_environment(tokens)
-    for index, token in enumerate(tokens[:-1]):
-        if (token.kind == "identifier"
-                and token.value in _NETWORK_CALLS
-                and tokens[index + 1].value == "("):
-            argument, end = _eval_static_string(tokens, index + 2, environment)
-            if argument is None:
-                return True
-            if end >= len(tokens) or tokens[end].value not in {",", ")"}:
-                return True
-            if _NETWORK_URL_RE.match(argument.strip()):
-                return True
+    for index, token in enumerate(tokens):
+        if token.kind == "identifier" and token.value in _FORBIDDEN_NETWORK_IDENTIFIERS:
+            return True
+        if token.kind == "punctuation" and token.value == "\\":
+            return True
+        if (token.kind == "string"
+                and token.value in _FORBIDDEN_NETWORK_IDENTIFIERS
+                and index > 0
+                and index + 1 < len(tokens)
+                and tokens[index - 1].value == "["
+                and tokens[index + 1].value == "]"):
+            return True
     index = 0
     while index < len(tokens):
         if tokens[index].kind not in {"string", "dynamic-string"}:
@@ -771,47 +717,106 @@ def _script_has_external_reference(source: str) -> bool:
     return False
 
 
-def _strip_css_comments(source: str) -> str:
-    parts: list[str] = []
+@dataclass(frozen=True)
+class _CssToken:
+    kind: str
+    value: str
+
+
+def _decode_css_escape(source: str, index: int) -> tuple[str, int]:
+    if index >= len(source):
+        return "", index
+    if source[index] in "\r\n\f":
+        return "", index + 1
+    end = index
+    while end < len(source) and end - index < 6 and source[end] in "0123456789abcdefABCDEF":
+        end += 1
+    if end > index:
+        value = int(source[index:end], 16)
+        if end < len(source) and source[end].isspace():
+            end += 1
+        return (chr(value) if 0 < value <= 0x10FFFF else "\ufffd"), end
+    return source[index], index + 1
+
+
+def _css_tokens(source: str) -> tuple[_CssToken, ...]:
+    tokens: list[_CssToken] = []
     index = 0
-    quote: str | None = None
     while index < len(source):
         char = source[index]
-        if quote is not None:
-            parts.append(char)
-            if char == "\\" and index + 1 < len(source):
-                parts.append(source[index + 1])
-                index += 2
-                continue
-            if char == quote:
-                quote = None
-            index += 1
-            continue
-        if char in "'\"":
-            quote = char
-            parts.append(char)
+        if char.isspace():
             index += 1
             continue
         if source.startswith("/*", index):
             end = source.find("*/", index + 2)
             index = len(source) if end == -1 else end + 2
             continue
-        parts.append(char)
+        if char in "'\"":
+            quote = char
+            index += 1
+            value: list[str] = []
+            while index < len(source):
+                char = source[index]
+                if char == quote:
+                    index += 1
+                    break
+                if char == "\\":
+                    decoded, index = _decode_css_escape(source, index + 1)
+                    value.append(decoded)
+                    continue
+                value.append(char)
+                index += 1
+            tokens.append(_CssToken("string", "".join(value)))
+            continue
+        if char.isalnum() or char in "_-\\":
+            value: list[str] = []
+            while index < len(source):
+                char = source[index]
+                if char == "\\":
+                    decoded, index = _decode_css_escape(source, index + 1)
+                    value.append(decoded)
+                    continue
+                if not (char.isalnum() or char in "_-"):
+                    break
+                value.append(char)
+                index += 1
+            tokens.append(_CssToken("identifier", "".join(value)))
+            continue
+        tokens.append(_CssToken("punctuation", char))
         index += 1
-    return "".join(parts)
+    return tuple(tokens)
+
+
+def _style_has_external_reference(source: str) -> bool:
+    tokens = _css_tokens(source)
+    for index, token in enumerate(tokens):
+        if token.kind == "identifier" and token.value.lower() == "url":
+            if index + 1 >= len(tokens) or tokens[index + 1].value != "(":
+                continue
+            end = index + 2
+            parts: list[str] = []
+            while end < len(tokens) and tokens[end].value != ")":
+                parts.append(tokens[end].value)
+                end += 1
+            if end >= len(tokens):
+                return True
+            if _NETWORK_URL_RE.match("".join(parts).strip()):
+                return True
+        if (token.value == "@"
+                and index + 2 < len(tokens)
+                and tokens[index + 1].kind == "identifier"
+                and tokens[index + 1].value.lower() == "import"
+                and tokens[index + 2].kind == "string"
+                and _NETWORK_URL_RE.match(tokens[index + 2].value.strip())):
+            return True
+    return False
 
 
 def _has_external_asset_reference(body: str, slot_type: str) -> bool:
     """Reject statically recoverable network URLs, excluding comments."""
     if slot_type == "scripts":
         return _script_has_external_reference(body)
-    scanned = _strip_css_comments(body)
-    if any("\\" in match.group(1) for match in _CSS_URL_BODY_RE.finditer(scanned)):
-        return True
-    return bool(
-        _EXTERNAL_CSS_URL_RE.search(scanned)
-        or _EXTERNAL_CSS_LITERAL_RE.search(scanned)
-    )
+    return _style_has_external_reference(body)
 
 
 def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, components_dir: Path | None) -> list[Diagnostic]:

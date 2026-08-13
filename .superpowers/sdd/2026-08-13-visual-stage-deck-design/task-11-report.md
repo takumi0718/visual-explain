@@ -163,3 +163,39 @@ Fix-round verification:
 - Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
 - Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
 - `python3 -m py_compile` and `git diff --check`: clean.
+
+## Fix Round 3
+
+The controlled-asset policy was intentionally simplified after review: these
+assets do not need network acquisition APIs, so their presence is prohibited
+instead of attempting to prove each call argument safe.
+
+1. JavaScript closed acquisition vocabulary
+   - RED: direct aliases, `.call`, shadowed parameters, reassignment, bare
+     property references, computed `window['fetch']`, and escaped identifiers
+     could evade a call-shape/argument analyzer.
+   - GREEN: after comment/string tokenization, any code identifier in the closed
+     acquisition set (`fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`,
+     `sendBeacon`, `importScripts`) is rejected regardless of use shape.
+     Computed-property string tokens are rejected only inside `[...]`, so an
+     ordinary UI string such as `"fetch"` remains valid. A backslash in JS code
+     outside comments/strings is fail-closed, preventing escaped identifiers.
+     The const environment and acquisition call evaluator from Round 2 were
+     deleted. Existing SVG namespace validation remains receiver/context closed.
+2. CSS code-aware escape handling
+   - RED: escaped `url` identifiers and escaped scheme slashes bypassed the scan,
+     while text content containing `"url(foo\\bar)"` was falsely rejected.
+   - GREEN: a bounded CSS tokenizer now excludes comments and ordinary strings
+     from code, decodes CSS escapes in code identifiers and `url(...)` values,
+     and rejects external network URLs only in live `url`/`@import` contexts.
+     `data:`, fragment, and relative URLs remain allowed.
+
+Fix-round verification:
+
+- Focused adversarial file: `21 passed`.
+- Related checker/SVG/asset/flow suites: `196 passed, 56 subtests passed`.
+- Full canonical suite: `933 passed, 153 subtests passed`.
+- Checker selftest: `31 passed, 0 failed`.
+- Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
+- Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
+- `python3 -m py_compile` and `git diff --check`: clean.
