@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 CERTAINTY_LABEL = {"confirmed": "確認済み", "inferred": "推論", "unverified": "未確認"}
 
@@ -313,6 +313,31 @@ class EvidenceMapPayload:
 
 
 # ---------------------------------------------------------------------------
+# Stage-deck declarations
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SequenceStep:
+    id: str
+    label: str
+    target_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SequenceDeclaration:
+    mode: str
+    steps: tuple[SequenceStep, ...]
+
+
+@dataclass(frozen=True)
+class Assertion:
+    id: str
+    text: str
+    cover_ids: tuple[str, ...]
+
+
+# ---------------------------------------------------------------------------
 # Sections
 # ---------------------------------------------------------------------------
 
@@ -341,6 +366,9 @@ class CanonicalIR:
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
+    claim: Optional[str] = None
+    sequence: Optional[SequenceDeclaration] = None
+    assertions: Optional[Tuple[Assertion, ...]] = None
 
     @property
     def payload_kind(self) -> str:

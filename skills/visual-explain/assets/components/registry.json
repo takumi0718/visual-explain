@@ -7,7 +7,8 @@
       "relationshipKind": "two-axis",
       "capabilities": [
         "two-axis-classification",
-        "intersection-comparison"
+        "intersection-comparison",
+        "typed-sequence"
       ],
       "semanticResponsibility": "二軸分類と交差の比較のみを担う。",
       "requiredInputs": [
@@ -51,6 +52,12 @@
           "slot": "styles",
           "path": "matrix.css",
           "digest": "fe9fd5f86063dcb93790a9549a7630a162d674082446e2dd5f86c540bd6b692c"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -61,7 +68,8 @@
       "capabilities": [
         "ordered-transition",
         "directed-transition",
-        "branching"
+        "branching",
+        "typed-sequence"
       ],
       "semanticResponsibility": "明示的な順序・有向遷移・分岐の関係のみを担う。",
       "requiredInputs": [
@@ -103,6 +111,18 @@
           "slot": "styles",
           "path": "flow.css",
           "digest": "778c861a2bf3acd4f197f92fac9385a0b4acec7accc4c97a1d25a871b701770e"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
+        },
+        {
+          "id": "visual-stage-flow",
+          "slot": "scripts",
+          "path": "visual-stage-flow.js",
+          "digest": "408619d29215e864902974b85cb71e748e3fae504a139671264f5510af1b6ac2"
         }
       ]
     },
@@ -149,6 +169,12 @@
           "slot": "styles",
           "path": "enumeration.css",
           "digest": "70c182dfb356bb58117fac1cce740dde5e5b1201a5eeb309d0555a9e84ab7e34"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -196,6 +222,12 @@
           "slot": "styles",
           "path": "chevron.css",
           "digest": "afdb6d3b748a45e67714851bdb8033993fadd7bc27a9a5295f46fef77c6720f8"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -242,6 +274,12 @@
           "slot": "styles",
           "path": "pyramid.css",
           "digest": "5ae27d2763f9f6d1871a99b662a91804a892798707a444dc14d3138fd33ecf7c"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -250,7 +288,8 @@
       "version": 2,
       "relationshipKind": "staged-maturity",
       "capabilities": [
-        "maturity-staging"
+        "maturity-staging",
+        "typed-sequence"
       ],
       "semanticResponsibility": "到達したら留まる成熟度段階のみを担う。",
       "requiredInputs": [
@@ -289,6 +328,12 @@
           "slot": "styles",
           "path": "stairs.css",
           "digest": "c490a27d4fda79c63cfbb0a1595ece6589715d65947a788737482c464adfacc6"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -336,6 +381,12 @@
           "slot": "styles",
           "path": "logic-tree.css",
           "digest": "2a701472b525d268eb2946c5f3f5bec2d79f9335b66286c06cd67f00e8292e30"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -344,7 +395,8 @@
       "version": 2,
       "relationshipKind": "additive-bridge",
       "capabilities": [
-        "additive-bridging"
+        "additive-bridging",
+        "typed-sequence"
       ],
       "semanticResponsibility": "加算的な橋渡し（増減の累積）のみを担う。",
       "requiredInputs": [
@@ -389,6 +441,12 @@
           "slot": "styles",
           "path": "waterfall.css",
           "digest": "b6662c0fa0d983c0c6ae5bdb742aaf4818dc341122c381380e2779e8847504a8"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -440,6 +498,12 @@
           "slot": "styles",
           "path": "slope.css",
           "digest": "a0059b8aa25254449fabe0aa3ba4899974b524b6d0b9d08c08524af0ca61dae6"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -487,6 +551,12 @@
           "slot": "styles",
           "path": "evidence-map.css",
           "digest": "b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -496,7 +566,8 @@
       "relationshipKind": "quantitative-comparison",
       "capabilities": [
         "single-axis-quantity",
-        "ranked-comparison"
+        "ranked-comparison",
+        "typed-sequence"
       ],
       "semanticResponsibility": "単一軸の定量比較と順位付き比較のみを担う。",
       "requiredInputs": [
@@ -537,6 +608,12 @@
           "slot": "styles",
           "path": "bars.css",
           "digest": "dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     },
@@ -584,6 +661,12 @@
           "slot": "styles",
           "path": "kpi.css",
           "digest": "5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
     }

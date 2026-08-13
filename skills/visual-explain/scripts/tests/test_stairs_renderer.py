@@ -152,9 +152,9 @@ class StairsManifestTest(unittest.TestCase):
     def test_registry_entry_is_complete(self) -> None:
         self.assertIsNotNone(STAIRS_DEF)
         self.assertEqual(STAIRS_DEF.relationship_kind, "staged-maturity")
-        self.assertEqual(STAIRS_DEF.capabilities, ("maturity-staging",))
+        self.assertEqual(STAIRS_DEF.capabilities, ("maturity-staging", "typed-sequence"))
         self.assertEqual(STAIRS_DEF.renderer, "stairs@2")
-        self.assertEqual([a.id for a in STAIRS_DEF.assets], ["stairs.css"])
+        self.assertEqual([a.id for a in STAIRS_DEF.assets], ["stairs.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir, result = render_fixture("component-valid-stairs.json")

@@ -50,9 +50,12 @@ class MatrixManifestTest(unittest.TestCase):
     def test_registry_entry_is_complete(self) -> None:
         self.assertIsNotNone(MATRIX_DEF)
         self.assertEqual(MATRIX_DEF.relationship_kind, "two-axis")
-        self.assertEqual(MATRIX_DEF.capabilities, ("two-axis-classification", "intersection-comparison"))
+        self.assertEqual(
+            MATRIX_DEF.capabilities,
+            ("two-axis-classification", "intersection-comparison", "typed-sequence"),
+        )
         self.assertEqual(MATRIX_DEF.renderer, "matrix@2")
-        self.assertEqual([a.id for a in MATRIX_DEF.assets], ["matrix.css"])
+        self.assertEqual([a.id for a in MATRIX_DEF.assets], ["matrix.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir = load_fixture_ir()

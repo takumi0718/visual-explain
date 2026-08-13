@@ -5,9 +5,16 @@ summary, height-enumerated treads, highlight marker, and notes.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
+from .common import (
+    SequencePanel,
+    claim_before_body,
+    expand_sequence,
+    select_style_assets,
+)
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
@@ -16,7 +23,11 @@ def _esc(value: str) -> str:
     return html.escape(str(value))
 
 
-def render_stairs(section: CanonicalSection, definition) -> RenderResult:
+def _render_stairs_panel(
+    section: CanonicalSection,
+    definition,
+    panel: SequencePanel,
+) -> RenderResult:
     ir = section.ir
     stairs = ir.stairs
     assert stairs is not None
@@ -47,6 +58,10 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
             cls_parts.append("ve-stairs-todo")
         if stage.id in takeaway:
             cls_parts.append("ve-takeaway-target")
+        if panel.step is not None:
+            cls_parts.append(
+                "ve-seq-spot" if stage.id in panel.highlight_ids else "ve-seq-dim"
+            )
         takeaway_attr = ' data-ve-takeaway="true"' if stage.id in takeaway else ""
         emphasis_html = (
             f'<span class="ve-emphasis">{_esc(emphasis_by_id[stage.id])}</span>'
@@ -84,7 +99,7 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
         joined = "、".join(f"注釈: {_esc(label)}" for label in emphasis_by_id.values())
         annotation_note = f" {joined}"
 
-    markup = (
+    body_markup = (
         f'<figure data-ve-component="stairs" role="group"'
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<figcaption id="{_esc(caption_id)}" class="ve-stairs-caption">{_esc(ir.caption)}</figcaption>'
@@ -93,8 +108,7 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-stairs-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
-
-    style_assets = [a for a in definition.assets if a.slot == "styles"]
+    style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
         component_version=definition.version,
@@ -108,8 +122,19 @@ def render_stairs(section: CanonicalSection, definition) -> RenderResult:
         fallback_mode=definition.fallback,
     )
     return RenderResult(
-        markup=markup,
+        markup=body_markup,
         style_asset_ids=tuple(a.id for a in style_assets),
         script_asset_ids=(),
         manifest=manifest,
     )
+
+
+def render_stairs(section: CanonicalSection, definition) -> RenderResult:
+    """Render a legacy figure or expand complete static state-lens panels."""
+    ir = section.ir
+
+    def render_panel(panel: SequencePanel) -> RenderResult:
+        return _render_stairs_panel(section, definition, panel)
+
+    expanded = expand_sequence(ir.sequence, render_panel)
+    return replace(expanded, markup=claim_before_body(ir, expanded.markup))

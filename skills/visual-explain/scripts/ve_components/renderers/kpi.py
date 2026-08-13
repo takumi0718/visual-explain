@@ -4,6 +4,7 @@ from __future__ import annotations
 import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
+from .common import claim_before_body, select_style_assets
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
@@ -42,7 +43,7 @@ def render_kpi(section: CanonicalSection, definition) -> RenderResult:
             f'<strong>出典 {_esc(src.label)}</strong>{detail}</li>'
         )
 
-    markup = (
+    body_markup = (
         f'<figure data-ve-component="kpi" role="group"'
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<figcaption id="{_esc(caption_id)}" class="ve-kpi-caption">{_esc(ir.caption)}</figcaption>'
@@ -51,8 +52,9 @@ def render_kpi(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-kpi-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
+    markup = claim_before_body(ir, body_markup)
 
-    style_assets = [a for a in definition.assets if a.slot == "styles"]
+    style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
         component_version=definition.version,

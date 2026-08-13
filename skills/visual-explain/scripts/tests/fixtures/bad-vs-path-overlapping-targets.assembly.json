@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "vs-flow-path",
+    "title": "承認経路ステッパー",
+    "summary": "承認経路を段階的に追跡する資料。",
+    "type": "system",
+    "profile": "visual-stage"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "first",
+      "decision": "承認経路を順に確認します。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "flow-path",
+        "relationship": {
+          "kind": "directed-graph",
+          "capabilities": [
+            "ordered-transition",
+            "branching",
+            "typed-sequence"
+          ]
+        },
+        "selection": {
+          "component": "flow",
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition",
+            "branching",
+            "typed-sequence"
+          ]
+        },
+        "caption": "起案から公開までの承認経路",
+        "certainty": [
+          {
+            "id": "flow-cert",
+            "level": "confirmed",
+            "statement": "主要経路を確認済み。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "flow-source",
+            "label": "承認手順"
+          }
+        ],
+        "accessibility": {
+          "label": "承認経路",
+          "summary": "起案、確認、承認、公開を結ぶ経路と分岐。"
+        },
+        "flow": {
+          "nodes": [
+            {
+              "id": "node-draft",
+              "label": "起案"
+            },
+            {
+              "id": "node-review",
+              "label": "確認"
+            },
+            {
+              "id": "node-approve",
+              "label": "承認"
+            },
+            {
+              "id": "node-publish",
+              "label": "公開"
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-draft-review",
+              "from": "node-draft",
+              "to": "node-review",
+              "relation": "ordered-transition"
+            },
+            {
+              "id": "edge-review-approve",
+              "from": "node-review",
+              "to": "node-approve",
+              "relation": "ordered-transition"
+            },
+            {
+              "id": "edge-approve-publish",
+              "from": "node-approve",
+              "to": "node-publish",
+              "relation": "ordered-transition"
+            },
+            {
+              "id": "edge-draft-approve",
+              "from": "node-draft",
+              "to": "node-approve",
+              "relation": "branching",
+              "label": "緊急承認"
+            }
+          ],
+          "startId": "node-draft",
+          "readingOrder": [
+            "node-draft",
+            "node-review",
+            "node-approve",
+            "node-publish"
+          ]
+        },
+        "claim": "主要な承認経路を段階ごとに追跡できる。",
+        "sequence": {
+          "mode": "path-spotlight",
+          "steps": [
+            {
+              "id": "path-review",
+              "label": "確認まで",
+              "targetIds": [
+                "node-draft",
+                "node-review"
+              ]
+            },
+            {
+              "id": "path-publish",
+              "label": "公開まで",
+              "targetIds": [
+                "node-review",
+                "node-approve",
+                "node-publish"
+              ]
+            }
+          ]
+        },
+        "assertions": [
+          {
+            "id": "flow-path-claim",
+            "text": "主要な承認経路を段階ごとに追跡できる。",
+            "coverIds": [
+              "node-draft",
+              "node-review",
+              "node-approve",
+              "node-publish",
+              "edge-draft-review",
+              "edge-review-approve",
+              "edge-approve-publish",
+              "edge-draft-approve"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "closing",
+      "id": "closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "例外分岐の利用頻度は対象外です。"
+          ]
+        }
+      ]
+    }
+  ]
+}

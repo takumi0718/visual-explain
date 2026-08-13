@@ -211,7 +211,7 @@ class LogicTreeManifestTest(unittest.TestCase):
         self.assertEqual(LOGIC_TREE_DEF.relationship_kind, "hierarchical-decomposition")
         self.assertEqual(LOGIC_TREE_DEF.capabilities, ("mece-decomposition",))
         self.assertEqual(LOGIC_TREE_DEF.renderer, "logic-tree@2")
-        self.assertEqual([a.id for a in LOGIC_TREE_DEF.assets], ["logic-tree.css"])
+        self.assertEqual([a.id for a in LOGIC_TREE_DEF.assets], ["logic-tree.css", "visual-stage"])
 
     def test_manifest_consumes_all_semantic_ids(self) -> None:
         ir, result = render_fixture("component-valid-logic-tree.json")

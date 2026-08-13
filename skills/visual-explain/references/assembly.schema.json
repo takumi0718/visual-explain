@@ -19,7 +19,7 @@
     "compatibilitySource": {"enum": ["legacy-html-insertion"]},
     "compatibilityReason": {"enum": ["unmigrated-format", "weak-model-degradation"]},
     "documentType": {"enum": ["proposal", "system", "research"]},
-    "documentProfile": {"enum": ["strict", "extended"]},
+    "documentProfile": {"enum": ["strict", "extended", "visual-stage"]},
     "document": {
       "type": "object",
       "additionalProperties": false,

@@ -530,6 +530,501 @@ def validate_controlled_assets(slots: dict[str, str], registry, components_dir: 
     return diagnostics
 
 
+_SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+_NETWORK_URL_RE = re.compile(r"^(?:(?:https?|wss?|ftp):)?//", re.IGNORECASE)
+_NAMESPACE_ONLY_CALLS = frozenset({
+    "createElementNS",
+})
+_FORBIDDEN_NETWORK_IDENTIFIERS = frozenset({
+    "fetch",
+    "XMLHttpRequest",
+    "WebSocket",
+    "EventSource",
+    "sendBeacon",
+    "importScripts",
+})
+
+
+@dataclass(frozen=True)
+class _JsToken:
+    kind: str
+    value: str
+
+
+def _decode_js_escape(source: str, index: int) -> tuple[str, int]:
+    if index >= len(source):
+        return "", index
+    char = source[index]
+    simple = {"n": "\n", "r": "\r", "t": "\t", "b": "\b", "f": "\f", "v": "\v"}
+    if char in simple:
+        return simple[char], index + 1
+    if char == "x" and re.fullmatch(r"[0-9a-fA-F]{2}", source[index + 1:index + 3]):
+        return chr(int(source[index + 1:index + 3], 16)), index + 3
+    if char == "u" and re.fullmatch(r"[0-9a-fA-F]{4}", source[index + 1:index + 5]):
+        return chr(int(source[index + 1:index + 5], 16)), index + 5
+    if char == "u" and source[index + 1:index + 2] == "{":
+        end = source.find("}", index + 2)
+        digits = source[index + 2:end] if end != -1 else ""
+        if end != -1 and re.fullmatch(r"[0-9a-fA-F]{1,6}", digits):
+            value = int(digits, 16)
+            if value <= 0x10FFFF:
+                return chr(value), end + 1
+    if char in "\r\n":
+        if char == "\r" and index + 1 < len(source) and source[index + 1] == "\n":
+            return "", index + 2
+        return "", index + 1
+    return char, index + 1
+
+
+_JS_REGEX_PREFIX_PUNCTUATION = frozenset({
+    "(", "[", "{", "=", ":", ",", ";", "!", "?", "&", "|", "+", "-", "*", "/", "%", "~", "<", ">",
+})
+_JS_REGEX_PREFIX_KEYWORDS = frozenset({
+    "return", "throw", "case", "delete", "void", "typeof", "new", "in", "of", "yield", "await", "else", "do",
+})
+
+
+def _can_start_js_regex(tokens: list[_JsToken]) -> bool:
+    if not tokens:
+        return True
+    previous = tokens[-1]
+    if previous.kind == "punctuation":
+        return previous.value in _JS_REGEX_PREFIX_PUNCTUATION
+    return previous.kind == "identifier" and previous.value in _JS_REGEX_PREFIX_KEYWORDS
+
+
+def _js_regex_end(source: str, start: int) -> int | None:
+    """Return the end of a regex literal, keeping escapes and classes opaque."""
+    index = start + 1
+    inside_class = False
+    while index < len(source):
+        char = source[index]
+        if char in "\r\n":
+            return None
+        if char == "\\":
+            index += 2
+            continue
+        if char == "[":
+            inside_class = True
+        elif char == "]" and inside_class:
+            inside_class = False
+        elif char == "/" and not inside_class:
+            index += 1
+            while index < len(source) and source[index].isalpha():
+                index += 1
+            return index
+        index += 1
+    return None
+
+
+_MAX_JS_TEMPLATE_DEPTH = 32
+
+
+def _js_quoted_string_end(source: str, start: int) -> int | None:
+    quote = source[start]
+    index = start + 1
+    while index < len(source):
+        if source[index] == "\\":
+            index += 2
+            continue
+        if source[index] == quote:
+            return index + 1
+        if source[index] in "\r\n":
+            return None
+        index += 1
+    return None
+
+
+def _js_template_expression_end(source: str, start: int, depth: int) -> int | None:
+    if depth > _MAX_JS_TEMPLATE_DEPTH:
+        return None
+    tokens: list[_JsToken] = []
+    braces = 1
+    index = start
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            index += 1
+            continue
+        if source.startswith("//", index):
+            newline = min(
+                (position for marker in ("\r", "\n")
+                 if (position := source.find(marker, index + 2)) != -1),
+                default=-1,
+            )
+            if newline == -1:
+                return None
+            index = newline + 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            if end == -1:
+                return None
+            index = end + 2
+            continue
+        if char in "'\"":
+            end = _js_quoted_string_end(source, index)
+            if end is None:
+                return None
+            tokens.append(_JsToken("string", source[index:end]))
+            index = end
+            continue
+        if char == "`":
+            nested = _js_template_tokens(source, index, depth + 1)
+            if nested is None:
+                return None
+            _, index = nested
+            tokens.append(_JsToken("string", ""))
+            continue
+        if char == "/" and _can_start_js_regex(tokens):
+            end = _js_regex_end(source, index)
+            if end is None:
+                return None
+            tokens.append(_JsToken("regex", source[index:end]))
+            index = end
+            continue
+        if char.isalpha() or char in "_$":
+            end = index + 1
+            while end < len(source) and (source[end].isalnum() or source[end] in "_$"):
+                end += 1
+            tokens.append(_JsToken("identifier", source[index:end]))
+            index = end
+            continue
+        if char == "{":
+            braces += 1
+        elif char == "}":
+            braces -= 1
+            if braces == 0:
+                return index
+        tokens.append(_JsToken("punctuation", char))
+        index += 1
+    return None
+
+
+def _js_template_tokens(
+    source: str,
+    start: int,
+    depth: int,
+) -> tuple[list[_JsToken], int] | None:
+    if depth > _MAX_JS_TEMPLATE_DEPTH:
+        return None
+    tokens: list[_JsToken] = []
+    chunk: list[str] = []
+    index = start + 1
+    while index < len(source):
+        char = source[index]
+        if char == "\\":
+            decoded, index = _decode_js_escape(source, index + 1)
+            chunk.append(decoded)
+            continue
+        if char == "`":
+            tokens.append(_JsToken("string", "".join(chunk)))
+            return tokens, index + 1
+        if source.startswith("${", index):
+            tokens.append(_JsToken("string", "".join(chunk)))
+            expression_start = index + 2
+            expression_end = _js_template_expression_end(source, expression_start, depth)
+            if expression_end is None:
+                return None
+            tokens.append(_JsToken(
+                "template-expression",
+                source[expression_start:expression_end],
+            ))
+            chunk = []
+            index = expression_end + 1
+            continue
+        chunk.append(char)
+        index += 1
+    return None
+
+
+def _js_tokens(source: str, template_depth: int = 0) -> tuple[_JsToken, ...]:
+    """Tokenize controlled JS while keeping comments, strings, and regex opaque."""
+    tokens: list[_JsToken] = []
+    index = 0
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            index += 1
+            continue
+        if source.startswith("//", index):
+            endings = [
+                position for marker in ("\r", "\n")
+                if (position := source.find(marker, index + 2)) != -1
+            ]
+            index = len(source) if not endings else min(endings) + 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = len(source) if end == -1 else end + 2
+            continue
+        if char == "/" and _can_start_js_regex(tokens):
+            end = _js_regex_end(source, index)
+            if end is not None:
+                tokens.append(_JsToken("regex", source[index:end]))
+                index = end
+                continue
+        if char == "`":
+            template = _js_template_tokens(source, index, template_depth + 1)
+            if template is None:
+                tokens.append(_JsToken("invalid", "unterminated template"))
+                break
+            template_tokens, index = template
+            tokens.extend(template_tokens)
+            continue
+        if char in "'\"":
+            quote = char
+            index += 1
+            value: list[str] = []
+            while index < len(source):
+                char = source[index]
+                if char == quote:
+                    index += 1
+                    break
+                if char == "\\":
+                    decoded, index = _decode_js_escape(source, index + 1)
+                    value.append(decoded)
+                    continue
+                value.append(char)
+                index += 1
+            tokens.append(_JsToken("string", "".join(value)))
+            continue
+        if char.isalpha() or char in "_$":
+            end = index + 1
+            while end < len(source) and (source[end].isalnum() or source[end] in "_$"):
+                end += 1
+            tokens.append(_JsToken("identifier", source[index:end]))
+            index = end
+            continue
+        tokens.append(_JsToken("punctuation", char))
+        index += 1
+    return tuple(tokens)
+
+
+def _known_global_computed_access(tokens: tuple[_JsToken, ...], index: int) -> bool:
+    token = tokens[index]
+    if token.kind != "identifier" or token.value not in {"window", "globalThis"}:
+        return False
+
+    left = index
+    while left > 0 and tokens[left - 1].value == "(":
+        left -= 1
+    wrappers = index - left
+    if left > 0:
+        previous = tokens[left - 1]
+        if (previous.value == "."
+                or (wrappers > 0
+                    and not (previous.kind == "punctuation"
+                             and previous.value in _JS_REGEX_PREFIX_PUNCTUATION)
+                    and not (previous.kind == "identifier"
+                             and previous.value in _JS_REGEX_PREFIX_KEYWORDS))):
+            return False
+
+    access = index + 1
+    for _ in range(wrappers):
+        if access >= len(tokens) or tokens[access].value != ")":
+            return False
+        access += 1
+    if access < len(tokens) and tokens[access].value == "[":
+        return True
+    return (
+        access + 2 < len(tokens)
+        and tokens[access].value == "?"
+        and tokens[access + 1].value == "."
+        and tokens[access + 2].value == "["
+    )
+
+
+def _namespace_expression_is_non_fetching(
+    tokens: tuple[_JsToken, ...],
+    expression_start: int,
+) -> bool:
+    def global_document_receiver(index: int) -> bool:
+        if index > 0 and tokens[index - 1].value == ".":
+            return False
+        for candidate, token in enumerate(tokens):
+            if token.kind != "identifier" or token.value != "document":
+                continue
+            if candidate + 1 >= len(tokens) or tokens[candidate + 1].value != ".":
+                return False
+            if candidate > 0 and tokens[candidate - 1].value == ".":
+                return False
+            if candidate > 0 and tokens[candidate - 1].value in {"const", "let", "var"}:
+                return False
+            if candidate + 1 < len(tokens) and tokens[candidate + 1].value == "=":
+                return False
+        return True
+
+    if (expression_start >= 4
+            and tokens[expression_start - 1].value == "("
+            and tokens[expression_start - 2].kind == "identifier"
+            and tokens[expression_start - 2].value in _NAMESPACE_ONLY_CALLS):
+        return (
+            tokens[expression_start - 3].value == "."
+            and tokens[expression_start - 4].kind == "identifier"
+            and tokens[expression_start - 4].value == "document"
+            and global_document_receiver(expression_start - 4)
+        )
+    if (expression_start < 2
+            or tokens[expression_start - 1].value != "="
+            or tokens[expression_start - 2].kind != "identifier"):
+        return False
+    binding_index = expression_start - 2
+    binding = tokens[binding_index].value
+    for index, token in enumerate(tokens):
+        if token.kind != "identifier" or token.value != binding or index == binding_index:
+            continue
+        if (index < 4
+                or tokens[index - 1].value != "("
+                or tokens[index - 2].kind != "identifier"
+                or tokens[index - 2].value not in _NAMESPACE_ONLY_CALLS
+                or tokens[index - 3].value != "."
+                or tokens[index - 4].kind != "identifier"
+                or tokens[index - 4].value != "document"
+                or not global_document_receiver(index - 4)):
+            return False
+    return True
+
+
+def _script_has_external_reference(source: str, template_depth: int = 0) -> bool:
+    if template_depth > _MAX_JS_TEMPLATE_DEPTH:
+        return True
+    tokens = _js_tokens(source, template_depth)
+    for index, token in enumerate(tokens):
+        if token.kind == "invalid":
+            return True
+        if (token.kind == "template-expression"
+                and _script_has_external_reference(token.value, template_depth + 1)):
+            return True
+        if token.kind == "identifier" and token.value in _FORBIDDEN_NETWORK_IDENTIFIERS:
+            return True
+        if token.kind == "punctuation" and token.value == "\\":
+            return True
+        if _known_global_computed_access(tokens, index):
+            return True
+    index = 0
+    while index < len(tokens):
+        if tokens[index].kind != "string":
+            index += 1
+            continue
+        start = index
+        value = tokens[index].value
+        while (tokens[start].kind == "string"
+                and index + 2 < len(tokens)
+                and tokens[index + 1].value == "+"
+                and tokens[index + 2].kind == "string"):
+            value += tokens[index + 2].value
+            index += 2
+        stripped = value.strip()
+        if _NETWORK_URL_RE.match(stripped):
+            if stripped != _SVG_NAMESPACE or not _namespace_expression_is_non_fetching(tokens, start):
+                return True
+        index += 1
+    return False
+
+
+@dataclass(frozen=True)
+class _CssToken:
+    kind: str
+    value: str
+
+
+def _decode_css_escape(source: str, index: int) -> tuple[str, int]:
+    if index >= len(source):
+        return "", index
+    if source[index] in "\r\n\f":
+        return "", index + 1
+    end = index
+    while end < len(source) and end - index < 6 and source[end] in "0123456789abcdefABCDEF":
+        end += 1
+    if end > index:
+        value = int(source[index:end], 16)
+        if end < len(source) and source[end].isspace():
+            end += 1
+        return (chr(value) if 0 < value <= 0x10FFFF else "\ufffd"), end
+    return source[index], index + 1
+
+
+def _css_tokens(source: str) -> tuple[_CssToken, ...]:
+    tokens: list[_CssToken] = []
+    index = 0
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            index += 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = len(source) if end == -1 else end + 2
+            continue
+        if char in "'\"":
+            quote = char
+            index += 1
+            value: list[str] = []
+            while index < len(source):
+                char = source[index]
+                if char == quote:
+                    index += 1
+                    break
+                if char == "\\":
+                    decoded, index = _decode_css_escape(source, index + 1)
+                    value.append(decoded)
+                    continue
+                value.append(char)
+                index += 1
+            tokens.append(_CssToken("string", "".join(value)))
+            continue
+        if char.isalnum() or char in "_-\\":
+            value: list[str] = []
+            while index < len(source):
+                char = source[index]
+                if char == "\\":
+                    decoded, index = _decode_css_escape(source, index + 1)
+                    value.append(decoded)
+                    continue
+                if not (char.isalnum() or char in "_-"):
+                    break
+                value.append(char)
+                index += 1
+            tokens.append(_CssToken("identifier", "".join(value)))
+            continue
+        tokens.append(_CssToken("punctuation", char))
+        index += 1
+    return tuple(tokens)
+
+
+def _style_has_external_reference(source: str) -> bool:
+    tokens = _css_tokens(source)
+    for index, token in enumerate(tokens):
+        if token.kind == "identifier" and token.value.lower() == "url":
+            if index + 1 >= len(tokens) or tokens[index + 1].value != "(":
+                continue
+            end = index + 2
+            parts: list[str] = []
+            while end < len(tokens) and tokens[end].value != ")":
+                parts.append(tokens[end].value)
+                end += 1
+            if end >= len(tokens):
+                return True
+            if _NETWORK_URL_RE.match("".join(parts).strip()):
+                return True
+        if (token.value == "@"
+                and index + 2 < len(tokens)
+                and tokens[index + 1].kind == "identifier"
+                and tokens[index + 1].value.lower() == "import"
+                and tokens[index + 2].kind == "string"
+                and _NETWORK_URL_RE.match(tokens[index + 2].value.strip())):
+            return True
+    return False
+
+
+def _has_external_asset_reference(body: str, slot_type: str) -> bool:
+    """Reject statically recoverable network URLs, excluding comments."""
+    if slot_type == "scripts":
+        return _script_has_external_reference(body)
+    return _style_has_external_reference(body)
+
+
 def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, components_dir: Path | None) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     collector = _StrictSlotParser(tag)
@@ -553,6 +1048,18 @@ def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, compon
         except ValueError:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"{slot_type} 資産の contract-version が不正です"))
             continue
+        declared_digests = {
+            candidate.digest
+            for registered_component in registry.components
+            for candidate in registered_component.assets
+            if candidate.id == asset_id
+        }
+        if len(declared_digests) > 1:
+            diagnostics.append(Diagnostic(
+                INVALID_CONTROLLED_ASSET,
+                f"資産 '{asset_id}' の registry 宣言ダイジェストが一致しません",
+            ))
+            continue
         component = registry.find(component_id, version)
         if component is None:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"未登録のコンポーネント資産です: {component_id}@{version}"))
@@ -569,7 +1076,7 @@ def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, compon
         if digest != asset.digest or body_digest != asset.digest:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"資産 '{asset_id}' のダイジェストが一致しません"))
             continue
-        if "//" in body or re.search(r"url\(\s*['\"]?\s*(?:https?:)?//", body, re.IGNORECASE):
+        if _has_external_asset_reference(body, slot_type):
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"資産 '{asset_id}' に外部参照があります"))
         if components_dir is not None:
             file_path = components_dir / asset.path
@@ -663,7 +1170,7 @@ class _DomSemanticParser(HTMLParser):
     shape and so can never anchor an edge endpoint.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, panel_number: str | None = None) -> None:
         super().__init__(convert_charrefs=True)
         self.semantic_ids: set[str] = set()
         self.node_ids: set[str] = set()
@@ -672,14 +1179,31 @@ class _DomSemanticParser(HTMLParser):
         self.row_refs: list[str] = []
         self.col_refs: list[str] = []
         self.cell_incomplete = False
-        self._stack: list[tuple[str, frozenset[str]]] = []
+        self._stack: list[tuple[str, frozenset[str], str | None, bool]] = []
+        self._panel_context = panel_number
+
+    def _panel_number(self) -> str | None:
+        for _tag, _classes, panel_number, _is_stepper in reversed(self._stack):
+            if panel_number is not None:
+                return panel_number
+        return self._panel_context
+
+    def _normalize_panel_id(self, value: str) -> str:
+        """Normalize only an exact suffix matching the enclosing data-step panel."""
+        panel_number = self._panel_number()
+        if panel_number is None:
+            return value
+        suffix = f"--p{panel_number}"
+        if value.endswith(suffix) and len(value) > len(suffix):
+            return value[:-len(suffix)]
+        return value
 
     def _is_station_in_canvas(self) -> bool:
         # Parent must be li.ve-flow-station whose own parent is ol.ve-flow-canvas.
         if len(self._stack) < 2:
             return False
-        ptag, pclasses = self._stack[-1]
-        gtag, gclasses = self._stack[-2]
+        ptag, pclasses, _ppanel, _pstepper = self._stack[-1]
+        gtag, gclasses, _gpanel, _gstepper = self._stack[-2]
         return (ptag == "li" and _STATION_CLASS in pclasses
                 and gtag == "ol" and bool(gclasses & _NODE_LIST_CLASSES))
 
@@ -688,13 +1212,18 @@ class _DomSemanticParser(HTMLParser):
         if "data-ve-semantic-id" in d:
             self.semantic_ids.add(d["data-ve-semantic-id"])
         node_id = d.get("data-ve-node-id")
-        if (node_id and d.get("data-ve-semantic-id") == node_id
+        normalized_node_id = self._normalize_panel_id(node_id) if node_id else None
+        if (normalized_node_id and d.get("data-ve-semantic-id") == normalized_node_id
                 and _NODE_CLASS in _class_tokens(attrs)
                 and self._is_station_in_canvas()):
-            self.node_ids.add(node_id)
+            self.node_ids.add(normalized_node_id)
         has = {k: (k in d) for k in ("data-ve-from", "data-ve-to", "data-ve-relation")}
         if all(has.values()):
-            self.edges.append((d["data-ve-from"], d["data-ve-to"], d["data-ve-relation"]))
+            self.edges.append((
+                self._normalize_panel_id(d["data-ve-from"]),
+                self._normalize_panel_id(d["data-ve-to"]),
+                d["data-ve-relation"],
+            ))
         elif any(has.values()):
             self.incomplete_edge = True
         has_row = "data-ve-row-id" in d
@@ -710,7 +1239,19 @@ class _DomSemanticParser(HTMLParser):
         tag = tag.lower()
         self._check(tag, attrs)
         if tag not in _VOID_TAGS:
-            self._stack.append((tag, _class_tokens(attrs)))
+            values = {key.lower(): (value or "") for key, value in attrs}
+            inside_stepper = any(frame[3] for frame in self._stack)
+            panel_number = (
+                values.get("data-step")
+                if inside_stepper and tag == "div" and "data-step" in values
+                else None
+            )
+            self._stack.append((
+                tag,
+                _class_tokens(attrs),
+                panel_number,
+                "data-stepper" in values,
+            ))
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._check(tag.lower(), attrs)
@@ -723,8 +1264,8 @@ class _DomSemanticParser(HTMLParser):
                 return
 
 
-def _parse_dom(fragment: str) -> _DomSemanticParser:
-    parser = _DomSemanticParser()
+def _parse_dom(fragment: str, *, panel_number: str | None = None) -> _DomSemanticParser:
+    parser = _DomSemanticParser(panel_number=panel_number)
     parser.feed(fragment)
     parser.close()
     return parser
@@ -1348,11 +1889,165 @@ def _section_attr(attrs: str, name: str) -> str | None:
     return match.group(1) if match else None
 
 
+@dataclass(frozen=True)
+class _SequencePanelFragment:
+    number: str
+    start: int
+    end: int
+    markup: str
+
+
+@dataclass(frozen=True)
+class _SvgElementFragment:
+    start: int
+    end: int
+    markup: str
+
+
+@dataclass(frozen=True)
+class _OpenPanelElement:
+    tag: str
+    start: int
+    panel_number: str | None
+    is_stepper: bool
+
+
+class _SequencePanelParser(HTMLParser):
+    """Slice panel subtrees without repairing or reserializing trusted markup."""
+
+    def __init__(self, fragment: str) -> None:
+        super().__init__(convert_charrefs=False)
+        self.fragment = fragment
+        self.line_starts = [0]
+        self.line_starts.extend(
+            match.end() for match in re.finditer("\n", fragment)
+        )
+        self.stack: list[_OpenPanelElement] = []
+        self.panels: list[_SequencePanelFragment] = []
+        self.svg_starts: list[int] = []
+        self.svg_elements: list[_SvgElementFragment] = []
+        self.has_stepper = False
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self.line_starts[line - 1] + column
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = {name.lower(): (value or "") for name, value in attrs}
+        inside_stepper = any(frame.is_stepper for frame in self.stack)
+        is_stepper = "data-stepper" in values
+        self.has_stepper = self.has_stepper or is_stepper
+        panel_number = values.get("data-step") if inside_stepper and "data-step" in values else None
+        start = self._offset()
+        if tag.lower() == "svg":
+            self.svg_starts.append(start)
+        self.stack.append(_OpenPanelElement(
+            tag=tag.lower(),
+            start=start,
+            panel_number=panel_number,
+            is_stepper=is_stepper,
+        ))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        frame = self.stack.pop()
+        end = self.fragment.find(">", self._offset()) + 1
+        if frame.tag == "svg":
+            self.svg_elements.append(_SvgElementFragment(
+                start=frame.start,
+                end=end,
+                markup=self.fragment[frame.start:end],
+            ))
+        if frame.panel_number is not None:
+            self.panels.append(_SequencePanelFragment(
+                number=frame.panel_number,
+                start=frame.start,
+                end=end,
+                markup=self.fragment[frame.start:end],
+            ))
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index].tag != tag:
+                continue
+            end = self.fragment.find(">", self._offset())
+            end = len(self.fragment) if end == -1 else end + 1
+            closed = self.stack[index:]
+            del self.stack[index:]
+            for frame in closed:
+                if frame.tag == "svg" and tag == "svg":
+                    self.svg_elements.append(_SvgElementFragment(
+                        start=frame.start,
+                        end=end,
+                        markup=self.fragment[frame.start:end],
+                    ))
+                if frame.panel_number is not None:
+                    self.panels.append(_SequencePanelFragment(
+                        number=frame.panel_number,
+                        start=frame.start,
+                        end=end,
+                        markup=self.fragment[frame.start:end],
+                    ))
+            return
+
+
+def _sequence_structure(fragment: str) -> _SequencePanelParser:
+    parser = _SequencePanelParser(fragment)
+    parser.feed(fragment)
+    parser.close()
+    parser.panels.sort(key=lambda panel: panel.start)
+    parser.svg_starts.sort()
+    parser.svg_elements.sort(key=lambda svg: svg.start)
+    return parser
+
+
+def _sequence_panels(fragment: str) -> tuple[bool, tuple[_SequencePanelFragment, ...]]:
+    parser = _sequence_structure(fragment)
+    return parser.has_stepper, tuple(sorted(parser.panels, key=lambda panel: panel.start))
+
+
+def _panel_diagnostics(
+    diagnostics: list[Diagnostic],
+    panel_number: str | None,
+) -> list[Diagnostic]:
+    if panel_number is None:
+        return diagnostics
+    return [
+        Diagnostic(item.code, f"panel {panel_number}: {item.message}", item.path)
+        for item in diagnostics
+    ]
+
+
 def _validate_svg_subtree(fragment: str, component_key: str = "slope@2") -> list[Diagnostic]:
     parser = _SvgSubtreeParser(component_key=component_key)
     parser.feed(fragment)
     parser.close()
     return parser.diagnostics
+
+
+def _validate_closed_svg(
+    fragment: str,
+    *,
+    component_key: str,
+    expected_id: str | None,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    svg_match = _SVG_OPEN_RE.match(fragment)
+    if svg_match is None:
+        return [Diagnostic(RENDERER_SVG_VIOLATION, "<svg> 開始タグを解析できません")]
+    svg_attrs = svg_match.group(1)
+    if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
+        diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "xmlns 宣言は許可されていません"))
+    if expected_id is not None:
+        sid = _section_attr(svg_attrs, "id")
+        if sid != expected_id:
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                f"<svg> id は '{expected_id}' である必要があります",
+            ))
+    diagnostics.extend(_validate_svg_subtree(fragment, component_key))
+    return diagnostics
 
 
 def validate_renderer_svg(content: str) -> list[Diagnostic]:
@@ -1365,43 +2060,112 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
         component = _section_attr(attrs, "data-ve-component")
         version = _section_attr(attrs, "data-ve-contract-version")
         instance = _section_attr(attrs, "data-ve-instance")
-        svg_matches = list(_SVG_OPEN_RE.finditer(body))
-        if not svg_matches:
-            continue
         component_key = f"{component}@{version}" if component and version else ""
         allowed = (
             kind == "canonical"
             and component_key in RENDERER_SVG_ALLOWLIST
         )
         if not allowed:
-            diagnostics.append(Diagnostic(
-                RENDERER_SVG_VIOLATION,
-                f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
-            ))
+            if _SVG_OPEN_RE.search(body):
+                diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
+                ))
             continue
+        structure = _sequence_structure(body)
+        if structure.has_stepper:
+            panels = tuple(structure.panels)
+            if not panels:
+                diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"{component or 'canonical'} sequence に panel がありません",
+                ))
+                continue
+            closed_by_start = {svg.start: svg for svg in structure.svg_elements}
+            for svg_start in structure.svg_starts:
+                if any(panel.start <= svg_start < panel.end for panel in panels):
+                    continue
+                diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"{component} sequence の SVG は panel 外に置けません",
+                ))
+                svg = closed_by_start.get(svg_start)
+                if svg is None:
+                    diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        "panel 外の <svg> が閉じられていません",
+                    ))
+                    continue
+                diagnostics.extend(_validate_closed_svg(
+                    svg.markup,
+                    component_key=component_key,
+                    expected_id=None,
+                ))
+            for panel in panels:
+                unit_diagnostics: list[Diagnostic] = []
+                if not re.fullmatch(r"[1-9][0-9]*", panel.number):
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        f"data-step '{panel.number}' は正の10進整数である必要があります",
+                    ))
+                panel_svg_starts = [
+                    start for start in structure.svg_starts
+                    if panel.start <= start < panel.end
+                ]
+                if len(panel_svg_starts) != 1:
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        f"{component} セクションの <svg> は1個である必要があります",
+                    ))
+                expected_id = f"{instance}-svg--p{panel.number}" if instance else ""
+                for svg_start in panel_svg_starts:
+                    svg = closed_by_start.get(svg_start)
+                    if svg is None:
+                        unit_diagnostics.append(Diagnostic(
+                            RENDERER_SVG_VIOLATION,
+                            "<svg> が閉じられていません",
+                        ))
+                        continue
+                    unit_diagnostics.extend(_validate_closed_svg(
+                        svg.markup,
+                        component_key=component_key,
+                        expected_id=expected_id,
+                    ))
+                diagnostics.extend(_panel_diagnostics(unit_diagnostics, panel.number))
+            continue
+
+        unit_diagnostics: list[Diagnostic] = []
+        svg_matches = list(_SVG_OPEN_RE.finditer(body))
         if len(svg_matches) != 1:
-            diagnostics.append(Diagnostic(
+            unit_diagnostics.append(Diagnostic(
                 RENDERER_SVG_VIOLATION,
-                "slope セクションの <svg> は1個である必要があります",
+                f"{component} セクションの <svg> は1個である必要があります",
             ))
         for svg_match in svg_matches:
             svg_attrs = svg_match.group(1)
             if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
-                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "xmlns 宣言は許可されていません"))
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    "xmlns 宣言は許可されていません",
+                ))
             expected_id = f"{instance}-svg" if instance else ""
             sid = _section_attr(svg_attrs, "id")
             if sid != expected_id:
-                diagnostics.append(Diagnostic(
+                unit_diagnostics.append(Diagnostic(
                     RENDERER_SVG_VIOLATION,
                     f"<svg> id は '{expected_id}' である必要があります",
                 ))
             start = svg_match.start()
             end = body.find("</svg>", svg_match.end())
             if end == -1:
-                diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "<svg> が閉じられていません"))
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    "<svg> が閉じられていません",
+                ))
                 continue
             subtree = body[start:end + len("</svg>")]
-            diagnostics.extend(_validate_svg_subtree(subtree, component_key))
+            unit_diagnostics.extend(_validate_svg_subtree(subtree, component_key))
+        diagnostics.extend(unit_diagnostics)
     outside = content
     for match in _WRAPPER_SECTION_RE.finditer(content):
         outside = outside.replace(match.group(0), "")
@@ -1674,6 +2438,56 @@ _CANONICAL_SECTION_RE = re.compile(
     r'<section\b[^>]*data-ve-section-kind="canonical"[^>]*>(.*?)</section>', re.DOTALL)
 
 
+def _validate_artifact_unit(
+    body: str,
+    component: str,
+    *,
+    panel_number: str | None = None,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    component_ids = {cid for cid in _COMPONENTS}
+    parser = _parse_dom(body, panel_number=panel_number)
+    if component == "flow":
+        if parser.incomplete_edge:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
+        for frm, to, _rel in parser.edges:
+            if frm not in parser.node_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
+            if to not in parser.node_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
+    elif component == "matrix":
+        if parser.cell_incomplete:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
+        for ref in parser.row_refs:
+            if ref not in parser.semantic_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
+        for ref in parser.col_refs:
+            if ref not in parser.semantic_ids:
+                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
+        diagnostics.extend(_check_matrix_artifact(body, parser))
+    elif component in component_ids:
+        if parser.incomplete_edge or parser.edges:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"{component} セクションに flow 辺属性は許可されていません"))
+        if parser.cell_incomplete or parser.row_refs or parser.col_refs:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"{component} セクションに matrix セル属性は許可されていません"))
+        checker = COMPONENT_ARTIFACT_CHECKS.get(component)
+        if checker is not None:
+            diagnostics.extend(checker(body, parser))
+    if "<figcaption" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
+    if "data-ve-semantic-id=" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
+    if component in component_ids:
+        if f"ve-{component}-notes" not in body:
+            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
+                                          f"canonical セクションに確度/出典の注記がありません"))
+    elif "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
+        diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
+    return diagnostics
+
+
 def validate_artifact_semantics(content: str) -> list[Diagnostic]:
     """Artifact-only static/semantic integrity, usable without an in-memory manifest.
 
@@ -1684,49 +2498,33 @@ def validate_artifact_semantics(content: str) -> list[Diagnostic]:
     notes must survive.
     """
     diagnostics: list[Diagnostic] = []
-    component_ids = {cid for cid in _COMPONENTS}
     for body in _CANONICAL_SECTION_RE.findall(content):
         component_match = _COMPONENT_RE.search(body)
         component = component_match.group(1) if component_match else ""
-        parser = _parse_dom(body)
-        if component == "flow":
-            if parser.incomplete_edge:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "flow 辺の from/to/relation が揃っていません"))
-            for frm, to, _rel in parser.edges:
-                if frm not in parser.node_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の from '{frm}' が同一フロー内のノードを参照していません"))
-                if to not in parser.node_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"flow 辺の to '{to}' が同一フロー内のノードを参照していません"))
-        elif component == "matrix":
-            if parser.cell_incomplete:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "matrix セルの行/列の関連付けが欠けています"))
-            for ref in parser.row_refs:
-                if ref not in parser.semantic_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.row 参照 '{ref}' がヘッダに存在しません"))
-            for ref in parser.col_refs:
-                if ref not in parser.semantic_ids:
-                    diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, f"cell.column 参照 '{ref}' がヘッダに存在しません"))
-            diagnostics.extend(_check_matrix_artifact(body, parser))
-        elif component in component_ids:
-            if parser.incomplete_edge or parser.edges:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"{component} セクションに flow 辺属性は許可されていません"))
-            if parser.cell_incomplete or parser.row_refs or parser.col_refs:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"{component} セクションに matrix セル属性は許可されていません"))
-            checker = COMPONENT_ARTIFACT_CHECKS.get(component)
-            if checker is not None:
-                diagnostics.extend(checker(body, parser))
-        if "<figcaption" not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに caption がありません"))
-        if "data-ve-semantic-id=" not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに意味 ID がありません"))
-        if component in component_ids:
-            if f"ve-{component}-notes" not in body:
-                diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH,
-                                              f"canonical セクションに確度/出典の注記がありません"))
-        elif "ve-matrix-notes" not in body and "ve-flow-notes" not in body:
-            diagnostics.append(Diagnostic(ARTIFACT_SEMANTIC_MISMATCH, "canonical セクションに確度/出典の注記がありません"))
+        has_stepper, panels = _sequence_panels(body)
+        if not has_stepper:
+            diagnostics.extend(_validate_artifact_unit(body, component))
+            continue
+        if not panels:
+            diagnostics.append(Diagnostic(
+                ARTIFACT_SEMANTIC_MISMATCH,
+                "canonical sequence に panel がありません",
+            ))
+            continue
+        for panel in panels:
+            unit_diagnostics: list[Diagnostic] = []
+            panel_components = _COMPONENT_RE.findall(panel.markup)
+            if panel_components != [component]:
+                unit_diagnostics.append(Diagnostic(
+                    ARTIFACT_SEMANTIC_MISMATCH,
+                    f"{component} component instance が1個必要です",
+                ))
+            unit_diagnostics.extend(_validate_artifact_unit(
+                panel.markup,
+                component,
+                panel_number=panel.number,
+            ))
+            diagnostics.extend(_panel_diagnostics(unit_diagnostics, panel.number))
     return diagnostics
 
 
@@ -1789,8 +2587,26 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_artifact_semantics(content)
         diagnostics += validate_renderer_svg(content)
         diagnostics += validate_notation_rules(content)
-        from .document_checks import check_document_structure
-        diagnostics += check_document_structure(content, title=_extract_title_text(text))
+        from .document_checks import (
+            _MAX_VISUAL_STAGE_DIAGNOSTICS,
+            check_document_structure,
+            check_visual_stage_document_css,
+        )
+        expected_records = expected.expected_records if expected is not None else None
+        structure_diagnostics = check_document_structure(
+            content, title=_extract_title_text(text), expected=expected_records,
+        )
+        diagnostics += structure_diagnostics
+        visual_stage_used = sum(
+            item.message.startswith("visual-stage ")
+            for item in structure_diagnostics
+        )
+        diagnostics += check_visual_stage_document_css(
+            content,
+            slots.get("styles", ""),
+            skel,
+            max_diagnostics=max(0, _MAX_VISUAL_STAGE_DIAGNOSTICS - visual_stage_used),
+        )
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
         from .final_checks import check_manifest_to_dom

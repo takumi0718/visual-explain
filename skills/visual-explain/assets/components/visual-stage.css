@@ -1,0 +1,90 @@
+/*
+ * Path-spotlight width contract, derived from skeleton.html at 1212px:
+ * C = var(--w-narrative) (45rem) - main inline padding (0) - main border (0).
+ * W = 10.5rem; gap = 1rem (the skeleton's --space-2).
+ * 4W + 3gap = 4 * 10.5rem + 3 * 1rem = 45rem <= C (45rem).
+ */
+:root {
+  --ve-path-spotlight-node-width: 10.5rem;
+  --ve-path-spotlight-gap: 1rem;
+  --ve-path-spotlight-content-width: var(--w-narrative);
+}
+
+script[data-ve-asset~="visual-stage-flow"] {
+  display: none;
+}
+
+.ve-seq-dim {
+  opacity: 0.42;
+}
+
+.ve-seq-spot:not(path) {
+  outline: 0.15rem solid var(--focus);
+  outline-offset: 0.15rem;
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--focus) 22%, transparent);
+}
+
+.ve-claim {
+  max-width: var(--w-narrative);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2);
+  border-left: 0.25rem solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--text);
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-scroll {
+  max-width: var(--ve-path-spotlight-content-width);
+  overflow-x: visible;
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-scroll[data-connect-scope] {
+  position: relative;
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-scroll[data-ve-flow-connect-scope] {
+  position: relative;
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-connector-layer path.ve-seq-dim {
+  opacity: 0.42;
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-connector-layer path.ve-seq-spot {
+  stroke: var(--focus);
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-connectors .ve-flow-link.ve-seq-spot {
+  outline: none;
+  box-shadow: none;
+}
+
+/* T8 emits this class only on the ordered station list; flow edges stay outside it. */
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-path-canvas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ve-path-spotlight-gap);
+  width: 100%;
+  max-width: var(--ve-path-spotlight-content-width);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-path-canvas .ve-flow-station {
+  flex: 0 0 var(--ve-path-spotlight-node-width);
+  max-width: var(--ve-path-spotlight-node-width);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-ve-component="flow"] .ve-flow-path-canvas .ve-flow-node {
+  display: block;
+  width: 100%;
+  max-width: var(--ve-path-spotlight-node-width);
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}

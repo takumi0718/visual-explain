@@ -1,11 +1,18 @@
 """Static, accessible renderer for the semantic ``bars`` component."""
 from __future__ import annotations
 
+from dataclasses import replace
 import html
 from decimal import ROUND_HALF_UP, Decimal
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 from ..numeric import to_decimal
+from .common import (
+    SequencePanel,
+    claim_before_body,
+    expand_sequence,
+    select_style_assets,
+)
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
@@ -21,7 +28,11 @@ def _bar_width_pct(value: int | Decimal, v_max: Decimal) -> int:
     return int(pct)
 
 
-def render_bars(section: CanonicalSection, definition) -> RenderResult:
+def _render_bars_panel(
+    section: CanonicalSection,
+    definition,
+    panel: SequencePanel,
+) -> RenderResult:
     ir = section.ir
     bars = ir.bars
     assert bars is not None
@@ -39,8 +50,13 @@ def render_bars(section: CanonicalSection, definition) -> RenderResult:
         fill_classes = ["ve-bars-fill", f"ve-bars-w-{width_pct}"]
         if highlight_id is not None and item.id == highlight_id:
             fill_classes.append("ve-dg-highlight")
+        row_classes = ["ve-bars-row"]
+        if panel.step is not None:
+            row_classes.append(
+                "ve-seq-spot" if item.id in panel.highlight_ids else "ve-seq-dim"
+            )
         rows.append(
-            f'<div class="ve-bars-row" data-ve-semantic-id="{_esc(item.id)}">'
+            f'<div class="{" ".join(row_classes)}" data-ve-semantic-id="{_esc(item.id)}">'
             f'<span class="ve-bars-label">{_esc(item.label)}</span>'
             f'<span class="ve-bars-track">'
             f'<span class="{" ".join(fill_classes)}"></span>'
@@ -61,7 +77,7 @@ def render_bars(section: CanonicalSection, definition) -> RenderResult:
             f'<strong>出典 {_esc(src.label)}</strong>{detail}</li>'
         )
 
-    markup = (
+    body_markup = (
         f'<figure data-ve-component="bars" role="group"'
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<p class="ve-fig-title">{_esc(bars.title)}</p>'
@@ -72,8 +88,7 @@ def render_bars(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-bars-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
-
-    style_assets = [a for a in definition.assets if a.slot == "styles"]
+    style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
         component_version=definition.version,
@@ -87,8 +102,19 @@ def render_bars(section: CanonicalSection, definition) -> RenderResult:
         fallback_mode=definition.fallback,
     )
     return RenderResult(
-        markup=markup,
+        markup=body_markup,
         style_asset_ids=tuple(a.id for a in style_assets),
         script_asset_ids=(),
         manifest=manifest,
     )
+
+
+def render_bars(section: CanonicalSection, definition) -> RenderResult:
+    """Render a legacy figure or expand complete cumulative delta panels."""
+    ir = section.ir
+
+    def render_panel(panel: SequencePanel) -> RenderResult:
+        return _render_bars_panel(section, definition, panel)
+
+    expanded = expand_sequence(ir.sequence, render_panel)
+    return replace(expanded, markup=claim_before_body(ir, expanded.markup))

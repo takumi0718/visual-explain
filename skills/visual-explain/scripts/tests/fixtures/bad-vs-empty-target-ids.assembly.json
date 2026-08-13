@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "document": {
+    "id": "vs-flow-state",
+    "title": "承認状態レンズ",
+    "summary": "承認フローの現在対象を切り替える資料。",
+    "type": "system",
+    "profile": "visual-stage"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "first",
+      "decision": "承認状態を順に確認します。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "flow-state",
+        "relationship": {
+          "kind": "directed-graph",
+          "capabilities": [
+            "ordered-transition",
+            "typed-sequence"
+          ]
+        },
+        "selection": {
+          "component": "flow",
+          "version": 2,
+          "matchedCapabilities": [
+            "ordered-transition",
+            "typed-sequence"
+          ]
+        },
+        "caption": "承認フローの現在対象",
+        "certainty": [
+          {
+            "id": "flow-state-cert",
+            "level": "confirmed",
+            "statement": "遷移順を確認済み。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "flow-state-source",
+            "label": "承認手順"
+          }
+        ],
+        "accessibility": {
+          "label": "承認状態",
+          "summary": "起案から公開までの現在対象を段階切替する。"
+        },
+        "flow": {
+          "nodes": [
+            {
+              "id": "node-draft",
+              "label": "起案"
+            },
+            {
+              "id": "node-review",
+              "label": "確認"
+            },
+            {
+              "id": "node-approve",
+              "label": "承認"
+            },
+            {
+              "id": "node-publish",
+              "label": "公開"
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-draft-review",
+              "from": "node-draft",
+              "to": "node-review",
+              "relation": "ordered-transition"
+            },
+            {
+              "id": "edge-review-approve",
+              "from": "node-review",
+              "to": "node-approve",
+              "relation": "ordered-transition"
+            },
+            {
+              "id": "edge-approve-publish",
+              "from": "node-approve",
+              "to": "node-publish",
+              "relation": "ordered-transition"
+            }
+          ],
+          "startId": "node-draft",
+          "readingOrder": [
+            "node-draft",
+            "node-review",
+            "node-approve",
+            "node-publish"
+          ]
+        },
+        "claim": "現在の承認対象だけを同じ配置で確認できる。",
+        "sequence": {
+          "mode": "state-lens",
+          "steps": [
+            {
+              "id": "state-review",
+              "label": "確認中",
+              "targetIds": []
+            },
+            {
+              "id": "state-publish",
+              "label": "公開中",
+              "targetIds": [
+                "node-publish"
+              ]
+            }
+          ]
+        },
+        "assertions": [
+          {
+            "id": "flow-state-claim",
+            "text": "現在の承認対象だけを同じ配置で確認できる。",
+            "coverIds": [
+              "node-draft",
+              "node-review",
+              "node-approve",
+              "node-publish",
+              "edge-draft-review",
+              "edge-review-approve",
+              "edge-approve-publish"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "closing",
+      "id": "closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "処理時間は対象外です。"
+          ]
+        }
+      ]
+    }
+  ]
+}
