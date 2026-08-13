@@ -48,6 +48,7 @@ class ExpectedCanonicalRecord:
     claim: str | None
     assertions: tuple[Assertion, ...] | None
     sequence: SequenceDeclaration | None
+    generated_dom_id_bases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -102,7 +103,31 @@ def _svg_open_tags(markup: str) -> tuple[str | None, ...]:
     return tuple(roots)
 
 
-def _expected_record(section: CanonicalSection, component_id: str) -> ExpectedCanonicalRecord:
+def _expected_generated_dom_id_bases(
+    manifest: RenderManifest,
+    sequence: SequenceDeclaration | None,
+) -> tuple[str, ...]:
+    ids = tuple(dict.fromkeys(manifest.generated_landmark_ids + manifest.svg_root_ids))
+    if sequence is None:
+        return ids
+    panel_numbers = range(1, len(sequence.steps) + 2)
+    bases: list[str] = []
+    for dom_id in ids:
+        matches = [number for number in panel_numbers if dom_id.endswith(f"--p{number}")]
+        if len(matches) != 1:
+            continue
+        suffix = f"--p{matches[0]}"
+        base = dom_id[:-len(suffix)]
+        if base not in bases:
+            bases.append(base)
+    return tuple(bases)
+
+
+def _expected_record(
+    section: CanonicalSection,
+    component_id: str,
+    manifest: RenderManifest,
+) -> ExpectedCanonicalRecord:
     ir = section.ir
     non_payload_ids = {ir.id}
     non_payload_ids.update(item.id for item in ir.certainty)
@@ -114,6 +139,7 @@ def _expected_record(section: CanonicalSection, component_id: str) -> ExpectedCa
         claim=ir.claim,
         assertions=ir.assertions,
         sequence=ir.sequence,
+        generated_dom_id_bases=_expected_generated_dom_id_bases(manifest, ir.sequence),
     )
 
 
@@ -212,7 +238,7 @@ def render_canonical(section: CanonicalSection, resolved) -> RenderedCanonical:
     return RenderedCanonical(
         instance_id=section.ir.id, markup=wrapper,
         style_assets=style_assets, script_assets=script_assets, manifest=manifest,
-        expected_record=_expected_record(section, component.id),
+        expected_record=_expected_record(section, component.id, manifest),
     )
 
 

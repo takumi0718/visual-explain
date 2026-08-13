@@ -70,8 +70,8 @@ _SEQUENCE_STATE_ATTRIBUTES = frozenset({
 })
 _SEQUENCE_ACTIONS = ("previous", "next", "all")
 _CONNECT_PAIR_RE = re.compile(r"\s*([^\s>]+)\s*->\s*([^\s>]+)\s*")
-_EXACT_URL_REF_RE = re.compile(r"^url\(\s*#([^\s)]+)\s*\)$", re.IGNORECASE)
-_INLINE_URL_REF_RE = re.compile(r"url\(\s*#([^\s)]+)\s*\)", re.IGNORECASE)
+_EXACT_URL_REF_RE = re.compile(r"^url\(\s*#([^\s)'\"#]+)\s*\)$", re.IGNORECASE)
+_INLINE_URL_REF_RE = re.compile(r"url\(\s*#([^\s)'\"#]+)\s*\)", re.IGNORECASE)
 
 _HIGHLIGHT_PAINT_PROPERTIES = frozenset({
     "opacity", "outline", "outline-offset", "box-shadow", "color",
@@ -86,6 +86,12 @@ _PATH_WIDTH_VARIABLES = (
     "--ve-path-spotlight-content-width",
 )
 _SKELETON_CONTENT_WIDTH_TOKEN = "--w-narrative"
+_PATH_CANVAS_SELECTOR = (
+    '[data-stepper][data-ve-sequence-mode="path-spotlight"] '
+    '[data-ve-component="flow"] .ve-flow-path-canvas'
+)
+_PATH_STATION_SELECTOR = f"{_PATH_CANVAS_SELECTOR} .ve-flow-station"
+_PATH_NODE_SELECTOR = f"{_PATH_CANVAS_SELECTOR} .ve-flow-node"
 
 
 @dataclass
@@ -547,34 +553,68 @@ def _normalized_panel_dom(node: _DomNode, panel_number: int, *, forecast: bool =
     return (node.tag, tuple(sorted(normalized_attrs)), tuple(normalized_children))
 
 
-def _panel_reference_targets(node: _DomNode) -> tuple[str, ...]:
+def _panel_reference_analysis(node: _DomNode) -> tuple[tuple[str, ...], tuple[str, ...]]:
     targets: list[str] = []
+    malformed: list[str] = []
     for element in _descendants(node, include_self=True):
         for name, value in element.attrs.items():
             kind = SEQUENCE_REFERENCE_ATTRIBUTES.get(name)
             if kind == "fragment":
                 if value.startswith("#"):
-                    targets.append(value[1:])
+                    target = value[1:]
+                    if target and "#" not in target and not any(char.isspace() for char in target):
+                        targets.append(target)
+                    else:
+                        malformed.append(name)
             elif kind == "single-idref":
-                if value:
+                if value and not any(char.isspace() for char in value):
                     targets.append(value)
+                else:
+                    malformed.append(name)
             elif kind == "idref-list":
-                targets.extend(value.split())
+                tokens = value.split()
+                if tokens:
+                    targets.extend(tokens)
+                else:
+                    malformed.append(name)
             elif kind == "connector-declaration":
-                for declaration in value.split(","):
+                declarations = value.split(",")
+                valid = bool(value) and all(declaration.strip() for declaration in declarations)
+                parsed: list[re.Match[str]] = []
+                for declaration in declarations:
                     match = _CONNECT_PAIR_RE.fullmatch(declaration)
-                    if match is not None:
+                    if match is None:
+                        valid = False
+                    else:
+                        parsed.append(match)
+                if valid:
+                    for match in parsed:
                         targets.extend(match.groups())
+                else:
+                    malformed.append(name)
             elif kind == "url-reference":
                 match = _EXACT_URL_REF_RE.fullmatch(value)
                 if match is not None:
                     targets.append(match.group(1))
+                elif re.search(r"url\s*\(", value, re.I):
+                    malformed.append(name)
             elif kind == "inline-url-reference":
-                targets.extend(match.group(1) for match in _INLINE_URL_REF_RE.finditer(value))
-    return tuple(targets)
+                valid_matches = tuple(_INLINE_URL_REF_RE.finditer(value))
+                targets.extend(match.group(1) for match in valid_matches)
+                residue = _INLINE_URL_REF_RE.sub("", value)
+                if re.search(r"url\s*\(", residue, re.I):
+                    malformed.append(name)
+    return tuple(targets), tuple(malformed)
 
 
-def _check_panel_namespace(panel: _DomNode, panel_number: int, path: str) -> list[Diagnostic]:
+def _check_panel_namespace(
+    panel: _DomNode,
+    panel_number: int,
+    path: str,
+    *,
+    expected_payload_ids: frozenset[str] = frozenset(),
+    expected_landmark_ids: tuple[str, ...] = (),
+) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     suffix = f"--p{panel_number}"
     ids = [
@@ -589,7 +629,38 @@ def _check_panel_namespace(panel: _DomNode, panel_number: int, path: str) -> lis
                 path,
             ))
     id_set = set(ids)
-    for target in _panel_reference_targets(panel):
+    for base_id in expected_payload_ids:
+        if base_id in id_set:
+            diagnostics.append(_sequence_diagnostic(
+                f"panel {panel_number} の expected semantic DOM id は"
+                f" '{base_id}{suffix}' が必要です（base id '{base_id}' のままでは不正です）",
+                path,
+            ))
+    for element in _descendants(panel, include_self=True):
+        semantic_id = element.attrs.get("data-ve-semantic-id")
+        dom_id = element.attrs.get("id")
+        if semantic_id in expected_payload_ids and dom_id is not None:
+            expected_id = f"{semantic_id}{suffix}"
+            if dom_id != expected_id:
+                diagnostics.append(_sequence_diagnostic(
+                    f"panel {panel_number} の semantic id '{semantic_id}' に対応する DOM id は"
+                    f" '{expected_id}' が必要です",
+                    path,
+                ))
+    for base_id in expected_landmark_ids:
+        expected_id = f"{base_id}{suffix}"
+        if expected_id not in id_set:
+            diagnostics.append(_sequence_diagnostic(
+                f"panel {panel_number} の expected landmark DOM id '{expected_id}' がありません",
+                path,
+            ))
+    reference_targets, malformed = _panel_reference_analysis(panel)
+    for attribute in malformed:
+        diagnostics.append(_sequence_diagnostic(
+            f"panel {panel_number} の参照属性 '{attribute}' の形式が閉じた grammar に違反します",
+            path,
+        ))
+    for target in reference_targets:
         if target not in id_set:
             diagnostics.append(_sequence_diagnostic(
                 f"panel {panel_number} の参照 '{target}' は同一 panel 内の id を指す必要があります",
@@ -605,6 +676,8 @@ def _check_sequence_stepper(
     instance_id: str,
     component_id: str,
     expected_sequence,
+    expected_payload_ids: frozenset[str],
+    expected_landmark_ids: tuple[str, ...],
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     path = f"content.canonical[{instance_id}]"
@@ -691,7 +764,13 @@ def _check_sequence_stepper(
 
     normalized = []
     for index, panel in enumerate(panels, 1):
-        diagnostics.extend(_check_panel_namespace(panel, index, path))
+        diagnostics.extend(_check_panel_namespace(
+            panel,
+            index,
+            path,
+            expected_payload_ids=expected_payload_ids,
+            expected_landmark_ids=expected_landmark_ids,
+        ))
         normalized.append(_normalized_panel_dom(panel, index))
     if normalized and any(item != normalized[0] for item in normalized[1:]):
         diagnostics.append(_sequence_diagnostic(
@@ -786,6 +865,14 @@ def _check_visual_stage_sequences(content_markup: str, expected) -> list[Diagnos
                 instance_id=instance_id,
                 component_id=component_id,
                 expected_sequence=expected_sequence,
+                expected_payload_ids=(
+                    frozenset(str(value) for value in record.payload_semantic_ids)
+                    if record is not None else frozenset()
+                ),
+                expected_landmark_ids=(
+                    tuple(str(value) for value in getattr(record, "generated_dom_id_bases", ()))
+                    if record is not None else ()
+                ),
             ))
         if len(diagnostics) >= _MAX_VISUAL_STAGE_DIAGNOSTICS:
             return diagnostics[:_MAX_VISUAL_STAGE_DIAGNOSTICS]
@@ -931,7 +1018,81 @@ def _decode_css_identifier(source: str) -> str:
     return "".join(out)
 
 
+def _selector_attribute_contents(selector: str) -> tuple[str, ...]:
+    contents: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(selector):
+        char = selector[index]
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'"}:
+            quote = char
+            index += 1
+            continue
+        if char != "[":
+            if char == "\\":
+                index += 2
+            else:
+                index += 1
+            continue
+        start = index + 1
+        index = start
+        inner_quote: str | None = None
+        while index < len(selector):
+            inner = selector[index]
+            if inner_quote is not None:
+                if inner == "\\":
+                    index += 2
+                    continue
+                if inner == inner_quote:
+                    inner_quote = None
+                index += 1
+                continue
+            if inner in {'"', "'"}:
+                inner_quote = inner
+            elif inner == "]":
+                contents.append(selector[start:index])
+                break
+            index += 1
+        index += 1
+    return tuple(contents)
+
+
+def _attribute_selector_targets_highlight(content: str) -> bool:
+    name_pattern = r"((?:\\.|[-_a-zA-Z0-9])+?)"
+    value_pattern = r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|(?:\\.|[^\s])+?)'
+    match = re.fullmatch(
+        rf"\s*{name_pattern}\s*~=\s*{value_pattern}\s*([iIsS])?\s*",
+        content,
+    )
+    if match is None:
+        return False
+    name = _decode_css_identifier(match.group(1)).lower()
+    if name != "class":
+        return False
+    raw_value = match.group(2)
+    if raw_value[:1] in {'"', "'"} and raw_value[-1:] == raw_value[:1]:
+        raw_value = raw_value[1:-1]
+    value = _decode_css_identifier(raw_value)
+    flag = (match.group(3) or "s").lower()
+    if flag == "i":
+        value = value.lower()
+    return value in _HIGHLIGHT_CLASS_NAMES
+
+
 def _selector_targets_highlight(selector: str) -> bool:
+    if any(
+        _attribute_selector_targets_highlight(content)
+        for content in _selector_attribute_contents(selector)
+    ):
+        return True
     index = 0
     quote: str | None = None
     while index < len(selector):
@@ -1008,15 +1169,44 @@ def _css_declarations(body: str) -> tuple[tuple[str, str], ...]:
     return tuple(declarations)
 
 
-def _css_custom_properties(source: str) -> dict[str, str]:
-    properties: dict[str, str] = {}
-    for selector, body in _css_rule_blocks(source):
-        if ":root" not in selector:
-            continue
-        for name, value in _css_declarations(body):
-            if name.startswith("--"):
-                properties[name] = value
-    return properties
+def _parsed_css_rules(source: str) -> tuple[tuple[str, tuple[tuple[str, str], ...]], ...]:
+    return tuple(
+        (selector.strip(), _css_declarations(body))
+        for selector, body in _css_rule_blocks(source)
+    )
+
+
+def _unique_exact_declaration(
+    rules: tuple[tuple[str, tuple[tuple[str, str], ...]], ...],
+    selector: str,
+    property_name: str,
+) -> str | None:
+    values = [
+        value
+        for candidate, declarations in rules
+        if candidate == selector
+        for name, value in declarations
+        if name == property_name
+    ]
+    matching_rules = [candidate for candidate, _declarations in rules if candidate == selector]
+    if len(matching_rules) != 1 or len(values) != 1:
+        return None
+    return values[0]
+
+
+def _unique_root_token(
+    rules: tuple[tuple[str, tuple[tuple[str, str], ...]], ...],
+    token: str,
+) -> str | None:
+    definitions = [
+        (selector, value)
+        for selector, declarations in rules
+        for name, value in declarations
+        if name == token
+    ]
+    if len(definitions) != 1 or definitions[0][0] != ":root":
+        return None
+    return definitions[0][1]
 
 
 def _skeleton_css(skeleton_markup: str) -> str:
@@ -1034,23 +1224,48 @@ def _rem_value(value: str) -> Decimal | None:
         return None
 
 
+def _compact_css_value(value: str) -> str:
+    return re.sub(r"\s+", "", value).lower()
+
+
+def _require_layout_declaration(
+    diagnostics: list[Diagnostic],
+    rules: tuple[tuple[str, tuple[tuple[str, str], ...]], ...],
+    selector: str,
+    property_name: str,
+    expected_value: str,
+) -> None:
+    actual = _unique_exact_declaration(rules, selector, property_name)
+    if actual is None or _compact_css_value(actual) != _compact_css_value(expected_value):
+        diagnostics.append(_css_diagnostic(
+            f"path layout の {selector!r} / {property_name} は"
+            f" '{expected_value}' の一意な有効宣言が必要です",
+        ))
+
+
 def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
     """Enforce emphasis paint-only rules and the skeleton-linked width equation."""
     diagnostics: list[Diagnostic] = []
-    for selector, body in _css_rule_blocks(css):
+    css_rules = _parsed_css_rules(css)
+    for selector, declarations in css_rules:
         if not _selector_targets_highlight(selector):
             continue
-        for property_name, _value in _css_declarations(body):
+        for property_name, _value in declarations:
             if property_name not in _HIGHLIGHT_PAINT_PROPERTIES:
                 diagnostics.append(_css_diagnostic(
                     f"強調 selector の '{property_name}' は paint-only allowlist 外です",
                 ))
 
-    css_vars = _css_custom_properties(css)
-    skeleton_vars = _css_custom_properties(_skeleton_css(skeleton_markup))
+    skeleton_rules = _parsed_css_rules(_skeleton_css(skeleton_markup))
+    css_vars: dict[str, str] = {}
     for name in _PATH_WIDTH_VARIABLES:
-        if name not in css_vars:
-            diagnostics.append(_css_diagnostic(f"幅定数 '{name}' がありません"))
+        value = _unique_root_token(css_rules, name)
+        if value is None:
+            diagnostics.append(_css_diagnostic(
+                f"幅定数 '{name}' は exact :root に一意に宣言する必要があります",
+            ))
+        else:
+            css_vars[name] = value
     width = _rem_value(css_vars.get(_PATH_WIDTH_VARIABLES[0], ""))
     gap = _rem_value(css_vars.get(_PATH_WIDTH_VARIABLES[1], ""))
     content_decl = css_vars.get(_PATH_WIDTH_VARIABLES[2], "")
@@ -1063,7 +1278,12 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         diagnostics.append(_css_diagnostic(
             "content width C は skeleton の --w-narrative token を var() で参照する必要があります",
         ))
-    content = _rem_value(skeleton_vars.get(_SKELETON_CONTENT_WIDTH_TOKEN, ""))
+    skeleton_content = _unique_root_token(skeleton_rules, _SKELETON_CONTENT_WIDTH_TOKEN)
+    if skeleton_content is None:
+        diagnostics.append(_css_diagnostic(
+            "skeleton の --w-narrative は exact :root に一意に宣言する必要があります",
+        ))
+    content = _rem_value(skeleton_content or "")
     if width is None or gap is None or content is None:
         diagnostics.append(_css_diagnostic(
             "W・gap・skeleton content token C は rem の固定値として解決できる必要があります",
@@ -1072,6 +1292,107 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         diagnostics.append(_css_diagnostic(
             f"幅式 4W + 3gap <= C に違反します（{width * 4 + gap * 3}rem > {content}rem）",
         ))
+
+    main_rules = [declarations for selector, declarations in skeleton_rules if selector == "main"]
+    expected_main_width = "min(100% - var(--space-4), var(--w-narrative))"
+    allowed_main_widths = {
+        _compact_css_value(expected_main_width),
+        _compact_css_value("min(100% - var(--space-2), var(--w-narrative))"),
+    }
+    base_contracts = 0
+    main_invalid = not main_rules
+    for declarations in main_rules:
+        values_by_name: dict[str, list[str]] = {}
+        for name, value in declarations:
+            values_by_name.setdefault(name, []).append(value)
+        for value in values_by_name.get("width", []):
+            if _compact_css_value(value) not in allowed_main_widths:
+                main_invalid = True
+        for name in ("padding-inline", "padding-left", "padding-right"):
+            if any(_compact_css_value(value) != "0" for value in values_by_name.get(name, [])):
+                main_invalid = True
+        widths = values_by_name.get("width", [])
+        paddings = values_by_name.get("padding", [])
+        if len(widths) == 1 and _compact_css_value(widths[0]) == _compact_css_value(expected_main_width):
+            if len(paddings) != 1:
+                main_invalid = True
+                continue
+            padding_parts = paddings[0].split()
+            inline_zero = (
+                len(padding_parts) == 2 and padding_parts[1] == "0"
+                or len(padding_parts) == 3 and padding_parts[1] == "0"
+                or len(padding_parts) == 4
+                and padding_parts[1] == "0"
+                and padding_parts[3] == "0"
+            )
+            if inline_zero:
+                base_contracts += 1
+            else:
+                main_invalid = True
+    for selector, declarations in skeleton_rules:
+        decoded_selector = _decode_css_identifier(selector)
+        if selector == "main" or re.search(
+            r"(?<![-_a-zA-Z0-9])main(?![-_a-zA-Z0-9])",
+            decoded_selector,
+        ) is None:
+            continue
+        if any(
+            name in {"width", "max-width", "padding", "padding-inline", "padding-left", "padding-right"}
+            for name, _value in declarations
+        ):
+            main_invalid = True
+    if main_invalid or base_contracts != 1:
+        diagnostics.append(_css_diagnostic(
+            "skeleton main は --w-narrative linked width と inline padding 0 の一意な宣言が必要です",
+        ))
+
+    _require_layout_declaration(
+        diagnostics, css_rules, _PATH_CANVAS_SELECTOR, "gap",
+        "var(--ve-path-spotlight-gap)",
+    )
+    _require_layout_declaration(
+        diagnostics, css_rules, _PATH_CANVAS_SELECTOR, "max-width",
+        "var(--ve-path-spotlight-content-width)",
+    )
+    _require_layout_declaration(
+        diagnostics, css_rules, _PATH_STATION_SELECTOR, "flex",
+        "0 0 var(--ve-path-spotlight-node-width)",
+    )
+    _require_layout_declaration(
+        diagnostics, css_rules, _PATH_STATION_SELECTOR, "max-width",
+        "var(--ve-path-spotlight-node-width)",
+    )
+    _require_layout_declaration(
+        diagnostics, css_rules, _PATH_NODE_SELECTOR, "max-width",
+        "var(--ve-path-spotlight-node-width)",
+    )
+    permitted_path_layout = {
+        (_PATH_CANVAS_SELECTOR, "gap", "var(--ve-path-spotlight-gap)"),
+        (_PATH_CANVAS_SELECTOR, "max-width", "var(--ve-path-spotlight-content-width)"),
+        (_PATH_STATION_SELECTOR, "flex", "0 0 var(--ve-path-spotlight-node-width)"),
+        (_PATH_STATION_SELECTOR, "max-width", "var(--ve-path-spotlight-node-width)"),
+        (_PATH_NODE_SELECTOR, "max-width", "var(--ve-path-spotlight-node-width)"),
+    }
+    relevant_layout_properties = {
+        "gap", "row-gap", "column-gap", "flex", "flex-basis", "max-width",
+    }
+    for selector, declarations in css_rules:
+        decoded_selector = _decode_css_identifier(selector)
+        if re.search(r"\.ve-flow-path-canvas(?![-_a-zA-Z0-9])", decoded_selector) is None:
+            continue
+        for name, value in declarations:
+            if name not in relevant_layout_properties:
+                continue
+            candidate = (selector, name, value)
+            if not any(
+                candidate[0] == allowed[0]
+                and candidate[1] == allowed[1]
+                and _compact_css_value(candidate[2]) == _compact_css_value(allowed[2])
+                for allowed in permitted_path_layout
+            ):
+                diagnostics.append(_css_diagnostic(
+                    f"path layout の selector {selector!r} が {name} を契約外で上書きしています",
+                ))
     return diagnostics
 
 

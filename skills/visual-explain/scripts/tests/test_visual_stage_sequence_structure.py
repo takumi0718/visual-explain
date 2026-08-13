@@ -221,6 +221,111 @@ def test_width_equation_uses_actual_css_constants_and_skeleton_linked_content_to
     assert any("skeleton" in item.message for item in check_visual_stage_css(unlinked, SKELETON))
 
 
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        lambda css: css.replace(
+            ":root {", ".evil:not(:root) {", 1,
+        ),
+        lambda css: css.replace(
+            "gap: var(--ve-path-spotlight-gap)", "gap: 8rem",
+        ),
+        lambda css: css.replace(
+            "flex: 0 0 var(--ve-path-spotlight-node-width)", "flex: 0 0 20rem",
+        ),
+        lambda css: css + "\n:root { --ve-path-spotlight-gap: 1rem; }",
+        lambda css: css + "\n.evil .ve-flow-path-canvas { gap: 8rem; }",
+    ),
+)
+def test_width_contract_is_tied_to_unique_effective_path_layout_declarations(mutation) -> None:
+    assert check_visual_stage_css(mutation(VISUAL_STAGE_CSS), SKELETON)
+
+
+@pytest.mark.parametrize(
+    "skeleton",
+    (
+        SKELETON.replace(
+            "width: min(100% - var(--space-4), var(--w-narrative))",
+            "width: 30rem",
+        ),
+        SKELETON.replace(
+            "padding: var(--space-4) 0 var(--space-6)",
+            "padding: var(--space-4) 5rem var(--space-6)",
+        ),
+        SKELETON.replace(
+            "section { min-width: 0;",
+            ".evil main { width: 30rem; } section { min-width: 0;",
+        ),
+    ),
+)
+def test_width_contract_rechecks_skeleton_main_content_width_and_inline_padding(skeleton: str) -> None:
+    assert any("skeleton main" in item.message for item in check_visual_stage_css(
+        VISUAL_STAGE_CSS, skeleton,
+    ))
+
+
+@pytest.mark.parametrize(
+    "selector",
+    (
+        '[class~="ve-seq-spot"]',
+        '[class~="VE-SEQ-SPOT" i]',
+        '[cl\\61ss~="ve-seq-spot" s]',
+        '[class~="ve-seq-\\73 pot"]',
+    ),
+)
+def test_css_scanner_recognizes_class_attribute_highlight_selectors(selector: str) -> None:
+    css = VISUAL_STAGE_CSS + f"\n.card{selector} {{ width: 1px; }}"
+    assert any("paint-only" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+@pytest.mark.parametrize(
+    "bad_attribute",
+    (
+        'data-connect=""',
+        'data-connect="node--p9--p2-&gt;desc--p2,"',
+        'data-connect="node--p9--p2 desc--p2"',
+        'filter="url(#desc--p2) trailing"',
+        'filter="url(#)"',
+    ),
+)
+def test_closed_reference_attributes_reject_malformed_or_trailing_grammar(
+    bad_attribute: str,
+) -> None:
+    panel_two = _panel(2).replace(
+        'aria-describedby="desc--p2"',
+        f'aria-describedby="desc--p2" {bad_attribute}',
+    )
+    messages = _messages(_content(body=_stepper(
+        panels=(_panel(1), panel_two, _panel(3)),
+    )))
+    assert any("参照属性" in message and "形式" in message for message in messages)
+
+
+def test_suffix_shaped_semantic_base_requires_exact_base_plus_panel_suffix() -> None:
+    record = replace(
+        _record(),
+        payload_semantic_ids=frozenset({"node--p1", "desc"}),
+        assertions=(Assertion("claim", "Claim", ("node--p1", "desc")),),
+        sequence=SequenceDeclaration("state-lens", (
+            SequenceStep("one", "First", ("node--p1",)),
+            SequenceStep("two", "Second", ("desc",)),
+        )),
+    )
+    panels = tuple(
+        _panel(number).replace(
+            f'id="node--p9--p{number}"',
+            (
+                'id="node--p1"'
+                if number == 1
+                else f'id="node--p1--p{number}"'
+            ),
+        )
+        for number in (1, 2, 3)
+    )
+    messages = _messages(_content(body=_stepper(panels=panels)), (record,))
+    assert any("node--p1--p1" in message for message in messages)
+
+
 def test_bad_css_is_not_scanned_for_non_visual_stage_profile() -> None:
     strict = _content().replace('data-ve-profile="visual-stage"', 'data-ve-profile="strict"')
     style = '<style data-ve-asset="visual-stage">.ve-seq-spot { width: 1px; }</style>'
