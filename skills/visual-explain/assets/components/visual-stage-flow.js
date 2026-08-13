@@ -166,6 +166,142 @@
     }));
     return best;
   };
+  const lowerBound = (values, target) => {
+    let low = 0;
+    let high = values.length;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      if (values[middle] < target) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  };
+  const upperBound = (values, target) => {
+    let low = 0;
+    let high = values.length;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      if (values[middle] <= target) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  };
+  const compressRoute = (points) => points.filter((point, index) => {
+    if (index === 0 || index === points.length - 1) return true;
+    const before = points[index - 1];
+    const after = points[index + 1];
+    return !((before.x === point.x && point.x === after.x)
+      || (before.y === point.y && point.y === after.y));
+  });
+  const gridRoute = (from, to, boxes, gap, declarationIndex, metrics) => {
+    const baseDirections = ['right', 'bottom', 'left', 'top'];
+    const offset = declarationIndex % baseDirections.length;
+    const directions = baseDirections.slice(offset).concat(baseDirections.slice(0, offset));
+    const otherBoxes = boxes.filter((box) => box !== from && box !== to);
+    const sourceGates = directions.map((direction) => gate(from, direction, gap))
+      .filter((item) => routeClear([item.anchor, item.stub], otherBoxes, metrics));
+    const targetGates = directions.map((direction) => gate(to, direction, gap))
+      .filter((item) => routeClear([item.stub, item.anchor], otherBoxes, metrics));
+    if (!sourceGates.length || !targetGates.length) return null;
+
+    const xs = Array.from(new Set([
+      ...boxes.flatMap((box) => [box.left - gap, box.right + gap]),
+      ...sourceGates.map((item) => item.stub.x),
+      ...targetGates.map((item) => item.stub.x)
+    ])).sort((a, b) => a - b);
+    const ys = Array.from(new Set([
+      ...boxes.flatMap((box) => [box.top - gap, box.bottom + gap]),
+      ...sourceGates.map((item) => item.stub.y),
+      ...targetGates.map((item) => item.stub.y)
+    ])).sort((a, b) => a - b);
+    const horizontalDiff = ys.map(() => new Int16Array(xs.length));
+    const verticalDiff = xs.map(() => new Int16Array(ys.length));
+
+    boxes.forEach((box) => {
+      const firstXEdge = Math.max(0, upperBound(xs, box.left) - 1);
+      const afterXEdge = Math.min(xs.length - 1, lowerBound(xs, box.right));
+      ys.forEach((y, yIndex) => {
+        if (metrics) metrics.graphOccupancyChecks = (metrics.graphOccupancyChecks || 0) + 1;
+        if (y <= box.top || y >= box.bottom || firstXEdge >= afterXEdge) return;
+        horizontalDiff[yIndex][firstXEdge] += 1;
+        horizontalDiff[yIndex][afterXEdge] -= 1;
+      });
+      const firstYEdge = Math.max(0, upperBound(ys, box.top) - 1);
+      const afterYEdge = Math.min(ys.length - 1, lowerBound(ys, box.bottom));
+      xs.forEach((x, xIndex) => {
+        if (metrics) metrics.graphOccupancyChecks = (metrics.graphOccupancyChecks || 0) + 1;
+        if (x <= box.left || x >= box.right || firstYEdge >= afterYEdge) return;
+        verticalDiff[xIndex][firstYEdge] += 1;
+        verticalDiff[xIndex][afterYEdge] -= 1;
+      });
+    });
+    const horizontalBlocked = horizontalDiff.map((differences) => {
+      let active = 0;
+      return Array.from(differences.slice(0, -1), (difference) => {
+        active += difference;
+        return active > 0;
+      });
+    });
+    const verticalBlocked = verticalDiff.map((differences) => {
+      let active = 0;
+      return Array.from(differences.slice(0, -1), (difference) => {
+        active += difference;
+        return active > 0;
+      });
+    });
+    const xIndex = new Map(xs.map((value, index) => [value, index]));
+    const yIndex = new Map(ys.map((value, index) => [value, index]));
+    const width = xs.length;
+    const directionSteps = [
+      [1, 0], [0, 1], [-1, 0], [0, -1]
+    ];
+    const orderedSteps = directionSteps.slice(offset).concat(directionSteps.slice(0, offset));
+    const edgeClear = (x, y, nextX, nextY) => {
+      if (x === nextX) return !verticalBlocked[x][Math.min(y, nextY)];
+      return !horizontalBlocked[y][Math.min(x, nextX)];
+    };
+
+    for (const source of sourceGates) {
+      for (const target of targetGates) {
+        const startX = xIndex.get(source.stub.x);
+        const startY = yIndex.get(source.stub.y);
+        const endX = xIndex.get(target.stub.x);
+        const endY = yIndex.get(target.stub.y);
+        const startId = startY * width + startX;
+        const endId = endY * width + endX;
+        const parents = new Int32Array(width * ys.length).fill(-2);
+        const queue = new Int32Array(width * ys.length);
+        let head = 0;
+        let tail = 0;
+        parents[startId] = -1;
+        queue[tail++] = startId;
+        while (head < tail && parents[endId] === -2) {
+          const id = queue[head++];
+          if (metrics) metrics.graphNodeVisits = (metrics.graphNodeVisits || 0) + 1;
+          const x = id % width;
+          const y = Math.floor(id / width);
+          orderedSteps.forEach(([dx, dy]) => {
+            const nextX = x + dx;
+            const nextY = y + dy;
+            if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= ys.length) return;
+            if (metrics) metrics.graphEdgeChecks = (metrics.graphEdgeChecks || 0) + 1;
+            const nextId = nextY * width + nextX;
+            if (parents[nextId] !== -2 || !edgeClear(x, y, nextX, nextY)) return;
+            parents[nextId] = id;
+            queue[tail++] = nextId;
+          });
+        }
+        if (parents[endId] === -2) continue;
+        const route = [];
+        for (let id = endId; id >= 0; id = parents[id]) {
+          route.push({x: xs[id % width], y: ys[Math.floor(id / width)]});
+        }
+        route.reverse();
+        return compressRoute([source.anchor, ...route, target.anchor]);
+      }
+    }
+    return null;
+  };
   /* TESTABLE_GEOMETRY:END */
 
   const pathFor = (from, to, scope, declarationIndex, metrics = null) => {
@@ -192,13 +328,15 @@
     const gap = Math.max(6, Math.min(12, minimumSize * .12));
     const obstacles = boxes.filter((box) => box !== source && box !== target);
     const points = directRoute(source, target, obstacles, gap, metrics)
-      || outerRoute(source, target, boxes, gap, declarationIndex, metrics);
-    return pathData(points || [{x: source.right, y: source.top}, {x: target.left, y: target.top}]);
+      || outerRoute(source, target, boxes, gap, declarationIndex, metrics)
+      || gridRoute(source, target, boxes, gap, declarationIndex, metrics);
+    return points ? pathData(points) : null;
   };
 
   const warning = (scope, message) => {
     const badge = document.createElement('p');
     badge.className = 'connector-warning';
+    badge.setAttribute('role', 'status');
     badge.textContent = `接続を描画できません: ${message}`;
     scope.append(badge);
   };
@@ -249,8 +387,17 @@
             return;
           }
 
+          const route = pathFor(from, to, scope, declarationIndex);
+          if (!route) {
+            console.error('visual-explain: no clear path connector route', item);
+            warning(scope, `「${item}」の接続経路が見つかりません。`);
+            const text = document.createElement('li');
+            text.textContent = `${from.textContent.trim()} から ${to.textContent.trim()} への接続経路が見つかりません`;
+            list.append(text);
+            return;
+          }
           const path = document.createElementNS(SVG_NS, 'path');
-          path.setAttribute('d', pathFor(from, to, scope, declarationIndex));
+          path.setAttribute('d', route);
           path.setAttribute('fill', 'none');
           path.setAttribute('stroke', 'currentColor');
           path.setAttribute('stroke-width', '2');

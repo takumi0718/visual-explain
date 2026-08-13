@@ -402,6 +402,95 @@ process.stdout.write(JSON.stringify({d, metrics}));
     assert 0 < result["metrics"]["boxChecks"] <= 400 * station_count ** 2
 
 
+def test_production_routing_finds_bounded_multi_bend_path_for_exact_review_layout() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+    start = source.index("  const pointPair")
+    end = source.index("  const warning", start)
+    geometry = source[start:end]
+    program = geometry + """
+const raw = [
+  [150, 30, 220, 130], [280, 0, 400, 100], [150, 130, 270, 240],
+  [300, 130, 380, 230], [0, 250, 120, 300], [150, 230, 270, 340],
+  [280, 240, 390, 300]
+];
+const stationBoxes = raw.map(([left, top, right, bottom]) => ({
+  left, top, right, bottom, width: right - left, height: bottom - top
+}));
+const stations = stationBoxes.map((bounds) => ({getBoundingClientRect: () => bounds}));
+const scope = {
+  getBoundingClientRect: () => ({left: 0, top: 0, right: 400, bottom: 340, width: 400, height: 340}),
+  querySelectorAll: () => stations
+};
+const metrics = {
+  candidateEvaluations: 0, boxChecks: 0, graphNodeVisits: 0, graphEdgeChecks: 0
+};
+const d = pathFor(stations[3], stations[4], scope, 6, metrics);
+const coordinates = d.match(/-?\\d+(?:\\.\\d+)?/g).map(Number);
+const points = [];
+for (let index = 0; index < coordinates.length - 2; index += 2) {
+  const start = {x: coordinates[index], y: coordinates[index + 1]};
+  const end = {x: coordinates[index + 2], y: coordinates[index + 3]};
+  for (let step = 0; step <= 80; step += 1) {
+    const t = step / 80;
+    points.push({x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t});
+  }
+}
+const hits = stationBoxes.flatMap((box, index) => points.some((point) => (
+  point.x > box.left + .01 && point.x < box.right - .01
+  && point.y > box.top + .01 && point.y < box.bottom - .01
+)) ? [index] : []);
+process.stdout.write(JSON.stringify({d, hits, metrics}));
+"""
+    completed = subprocess.run(
+        ["node", "-e", program], capture_output=True, text=True, check=True,
+    )
+    result = json.loads(completed.stdout)
+    station_count = 7
+
+    assert result["d"] != "M 380 130 L 0 250"
+    assert result["d"].count(" L ") >= 5
+    assert result["hits"] == [], result["d"]
+    assert 0 < result["metrics"]["graphOccupancyChecks"] <= 8 * station_count ** 2
+    assert 0 < result["metrics"]["graphNodeVisits"] <= 512 * station_count ** 2
+    assert 0 < result["metrics"]["graphEdgeChecks"] <= 2048 * station_count ** 2
+
+
+def test_no_clear_route_returns_null_and_render_exposes_accessible_warning() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+
+    assert "return points ? pathData(points) : null" in source
+    assert "points || [{x: source.right" not in source
+    assert "if (!route)" in source
+    assert "visual-explain: no clear path connector route" in source
+    assert "badge.setAttribute('role', 'status')" in source
+    assert "接続経路が見つかりません" in source
+
+    start = source.index("  const pointPair")
+    end = source.index("  const warning", start)
+    geometry = source[start:end]
+    program = geometry + """
+const raw = [[40, 40, 60, 60], [0, 0, 100, 100], [200, 40, 220, 60]];
+const stationBoxes = raw.map(([left, top, right, bottom]) => ({
+  left, top, right, bottom, width: right - left, height: bottom - top
+}));
+const stations = stationBoxes.map((bounds) => ({getBoundingClientRect: () => bounds}));
+const scope = {
+  getBoundingClientRect: () => ({left: 0, top: 0, right: 220, bottom: 100, width: 220, height: 100}),
+  querySelectorAll: () => stations
+};
+process.stdout.write(JSON.stringify(pathFor(stations[0], stations[2], scope, 0)));
+"""
+    completed = subprocess.run(
+        ["node", "-e", program], capture_output=True, text=True, check=True,
+    )
+
+    assert completed.stdout == "null"
+
+
 def test_flow_runtime_marker_uses_the_actual_edge_path_stroke() -> None:
     source = (
         SKILL / "assets" / "components" / "visual-stage-flow.js"
