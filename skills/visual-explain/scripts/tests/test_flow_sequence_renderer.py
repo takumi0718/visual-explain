@@ -231,10 +231,12 @@ def _production_geometry_cases() -> dict[str, object]:
     end = source.index("  const warning", start)
     geometry = source[start:end]
     program = geometry + """
-const box = (left, top) => ({left, top, right: left + 100, bottom: top + 60, width: 100, height: 60});
+const box = (left, top, width = 100, height = 60) => ({
+  left, top, right: left + width, bottom: top + height, width, height
+});
 const stationBoxes = [
   box(0, 0), box(120, 0), box(240, 0), box(360, 0),
-  box(0, 100), box(120, 100), box(240, 100), box(360, 100)
+  box(0, 100), box(120, 100, 90, 75), box(240, 100, 110, 50), box(370, 100, 80, 70)
 ];
 const stations = stationBoxes.map((bounds, index) => ({
   id: `node-${index + 1}`,
@@ -248,7 +250,10 @@ const definitions = {
   'same-row-adjacent': [0, 1, 0],
   'same-row-skip': [0, 2, 1],
   'wrap-boundary-adjacent': [3, 4, 3],
-  'same-column-cross-row': [0, 4, 4]
+  'same-column-cross-row': [0, 4, 4],
+  'unequal-stations': [5, 6, 5],
+  'reverse-wrap': [4, 3, 6],
+  'multiple-lane-a': [0, 2, 0]
 };
 
 const samples = (d) => {
@@ -322,6 +327,9 @@ process.stdout.write(JSON.stringify(results));
         ("same-row-skip", "outer-horizontal"),
         ("wrap-boundary-adjacent", "outer-wrap"),
         ("same-column-cross-row", "vertical"),
+        ("unequal-stations", "clear"),
+        ("reverse-wrap", "clear"),
+        ("multiple-lane-a", "outer-horizontal"),
     ],
 )
 def test_production_path_geometry_avoids_every_station_rectangle(
@@ -345,7 +353,53 @@ def test_production_path_geometry_avoids_every_station_rectangle(
             for first, second in zip(coordinates, coordinates[1:])
         ), "route must use a horizontal segment in the empty inter-row lane"
     else:
-        assert (result["minX"], result["maxX"]) == (50, 50)
+        if axis == "vertical":
+            assert (result["minX"], result["maxX"]) == (50, 50)
+
+
+def test_declaration_order_selects_distinct_clear_branch_lanes() -> None:
+    results = _production_geometry_cases()
+
+    assert results["multiple-lane-a"]["d"] != results["same-row-skip"]["d"]
+    assert results["multiple-lane-a"]["hits"] == []
+    assert results["same-row-skip"]["hits"] == []
+
+
+def test_maximum_scale_production_routing_has_quadratic_or_better_work_bound() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+    start = source.index("  const pointPair")
+    end = source.index("  const warning", start)
+    geometry = source[start:end]
+    program = geometry + """
+const stationBoxes = Array.from({length: 32}, (_, index) => {
+  const column = index % 4;
+  const row = Math.floor(index / 4);
+  const width = 88 + (index % 3) * 6;
+  const height = 52 + (index % 4) * 4;
+  const left = column * 120;
+  const top = row * 92;
+  return {left, top, right: left + width, bottom: top + height, width, height};
+});
+const stations = stationBoxes.map((bounds) => ({getBoundingClientRect: () => bounds}));
+const scope = {
+  getBoundingClientRect: () => ({left: 0, top: 0, right: 460, bottom: 700, width: 460, height: 700}),
+  querySelectorAll: () => stations
+};
+const metrics = {candidateEvaluations: 0, boxChecks: 0};
+const d = pathFor(stations[3], stations[28], scope, 7, metrics);
+process.stdout.write(JSON.stringify({d, metrics}));
+"""
+    completed = subprocess.run(
+        ["node", "-e", program], capture_output=True, text=True, check=True,
+    )
+    result = json.loads(completed.stdout)
+    station_count = 32
+
+    assert result["d"]
+    assert 0 < result["metrics"]["candidateEvaluations"] <= 64 * station_count
+    assert 0 < result["metrics"]["boxChecks"] <= 400 * station_count ** 2
 
 
 def test_flow_runtime_marker_uses_the_actual_edge_path_stroke() -> None:
