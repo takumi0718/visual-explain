@@ -231,6 +231,40 @@ def test_controlled_script_scan_rejects_computed_api_names_without_rejecting_ui_
     assert _has_external_asset_reference('const label = "fetch";', "scripts") is False
 
 
+def test_controlled_script_scan_rejects_all_known_global_computed_member_access() -> None:
+    blocked = (
+        "globalThis['fe' + 'tch']('/local')",
+        "globalThis[('fetch')]('/local')",
+        "const name = 'fetch'; globalThis[name]('/local')",
+        "globalThis?.['fetch']('/local')",
+        "window['safeLocalProperty']",
+    )
+
+    for source in blocked:
+        assert _has_external_asset_reference(source, "scripts") is True
+
+
+def test_controlled_script_scan_keeps_strings_and_regex_literals_opaque() -> None:
+    allowed = (
+        "const labels = ['fetch', 'WebSocket'];",
+        "const pattern = /fetch|WebSocket/g;",
+        r"const pattern = /[/]fetch\/WebSocket[abc]/gi;",
+    )
+
+    for source in allowed:
+        assert _has_external_asset_reference(source, "scripts") is False
+
+
+def test_controlled_script_scan_distinguishes_division_from_regex_literal() -> None:
+    assert _has_external_asset_reference("const ratio = total / count / 2;", "scripts") is False
+    assert _has_external_asset_reference("const ratio = total / fetch / 2;", "scripts") is True
+
+
+def test_controlled_script_reserves_network_names_in_object_and_class_code() -> None:
+    assert _has_external_asset_reference("const handlers = {fetch: localOnly};", "scripts") is True
+    assert _has_external_asset_reference("class Local { fetch() {} }", "scripts") is True
+
+
 def test_controlled_style_scan_ignores_comment_urls_but_rejects_live_ones() -> None:
     assert _has_external_asset_reference(
         "/* background: url(https://comment.invalid/image.png) */ .card { color: red; }",

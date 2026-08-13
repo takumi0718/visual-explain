@@ -199,3 +199,37 @@ Fix-round verification:
 - Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
 - Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
 - `python3 -m py_compile` and `git diff --check`: clean.
+
+## Fix Round 4
+
+Two remaining scanner findings were reproduced with exact RED cases and fixed
+without restoring string-expression evaluation.
+
+1. Known-global computed members
+   - RED: split, parenthesized, aliased, and optional computed access on
+     `globalThis` bypassed the computed-property string check.
+   - GREEN: any direct computed member access on the known global receivers
+     `window` or `globalThis` is rejected before inspecting its property
+     expression. This covers `[...]` and `?.[...]`, including unknown aliases,
+     while ordinary array literals remain unrelated tokenizer structure.
+2. Regex/string opacity
+   - RED: forbidden API words inside regular-expression bodies were emitted as
+     code identifiers and falsely rejected. The existing bracket/string rule
+     also conflated ordinary string arrays with computed properties.
+   - GREEN: the small JS lexer now recognizes regex literals in expression
+     context, consuming escapes, character classes, and flags as one opaque
+     token. Division remains punctuation in value context. Comments, strings,
+     and regex bodies therefore do not reserve ordinary UI vocabulary. Code
+     identifiers are intentionally still closed: object keys such as `fetch`
+     and class methods named `fetch` are rejected by the controlled-asset
+     policy.
+
+Fix-round verification:
+
+- Focused adversarial file: `25 passed`.
+- Related checker/SVG/asset/flow suites: `200 passed, 56 subtests passed`.
+- Full canonical suite: `937 passed, 153 subtests passed`.
+- Checker selftest: `31 passed, 0 failed`.
+- Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
+- Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
+- `python3 -m py_compile` and `git diff --check`: clean.

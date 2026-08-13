@@ -576,8 +576,49 @@ def _decode_js_escape(source: str, index: int) -> tuple[str, int]:
     return char, index + 1
 
 
+_JS_REGEX_PREFIX_PUNCTUATION = frozenset({
+    "(", "[", "{", "=", ":", ",", ";", "!", "?", "&", "|", "+", "-", "*", "%", "~", "<", ">",
+})
+_JS_REGEX_PREFIX_KEYWORDS = frozenset({
+    "return", "throw", "case", "delete", "void", "typeof", "new", "in", "of", "yield", "await", "else", "do",
+})
+
+
+def _can_start_js_regex(tokens: list[_JsToken]) -> bool:
+    if not tokens:
+        return True
+    previous = tokens[-1]
+    if previous.kind == "punctuation":
+        return previous.value in _JS_REGEX_PREFIX_PUNCTUATION
+    return previous.kind == "identifier" and previous.value in _JS_REGEX_PREFIX_KEYWORDS
+
+
+def _js_regex_end(source: str, start: int) -> int | None:
+    """Return the end of a regex literal, keeping escapes and classes opaque."""
+    index = start + 1
+    inside_class = False
+    while index < len(source):
+        char = source[index]
+        if char in "\r\n":
+            return None
+        if char == "\\":
+            index += 2
+            continue
+        if char == "[":
+            inside_class = True
+        elif char == "]" and inside_class:
+            inside_class = False
+        elif char == "/" and not inside_class:
+            index += 1
+            while index < len(source) and source[index].isalpha():
+                index += 1
+            return index
+        index += 1
+    return None
+
+
 def _js_tokens(source: str) -> tuple[_JsToken, ...]:
-    """Tokenize the JS subset needed for comment-safe static string folding."""
+    """Tokenize controlled JS while keeping comments, strings, and regex opaque."""
     tokens: list[_JsToken] = []
     index = 0
     while index < len(source):
@@ -596,6 +637,12 @@ def _js_tokens(source: str) -> tuple[_JsToken, ...]:
             end = source.find("*/", index + 2)
             index = len(source) if end == -1 else end + 2
             continue
+        if char == "/" and _can_start_js_regex(tokens):
+            end = _js_regex_end(source, index)
+            if end is not None:
+                tokens.append(_JsToken("regex", source[index:end]))
+                index = end
+                continue
         if char in "'\"`":
             quote = char
             index += 1
@@ -689,12 +736,15 @@ def _script_has_external_reference(source: str) -> bool:
             return True
         if token.kind == "punctuation" and token.value == "\\":
             return True
-        if (token.kind == "string"
-                and token.value in _FORBIDDEN_NETWORK_IDENTIFIERS
-                and index > 0
+        if (token.kind == "identifier"
+                and token.value in {"window", "globalThis"}
+                and (index == 0 or tokens[index - 1].value != ".")
                 and index + 1 < len(tokens)
-                and tokens[index - 1].value == "["
-                and tokens[index + 1].value == "]"):
+                and (tokens[index + 1].value == "["
+                     or (index + 3 < len(tokens)
+                         and tokens[index + 1].value == "?"
+                         and tokens[index + 2].value == "."
+                         and tokens[index + 3].value == "["))):
             return True
     index = 0
     while index < len(tokens):
