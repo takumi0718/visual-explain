@@ -11,7 +11,9 @@ content of ``script`` / ``style`` cannot spoof section wrappers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from html import unescape
 from html.parser import HTMLParser
+import unicodedata
 from urllib.parse import urlsplit
 
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
@@ -54,6 +56,7 @@ _RESERVED_ATTR_REQUIRED_TAG = {
 _VISUAL_STAGE_PROFILE = "visual-stage"
 _MAX_VISUAL_STAGE_DIAGNOSTICS = 32
 _MAX_DIAGNOSTIC_IDS = 8
+_MIN_VISUAL_STAGE_OVERLAP_CHARS = 10
 
 
 @dataclass
@@ -381,6 +384,51 @@ def _rendered_narrative_text_length(
     return _plain_text_character_count((text,))
 
 
+def _normalize_overlap_text(text: str) -> str:
+    """Apply the fixed assertion/narrative comparison normalization.
+
+    The threshold is measured in Python Unicode code points after entity
+    decoding and NFKC normalization.  Every Unicode separator, punctuation,
+    symbol, and whitespace code point is removed; letters, marks, and numbers
+    remain significant.
+    """
+    normalized = unicodedata.normalize("NFKC", unescape(text))
+    return "".join(
+        char
+        for char in normalized
+        if not char.isspace() and unicodedata.category(char)[0] not in {"P", "S", "Z"}
+    )
+
+
+def _has_common_substring_at_least(
+    left: str,
+    right: str,
+    minimum: int = _MIN_VISUAL_STAGE_OVERLAP_CHARS,
+) -> bool:
+    """Return whether two strings share a contiguous substring of ``minimum``.
+
+    A longest-common-substring has length at least ``minimum`` exactly when
+    the strings share one ``minimum``-code-point window.  Comparing fixed-size
+    windows gives the specified LCS threshold result in linear time and keeps
+    memory proportional to the shorter input instead of allocating an LCS
+    matrix for rendered prose.
+    """
+    if minimum <= 0:
+        return True
+    if len(left) < minimum or len(right) < minimum:
+        return False
+    if len(left) > len(right):
+        left, right = right, left
+    windows = {
+        left[index:index + minimum]
+        for index in range(len(left) - minimum + 1)
+    }
+    return any(
+        right[index:index + minimum] in windows
+        for index in range(len(right) - minimum + 1)
+    )
+
+
 def _check_visual_stage_completeness(
     structure: _DocStructure,
     expected,
@@ -451,6 +499,14 @@ def _check_visual_stage_completeness(
             continue
         records_by_instance[instance_id] = record
 
+    normalized_narratives = tuple(
+        (
+            narrative.attrs.get("data-ve-instance", "<unknown>"),
+            _normalize_overlap_text("".join(narrative.text_parts)),
+        )
+        for narrative in narrative_nodes
+    )
+
     for instance_id in sorted(set(nodes_by_instance) - set(records_by_instance)):
         label = instance_id or "<missing-instance-id>"
         add(f"canonical '{label}' に対応する expected record がありません", f"content.canonical[{label}]")
@@ -498,6 +554,26 @@ def _check_visual_stage_completeness(
                     f"（描画件数 {len(node.claim_texts)}件）",
                     path,
                 )
+
+        for assertion in assertion_items:
+            assertion_text = getattr(assertion, "text", None)
+            if not isinstance(assertion_text, str):
+                continue
+            normalized_assertion = _normalize_overlap_text(assertion_text)
+            if not normalized_assertion:
+                continue
+            assertion_id = str(getattr(assertion, "id", "<unknown>"))
+            for narrative_id, normalized_narrative in normalized_narratives:
+                if _has_common_substring_at_least(
+                    normalized_assertion,
+                    normalized_narrative,
+                ):
+                    add(
+                        f"claim/narrative 語句重複: canonical '{instance_id}' assertion "
+                        f"'{assertion_id}' と narrative '{narrative_id}' に正規化後"
+                        f"{_MIN_VISUAL_STAGE_OVERLAP_CHARS}文字以上の共通部分文字列があります",
+                        f"content.narrative[{narrative_id}]",
+                    )
 
         try:
             payload_ids = frozenset(str(value) for value in record.payload_semantic_ids)
