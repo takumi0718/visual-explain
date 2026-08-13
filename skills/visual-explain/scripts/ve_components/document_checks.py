@@ -83,6 +83,7 @@ _HIGHLIGHT_PAINT_PROPERTIES = frozenset({
 _HIGHLIGHT_CLASS_NAMES = frozenset({
     "ve-seq-spot", "ve-seq-dim", "ve-takeaway-target",
 })
+_GLOBAL_AXIS_RESET_PROPERTIES = frozenset({"writing-mode", "all"})
 _PATH_WIDTH_VARIABLES = (
     "--ve-path-spotlight-node-width",
     "--ve-path-spotlight-gap",
@@ -1261,7 +1262,7 @@ def _is_sizing_property(name: str) -> bool:
         "inline-size", "min-inline-size", "max-inline-size",
         "block-size", "min-block-size", "max-block-size",
         "gap", "row-gap", "column-gap", "grid-gap", "grid-row-gap", "grid-column-gap",
-        "flex", "box-sizing", "display", "margin", "writing-mode", "all",
+        "flex", "box-sizing", "display", "margin",
     }:
         return True
     return name.startswith(("flex-", "padding-", "border-", "margin-")) or name in {
@@ -1430,6 +1431,19 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
     """Enforce emphasis paint-only rules and the skeleton-linked width equation."""
     diagnostics: list[Diagnostic] = []
     css_rules = _parsed_css_rules(css)
+    skeleton_rules = _parsed_css_rules(_skeleton_css(skeleton_markup))
+    for source_name, rules in (
+        ("visual-stage", css_rules),
+        ("skeleton", skeleton_rules),
+    ):
+        for selector, declarations in rules:
+            for property_name, _value in declarations:
+                if property_name in _GLOBAL_AXIS_RESET_PROPERTIES:
+                    diagnostics.append(_css_diagnostic(
+                        f"1212px {source_name} selector"
+                        f" {_bounded_identifier(selector)!r} の {property_name} は"
+                        "全 rule で禁止されています",
+                    ))
     for selector, declarations in css_rules:
         if not _selector_targets_highlight(selector):
             continue
@@ -1439,7 +1453,6 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
                     f"強調 selector の '{property_name}' は paint-only allowlist 外です",
                 ))
 
-    skeleton_rules = _parsed_css_rules(_skeleton_css(skeleton_markup))
     css_vars: dict[str, str] = {}
     for name in _PATH_WIDTH_VARIABLES:
         value = _unique_root_token(css_rules, name)

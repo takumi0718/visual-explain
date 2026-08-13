@@ -400,6 +400,51 @@ def test_content_width_contract_rejects_axis_and_reset_overrides(skeleton: str) 
 
 
 @pytest.mark.parametrize(
+    "css",
+    (
+        VISUAL_STAGE_CSS + "\nbody { all: initial; }",
+        VISUAL_STAGE_CSS + "\nsection { writing-mode: vertical-rl; }",
+        VISUAL_STAGE_CSS + "\nbody { WrItInG-MoDe: vertical-rl; }",
+        VISUAL_STAGE_CSS + "\nsection { \\61 ll: initial; }",
+    ),
+)
+def test_axis_and_reset_properties_are_global_in_visual_stage_css(css: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+@pytest.mark.parametrize(
+    "skeleton",
+    (
+        SKELETON.replace(
+            "section { min-width: 0;",
+            "section { writing-mode: vertical-rl; min-width: 0;",
+        ),
+        SKELETON.replace(
+            "section { min-width: 0;",
+            "section { all: initial; min-width: 0;",
+        ),
+        SKELETON.replace(
+            "section { min-width: 0;",
+            "section { \\77 riting-mode: vertical-rl; min-width: 0;",
+        ),
+    ),
+)
+def test_axis_and_reset_properties_are_global_in_skeleton_css(skeleton: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(
+        VISUAL_STAGE_CSS, skeleton,
+    ))
+
+
+def test_axis_and_reset_named_custom_properties_remain_allowed() -> None:
+    css = VISUAL_STAGE_CSS + "\nbody { --all: initial; --writing-mode: vertical-rl; }"
+    skeleton = SKELETON.replace(
+        "section { min-width: 0;",
+        "section { --all: initial; --writing-mode: vertical-rl; min-width: 0;",
+    )
+    assert check_visual_stage_css(css, skeleton) == []
+
+
+@pytest.mark.parametrize(
     "bad_attribute",
     (
         'data-connect=""',
