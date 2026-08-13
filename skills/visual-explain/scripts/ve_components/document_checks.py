@@ -1261,7 +1261,7 @@ def _is_sizing_property(name: str) -> bool:
         "inline-size", "min-inline-size", "max-inline-size",
         "block-size", "min-block-size", "max-block-size",
         "gap", "row-gap", "column-gap", "grid-gap", "grid-row-gap", "grid-column-gap",
-        "flex", "box-sizing", "display", "margin",
+        "flex", "box-sizing", "display", "margin", "writing-mode", "all",
     }:
         return True
     return name.startswith(("flex-", "padding-", "border-", "margin-")) or name in {

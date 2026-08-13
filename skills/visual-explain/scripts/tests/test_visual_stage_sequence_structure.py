@@ -342,6 +342,17 @@ def test_width_contract_rejects_logical_and_ancestor_sizing_sources(css: str) ->
 
 
 @pytest.mark.parametrize(
+    "css",
+    (
+        VISUAL_STAGE_CSS + "\n.ve-flow-node { writing-mode: vertical-rl; }",
+        VISUAL_STAGE_CSS + "\n.ve-flow-station { all: initial; }",
+    ),
+)
+def test_width_contract_rejects_axis_and_reset_overrides_in_path_sources(css: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+@pytest.mark.parametrize(
     "skeleton",
     (
         SKELETON.replace(
@@ -364,6 +375,25 @@ def test_width_contract_rejects_logical_and_ancestor_sizing_sources(css: str) ->
     ),
 )
 def test_content_width_contract_includes_padding_border_and_box_sizing(skeleton: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(
+        VISUAL_STAGE_CSS, skeleton,
+    ))
+
+
+@pytest.mark.parametrize(
+    "skeleton",
+    (
+        SKELETON.replace(
+            "main { width: min(100% - var(--space-4), var(--w-narrative));",
+            "main { all: initial; width: min(100% - var(--space-4), var(--w-narrative));",
+        ),
+        SKELETON.replace(
+            "section { min-width: 0;",
+            "* { writing-mode: vertical-rl; } section { min-width: 0;",
+        ),
+    ),
+)
+def test_content_width_contract_rejects_axis_and_reset_overrides(skeleton: str) -> None:
     assert any("1212" in item.message for item in check_visual_stage_css(
         VISUAL_STAGE_CSS, skeleton,
     ))
