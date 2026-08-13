@@ -57,3 +57,37 @@ The brief's root-directory path command with `PYTHONPATH` reached 246 tests but 
 ## Concerns
 
 - Full-suite tests depend on being launched from `skills/visual-explain/scripts`; the brief's root-relative command has a pre-existing path-sensitive failure.
+
+## Fix Round 1
+
+### What changed
+
+Moved the new optional `claim`, `sequence`, and `assertions` fields after every pre-existing `CanonicalIR` field. This preserves positional construction of existing optional payloads, while retaining defaulted backward-compatible stage-deck fields.
+
+### TDD covering test
+
+Added `test_existing_positional_matrix_argument_keeps_binding_to_matrix` in `skills/visual-explain/scripts/tests/test_model_stage_deck.py`.
+
+RED command and output:
+
+```text
+PYTHONPATH=skills/visual-explain/scripts python3 -m pytest skills/visual-explain/scripts/tests/test_model_stage_deck.py -q
+1 failed, 1 passed in 0.05s
+AssertionError: assert None is MatrixPayload(...)
+```
+
+The failure showed the existing positional matrix argument was being bound to the newly inserted `claim` field.
+
+GREEN focused command and output:
+
+```text
+PYTHONPATH=skills/visual-explain/scripts python3 -m pytest skills/visual-explain/scripts/tests/test_model_stage_deck.py -q
+2 passed in 0.04s
+```
+
+GREEN full-suite command and output (from `skills/visual-explain/scripts`):
+
+```text
+python3 -m pytest tests/ -x -q
+764 passed, 153 subtests passed in 7.29s
+```

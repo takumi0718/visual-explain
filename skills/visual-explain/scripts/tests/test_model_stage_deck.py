@@ -5,6 +5,7 @@ from ve_components.model import (
     Assertion,
     CanonicalIR,
     ExplicitSelection,
+    MatrixPayload,
     RelationshipDeclaration,
     SequenceDeclaration,
     SequenceStep,
@@ -45,3 +46,19 @@ def test_stage_deck_fields_are_frozen_and_step_assertion_ids_are_not_semantic_id
     assert getattr(SequenceDeclaration, "__dataclass_params__").frozen
     assert getattr(SequenceStep, "__dataclass_params__").frozen
     assert getattr(Assertion, "__dataclass_params__").frozen
+
+
+def test_existing_positional_matrix_argument_keeps_binding_to_matrix() -> None:
+    matrix = MatrixPayload((), (), ())
+    ir = CanonicalIR(
+        "section-1",
+        RelationshipDeclaration("two-axis", ("two-axis-classification",)),
+        ExplicitSelection("matrix", 2, ("two-axis-classification",)),
+        "Caption",
+        (),
+        (),
+        AccessibilityInfo("Label", "Summary"),
+        matrix,
+    )
+
+    assert ir.matrix is matrix

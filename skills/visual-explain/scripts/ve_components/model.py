@@ -351,9 +351,6 @@ class CanonicalIR:
     certainty: tuple[CertaintyAssertion, ...]
     sources: tuple[Source, ...]
     accessibility: AccessibilityInfo
-    claim: Optional[str] = None
-    sequence: Optional[SequenceDeclaration] = None
-    assertions: Optional[Tuple[Assertion, ...]] = None
     matrix: Optional[MatrixPayload] = None
     flow: Optional[FlowPayload] = None
     enumeration: Optional[EnumerationPayload] = None
@@ -369,6 +366,9 @@ class CanonicalIR:
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
+    claim: Optional[str] = None
+    sequence: Optional[SequenceDeclaration] = None
+    assertions: Optional[Tuple[Assertion, ...]] = None
 
     @property
     def payload_kind(self) -> str:
