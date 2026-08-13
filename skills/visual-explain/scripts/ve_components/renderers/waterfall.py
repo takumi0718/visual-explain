@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
 from ..numeric import to_decimal, waterfall_axis_max, waterfall_scale_values, waterfall_y
+from .common import claim_before_body, select_style_assets
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
@@ -193,7 +194,7 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
             f'<strong>出典 {_esc(src.label)}</strong>{detail}</li>'
         )
 
-    markup = (
+    body_markup = (
         f'<figure data-ve-component="waterfall" role="group"'
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<p class="ve-fig-title">{_esc(wf.title)}</p>'
@@ -204,8 +205,9 @@ def render_waterfall(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-waterfall-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
+    markup = claim_before_body(ir, body_markup)
 
-    style_assets = [a for a in definition.assets if a.slot == "styles"]
+    style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
         component_version=definition.version,

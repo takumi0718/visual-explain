@@ -17,6 +17,7 @@ import html
 from ..diagnostics import RENDERER_FAILURE, Diagnostic
 from ..flow_layout import MAX_SPINE_ROWS, assign_rails, edge_spans, order_index
 from ..model import CanonicalSection, RenderManifest, RenderResult
+from .common import claim_before_body, select_style_assets
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 _RELATION_LABEL = {
@@ -162,7 +163,7 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
         joined = "、".join(f"注釈: {_esc(label)}" for label in emphasis_by_id.values())
         annotation_note = f" {joined}"
 
-    markup = (
+    body_markup = (
         f'<figure data-ve-component="flow" role="group"'
         f' aria-label="{_esc(ir.accessibility.label)}" aria-describedby="{_esc(summary_id)}">'
         f'<figcaption id="{_esc(caption_id)}" class="ve-flow-caption">{_esc(ir.caption)}</figcaption>'
@@ -172,8 +173,9 @@ def render_flow(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-flow-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
+    markup = claim_before_body(ir, body_markup)
 
-    style_assets = [a for a in definition.assets if a.slot == "styles"]
+    style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
         component_version=definition.version,
