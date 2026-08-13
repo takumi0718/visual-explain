@@ -34,9 +34,12 @@ def _content(
     claim_markup: str = "A &amp; B are covered",
     narratives: tuple[str, ...] = (),
     canonical_instance: str = "sec-map",
+    narrative_wrapper_newlines: bool = True,
 ) -> str:
+    boundary = "\n" if narrative_wrapper_newlines else ""
     narrative_markup = "".join(
-        f'<section data-ve-section-kind="narrative" data-ve-instance="n-{index}">\n{text}\n</section>'
+        f'<section data-ve-section-kind="narrative" data-ve-instance="n-{index}">'
+        f'{boundary}{text}{boundary}</section>'
         for index, text in enumerate(narratives, 1)
     )
     return (
@@ -149,6 +152,30 @@ def test_artifact_only_narrative_length_counts_author_boundary_whitespace() -> N
     ):
         messages = _visual_messages(_content(narratives=(narrative,)), None)
         assert any("narrative" in message and "200" in message for message in messages)
+
+
+def test_artifact_only_raw_section_does_not_strip_boundary_newlines() -> None:
+    for narrative in ("\n" + ("x" * 200), ("x" * 200) + "\n"):
+        messages = _visual_messages(
+            _content(
+                narratives=(narrative,),
+                narrative_wrapper_newlines=False,
+            ),
+            None,
+        )
+        assert any("narrative" in message and "201" in message for message in messages)
+
+
+def test_generated_wrapper_removes_only_its_lf_and_counts_author_crlf() -> None:
+    assert _visual_messages(
+        _content(narratives=("\r\n" + ("x" * 198),)),
+        (_record(),),
+    ) == []
+    messages = _visual_messages(
+        _content(narratives=("\r\n" + ("x" * 199),)),
+        (_record(),),
+    )
+    assert any("narrative" in message and "201" in message for message in messages)
 
 
 def test_expected_records_are_matched_to_canonical_instance_not_global_claim_text() -> None:
