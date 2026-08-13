@@ -8,6 +8,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+
+MAX_DIAGNOSTICS = 32
+MAX_DIAGNOSTIC_MESSAGE_CHARS = 384
+MAX_DIAGNOSTIC_PATH_CHARS = 384
+MAX_CONTRACT_ERROR_CHARS = 16384
+_OMITTED_MESSAGE = "診断上限により追加の{count}件を省略しました"
+
+
+def _truncate(value: object, limit: int) -> str:
+    rendered = str(value)
+    if len(rendered) <= limit:
+        return rendered
+    return rendered[:limit - 1] + "…"
+
 # Task 1 — contract / IR codes.
 INVALID_RELATIONSHIP_DECLARATION = "invalid_relationship_declaration"
 INVALID_COMPONENT_PAYLOAD = "invalid_component_payload"
@@ -165,6 +179,8 @@ class Diagnostic:
     def __post_init__(self) -> None:
         if self.code not in ALL_CODES:
             raise ValueError(f"unknown diagnostic code: {self.code}")
+        object.__setattr__(self, "message", _truncate(self.message, MAX_DIAGNOSTIC_MESSAGE_CHARS))
+        object.__setattr__(self, "path", _truncate(self.path, MAX_DIAGNOSTIC_PATH_CHARS))
 
     def __str__(self) -> str:
         where = f" [{self.path}]" if self.path else ""
@@ -177,8 +193,17 @@ class ContractError(Exception):
     def __init__(self, diagnostics: list[Diagnostic]):
         if not diagnostics:
             raise ValueError("ContractError requires at least one diagnostic")
-        self.diagnostics = list(diagnostics)
-        super().__init__("; ".join(str(d) for d in self.diagnostics))
+        source = list(diagnostics)
+        if len(source) > MAX_DIAGNOSTICS:
+            omitted = len(source) - (MAX_DIAGNOSTICS - 1)
+            source = source[:MAX_DIAGNOSTICS - 1] + [Diagnostic(
+                source[MAX_DIAGNOSTICS - 1].code,
+                _OMITTED_MESSAGE.format(count=omitted),
+                source[MAX_DIAGNOSTICS - 1].path,
+            )]
+        self.diagnostics = source
+        rendered = "; ".join(str(d) for d in self.diagnostics)
+        super().__init__(_truncate(rendered, MAX_CONTRACT_ERROR_CHARS))
 
     @classmethod
     def single(cls, code: str, message: str, path: str = "") -> "ContractError":
@@ -194,9 +219,30 @@ class DiagnosticCollector:
     """Accumulates diagnostics so a validator can report several at once."""
 
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    _omitted: int = field(default=0, init=False, repr=False, compare=False)
 
     def add(self, code: str, message: str, path: str = "") -> None:
-        self.diagnostics.append(Diagnostic(code, message, path))
+        diagnostic = Diagnostic(code, message, path)
+        if len(self.diagnostics) < MAX_DIAGNOSTICS:
+            self.diagnostics.append(diagnostic)
+            return
+        if self._omitted == 0:
+            # Keep the stable cap inclusive of one explicit omission marker.
+            # The prior final finding and this new finding are now omitted.
+            self._omitted = 2
+            self.diagnostics[-1] = Diagnostic(
+                diagnostic.code,
+                _OMITTED_MESSAGE.format(count=self._omitted),
+                diagnostic.path,
+            )
+            return
+        self._omitted += 1
+        marker = self.diagnostics[-1]
+        self.diagnostics[-1] = Diagnostic(
+            marker.code,
+            _OMITTED_MESSAGE.format(count=self._omitted),
+            marker.path,
+        )
 
     def __bool__(self) -> bool:
         return bool(self.diagnostics)

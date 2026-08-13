@@ -15,7 +15,7 @@ from __future__ import annotations
 import html
 from dataclasses import replace
 
-from ..diagnostics import RENDERER_FAILURE, Diagnostic
+from ..diagnostics import ContractError, RENDERER_FAILURE, Diagnostic
 from ..flow_layout import MAX_SPINE_ROWS, assign_rails, edge_spans, order_index
 from ..model import (
     CanonicalSection,
@@ -53,7 +53,14 @@ def _path_edge_ids(
         previous = sequence.steps[step_index - 1]
         pairs.append((previous.target_ids[-1], step.target_ids[0]))
     edge_by_pair = {(edge.source, edge.target): edge.id for edge in flow.edges}
-    return tuple(edge_by_pair[pair] for pair in pairs if pair in edge_by_pair)
+    for source, target in pairs:
+        if (source, target) not in edge_by_pair:
+            raise ContractError.single(
+                RENDERER_FAILURE,
+                f"path-spotlight の必須辺 '{source}' -> '{target}' がありません",
+                "flow.sequence",
+            )
+    return tuple(edge_by_pair[pair] for pair in pairs)
 
 
 def _esc(value: str) -> str:

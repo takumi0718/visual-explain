@@ -84,6 +84,7 @@ _HIGHLIGHT_CLASS_NAMES = frozenset({
     "ve-seq-spot", "ve-seq-dim", "ve-takeaway-target",
 })
 _GLOBAL_AXIS_RESET_PROPERTIES = frozenset({"writing-mode", "all"})
+_PATH_WRAPPING_PROPERTIES = frozenset({"overflow-wrap", "word-break", "white-space"})
 _PATH_WIDTH_VARIABLES = (
     "--ve-path-spotlight-node-width",
     "--ve-path-spotlight-gap",
@@ -102,11 +103,34 @@ _PATH_STATION_SELECTOR = f"{_PATH_CANVAS_SELECTOR} .ve-flow-station"
 _PATH_NODE_SELECTOR = f"{_PATH_CANVAS_SELECTOR} .ve-flow-node"
 
 
+def _attributes_first_wins(
+    attrs: list[tuple[str, str | None]],
+) -> tuple[dict[str, str], list[str]]:
+    """Mirror browser first-wins HTML attributes and report duplicates.
+
+    ``HTMLParser`` preserves duplicate attributes while a dict comprehension
+    silently selects the final value. Browsers instead expose the first value
+    for duplicate names, case-insensitively, so every parser must reject the
+    ambiguity before mapping it.
+    """
+    mapped: dict[str, str] = {}
+    duplicates: list[str] = []
+    for raw_name, value in attrs:
+        name = raw_name.lower()
+        if name in mapped:
+            if name not in duplicates:
+                duplicates.append(name)
+            continue
+        mapped[name] = value or ""
+    return mapped, duplicates
+
+
 @dataclass
 class _DomNode:
     tag: str
     attrs: dict[str, str]
     children: list["_DomNode | str"] = field(default_factory=list)
+    duplicate_attributes: list[tuple[str, str]] = field(default_factory=list)
 
 
 class _DomTreeParser(HTMLParser):
@@ -118,9 +142,16 @@ class _DomTreeParser(HTMLParser):
         self._stack = [self.root]
         self._opaque: str | None = None
 
+    def _attrs(
+        self, tag: str, attrs: list[tuple[str, str | None]],
+    ) -> dict[str, str]:
+        mapped, duplicates = _attributes_first_wins(attrs)
+        self.root.duplicate_attributes.extend((tag, name) for name in duplicates)
+        return mapped
+
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
-        node = _DomNode(tag, {name.lower(): (value or "") for name, value in attrs})
+        node = _DomNode(tag, self._attrs(tag, attrs))
         self._stack[-1].children.append(node)
         if tag not in _VOID_TAGS:
             self._stack.append(node)
@@ -130,7 +161,7 @@ class _DomTreeParser(HTMLParser):
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
         self._stack[-1].children.append(
-            _DomNode(tag, {name.lower(): (value or "") for name, value in attrs}),
+            _DomNode(tag, self._attrs(tag, attrs)),
         )
 
     def handle_endtag(self, tag: str) -> None:
@@ -203,6 +234,7 @@ class _DocStructure:
     h1_total: int = 0
     self_closing_tags: list[str] = field(default_factory=list)
     misplaced_reserved_attrs: list[tuple[str, str]] = field(default_factory=list)
+    duplicate_attributes: list[tuple[str, str]] = field(default_factory=list)
 
 
 class _StructureParser(HTMLParser):
@@ -225,6 +257,8 @@ class _StructureParser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
+        attr_map, duplicates = _attributes_first_wins(attrs)
+        self.structure.duplicate_attributes.extend((tag, name) for name in duplicates)
         if self._opaque is not None:
             return
         if tag in _OPAQUE_TAGS:
@@ -232,7 +266,6 @@ class _StructureParser(HTMLParser):
             return
         if tag == "svg":
             self._svg_depth += 1
-        attr_map = {k.lower(): (v or "") for k, v in attrs}
         self._collect_option_id(attr_map)
         self._check_reserved_attr_placement(tag, attr_map)
         if tag not in _VOID_TAGS:
@@ -291,6 +324,8 @@ class _StructureParser(HTMLParser):
         # so any ``data-ask-option-id`` it carries must still reach the
         # digest, exactly like a void self-closing tag's does below.
         tag = tag.lower()
+        attr_map, duplicates = _attributes_first_wins(attrs)
+        self.structure.duplicate_attributes.extend((tag, name) for name in duplicates)
         if self._opaque is not None or tag in _OPAQUE_TAGS:
             return
         in_svg = tag == "svg" or self._svg_depth > 0
@@ -302,7 +337,6 @@ class _StructureParser(HTMLParser):
         # syntax. Collect data-ask-option-id here too (and for any element
         # self-closed inside <svg>, void or not), or an option carried on it
         # silently evades the decision-panel digest.
-        attr_map = {k.lower(): (v or "") for k, v in attrs}
         self._collect_option_id(attr_map)
         self._check_reserved_attr_placement(tag, attr_map)
 
@@ -828,6 +862,12 @@ def _check_sequence_stepper(
 
 def _check_visual_stage_sequences(content_markup: str, expected) -> list[Diagnostic]:
     root = _parse_dom_tree(content_markup)
+    if root.duplicate_attributes:
+        tag, name = root.duplicate_attributes[0]
+        return [_sequence_diagnostic(
+            f"HTML の重複属性は許容されません: <{tag} {name}>",
+            "content",
+        )]
     canonicals = [
         node for node in _descendants(root)
         if node.tag == "section" and node.attrs.get("data-ve-section-kind") == "canonical"
@@ -1048,6 +1088,58 @@ def _css_rule_blocks(source: str):
         index += 1
 
 
+def _qualified_body_has_nested_block(body: str) -> bool:
+    """Reject modern nesting while preserving opaque custom-property values."""
+    body = _remove_css_comments(body)
+    index = 0
+    segment_start = 0
+    quote: str | None = None
+    parens = 0
+    brackets = 0
+    while index < len(body):
+        char = body[index]
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {'"', "'"}:
+            quote = char
+        elif char == "(":
+            parens += 1
+        elif char == ")" and parens:
+            parens -= 1
+        elif char == "[":
+            brackets += 1
+        elif char == "]" and brackets:
+            brackets -= 1
+        elif char == ";" and parens == 0 and brackets == 0:
+            segment_start = index + 1
+        elif char == "{" and parens == 0 and brackets == 0:
+            prefix = body[segment_start:index].strip()
+            # CSS custom-property values may intentionally contain balanced
+            # blocks. They are data, not qualified rules, and stay opaque.
+            if re.match(r"^--(?:\\.|[-_a-zA-Z0-9])+\s*:", prefix):
+                closing = _css_matching_brace(body, index)
+                if closing is None:
+                    return True
+                index = closing
+            else:
+                return True
+        index += 1
+    return False
+
+
+def _nested_qualified_selectors(source: str) -> tuple[str, ...]:
+    return tuple(
+        selector for selector, body in _css_rule_blocks(source)
+        if _qualified_body_has_nested_block(body)
+    )
+
+
 def _decode_css_escape(source: str, index: int) -> tuple[str, int]:
     if index >= len(source):
         return "", index
@@ -1238,6 +1330,78 @@ def _selector_may_affect_path_sizing(selector: str) -> bool:
         and "flow" in content.lower()
         for content in attributes
     )
+
+
+def _selector_may_affect_path_wrapping(selector: str) -> bool:
+    """Conservatively identify path nodes and inheriting ancestor sources."""
+    decoded = _decode_css_identifier(selector)
+    compounds: list[str] = []
+    start = 0
+    candidate_start = 0
+    quote: str | None = None
+    brackets = 0
+    parens = 0
+    index = 0
+    while index <= len(decoded):
+        char = decoded[index] if index < len(decoded) else ","
+        if quote is not None:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "[":
+            brackets += 1
+        elif char == "]" and brackets:
+            brackets -= 1
+        elif char == "(":
+            parens += 1
+        elif char == ")" and parens:
+            parens -= 1
+        elif brackets == 0 and parens == 0:
+            if char == ",":
+                compound = decoded[candidate_start:index].strip()
+                if compound:
+                    compounds.append(compound)
+                start = index + 1
+                candidate_start = start
+            elif char in ">+~" or char.isspace():
+                next_index = index + 1
+                while next_index < len(decoded) and decoded[next_index].isspace():
+                    next_index += 1
+                if next_index < len(decoded) and decoded[next_index] not in ">+~":
+                    candidate_start = next_index
+        index += 1
+
+    for compound in compounds:
+        if _selector_has_universal_target(compound):
+            return True
+        if any(
+            _selector_may_target_class(compound, class_name)
+            for class_name in (
+                "ve-flow-scroll", "ve-flow-path-canvas", "ve-flow-station", "ve-flow-node",
+            )
+        ):
+            return True
+        attributes = _selector_attribute_contents(compound)
+        if any(
+            _selector_attribute_name(content) in {"data-stepper", "data-ve-component"}
+            for content in attributes
+        ):
+            return True
+        syntax = compound
+        for content in attributes:
+            syntax = syntax.replace(f"[{content}]", " ")
+        syntax = re.sub(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', " ", syntax)
+        if re.search(
+            r"(?<![-_a-zA-Z0-9])(html|body|main|section|figure)(?![-_a-zA-Z0-9])|:root\b",
+            syntax,
+            re.I,
+        ):
+            return True
+    return False
 
 
 def _selector_may_affect_main_sizing(selector: str) -> bool:
@@ -1431,7 +1595,13 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
     """Enforce emphasis paint-only rules and the skeleton-linked width equation."""
     diagnostics: list[Diagnostic] = []
     css_rules = _parsed_css_rules(css)
-    skeleton_rules = _parsed_css_rules(_skeleton_css(skeleton_markup))
+    skeleton_source = _skeleton_css(skeleton_markup)
+    skeleton_rules = _parsed_css_rules(skeleton_source)
+    for source_name, source in (("visual-stage", css), ("skeleton", skeleton_source)):
+        for selector in _nested_qualified_selectors(source):
+            diagnostics.append(_css_diagnostic(
+                f"{source_name} selector {_bounded_identifier(selector)!r} の nested CSS rule は禁止です",
+            ))
     for source_name, rules in (
         ("visual-stage", css_rules),
         ("skeleton", skeleton_rules),
@@ -1566,6 +1736,24 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         diagnostics, css_rules, _PATH_NODE_SELECTOR, "max-width",
         "var(--ve-path-spotlight-node-width)",
     )
+    _require_layout_declaration(
+        diagnostics, css_rules, _PATH_NODE_SELECTOR, "overflow-wrap", "anywhere",
+    )
+    for source_name, rules in (("visual-stage", css_rules), ("skeleton", skeleton_rules)):
+        for selector, declarations in rules:
+            if not _selector_may_affect_path_wrapping(selector):
+                continue
+            for name, value in declarations:
+                if name not in _PATH_WRAPPING_PROPERTIES:
+                    continue
+                if name == "overflow-wrap" and _compact_css_value(value) == "anywhere":
+                    # Redundant declarations of the same safe value cannot
+                    # defeat the required exact path-node source.
+                    continue
+                diagnostics.append(_css_diagnostic(
+                    f"path wrapping の {source_name} selector"
+                    f" {_bounded_identifier(selector)!r} / {name} は閉じた宣言元に違反します",
+                ))
     permitted_path_layout = {
         (_PATH_SCROLL_SELECTOR, "max-width", "var(--ve-path-spotlight-content-width)"),
         (_PATH_CANVAS_SELECTOR, "gap", "var(--ve-path-spotlight-gap)"),
@@ -1992,6 +2180,18 @@ def check_document_structure(
     """
     diagnostics: list[Diagnostic] = []
     structure = _parse_structure(content_markup)
+    if structure.duplicate_attributes:
+        offenders = ", ".join(
+            f"<{tag} {name}>" for tag, name in structure.duplicate_attributes[:8]
+        )
+        if len(structure.duplicate_attributes) > 8:
+            offenders += f", …(+{len(structure.duplicate_attributes) - 8})"
+        diagnostics.append(Diagnostic(
+            DOCUMENT_STRUCTURE_VIOLATION,
+            f"HTML の重複属性は許容されません: {offenders}",
+            "content",
+        ))
+        return diagnostics
     if structure.self_closing_tags:
         tags = ", ".join(f"<{tag}/>" for tag in structure.self_closing_tags)
         diagnostics.append(Diagnostic(
