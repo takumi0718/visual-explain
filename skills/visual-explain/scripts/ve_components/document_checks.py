@@ -60,6 +60,8 @@ _RESERVED_ATTR_REQUIRED_TAG = {
 _VISUAL_STAGE_PROFILE = "visual-stage"
 _MAX_VISUAL_STAGE_DIAGNOSTICS = 32
 _MAX_DIAGNOSTIC_IDS = 8
+_MAX_DIAGNOSTIC_IDENTIFIER_CHARS = 96
+_MAX_DIAGNOSTIC_ID_LIST_CHARS = 256
 _MIN_VISUAL_STAGE_OVERLAP_CHARS = 10
 _SEQUENCE_HIGHLIGHT_CLASSES = frozenset({
     "ve-seq-spot", "ve-seq-dim", "ve-takeaway-target",
@@ -463,12 +465,23 @@ def _dom_text(fragment: str) -> str:
     return "".join(p.parts).strip()
 
 
+def _bounded_identifier(value: object) -> str:
+    """Keep attacker-controlled identifiers from inflating diagnostics."""
+    rendered = str(value)
+    if len(rendered) <= _MAX_DIAGNOSTIC_IDENTIFIER_CHARS:
+        return rendered
+    return rendered[:_MAX_DIAGNOSTIC_IDENTIFIER_CHARS - 1] + "…"
+
+
 def _bounded_id_list(values) -> str:
     """Render a stable, bounded identifier list for diagnostics."""
     ordered = sorted({str(value) for value in values})
-    shown = ordered[:_MAX_DIAGNOSTIC_IDS]
+    shown = [_bounded_identifier(value) for value in ordered[:_MAX_DIAGNOSTIC_IDS]]
     suffix = f", …(+{len(ordered) - len(shown)})" if len(ordered) > len(shown) else ""
-    return ", ".join(shown) + suffix
+    rendered = ", ".join(shown) + suffix
+    if len(rendered) <= _MAX_DIAGNOSTIC_ID_LIST_CHARS:
+        return rendered
+    return rendered[:_MAX_DIAGNOSTIC_ID_LIST_CHARS - 1] + "…"
 
 
 def _visual_stage_diagnostic(message: str, path: str) -> Diagnostic:
@@ -560,8 +573,9 @@ def _panel_reference_analysis(node: _DomNode) -> tuple[tuple[str, ...], tuple[st
         for name, value in element.attrs.items():
             kind = SEQUENCE_REFERENCE_ATTRIBUTES.get(name)
             if kind == "fragment":
-                if value.startswith("#"):
-                    target = value[1:]
+                trimmed = value.strip()
+                if trimmed.startswith("#"):
+                    target = trimmed[1:]
                     if target and "#" not in target and not any(char.isspace() for char in target):
                         targets.append(target)
                     else:
@@ -593,16 +607,25 @@ def _panel_reference_analysis(node: _DomNode) -> tuple[tuple[str, ...], tuple[st
                 else:
                     malformed.append(name)
             elif kind == "url-reference":
-                match = _EXACT_URL_REF_RE.fullmatch(value)
+                decoded_value = _decode_css_identifier(value)
+                match = _EXACT_URL_REF_RE.fullmatch(decoded_value)
                 if match is not None:
                     targets.append(match.group(1))
-                elif re.search(r"url\s*\(", value, re.I):
+                elif re.search(r"url\s*\(", decoded_value, re.I):
                     malformed.append(name)
             elif kind == "inline-url-reference":
-                valid_matches = tuple(_INLINE_URL_REF_RE.finditer(value))
-                targets.extend(match.group(1) for match in valid_matches)
-                residue = _INLINE_URL_REF_RE.sub("", value)
-                if re.search(r"url\s*\(", residue, re.I):
+                decoded_value = _decode_css_identifier(value)
+                url_seen = False
+                for _property, declaration_value in _css_declarations(decoded_value):
+                    if not re.search(r"url\s*\(", declaration_value, re.I):
+                        continue
+                    url_seen = True
+                    match = _EXACT_URL_REF_RE.fullmatch(declaration_value.strip())
+                    if match is None:
+                        malformed.append(name)
+                    else:
+                        targets.append(match.group(1))
+                if re.search(r"url\s*\(", decoded_value, re.I) and not url_seen:
                     malformed.append(name)
     return tuple(targets), tuple(malformed)
 
@@ -625,7 +648,8 @@ def _check_panel_namespace(
     for dom_id in ids:
         if not dom_id.endswith(suffix):
             diagnostics.append(_sequence_diagnostic(
-                f"panel {panel_number} の DOM id '{dom_id}' は {suffix} で終わる必要があります",
+                f"panel {panel_number} の DOM id '{_bounded_identifier(dom_id)}' は"
+                f" {suffix} で終わる必要があります",
                 path,
             ))
     id_set = set(ids)
@@ -633,7 +657,8 @@ def _check_panel_namespace(
         if base_id in id_set:
             diagnostics.append(_sequence_diagnostic(
                 f"panel {panel_number} の expected semantic DOM id は"
-                f" '{base_id}{suffix}' が必要です（base id '{base_id}' のままでは不正です）",
+                f" '{_bounded_identifier(base_id + suffix)}' が必要です"
+                f"（base id '{_bounded_identifier(base_id)}' のままでは不正です）",
                 path,
             ))
     for element in _descendants(panel, include_self=True):
@@ -643,15 +668,17 @@ def _check_panel_namespace(
             expected_id = f"{semantic_id}{suffix}"
             if dom_id != expected_id:
                 diagnostics.append(_sequence_diagnostic(
-                    f"panel {panel_number} の semantic id '{semantic_id}' に対応する DOM id は"
-                    f" '{expected_id}' が必要です",
+                    f"panel {panel_number} の semantic id"
+                    f" '{_bounded_identifier(semantic_id)}' に対応する DOM id は"
+                    f" '{_bounded_identifier(expected_id)}' が必要です",
                     path,
                 ))
     for base_id in expected_landmark_ids:
         expected_id = f"{base_id}{suffix}"
         if expected_id not in id_set:
             diagnostics.append(_sequence_diagnostic(
-                f"panel {panel_number} の expected landmark DOM id '{expected_id}' がありません",
+                f"panel {panel_number} の expected landmark DOM id"
+                f" '{_bounded_identifier(expected_id)}' がありません",
                 path,
             ))
     reference_targets, malformed = _panel_reference_analysis(panel)
@@ -663,7 +690,8 @@ def _check_panel_namespace(
     for target in reference_targets:
         if target not in id_set:
             diagnostics.append(_sequence_diagnostic(
-                f"panel {panel_number} の参照 '{target}' は同一 panel 内の id を指す必要があります",
+                f"panel {panel_number} の参照 '{_bounded_identifier(target)}' は"
+                "同一 panel 内の id を指す必要があります",
                 path,
             ))
     return diagnostics
@@ -887,6 +915,19 @@ def _css_diagnostic(message: str) -> Diagnostic:
     )
 
 
+def _bound_visual_stage_diagnostics(diagnostics: list[Diagnostic]) -> list[Diagnostic]:
+    bounded: list[Diagnostic] = []
+    visual_count = 0
+    for diagnostic in diagnostics:
+        is_visual = diagnostic.message.startswith("visual-stage ")
+        if is_visual:
+            if visual_count >= _MAX_VISUAL_STAGE_DIAGNOSTICS:
+                continue
+            visual_count += 1
+        bounded.append(diagnostic)
+    return bounded
+
+
 def _remove_css_comments(source: str) -> str:
     """Remove comments while preserving strings and CSS token adjacency."""
     out: list[str] = []
@@ -1069,7 +1110,8 @@ def _attribute_selector_targets_highlight(content: str) -> bool:
     name_pattern = r"((?:\\.|[-_a-zA-Z0-9])+?)"
     value_pattern = r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|(?:\\.|[^\s])+?)'
     match = re.fullmatch(
-        rf"\s*{name_pattern}\s*~=\s*{value_pattern}\s*([iIsS])?\s*",
+        rf"\s*{name_pattern}\s*(~=|\^=|\$=|\*=|\|=|=)\s*"
+        rf"{value_pattern}\s*((?:\\.|[iIsS0-9])*)\s*",
         content,
     )
     if match is None:
@@ -1077,14 +1119,44 @@ def _attribute_selector_targets_highlight(content: str) -> bool:
     name = _decode_css_identifier(match.group(1)).lower()
     if name != "class":
         return False
-    raw_value = match.group(2)
+    operator = match.group(2)
+    raw_value = match.group(3)
     if raw_value[:1] in {'"', "'"} and raw_value[-1:] == raw_value[:1]:
         raw_value = raw_value[1:-1]
     value = _decode_css_identifier(raw_value)
-    flag = (match.group(3) or "s").lower()
+    flag = (_decode_css_identifier(match.group(4)) or "s").lower()
     if flag == "i":
         value = value.lower()
-    return value in _HIGHLIGHT_CLASS_NAMES
+    if operator == "~=":
+        return value in _HIGHLIGHT_CLASS_NAMES
+    return any(class_name in value for class_name in _HIGHLIGHT_CLASS_NAMES)
+
+
+def _selector_may_target_class(selector: str, class_name: str) -> bool:
+    decoded = _decode_css_identifier(selector)
+    if re.search(rf"\.{re.escape(class_name)}(?![-_a-zA-Z0-9])", decoded):
+        return True
+    for content in _selector_attribute_contents(selector):
+        name_pattern = r"((?:\\.|[-_a-zA-Z0-9])+?)"
+        value_pattern = r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|(?:\\.|[^\s])+?)'
+        match = re.fullmatch(
+            rf"\s*{name_pattern}\s*(~=|\^=|\$=|\*=|\|=|=)\s*"
+            rf"{value_pattern}\s*((?:\\.|[iIsS0-9])*)\s*",
+            content,
+        )
+        if match is None or _decode_css_identifier(match.group(1)).lower() != "class":
+            continue
+        value = match.group(3)
+        if value[:1] in {'"', "'"} and value[-1:] == value[:1]:
+            value = value[1:-1]
+        value = _decode_css_identifier(value)
+        flag = (_decode_css_identifier(match.group(4)) or "s").lower()
+        target = class_name
+        if flag == "i":
+            value, target = value.lower(), target.lower()
+        if target in value:
+            return True
+    return False
 
 
 def _selector_targets_highlight(selector: str) -> bool:
@@ -1343,7 +1415,7 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
             main_invalid = True
     if main_invalid or base_contracts != 1:
         diagnostics.append(_css_diagnostic(
-            "skeleton main は --w-narrative linked width と inline padding 0 の一意な宣言が必要です",
+            "1212px skeleton main は --w-narrative linked width と inline padding 0 の一意な宣言が必要です",
         ))
 
     _require_layout_declaration(
@@ -1373,15 +1445,33 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         (_PATH_STATION_SELECTOR, "max-width", "var(--ve-path-spotlight-node-width)"),
         (_PATH_NODE_SELECTOR, "max-width", "var(--ve-path-spotlight-node-width)"),
     }
+    safe_path_layout_values = {
+        "width": frozenset({"100%"}),
+        "min-width": frozenset({"0"}),
+        "box-sizing": frozenset({"border-box"}),
+    }
     relevant_layout_properties = {
-        "gap", "row-gap", "column-gap", "flex", "flex-basis", "max-width",
+        "gap", "grid-gap", "row-gap", "column-gap", "flex", "flex-basis",
+        "width", "min-width", "max-width", "padding", "padding-inline",
+        "padding-left", "padding-right", "border", "border-inline",
+        "border-left", "border-right", "box-sizing",
     }
     for selector, declarations in css_rules:
-        decoded_selector = _decode_css_identifier(selector)
-        if re.search(r"\.ve-flow-path-canvas(?![-_a-zA-Z0-9])", decoded_selector) is None:
+        affects_path = any(
+            _selector_may_target_class(selector, class_name)
+            for class_name in ("ve-flow-path-canvas", "ve-flow-station", "ve-flow-node")
+        )
+        if not affects_path:
             continue
         for name, value in declarations:
             if name not in relevant_layout_properties:
+                continue
+            compact_value = _compact_css_value(value)
+            if (
+                name in safe_path_layout_values
+                and compact_value in safe_path_layout_values[name]
+                and "!important" not in compact_value
+            ):
                 continue
             candidate = (selector, name, value)
             if not any(
@@ -1391,8 +1481,46 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
                 for allowed in permitted_path_layout
             ):
                 diagnostics.append(_css_diagnostic(
-                    f"path layout の selector {selector!r} が {name} を契約外で上書きしています",
+                    f"1212px path layout の selector {_bounded_identifier(selector)!r} が"
+                    f" {name} を契約外で上書きしています",
                 ))
+
+    skeleton_critical = {
+        "width", "min-width", "max-width", "padding", "padding-inline",
+        "padding-left", "padding-right", "border", "border-inline",
+        "border-left", "border-right", "box-sizing",
+    }
+    universal_border_box = 0
+    for selector, declarations in skeleton_rules:
+        decoded_selector = _decode_css_identifier(selector).strip()
+        targets_main = decoded_selector == "main" or re.search(
+            r"(?<![-_a-zA-Z0-9])main(?![-_a-zA-Z0-9])",
+            decoded_selector,
+        ) is not None
+        targets_everything = "*" in decoded_selector
+        for name, value in declarations:
+            if name not in skeleton_critical:
+                continue
+            compact = _compact_css_value(value)
+            if decoded_selector == "*" and name == "box-sizing" and compact == "border-box":
+                universal_border_box += 1
+                continue
+            if decoded_selector == "main":
+                allowed = (
+                    name == "width" and compact in allowed_main_widths
+                    or name == "padding" and "!important" not in compact
+                )
+                if allowed:
+                    continue
+            if targets_main or targets_everything:
+                diagnostics.append(_css_diagnostic(
+                    f"1212px skeleton selector {_bounded_identifier(selector)!r} の {name} は"
+                    " content width/padding/border/box-sizing の閉じた宣言元に違反します",
+                ))
+    if universal_border_box != 1:
+        diagnostics.append(_css_diagnostic(
+            "1212px skeleton は exact '*' で box-sizing:border-box を一意に宣言する必要があります",
+        ))
     return diagnostics
 
 
@@ -1444,6 +1572,8 @@ def check_visual_stage_document_css(
     content_markup: str,
     styles_markup: str,
     skeleton_markup: str,
+    *,
+    max_diagnostics: int = _MAX_VISUAL_STAGE_DIAGNOSTICS,
 ) -> list[Diagnostic]:
     """Profile-gated CSS contract entry point for the final-document checker."""
     structure = _parse_structure(content_markup)
@@ -1452,7 +1582,7 @@ def check_visual_stage_document_css(
         return []
     if first_nodes[0].attrs.get("data-ve-profile") != _VISUAL_STAGE_PROFILE:
         return []
-    return _check_visual_stage_style_slot(styles_markup, skeleton_markup)
+    return _check_visual_stage_style_slot(styles_markup, skeleton_markup)[:max(0, max_diagnostics)]
 
 
 def _rendered_narrative_text_length(
@@ -1839,6 +1969,7 @@ def check_document_structure(
     if profile == _VISUAL_STAGE_PROFILE:
         diagnostics.extend(_check_visual_stage_completeness(structure, expected))
         diagnostics.extend(_check_visual_stage_sequences(content_markup, expected))
+        diagnostics = _bound_visual_stage_diagnostics(diagnostics)
     return diagnostics
 
 

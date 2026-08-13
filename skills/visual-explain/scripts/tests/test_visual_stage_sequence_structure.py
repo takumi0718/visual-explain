@@ -1,23 +1,30 @@
 """Task 14 rendered-sequence and visual-stage CSS contracts."""
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
+from build_explainer import build_document
 from ve_components.assembly import ExpectedCanonicalRecord
+from ve_components.checker import check_final_document
 from ve_components.document_checks import (
     check_document_structure,
     check_visual_stage_css,
     check_visual_stage_document_css,
 )
 from ve_components.model import Assertion, SequenceDeclaration, SequenceStep
+from ve_components.registry import load_registry
+from ve_components.renderers import TRUSTED_RENDERERS
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SKELETON = (ROOT / "assets" / "skeleton.html").read_text("utf-8")
 VISUAL_STAGE_CSS = (ROOT / "assets" / "components" / "visual-stage.css").read_text("utf-8")
+COMPONENTS = ROOT / "assets" / "components"
+REGISTRY = load_registry(COMPONENTS / "registry.json")
 
 
 def _record(*, component: str = "flow", mode: str = "state-lens") -> ExpectedCanonicalRecord:
@@ -279,6 +286,61 @@ def test_css_scanner_recognizes_class_attribute_highlight_selectors(selector: st
 
 
 @pytest.mark.parametrize(
+    "selector",
+    (
+        '[class="ve-seq-spot"]',
+        '[class^="ve-seq-spot"]',
+        '[class$="ve-seq-spot"]',
+        '[class*="ve-seq-spot"]',
+        '[class|="ve-seq-spot"]',
+        '[class="VE-SEQ-SPOT" \\69]',
+        '[class*="prefix-ve-seq-spot-suffix"]',
+    ),
+)
+def test_css_scanner_conservatively_recognizes_every_matching_class_operator(
+    selector: str,
+) -> None:
+    css = VISUAL_STAGE_CSS + f"\n.card{selector} {{ width: 1px; }}"
+    assert any("paint-only" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+@pytest.mark.parametrize(
+    "css",
+    (
+        VISUAL_STAGE_CSS + "\n.ve-flow-station { flex-basis: 30rem !important; }",
+        VISUAL_STAGE_CSS + "\n.ve-flow-station { max-width: 30rem !important; }",
+        VISUAL_STAGE_CSS + '\n[class~="ve-flow-path-canvas"] { gap: 8rem !important; }',
+        VISUAL_STAGE_CSS + "\n.ve-flow-path-canvas { grid-gap: 8rem; }",
+    ),
+)
+def test_width_contract_rejects_closed_set_interfering_visual_stage_sources(css: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(css, SKELETON))
+
+
+@pytest.mark.parametrize(
+    "skeleton",
+    (
+        SKELETON.replace(
+            "section { min-width: 0;",
+            "main { border-inline: 1rem solid red; } section { min-width: 0;",
+        ),
+        SKELETON.replace(
+            "section { min-width: 0;",
+            "* { padding-inline: 5rem !important; } section { min-width: 0;",
+        ),
+        SKELETON.replace(
+            "main { width: min(100% - var(--space-4), var(--w-narrative));",
+            "main { box-sizing: content-box; width: min(100% - var(--space-4), var(--w-narrative));",
+        ),
+    ),
+)
+def test_content_width_contract_includes_padding_border_and_box_sizing(skeleton: str) -> None:
+    assert any("1212" in item.message for item in check_visual_stage_css(
+        VISUAL_STAGE_CSS, skeleton,
+    ))
+
+
+@pytest.mark.parametrize(
     "bad_attribute",
     (
         'data-connect=""',
@@ -299,6 +361,96 @@ def test_closed_reference_attributes_reject_malformed_or_trailing_grammar(
         panels=(_panel(1), panel_two, _panel(3)),
     )))
     assert any("参照属性" in message and "形式" in message for message in messages)
+
+
+@pytest.mark.parametrize(
+    "bad_attribute",
+    (
+        'href=" #desc--p1 "',
+        'filter="u\\72l(#desc--p2) trailing"',
+        'style="filter: u\\72l(#desc--p2) trailing"',
+        'style="filter: u\\72l(#desc--p1)"',
+    ),
+)
+def test_reference_grammar_decodes_css_escapes_and_trims_fragment_values(
+    bad_attribute: str,
+) -> None:
+    panel_two = _panel(2).replace(
+        'aria-describedby="desc--p2"',
+        f'aria-describedby="desc--p2" {bad_attribute}',
+    )
+    messages = _messages(_content(body=_stepper(
+        panels=(_panel(1), panel_two, _panel(3)),
+    )))
+    assert any(
+        "参照属性" in message and "形式" in message or "同一 panel" in message
+        for message in messages
+    )
+
+
+def test_visual_stage_diagnostics_share_one_document_wide_stable_cap() -> None:
+    style = "<style data-ve-asset=\"visual-stage\">" + VISUAL_STAGE_CSS + "\n" + "\n".join(
+        f'.bad-{index}[class*="ve-seq-spot"] {{ width: {index + 1}px; }}'
+        for index in range(40)
+    ) + "</style>"
+
+    first = check_visual_stage_document_css(_content(), style, SKELETON)
+    second = check_visual_stage_document_css(_content(), style, SKELETON)
+    assert first == second
+    assert len(first) == 32
+
+
+def test_final_checker_shares_cap_between_structure_and_css_diagnostics() -> None:
+    raw = json.loads(
+        (ROOT / "scripts" / "tests" / "component-valid-flow-sequence-branch.json")
+        .read_text("utf-8")
+    )
+    document = build_document(
+        raw,
+        REGISTRY,
+        TRUSTED_RENDERERS,
+        SKELETON,
+        COMPONENTS,
+        document_path="bounded.html",
+    )
+    document = document.replace('data-step="1"', 'data-step="9"', 1)
+    style_start = document.index('data-ve-asset="visual-stage"')
+    style_end = document.index("</style>", style_start)
+    invalid_rules = "\n".join(
+        f'.bad-{index}[class*="ve-seq-spot"] {{ width: {index + 1}px; }}'
+        for index in range(40)
+    )
+    document = document[:style_end] + invalid_rules + document[style_end:]
+
+    first = check_final_document(document, SKELETON, REGISTRY, components_dir=COMPONENTS)
+    second = check_final_document(document, SKELETON, REGISTRY, components_dir=COMPONENTS)
+    first_visual = [item for item in first if item.message.startswith("visual-stage ")]
+    second_visual = [item for item in second if item.message.startswith("visual-stage ")]
+    assert first_visual == second_visual
+    assert len(first_visual) == 32
+
+
+def test_user_controlled_identifiers_are_bounded_in_diagnostics() -> None:
+    huge_identifier = "x" * 5000
+    css = VISUAL_STAGE_CSS + (
+        f"\n.ve-flow-station#{huge_identifier} "
+        "{ flex-basis: 30rem !important; }"
+    )
+    css_messages = [item.message for item in check_visual_stage_css(css, SKELETON)]
+    assert css_messages
+    assert max(map(len, css_messages)) <= 512
+
+    record = replace(
+        _record(),
+        assertions=(Assertion("claim", "Claim", (huge_identifier,)),),
+    )
+    structure_messages = [
+        item.message
+        for item in check_document_structure(_content(), title="Title", expected=(record,))
+        if item.message.startswith("visual-stage ")
+    ]
+    assert structure_messages
+    assert max(map(len, structure_messages)) <= 512
 
 
 def test_suffix_shaped_semantic_base_requires_exact_base_plus_panel_suffix() -> None:

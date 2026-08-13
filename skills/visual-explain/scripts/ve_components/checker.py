@@ -2587,13 +2587,25 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         diagnostics += validate_artifact_semantics(content)
         diagnostics += validate_renderer_svg(content)
         diagnostics += validate_notation_rules(content)
-        from .document_checks import check_document_structure, check_visual_stage_document_css
+        from .document_checks import (
+            _MAX_VISUAL_STAGE_DIAGNOSTICS,
+            check_document_structure,
+            check_visual_stage_document_css,
+        )
         expected_records = expected.expected_records if expected is not None else None
-        diagnostics += check_document_structure(
+        structure_diagnostics = check_document_structure(
             content, title=_extract_title_text(text), expected=expected_records,
         )
+        diagnostics += structure_diagnostics
+        visual_stage_used = sum(
+            item.message.startswith("visual-stage ")
+            for item in structure_diagnostics
+        )
         diagnostics += check_visual_stage_document_css(
-            content, slots.get("styles", ""), skel,
+            content,
+            slots.get("styles", ""),
+            skel,
+            max_diagnostics=max(0, _MAX_VISUAL_STAGE_DIAGNOSTICS - visual_stage_used),
         )
     diagnostics += validate_controlled_assets(slots, registry, components_dir)
     if expected is not None:
