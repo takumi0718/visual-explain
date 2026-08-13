@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "vs-matrix-state", "title": "権限状態レンズ", "summary": "権限セルの現在対象を切り替える資料。", "type": "system", "profile": "visual-stage"},
+  "sections": [
+    {"kind": "first-screen", "id": "first", "decision": "対象権限を順に確認します。"},
+    {"kind": "canonical", "ir": {
+      "id": "matrix-state",
+      "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison", "typed-sequence"]},
+      "selection": {"component": "matrix", "version": 2, "matchedCapabilities": ["two-axis-classification", "intersection-comparison", "typed-sequence"]},
+      "caption": "役割と操作の権限状態",
+      "certainty": [{"id": "matrix-cert", "level": "confirmed", "statement": "権限表を確認済み。"}],
+      "sources": [{"id": "matrix-source", "label": "権限仕様"}],
+      "accessibility": {"label": "権限マトリクス", "summary": "役割と操作の交点に権限状態を示す。"},
+      "matrix": {
+        "rows": [{"id": "row-admin", "label": "管理者"}, {"id": "row-viewer", "label": "閲覧者"}],
+        "columns": [{"id": "col-read", "label": "読取"}, {"id": "col-write", "label": "書込"}],
+        "cells": [
+          {"id": "cell-admin-read", "rowId": "row-admin", "columnId": "col-read", "content": "許可"},
+          {"id": "cell-admin-write", "rowId": "row-admin", "columnId": "col-write", "content": "許可"},
+          {"id": "cell-viewer-read", "rowId": "row-viewer", "columnId": "col-read", "content": "許可"},
+          {"id": "cell-viewer-write", "rowId": "row-viewer", "columnId": "col-write", "content": "不可"}
+        ]
+      },
+      "claim": "現在の権限セルだけを同じ配置で確認できる。",
+      "sequence": {"mode": "state-lens", "steps": [
+        {"id": "state-admin", "label": "管理者", "targetIds": ["cell-admin-read", "cell-admin-write"]},
+        {"id": "state-viewer", "label": "閲覧者の書込", "targetIds": ["cell-viewer-write"]}
+      ]},
+      "assertions": [{"id": "matrix-state-claim", "text": "現在の権限セルだけを同じ配置で確認できる。", "coverIds": ["row-admin", "row-viewer", "col-read", "col-write", "cell-admin-read", "cell-admin-write", "cell-viewer-read", "cell-viewer-write"]}]
+    }},
+    {"kind": "closing", "id": "closing", "blocks": [{"heading": "限界・確度", "items": ["例外権限は対象外です。"]}]}
+  ]
+}

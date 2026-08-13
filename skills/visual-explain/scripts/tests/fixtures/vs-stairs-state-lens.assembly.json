@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "vs-stairs-state", "title": "成熟度状態レンズ", "summary": "成熟度の現在対象を切り替える資料。", "type": "system", "profile": "visual-stage"},
+  "sections": [
+    {"kind": "first-screen", "id": "first", "decision": "成熟度状態を順に確認します。"},
+    {"kind": "canonical", "ir": {
+      "id": "stairs-state",
+      "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging", "typed-sequence"]},
+      "selection": {"component": "stairs", "version": 2, "matchedCapabilities": ["maturity-staging", "typed-sequence"]},
+      "caption": "成熟度の現在対象",
+      "certainty": [{"id": "stairs-cert", "level": "confirmed", "statement": "段階定義を確認済み。"}],
+      "sources": [{"id": "stairs-source", "label": "成熟度モデル"}],
+      "accessibility": {"label": "成熟度階段", "summary": "五段階の成熟度で現在対象を切り替える。"},
+      "stairs": {"stages": [
+        {"id": "stage-1", "label": "未整備"},
+        {"id": "stage-2", "label": "部分導入"},
+        {"id": "stage-3", "label": "標準化"},
+        {"id": "stage-4", "label": "最適化"},
+        {"id": "stage-5", "label": "自律運用"}
+      ]},
+      "claim": "現在の成熟度だけを同じ配置で確認できる。",
+      "sequence": {"mode": "state-lens", "steps": [
+        {"id": "state-start", "label": "導入初期", "targetIds": ["stage-1", "stage-2"]},
+        {"id": "state-optimize", "label": "最適化", "targetIds": ["stage-4"]}
+      ]},
+      "assertions": [{"id": "stairs-state-claim", "text": "現在の成熟度だけを同じ配置で確認できる。", "coverIds": ["stage-1", "stage-2", "stage-3", "stage-4", "stage-5"]}]
+    }},
+    {"kind": "closing", "id": "closing", "blocks": [{"heading": "限界・確度", "items": ["移行期間は対象外です。"]}]}
+  ]
+}

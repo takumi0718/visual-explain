@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "document": {"id": "vs-waterfall-delta", "title": "利益差分の累積", "summary": "利益の到達済み差分を累積表示する資料。", "type": "system", "profile": "visual-stage"},
+  "sections": [
+    {"kind": "first-screen", "id": "first", "decision": "利益差分を順に確認します。"},
+    {"kind": "canonical", "ir": {
+      "id": "waterfall-delta",
+      "relationship": {"kind": "additive-bridge", "capabilities": ["additive-bridging", "typed-sequence"]},
+      "selection": {"component": "waterfall", "version": 2, "matchedCapabilities": ["additive-bridging", "typed-sequence"]},
+      "caption": "営業利益の累積差分",
+      "certainty": [{"id": "waterfall-cert", "level": "confirmed", "statement": "算術を確認済み。"}],
+      "sources": [{"id": "waterfall-source", "label": "利益台帳"}],
+      "accessibility": {"label": "利益ウォーターフォール", "summary": "期首から増減を経て期末へ至る。"},
+      "waterfall": {
+        "displayPrecision": 1, "title": "営業利益", "unitLabel": "億円", "axisTicks": ["0", "50", "100", "150"],
+        "start": {"id": "wf-start", "label": "期首", "value": 90, "valueText": "90"},
+        "steps": [
+          {"id": "wf-step-1", "label": "価格改定", "delta": 40, "tone": "positive", "valueText": "+40"},
+          {"id": "wf-step-2", "label": "販促費", "delta": 20, "tone": "positive", "valueText": "+20"},
+          {"id": "wf-step-3", "label": "値引き", "delta": -50, "tone": "warning", "valueText": "−50"},
+          {"id": "wf-step-4", "label": "原価", "delta": -20, "tone": "warning", "valueText": "−20"}
+        ],
+        "end": {"id": "wf-end", "label": "期末", "value": 80, "valueText": "80"}
+      },
+      "claim": "到達済みの利益差分を段階的に累積できる。",
+      "sequence": {"mode": "delta-accumulate", "steps": [
+        {"id": "delta-start", "label": "期首と価格改定", "targetIds": ["wf-start", "wf-step-1"]},
+        {"id": "delta-end", "label": "値引きと期末", "targetIds": ["wf-step-3", "wf-end"]}
+      ]},
+      "assertions": [{"id": "waterfall-delta-claim", "text": "到達済みの利益差分を段階的に累積できる。", "coverIds": ["wf-start", "wf-step-1", "wf-step-2", "wf-step-3", "wf-step-4", "wf-end"]}]
+    }},
+    {"kind": "closing", "id": "closing", "blocks": [{"heading": "限界・確度", "items": ["将来予測は対象外です。"]}]}
+  ]
+}

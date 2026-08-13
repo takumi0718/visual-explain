@@ -138,7 +138,11 @@ def _render_flow_panel(
                     f'{_esc(group_label.get(group, group))}</li>')
         row += 1
         station_row[nid] = row
-        spine_items.append(station_li(nid, in_group=group is not None))
+        spine_items.append(station_li(
+            nid,
+            in_group=group is not None,
+            connector_node=ir.sequence is not None,
+        ))
         edge = adjacent.get(index[nid])
         if edge is not None:
             row += 1
