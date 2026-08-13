@@ -88,3 +88,42 @@ to successful trust-boundary execution. No fixture was modified.
 - Sequence cardinality/order, all-panel DOM normalization, and expected-record
   payload equality remain Tasks 12–14 as planned. This task supplies the
   component/SVG panel boundary they consume.
+
+## Fix Round 1
+
+Two review findings were reproduced with exact RED tests and fixed.
+
+1. Sequence SVG ownership
+   - RED: a valid SVG, or a forbidden `<foreignObject>` SVG, inserted between
+     the final panel and controls escaped both the panel-only SVG validator and
+     the post-section outside scan. A follow-up adversarial case showed that a
+     raw regex ownership count would also treat `<svg>` text in an HTML comment
+     as a real element.
+   - GREEN: `_SequencePanelParser` now records source offsets for actual panel
+     and SVG elements. Every SVG open element in a sequence canonical must lie
+     inside exactly one recorded panel interval. Panel-external SVG is rejected
+     and its real subtree still passes through the incumbent closed SVG grammar,
+     so forbidden elements cannot hide outside panels. Comments are ignored by
+     construction rather than stripped by regex.
+2. Controlled asset network scanning
+   - RED: static concatenations such as `fetch('http:' + '//host')`, split
+     `http`, protocol-relative strings, `wss://`, and `ftp://` were missed;
+     conversely URL text in JS/CSS comments was rejected. The former SVG
+     namespace string exception also allowed that same string in `fetch()`.
+   - GREEN: scripts use a small comment-aware tokenizer with escape decoding and
+     adjacent string-expression folding. Statically recoverable network URLs
+     (`http`, `https`, `ws`, `wss`, `ftp`, and `//`) fail. The SVG namespace is
+     allowed only as a direct or single-purpose binding for namespace-only DOM
+     APIs; any fetch/WebSocket/general use fails. Styles use quote-aware comment
+     removal before their live URL scan, including strings that contain comment
+     delimiter text.
+
+Fix-round verification:
+
+- Focused adversarial file: `17 passed`.
+- Related checker/SVG/asset/flow suites: `192 passed, 56 subtests passed`.
+- Full canonical suite: `929 passed, 153 subtests passed`.
+- Checker selftest: `31 passed, 0 failed`.
+- Real branch flow sequence CLI build and generated-document check: `OK`, `PASS`.
+- Legacy flow/matrix/stairs/waterfall/bars exact-byte tests: `5 passed`.
+- `python3 -m py_compile` and `git diff --check`: clean.

@@ -530,29 +530,190 @@ def validate_controlled_assets(slots: dict[str, str], registry, components_dir: 
     return diagnostics
 
 
-_SVG_NAMESPACE_CONCAT = "'http:' + '//www.w3.org/2000/svg'"
-_EXTERNAL_LITERAL_RE = re.compile(
-    r"https?://|(?:['\"]\s*)//[^/'\"\s]",
-    re.IGNORECASE,
-)
+_SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+_NETWORK_URL_RE = re.compile(r"^(?:(?:https?|wss?|ftp):)?//", re.IGNORECASE)
 _EXTERNAL_CSS_URL_RE = re.compile(
-    r"url\(\s*['\"]?\s*(?:https?:)?//",
+    r"url\(\s*['\"]?\s*(?:(?:https?|wss?|ftp):)?//",
     re.IGNORECASE,
 )
+_EXTERNAL_CSS_LITERAL_RE = re.compile(
+    r"(?:(?:https?|wss?|ftp):)?//[^/'\"\s]",
+    re.IGNORECASE,
+)
+_NAMESPACE_ONLY_CALLS = frozenset({
+    "createElementNS",
+    "createAttributeNS",
+    "getElementsByTagNameNS",
+    "setAttributeNS",
+})
 
 
-def _has_external_asset_reference(body: str) -> bool:
-    """Reject network URL literals without mistaking JS comments for URLs.
+@dataclass(frozen=True)
+class _JsToken:
+    kind: str
+    value: str
 
-    The controlled flow runtime's one URL-shaped value is the standard SVG DOM
-    namespace passed to ``createElementNS``. It identifies nodes and never
-    performs a network request, so remove that exact closed literal before the
-    URL scan. Asset digest verification still guarantees the trusted source.
-    """
-    scanned = body.replace(_SVG_NAMESPACE_CONCAT, "")
+
+def _decode_js_escape(source: str, index: int) -> tuple[str, int]:
+    if index >= len(source):
+        return "", index
+    char = source[index]
+    simple = {"n": "\n", "r": "\r", "t": "\t", "b": "\b", "f": "\f", "v": "\v"}
+    if char in simple:
+        return simple[char], index + 1
+    if char == "x" and re.fullmatch(r"[0-9a-fA-F]{2}", source[index + 1:index + 3]):
+        return chr(int(source[index + 1:index + 3], 16)), index + 3
+    if char == "u" and re.fullmatch(r"[0-9a-fA-F]{4}", source[index + 1:index + 5]):
+        return chr(int(source[index + 1:index + 5], 16)), index + 5
+    if char in "\r\n":
+        if char == "\r" and index + 1 < len(source) and source[index + 1] == "\n":
+            return "", index + 2
+        return "", index + 1
+    return char, index + 1
+
+
+def _js_tokens(source: str) -> tuple[_JsToken, ...]:
+    """Tokenize the JS subset needed for comment-safe static string folding."""
+    tokens: list[_JsToken] = []
+    index = 0
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            index += 1
+            continue
+        if source.startswith("//", index):
+            endings = [
+                position for marker in ("\r", "\n")
+                if (position := source.find(marker, index + 2)) != -1
+            ]
+            index = len(source) if not endings else min(endings) + 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = len(source) if end == -1 else end + 2
+            continue
+        if char in "'\"`":
+            quote = char
+            index += 1
+            value: list[str] = []
+            dynamic_template = False
+            while index < len(source):
+                char = source[index]
+                if char == quote:
+                    index += 1
+                    break
+                if quote == "`" and source.startswith("${", index):
+                    dynamic_template = True
+                if char == "\\":
+                    decoded, index = _decode_js_escape(source, index + 1)
+                    value.append(decoded)
+                    continue
+                value.append(char)
+                index += 1
+            tokens.append(_JsToken(
+                "dynamic-string" if dynamic_template else "string",
+                "".join(value),
+            ))
+            continue
+        if char.isalpha() or char in "_$":
+            end = index + 1
+            while end < len(source) and (source[end].isalnum() or source[end] in "_$"):
+                end += 1
+            tokens.append(_JsToken("identifier", source[index:end]))
+            index = end
+            continue
+        tokens.append(_JsToken("punctuation", char))
+        index += 1
+    return tuple(tokens)
+
+
+def _namespace_expression_is_non_fetching(
+    tokens: tuple[_JsToken, ...],
+    expression_start: int,
+) -> bool:
+    if (expression_start >= 2
+            and tokens[expression_start - 1].value == "("
+            and tokens[expression_start - 2].kind == "identifier"
+            and tokens[expression_start - 2].value in _NAMESPACE_ONLY_CALLS):
+        return True
+    if (expression_start < 2
+            or tokens[expression_start - 1].value != "="
+            or tokens[expression_start - 2].kind != "identifier"):
+        return False
+    binding_index = expression_start - 2
+    binding = tokens[binding_index].value
+    for index, token in enumerate(tokens):
+        if token.kind != "identifier" or token.value != binding or index == binding_index:
+            continue
+        if (index < 2
+                or tokens[index - 1].value != "("
+                or tokens[index - 2].kind != "identifier"
+                or tokens[index - 2].value not in _NAMESPACE_ONLY_CALLS):
+            return False
+    return True
+
+
+def _script_has_external_reference(source: str) -> bool:
+    tokens = _js_tokens(source)
+    index = 0
+    while index < len(tokens):
+        if tokens[index].kind not in {"string", "dynamic-string"}:
+            index += 1
+            continue
+        start = index
+        value = tokens[index].value
+        while (tokens[start].kind == "string"
+                and index + 2 < len(tokens)
+                and tokens[index + 1].value == "+"
+                and tokens[index + 2].kind == "string"):
+            value += tokens[index + 2].value
+            index += 2
+        stripped = value.strip()
+        if _NETWORK_URL_RE.match(stripped):
+            if stripped != _SVG_NAMESPACE or not _namespace_expression_is_non_fetching(tokens, start):
+                return True
+        index += 1
+    return False
+
+
+def _strip_css_comments(source: str) -> str:
+    parts: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(source):
+        char = source[index]
+        if quote is not None:
+            parts.append(char)
+            if char == "\\" and index + 1 < len(source):
+                parts.append(source[index + 1])
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in "'\"":
+            quote = char
+            parts.append(char)
+            index += 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = len(source) if end == -1 else end + 2
+            continue
+        parts.append(char)
+        index += 1
+    return "".join(parts)
+
+
+def _has_external_asset_reference(body: str, slot_type: str) -> bool:
+    """Reject statically recoverable network URLs, excluding comments."""
+    if slot_type == "scripts":
+        return _script_has_external_reference(body)
+    scanned = _strip_css_comments(body)
     return bool(
         _EXTERNAL_CSS_URL_RE.search(scanned)
-        or _EXTERNAL_LITERAL_RE.search(scanned)
+        or _EXTERNAL_CSS_LITERAL_RE.search(scanned)
     )
 
 
@@ -607,7 +768,7 @@ def _validate_asset_slot(markup: str, tag: str, slot_type: str, registry, compon
         if digest != asset.digest or body_digest != asset.digest:
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"資産 '{asset_id}' のダイジェストが一致しません"))
             continue
-        if _has_external_asset_reference(body):
+        if _has_external_asset_reference(body, slot_type):
             diagnostics.append(Diagnostic(INVALID_CONTROLLED_ASSET, f"資産 '{asset_id}' に外部参照があります"))
         if components_dir is not None:
             file_path = components_dir / asset.path
@@ -1423,6 +1584,15 @@ def _section_attr(attrs: str, name: str) -> str | None:
 @dataclass(frozen=True)
 class _SequencePanelFragment:
     number: str
+    start: int
+    end: int
+    markup: str
+
+
+@dataclass(frozen=True)
+class _SvgElementFragment:
+    start: int
+    end: int
     markup: str
 
 
@@ -1446,6 +1616,8 @@ class _SequencePanelParser(HTMLParser):
         )
         self.stack: list[_OpenPanelElement] = []
         self.panels: list[_SequencePanelFragment] = []
+        self.svg_starts: list[int] = []
+        self.svg_elements: list[_SvgElementFragment] = []
         self.has_stepper = False
 
     def _offset(self) -> int:
@@ -1458,9 +1630,12 @@ class _SequencePanelParser(HTMLParser):
         is_stepper = "data-stepper" in values
         self.has_stepper = self.has_stepper or is_stepper
         panel_number = values.get("data-step") if inside_stepper and "data-step" in values else None
+        start = self._offset()
+        if tag.lower() == "svg":
+            self.svg_starts.append(start)
         self.stack.append(_OpenPanelElement(
             tag=tag.lower(),
-            start=self._offset(),
+            start=start,
             panel_number=panel_number,
             is_stepper=is_stepper,
         ))
@@ -1468,10 +1643,18 @@ class _SequencePanelParser(HTMLParser):
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs)
         frame = self.stack.pop()
+        end = self.fragment.find(">", self._offset()) + 1
+        if frame.tag == "svg":
+            self.svg_elements.append(_SvgElementFragment(
+                start=frame.start,
+                end=end,
+                markup=self.fragment[frame.start:end],
+            ))
         if frame.panel_number is not None:
-            end = self.fragment.find(">", self._offset()) + 1
             self.panels.append(_SequencePanelFragment(
                 number=frame.panel_number,
+                start=frame.start,
+                end=end,
                 markup=self.fragment[frame.start:end],
             ))
 
@@ -1485,19 +1668,35 @@ class _SequencePanelParser(HTMLParser):
             closed = self.stack[index:]
             del self.stack[index:]
             for frame in closed:
+                if frame.tag == "svg" and tag == "svg":
+                    self.svg_elements.append(_SvgElementFragment(
+                        start=frame.start,
+                        end=end,
+                        markup=self.fragment[frame.start:end],
+                    ))
                 if frame.panel_number is not None:
                     self.panels.append(_SequencePanelFragment(
                         number=frame.panel_number,
+                        start=frame.start,
+                        end=end,
                         markup=self.fragment[frame.start:end],
                     ))
             return
 
 
-def _sequence_panels(fragment: str) -> tuple[bool, tuple[_SequencePanelFragment, ...]]:
+def _sequence_structure(fragment: str) -> _SequencePanelParser:
     parser = _SequencePanelParser(fragment)
     parser.feed(fragment)
     parser.close()
-    return parser.has_stepper, tuple(sorted(parser.panels, key=lambda panel: fragment.index(panel.markup)))
+    parser.panels.sort(key=lambda panel: panel.start)
+    parser.svg_starts.sort()
+    parser.svg_elements.sort(key=lambda svg: svg.start)
+    return parser
+
+
+def _sequence_panels(fragment: str) -> tuple[bool, tuple[_SequencePanelFragment, ...]]:
+    parser = _sequence_structure(fragment)
+    return parser.has_stepper, tuple(sorted(parser.panels, key=lambda panel: panel.start))
 
 
 def _panel_diagnostics(
@@ -1517,6 +1716,30 @@ def _validate_svg_subtree(fragment: str, component_key: str = "slope@2") -> list
     parser.feed(fragment)
     parser.close()
     return parser.diagnostics
+
+
+def _validate_closed_svg(
+    fragment: str,
+    *,
+    component_key: str,
+    expected_id: str | None,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    svg_match = _SVG_OPEN_RE.match(fragment)
+    if svg_match is None:
+        return [Diagnostic(RENDERER_SVG_VIOLATION, "<svg> 開始タグを解析できません")]
+    svg_attrs = svg_match.group(1)
+    if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
+        diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "xmlns 宣言は許可されていません"))
+    if expected_id is not None:
+        sid = _section_attr(svg_attrs, "id")
+        if sid != expected_id:
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                f"<svg> id は '{expected_id}' である必要があります",
+            ))
+    diagnostics.extend(_validate_svg_subtree(fragment, component_key))
+    return diagnostics
 
 
 def validate_renderer_svg(content: str) -> list[Diagnostic]:
@@ -1541,58 +1764,100 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
                     f"許可されていないセクションに <svg> があります ({kind}/{component_key or 'unknown'})",
                 ))
             continue
-        has_stepper, panels = _sequence_panels(body)
-        units: tuple[tuple[str | None, str], ...]
-        if has_stepper:
+        structure = _sequence_structure(body)
+        if structure.has_stepper:
+            panels = tuple(structure.panels)
             if not panels:
                 diagnostics.append(Diagnostic(
                     RENDERER_SVG_VIOLATION,
                     f"{component or 'canonical'} sequence に panel がありません",
                 ))
                 continue
-            units = tuple((panel.number, panel.markup) for panel in panels)
-        else:
-            units = ((None, body),)
-
-        for panel_number, unit in units:
-            unit_diagnostics: list[Diagnostic] = []
-            if panel_number is not None and not re.fullmatch(r"[1-9][0-9]*", panel_number):
-                unit_diagnostics.append(Diagnostic(
+            closed_by_start = {svg.start: svg for svg in structure.svg_elements}
+            for svg_start in structure.svg_starts:
+                if any(panel.start <= svg_start < panel.end for panel in panels):
+                    continue
+                diagnostics.append(Diagnostic(
                     RENDERER_SVG_VIOLATION,
-                    f"data-step '{panel_number}' は正の10進整数である必要があります",
+                    f"{component} sequence の SVG は panel 外に置けません",
                 ))
-            svg_matches = list(_SVG_OPEN_RE.finditer(unit))
-            if len(svg_matches) != 1:
-                unit_diagnostics.append(Diagnostic(
-                    RENDERER_SVG_VIOLATION,
-                    f"{component} セクションの <svg> は1個である必要があります",
-                ))
-            for svg_match in svg_matches:
-                svg_attrs = svg_match.group(1)
-                if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
-                    unit_diagnostics.append(Diagnostic(
+                svg = closed_by_start.get(svg_start)
+                if svg is None:
+                    diagnostics.append(Diagnostic(
                         RENDERER_SVG_VIOLATION,
-                        "xmlns 宣言は許可されていません",
-                    ))
-                suffix = f"--p{panel_number}" if panel_number is not None else ""
-                expected_id = f"{instance}-svg{suffix}" if instance else ""
-                sid = _section_attr(svg_attrs, "id")
-                if sid != expected_id:
-                    unit_diagnostics.append(Diagnostic(
-                        RENDERER_SVG_VIOLATION,
-                        f"<svg> id は '{expected_id}' である必要があります",
-                    ))
-                start = svg_match.start()
-                end = unit.find("</svg>", svg_match.end())
-                if end == -1:
-                    unit_diagnostics.append(Diagnostic(
-                        RENDERER_SVG_VIOLATION,
-                        "<svg> が閉じられていません",
+                        "panel 外の <svg> が閉じられていません",
                     ))
                     continue
-                subtree = unit[start:end + len("</svg>")]
-                unit_diagnostics.extend(_validate_svg_subtree(subtree, component_key))
-            diagnostics.extend(_panel_diagnostics(unit_diagnostics, panel_number))
+                diagnostics.extend(_validate_closed_svg(
+                    svg.markup,
+                    component_key=component_key,
+                    expected_id=None,
+                ))
+            for panel in panels:
+                unit_diagnostics: list[Diagnostic] = []
+                if not re.fullmatch(r"[1-9][0-9]*", panel.number):
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        f"data-step '{panel.number}' は正の10進整数である必要があります",
+                    ))
+                panel_svg_starts = [
+                    start for start in structure.svg_starts
+                    if panel.start <= start < panel.end
+                ]
+                if len(panel_svg_starts) != 1:
+                    unit_diagnostics.append(Diagnostic(
+                        RENDERER_SVG_VIOLATION,
+                        f"{component} セクションの <svg> は1個である必要があります",
+                    ))
+                expected_id = f"{instance}-svg--p{panel.number}" if instance else ""
+                for svg_start in panel_svg_starts:
+                    svg = closed_by_start.get(svg_start)
+                    if svg is None:
+                        unit_diagnostics.append(Diagnostic(
+                            RENDERER_SVG_VIOLATION,
+                            "<svg> が閉じられていません",
+                        ))
+                        continue
+                    unit_diagnostics.extend(_validate_closed_svg(
+                        svg.markup,
+                        component_key=component_key,
+                        expected_id=expected_id,
+                    ))
+                diagnostics.extend(_panel_diagnostics(unit_diagnostics, panel.number))
+            continue
+
+        unit_diagnostics: list[Diagnostic] = []
+        svg_matches = list(_SVG_OPEN_RE.finditer(body))
+        if len(svg_matches) != 1:
+            unit_diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                f"{component} セクションの <svg> は1個である必要があります",
+            ))
+        for svg_match in svg_matches:
+            svg_attrs = svg_match.group(1)
+            if "xmlns" in svg_attrs or "xmlns:" in svg_attrs:
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    "xmlns 宣言は許可されていません",
+                ))
+            expected_id = f"{instance}-svg" if instance else ""
+            sid = _section_attr(svg_attrs, "id")
+            if sid != expected_id:
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    f"<svg> id は '{expected_id}' である必要があります",
+                ))
+            start = svg_match.start()
+            end = body.find("</svg>", svg_match.end())
+            if end == -1:
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    "<svg> が閉じられていません",
+                ))
+                continue
+            subtree = body[start:end + len("</svg>")]
+            unit_diagnostics.extend(_validate_svg_subtree(subtree, component_key))
+        diagnostics.extend(unit_diagnostics)
     outside = content
     for match in _WRAPPER_SECTION_RE.finditer(content):
         outside = outside.replace(match.group(0), "")

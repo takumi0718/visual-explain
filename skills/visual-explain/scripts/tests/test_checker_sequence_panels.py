@@ -141,15 +141,61 @@ def test_flow_path_sequence_build_accepts_local_svg_namespace_and_js_comments() 
 
 
 def test_controlled_asset_url_scan_distinguishes_comments_and_svg_namespace_from_network_urls() -> None:
-    assert _has_external_asset_reference("// redraw after resize\nconst ready = true;") is False
     assert _has_external_asset_reference(
-        "const SVG_NS = 'http:' + '//www.w3.org/2000/svg';"
+        "// fetch('https://comment.invalid/x')\nconst ready = true;",
+        "scripts",
     ) is False
     assert _has_external_asset_reference(
-        "fetch('https://example.invalid/data.json')"
+        "/* fetch('wss://comment.invalid/x') */ const ready = true;",
+        "scripts",
+    ) is False
+    assert _has_external_asset_reference(
+        "const SVG_NS = 'http:' + '//www.w3.org/2000/svg';"
+        "document.createElementNS(SVG_NS, 'svg');",
+        "scripts",
+    ) is False
+    assert _has_external_asset_reference(
+        "document.createElementNS('http:' + '//www.w3.org/2000/svg', 'svg');",
+        "scripts",
+    ) is False
+    assert _has_external_asset_reference(
+        "fetch('https://example.invalid/data.json')",
+        "scripts",
     ) is True
     assert _has_external_asset_reference(
-        ".card { background: url(//example.invalid/image.png); }"
+        ".card { background: url(//example.invalid/image.png); }",
+        "styles",
+    ) is True
+
+
+def test_controlled_script_scan_rejects_static_network_url_concatenation() -> None:
+    blocked = (
+        "fetch('http:' + '//example.invalid/data.json')",
+        "fetch('//' + 'example.invalid/data.json')",
+        "fetch('ht' + 'tp://example.invalid/data.json')",
+        "new WebSocket('wss:' + '//example.invalid/socket')",
+        "fetch('ftp:' + '//example.invalid/archive')",
+        "fetch('http:' + '//www.w3.org/2000/svg')",
+        "const SVG_NS = 'http:' + '//www.w3.org/2000/svg'; fetch(SVG_NS)",
+    )
+
+    for source in blocked:
+        assert _has_external_asset_reference(source, "scripts") is True
+
+
+def test_controlled_style_scan_ignores_comment_urls_but_rejects_live_ones() -> None:
+    assert _has_external_asset_reference(
+        "/* background: url(https://comment.invalid/image.png) */ .card { color: red; }",
+        "styles",
+    ) is False
+    assert _has_external_asset_reference(
+        '@import "ftp://example.invalid/theme.css";',
+        "styles",
+    ) is True
+    assert _has_external_asset_reference(
+        '.card::before { content: "/*"; background: url(https://example.invalid/x);'
+        ' content: "*/"; }',
+        "styles",
     ) is True
 
 
@@ -261,3 +307,41 @@ def test_svg_checker_requires_root_id_suffix_matching_its_panel() -> None:
 
     messages = _messages(validate_renderer_svg(tampered), RENDERER_SVG_VIOLATION)
     assert "panel 2" in messages
+
+
+def test_svg_checker_rejects_svg_inserted_between_panels_and_controls() -> None:
+    markup = _rendered(_waterfall_sequence_section())
+    controls = '<div class="ve-stepper-controls">'
+    rogue = (
+        '<svg id="rogue-svg" viewBox="0 0 640 360"'
+        ' preserveAspectRatio="xMidYMid meet"><rect x="0" y="0" width="1" height="1">'
+        '</rect></svg>'
+    )
+    tampered = markup.replace(controls, rogue + controls, 1)
+
+    messages = _messages(validate_renderer_svg(tampered), RENDERER_SVG_VIOLATION)
+    assert "panel 外" in messages
+
+
+def test_svg_checker_rejects_forbidden_svg_markup_outside_every_panel() -> None:
+    markup = _rendered(_waterfall_sequence_section())
+    controls = '<div class="ve-stepper-controls">'
+    rogue = (
+        '<svg id="rogue-svg" viewBox="0 0 640 360"'
+        ' preserveAspectRatio="xMidYMid meet">'
+        '<foreignObject><p>unsafe</p></foreignObject></svg>'
+    )
+    tampered = markup.replace(controls, rogue + controls, 1)
+
+    messages = _messages(validate_renderer_svg(tampered), RENDERER_SVG_VIOLATION)
+    assert "panel 外" in messages
+    assert "foreignobject" in messages.lower()
+
+
+def test_svg_panel_ownership_ignores_svg_text_inside_html_comments() -> None:
+    markup = _rendered(_waterfall_sequence_section())
+    controls = '<div class="ve-stepper-controls">'
+    comment = '<!-- <svg id="not-an-element"><foreignObject></foreignObject></svg> -->'
+    tampered = markup.replace(controls, comment + controls, 1)
+
+    assert validate_renderer_svg(tampered) == []
