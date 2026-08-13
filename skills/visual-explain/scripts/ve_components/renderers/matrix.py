@@ -9,10 +9,16 @@ external references; the DOM order matches the declared rows and columns exactly
 """
 from __future__ import annotations
 
+from dataclasses import replace
 import html
 
 from ..model import CanonicalSection, RenderManifest, RenderResult
-from .common import claim_before_body, select_style_assets
+from .common import (
+    SequencePanel,
+    claim_before_body,
+    expand_sequence,
+    select_style_assets,
+)
 
 from ..model import CERTAINTY_LABEL as _CERT_LABEL
 
@@ -44,7 +50,17 @@ def _cell_refs_html(cell, cert_by_id, src_by_id) -> str:
     return f'<span class="ve-matrix-refs">{"".join(refs)}</span>' if refs else ""
 
 
-def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id, show_column_headers):
+def _render_dense_table(
+    matrix,
+    cert_by_id,
+    src_by_id,
+    cell_by_key,
+    takeaway,
+    emphasis_by_id,
+    highlight_id,
+    show_column_headers,
+    panel,
+):
     head_cells = "".join(
         f'<th scope="col" data-ve-semantic-id="{_esc(col.id)}">{_esc(col.label)}</th>'
         for col in matrix.columns
@@ -66,6 +82,10 @@ def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, em
                 classes.append("ve-takeaway-target")
             if cell.id == highlight_id:
                 classes.append("ve-dg-highlight")
+            if panel.step is not None:
+                classes.append(
+                    "ve-seq-spot" if cell.id in panel.highlight_ids else "ve-seq-dim"
+                )
             cls_attr = f' class="{" ".join(classes)}"' if classes else ""
             takeaway_attr = ' data-ve-takeaway="true"' if cell.id in takeaway else ""
             emphasis_html = (
@@ -106,7 +126,16 @@ def _render_dense_table(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, em
     )
 
 
-def _render_concept_grid(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id):
+def _render_concept_grid(
+    matrix,
+    cert_by_id,
+    src_by_id,
+    cell_by_key,
+    takeaway,
+    emphasis_by_id,
+    highlight_id,
+    panel,
+):
     ncol = len(matrix.columns)
     grid_classes = f"ve-mx-grid ve-mx-cols-{ncol}"
     parts = ['<div class="ve-matrix-corner" aria-hidden="true"></div>']
@@ -132,6 +161,10 @@ def _render_concept_grid(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, e
                 classes.append("ve-takeaway-target")
             if cell.id == highlight_id:
                 classes.append("ve-dg-highlight")
+            if panel.step is not None:
+                classes.append(
+                    "ve-seq-spot" if cell.id in panel.highlight_ids else "ve-seq-dim"
+                )
             takeaway_attr = ' data-ve-takeaway="true"' if cell.id in takeaway else ""
             emphasis_html = (
                 f'<span class="ve-emphasis">{_esc(emphasis_by_id[cell.id])}</span>'
@@ -155,7 +188,11 @@ def _render_concept_grid(matrix, cert_by_id, src_by_id, cell_by_key, takeaway, e
     return f'<div class="{grid_classes}">{"".join(parts)}</div>{hidden}'
 
 
-def render_matrix(section: CanonicalSection, definition) -> RenderResult:
+def _render_matrix_panel(
+    section: CanonicalSection,
+    definition,
+    panel: SequencePanel,
+) -> RenderResult:
     ir = section.ir
     matrix = ir.matrix
     assert matrix is not None
@@ -172,11 +209,12 @@ def render_matrix(section: CanonicalSection, definition) -> RenderResult:
     if matrix.presentation == "concept":
         body = _render_concept_grid(
             matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id,
+            panel,
         )
     else:
         body = _render_dense_table(
             matrix, cert_by_id, src_by_id, cell_by_key, takeaway, emphasis_by_id, highlight_id,
-            matrix.show_column_headers,
+            matrix.show_column_headers, panel,
         )
 
     notes = []
@@ -205,8 +243,6 @@ def render_matrix(section: CanonicalSection, definition) -> RenderResult:
         f'<ul class="ve-matrix-notes">{"".join(notes)}</ul>'
         f'</figure>'
     )
-    markup = claim_before_body(ir, body_markup)
-
     style_assets = select_style_assets(ir, definition.assets)
     manifest = RenderManifest(
         component_id=definition.id,
@@ -221,8 +257,19 @@ def render_matrix(section: CanonicalSection, definition) -> RenderResult:
         fallback_mode=definition.fallback,
     )
     return RenderResult(
-        markup=markup,
+        markup=body_markup,
         style_asset_ids=tuple(a.id for a in style_assets),
         script_asset_ids=(),
         manifest=manifest,
     )
+
+
+def render_matrix(section: CanonicalSection, definition) -> RenderResult:
+    """Render a legacy figure or expand complete static state-lens panels."""
+    ir = section.ir
+
+    def render_panel(panel: SequencePanel) -> RenderResult:
+        return _render_matrix_panel(section, definition, panel)
+
+    expanded = expand_sequence(ir.sequence, render_panel)
+    return replace(expanded, markup=claim_before_body(ir, expanded.markup))
