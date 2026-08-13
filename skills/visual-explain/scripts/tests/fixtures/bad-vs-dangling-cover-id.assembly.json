@@ -133,14 +133,15 @@
             "id": "flow-path-claim",
             "text": "主要な承認経路を段階ごとに追跡できる。",
             "coverIds": [
-              "missing-node",
+              "node-draft",
               "node-review",
               "node-approve",
               "node-publish",
               "edge-draft-review",
               "edge-review-approve",
               "edge-approve-publish",
-              "edge-draft-approve"
+              "edge-draft-approve",
+              "missing-node"
             ]
           }
         ]

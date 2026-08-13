@@ -134,6 +134,13 @@
             "text": "主要な承認経路を段階ごとに追跡できる。",
             "coverIds": [
               "node-draft",
+              "node-review",
+              "node-approve",
+              "node-publish",
+              "edge-draft-review",
+              "edge-review-approve",
+              "edge-approve-publish",
+              "edge-draft-approve",
               "node-draft"
             ]
           }

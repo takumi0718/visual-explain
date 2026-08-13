@@ -1,6 +1,7 @@
 """Task 16: one visual-stage contract violation per committed bad fixture."""
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -31,7 +32,14 @@ class BadCase:
     code: str
     message: str
     path: str
-    extra_messages: tuple[str, ...] = ()
+    extra_diagnostics: tuple[tuple[str, str, str], ...] = ()
+
+
+@dataclass(frozen=True)
+class Correction:
+    operation: str
+    path: str
+    value: object | None = None
 
 
 def _case(
@@ -40,7 +48,7 @@ def _case(
     code: str,
     message: str,
     path: str,
-    *extra_messages: str,
+    *extra_diagnostics: tuple[str, str, str],
 ) -> BadCase:
     return BadCase(
         filename=f"bad-vs-{stem}.assembly.json",
@@ -48,7 +56,7 @@ def _case(
         code=code,
         message=message,
         path=path,
-        extra_messages=extra_messages,
+        extra_diagnostics=extra_diagnostics,
     )
 
 
@@ -69,7 +77,7 @@ BAD_CASES = (
     _case("compatibility-section", "validation", "invalid_component_payload", "visual-stage では compatibility section", "assembly.sections[2]"),
     _case("missing-claim", "validation", "missing_required_slot", "visual-stage canonical には claim が必須", "assembly.sections[1].ir"),
     _case("missing-assertions", "validation", "missing_required_slot", "visual-stage canonical には assertions が必須", "assembly.sections[1].ir"),
-    _case("empty-assertions", "schema", "invalid_component_payload", "assertions は非空の配列", "assembly.sections[1].ir.assertions", "claim は assertions のいずれかの text と一致"),
+    _case("empty-assertions", "schema", "invalid_component_payload", "assertions は非空の配列", "assembly.sections[1].ir.assertions", ("invalid_component_payload", "claim は assertions のいずれかの text と一致", "assembly.sections[1].ir")),
     _case("invalid-assertion-id", "schema", "invalid_component_payload", "assertion.id の形式が不正", "assembly.sections[1].ir.assertions[0]"),
     _case("duplicate-document-assertion-id", "validation", "duplicate_semantic_id", "assertion.id 'flow-path-claim' は文書内で重複", "assembly.sections"),
     _case("empty-assertion-text", "schema", "invalid_component_payload", "assertion.text は1〜80字", "assembly.sections[1].ir.assertions[1]"),
@@ -81,7 +89,7 @@ BAD_CASES = (
     _case("incomplete-assertion-coverage", "document-check", "document_structure_violation", "payload semantic id が assertions で未カバー", "content.canonical[flow-path]"),
     _case("delta-reused-target", "validation", "invalid_component_payload", "delta-accumulate の targetId 'b1' は先行 step と重複", "assembly.sections[1].ir"),
     _case("path-disconnected", "validation", "invalid_component_payload", "path-spotlight step 間の node 'node-review' から 'node-publish'", "assembly.sections[1].ir"),
-    _case("path-overlapping-targets", "validation", "invalid_component_payload", "path-spotlight の targetId 'node-review' は step 間で重複", "assembly.sections[1].ir", "path-spotlight step 間の node 'node-review' から 'node-review'"),
+    _case("path-overlapping-targets", "validation", "invalid_component_payload", "path-spotlight の targetId 'node-review' は step 間で重複", "assembly.sections[1].ir", ("invalid_component_payload", "path-spotlight step 間の node 'node-review' から 'node-review'", "assembly.sections[1].ir")),
     _case("three-narratives", "validation", "invalid_narrative_section", "visual-stage の narrative section は最大2件", "assembly.sections"),
     _case("narrative-201", "validation", "invalid_narrative_section", "visual-stage の narrative plain text は200字以内", "assembly.sections[2]"),
     _case("claim-narrative-overlap", "document-check", "document_structure_violation", "assertion 'flow-path-claim' と narrative 'context'", "content.narrative[context]"),
@@ -139,6 +147,75 @@ REQUIRED_OMISSION_CASES = {
     "bad-vs-missing-assertion-cover-ids.assembly.json",
 }
 
+# One literal JSON operation repairs each fixture. Values are test-owned
+# contract examples; none are derived from production schemas or validators.
+_FLOW_ASSERTIONS = [{
+    "id": "flow-path-claim",
+    "text": "主要な承認経路を段階ごとに追跡できる。",
+    "coverIds": [
+        "node-draft",
+        "node-review",
+        "node-approve",
+        "node-publish",
+        "edge-draft-review",
+        "edge-review-approve",
+        "edge-approve-publish",
+        "edge-draft-approve",
+    ],
+}]
+_FLOW_STEPS = [
+    {"id": "path-review", "label": "確認まで", "targetIds": ["node-draft", "node-review"]},
+    {"id": "path-publish", "label": "公開まで", "targetIds": ["node-approve", "node-publish"]},
+]
+CORRECTIONS = {
+    "bad-vs-sequence-steps-9.assembly.json": Correction("remove", "/sections/1/ir/sequence/steps/8"),
+    "bad-vs-sequence-steps-1.assembly.json": Correction("add", "/sections/1/ir/sequence/steps/-", {"id": "state-boundary", "label": "段階2", "targetIds": ["node-publish"]}),
+    "bad-vs-bars-path-spotlight.assembly.json": Correction("replace", "/sections/1/ir/sequence/mode", "delta-accumulate"),
+    "bad-vs-dangling-target-id.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/targetIds/0", "node-draft"),
+    "bad-vs-target-id-is-step-id.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/targetIds/0", "node-draft"),
+    "bad-vs-duplicate-step-id.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/1/id", "path-publish"),
+    "bad-vs-invalid-step-id.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/id", "path-review"),
+    "bad-vs-unknown-step-field.assembly.json": Correction("remove", "/sections/1/ir/sequence/steps/0/extra"),
+    "bad-vs-empty-step-label.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/label", "確認まで"),
+    "bad-vs-long-step-label.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/label", "x" * 40),
+    "bad-vs-empty-target-ids.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/targetIds", ["node-draft", "node-review"]),
+    "bad-vs-duplicate-target-ids.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/targetIds", ["node-draft", "node-review"]),
+    "bad-vs-state-lens-source-target.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/0/targetIds/0", "node-draft"),
+    "bad-vs-compatibility-section.assembly.json": Correction("remove", "/sections/2"),
+    "bad-vs-missing-claim.assembly.json": Correction("add", "/sections/1/ir/claim", "主要な承認経路を段階ごとに追跡できる。"),
+    "bad-vs-missing-assertions.assembly.json": Correction("add", "/sections/1/ir/assertions", _FLOW_ASSERTIONS),
+    "bad-vs-empty-assertions.assembly.json": Correction("replace", "/sections/1/ir/assertions", _FLOW_ASSERTIONS),
+    "bad-vs-invalid-assertion-id.assembly.json": Correction("replace", "/sections/1/ir/assertions/0/id", "flow-path-claim"),
+    "bad-vs-duplicate-document-assertion-id.assembly.json": Correction("replace", "/sections/2/ir/assertions/0/id", "flow-path-claim-second"),
+    "bad-vs-empty-assertion-text.assembly.json": Correction("replace", "/sections/1/ir/assertions/1/text", "補足主張。"),
+    "bad-vs-long-assertion-text.assembly.json": Correction("replace", "/sections/1/ir/assertions/1/text", "x" * 80),
+    "bad-vs-empty-cover-ids.assembly.json": Correction("replace", "/sections/1/ir/assertions/1/coverIds", ["node-draft"]),
+    "bad-vs-duplicate-cover-ids.assembly.json": Correction("remove", "/sections/1/ir/assertions/0/coverIds/8"),
+    "bad-vs-dangling-cover-id.assembly.json": Correction("remove", "/sections/1/ir/assertions/0/coverIds/8"),
+    "bad-vs-claim-not-in-assertions.assembly.json": Correction("replace", "/sections/1/ir/claim", "主要な承認経路を段階ごとに追跡できる。"),
+    "bad-vs-incomplete-assertion-coverage.assembly.json": Correction("replace", "/sections/1/ir/assertions/0/coverIds", _FLOW_ASSERTIONS[0]["coverIds"]),
+    "bad-vs-delta-reused-target.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/1/targetIds/0", "b2"),
+    "bad-vs-path-disconnected.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/1/targetIds", ["node-approve", "node-publish"]),
+    "bad-vs-path-overlapping-targets.assembly.json": Correction("replace", "/sections/1/ir/sequence/steps/1/targetIds", ["node-approve", "node-publish"]),
+    "bad-vs-three-narratives.assembly.json": Correction("remove", "/sections/4"),
+    "bad-vs-narrative-201.assembly.json": Correction("replace", "/sections/2/markup", f"<p>{'あ' * 200}</p>"),
+    "bad-vs-claim-narrative-overlap.assembly.json": Correction("replace", "/sections/2/markup", "<p>図外の背景条件。</p>"),
+    "bad-vs-nonclaim-narrative-overlap.assembly.json": Correction("replace", "/sections/2/markup", "<p>図外の背景条件。</p>"),
+    "bad-vs-strict-with-claim.assembly.json": Correction("remove", "/sections/1/ir/claim"),
+    "bad-vs-strict-with-sequence.assembly.json": Correction("remove", "/sections/1/ir/sequence"),
+    "bad-vs-strict-with-assertions.assembly.json": Correction("remove", "/sections/1/ir/assertions"),
+    "bad-vs-visual-stage-takeaway-targets.assembly.json": Correction("remove", "/sections/1/ir/takeawayTargetIds"),
+    "bad-vs-visual-stage-emphasis.assembly.json": Correction("remove", "/sections/1/ir/emphasis"),
+    "bad-vs-missing-sequence-mode.assembly.json": Correction("add", "/sections/1/ir/sequence/mode", "path-spotlight"),
+    "bad-vs-missing-sequence-steps.assembly.json": Correction("add", "/sections/1/ir/sequence/steps", _FLOW_STEPS),
+    "bad-vs-missing-step-id.assembly.json": Correction("add", "/sections/1/ir/sequence/steps/0/id", "path-review"),
+    "bad-vs-missing-step-label.assembly.json": Correction("add", "/sections/1/ir/sequence/steps/0/label", "確認まで"),
+    "bad-vs-missing-step-target-ids.assembly.json": Correction("add", "/sections/1/ir/sequence/steps/0/targetIds", ["node-draft", "node-review"]),
+    "bad-vs-missing-assertion-id.assembly.json": Correction("add", "/sections/1/ir/assertions/1/id", "flow-path-detail"),
+    "bad-vs-missing-assertion-text.assembly.json": Correction("add", "/sections/1/ir/assertions/1/text", "補足主張。"),
+    "bad-vs-missing-assertion-cover-ids.assembly.json": Correction("add", "/sections/1/ir/assertions/1/coverIds", ["node-draft"]),
+}
+
 
 def _load(path: Path) -> dict:
     return json.loads(path.read_text("utf-8"))
@@ -163,6 +240,74 @@ def _full_build(raw: dict) -> str:
     )
 
 
+def _pointer_parent(document: object, pointer: str) -> tuple[object, str]:
+    tokens = [
+        token.replace("~1", "/").replace("~0", "~")
+        for token in pointer.removeprefix("/").split("/")
+    ]
+    parent = document
+    for token in tokens[:-1]:
+        parent = parent[int(token)] if isinstance(parent, list) else parent[token]
+    return parent, tokens[-1]
+
+
+def _apply_correction(raw: dict, correction: Correction) -> dict:
+    repaired = deepcopy(raw)
+    parent, token = _pointer_parent(repaired, correction.path)
+    if correction.operation == "replace":
+        key = int(token) if isinstance(parent, list) else token
+        assert parent[key] != correction.value
+        parent[key] = deepcopy(correction.value)
+    elif correction.operation == "add":
+        if isinstance(parent, list):
+            assert token == "-"
+            parent.append(deepcopy(correction.value))
+        else:
+            assert token not in parent
+            parent[token] = deepcopy(correction.value)
+    elif correction.operation == "remove":
+        key = int(token) if isinstance(parent, list) else token
+        del parent[key]
+    else:
+        raise AssertionError(f"unknown correction operation: {correction.operation}")
+    return repaired
+
+
+def _assert_only_declared_structural_edit(
+    before: dict,
+    after: dict,
+    correction: Correction,
+) -> None:
+    restored = deepcopy(after)
+    before_parent, before_token = _pointer_parent(before, correction.path)
+    after_parent, after_token = _pointer_parent(restored, correction.path)
+
+    if correction.operation == "replace":
+        before_key = int(before_token) if isinstance(before_parent, list) else before_token
+        after_key = int(after_token) if isinstance(after_parent, list) else after_token
+        assert before_parent[before_key] != after_parent[after_key]
+        after_parent[after_key] = deepcopy(before_parent[before_key])
+    elif correction.operation == "add":
+        if isinstance(after_parent, list):
+            assert after_token == "-"
+            assert after_parent[-1] == correction.value
+            after_parent.pop()
+        else:
+            assert before_token not in before_parent
+            assert after_parent[after_token] == correction.value
+            del after_parent[after_token]
+    else:
+        before_key = int(before_token) if isinstance(before_parent, list) else before_token
+        removed = deepcopy(before_parent[before_key])
+        if isinstance(after_parent, list):
+            after_parent.insert(int(after_token), removed)
+        else:
+            assert after_token not in after_parent
+            after_parent[after_token] = removed
+
+    assert restored == before
+
+
 def test_bad_visual_stage_inventory_is_exactly_46_unique_committed_fixtures() -> None:
     names = [case.filename for case in BAD_CASES]
     assert len(names) == 46
@@ -175,6 +320,27 @@ def test_bad_visual_stage_inventory_is_exactly_46_unique_committed_fixtures() ->
     assert len(REQUIRED_OMISSION_CASES) == 8
     assert REQUIRED_OMISSION_CASES <= set(names)
     assert set(names) == {path.name for path in FIXTURES.glob("bad-vs-*.assembly.json")}
+
+
+def test_cover_reference_fixtures_append_one_bad_id_to_complete_coverage() -> None:
+    valid = _load(FIXTURES / "vs-flow-path-spotlight.assembly.json")
+    complete = valid["sections"][1]["ir"]["assertions"][0]["coverIds"]
+
+    duplicate = _load(FIXTURES / "bad-vs-duplicate-cover-ids.assembly.json")
+    dangling = _load(FIXTURES / "bad-vs-dangling-cover-id.assembly.json")
+
+    assert duplicate["sections"][1]["ir"]["assertions"][0]["coverIds"] == [
+        *complete,
+        "node-draft",
+    ]
+    assert dangling["sections"][1]["ir"]["assertions"][0]["coverIds"] == [
+        *complete,
+        "missing-node",
+    ]
+
+
+def test_every_bad_case_declares_one_explicit_correction() -> None:
+    assert set(CORRECTIONS) == {case.filename for case in BAD_CASES}
 
 
 @pytest.mark.parametrize("case", BAD_CASES, ids=lambda case: case.filename)
@@ -198,11 +364,15 @@ def test_each_bad_visual_stage_fixture_fails_at_its_owned_boundary(case: BadCase
         assert validation_caught.value.diagnostics == caught.value.diagnostics
 
     diagnostics = caught.value.diagnostics
-    assert diagnostics[0].code == case.code
-    assert case.message in diagnostics[0].message
-    assert diagnostics[0].path == case.path
-    assert len(diagnostics) == 1 + len(case.extra_messages)
-    assert tuple(message in diagnostic.message for message, diagnostic in zip(case.extra_messages, diagnostics[1:])) == tuple(True for _ in case.extra_messages)
+    expected = (
+        (case.code, case.message, case.path),
+        *case.extra_diagnostics,
+    )
+    assert len(diagnostics) == len(expected)
+    for diagnostic, (code, message, path) in zip(diagnostics, expected, strict=True):
+        assert diagnostic.code == code
+        assert message in diagnostic.message
+        assert diagnostic.path == path
 
 
 def test_schema_owned_bad_fixtures_are_backed_by_the_authoritative_keywords() -> None:
@@ -216,66 +386,12 @@ def test_schema_owned_bad_fixtures_are_backed_by_the_authoritative_keywords() ->
             assert actual == expected, filename
 
 
-def test_each_bad_fixture_has_a_valid_positive_counterpart() -> None:
-    for path in sorted(FIXTURES.glob("vs-*.assembly.json")):
-        assert isinstance(_full_build(_load(path)), str), path.name
+@pytest.mark.parametrize("case", BAD_CASES, ids=lambda case: case.filename)
+def test_each_bad_fixture_has_one_explicit_validating_correction(case: BadCase) -> None:
+    raw = _load(FIXTURES / case.filename)
+    correction = CORRECTIONS[case.filename]
+    repaired = _apply_correction(raw, correction)
 
-
-def test_bad_fixture_numeric_boundaries_have_immediate_valid_neighbors() -> None:
-    steps_9 = _load(FIXTURES / "bad-vs-sequence-steps-9.assembly.json")
-    del steps_9["sections"][1]["ir"]["sequence"]["steps"][8]
-    assert isinstance(_full_build(steps_9), str)
-
-    steps_1 = _load(FIXTURES / "bad-vs-sequence-steps-1.assembly.json")
-    steps_1["sections"][1]["ir"]["sequence"]["steps"].append(
-        {"id": "state-boundary", "label": "段階2", "targetIds": ["node-publish"]}
-    )
-    assert isinstance(_full_build(steps_1), str)
-
-    narrative_201 = _load(FIXTURES / "bad-vs-narrative-201.assembly.json")
-    narrative_201["sections"][2]["markup"] = f"<p>{'あ' * 200}</p>"
-    assert isinstance(_full_build(narrative_201), str)
-
-    for filename, value in (
-        ("bad-vs-empty-step-label.assembly.json", "x"),
-        ("bad-vs-long-step-label.assembly.json", "x" * 40),
-    ):
-        raw = _load(FIXTURES / filename)
-        raw["sections"][1]["ir"]["sequence"]["steps"][0]["label"] = value
-        assert isinstance(_full_build(raw), str)
-
-    for filename, value in (
-        ("bad-vs-empty-assertion-text.assembly.json", "x"),
-        ("bad-vs-long-assertion-text.assembly.json", "x" * 80),
-    ):
-        raw = _load(FIXTURES / filename)
-        raw["sections"][1]["ir"]["assertions"][1]["text"] = value
-        assert isinstance(_full_build(raw), str)
-
-
-def test_cascading_diagnostics_have_one_edit_valid_counterparts() -> None:
-    empty_assertions = _load(FIXTURES / "bad-vs-empty-assertions.assembly.json")
-    empty_assertions["sections"][1]["ir"]["assertions"] = [
-        {
-            "id": "flow-path-claim",
-            "text": "主要な承認経路を段階ごとに追跡できる。",
-            "coverIds": [
-                "node-draft",
-                "node-review",
-                "node-approve",
-                "node-publish",
-                "edge-draft-review",
-                "edge-review-approve",
-                "edge-approve-publish",
-                "edge-draft-approve",
-            ],
-        }
-    ]
-    assert isinstance(_full_build(empty_assertions), str)
-
-    overlapping_path = _load(FIXTURES / "bad-vs-path-overlapping-targets.assembly.json")
-    overlapping_path["sections"][1]["ir"]["sequence"]["steps"][1]["targetIds"] = [
-        "node-approve",
-        "node-publish",
-    ]
-    assert isinstance(_full_build(overlapping_path), str)
+    _assert_only_declared_structural_edit(raw, repaired, correction)
+    validate_assembly(repaired)
+    assert isinstance(_full_build(repaired), str)
