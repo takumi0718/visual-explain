@@ -340,11 +340,16 @@ class _PlainTextParser(HTMLParser):
         self.parts.append(data)
 
 
+def _plain_text_character_count(parts) -> int:
+    """Count decoded author text exactly, including boundary whitespace."""
+    return len("".join(parts))
+
+
 def _plain_text_length(markup: str) -> int:
     parser = _PlainTextParser()
     parser.feed(markup)
     parser.close()
-    return len("".join(parser.parts))
+    return _plain_text_character_count(parser.parts)
 
 
 def scan_author_markup_bans(

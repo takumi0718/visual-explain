@@ -22,6 +22,7 @@ from .validation import (
     _DOCUMENT_TYPES,
     MAX_VISUAL_STAGE_NARRATIVE_CHARS,
     MAX_VISUAL_STAGE_NARRATIVE_SECTIONS,
+    _plain_text_character_count,
 )
 
 _VOID_TAGS = frozenset({
@@ -195,7 +196,8 @@ class _StructureParser(HTMLParser):
             return
 
         if self._paragraph_classes is not None and tag == "p":
-            text = "".join(self._paragraph_parts).strip()
+            raw_text = "".join(self._paragraph_parts)
+            text = raw_text.strip()
             classes = self._paragraph_classes
             self._paragraph_classes = None
             self._paragraph_parts = []
@@ -207,7 +209,7 @@ class _StructureParser(HTMLParser):
             if "ve-claim" in classes:
                 target = self._current_section("canonical")
                 if target is not None:
-                    target.claim_texts.append(text)
+                    target.claim_texts.append(raw_text)
             self._pop_element(tag)
             return
 
@@ -357,6 +359,22 @@ def _visual_stage_diagnostic(message: str, path: str) -> Diagnostic:
     )
 
 
+def _rendered_narrative_text_length(node: _SectionNode) -> int:
+    """Count author text after removing only the wrapper's two newlines.
+
+    ``process_narrative_section`` emits one structural ``\n`` immediately
+    inside each side of the section wrapper. Removing exactly those code
+    points preserves every author-supplied boundary space/newline. Standalone
+    artifact markup without the wrapper newlines is counted unchanged.
+    """
+    text = "".join(node.text_parts)
+    if text.startswith("\n"):
+        text = text[1:]
+    if text.endswith("\n"):
+        text = text[:-1]
+    return _plain_text_character_count((text,))
+
+
 def _check_visual_stage_completeness(
     structure: _DocStructure,
     expected,
@@ -381,9 +399,7 @@ def _check_visual_stage_completeness(
             "content.narrative",
         )
     for node in narrative_nodes:
-        # Rendered wrappers add formatting whitespace around author markup.
-        # Trim only the outer boundary; HTMLParser already entity-decodes text.
-        text_length = len("".join(node.text_parts).strip())
+        text_length = _rendered_narrative_text_length(node)
         if text_length > MAX_VISUAL_STAGE_NARRATIVE_CHARS:
             instance_id = node.attrs.get("data-ve-instance", "<unknown>")
             add(

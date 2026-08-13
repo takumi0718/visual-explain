@@ -36,7 +36,7 @@ def _content(
     canonical_instance: str = "sec-map",
 ) -> str:
     narrative_markup = "".join(
-        f'<section data-ve-section-kind="narrative" data-ve-instance="n-{index}">{text}</section>'
+        f'<section data-ve-section-kind="narrative" data-ve-instance="n-{index}">\n{text}\n</section>'
         for index, text in enumerate(narratives, 1)
     )
     return (
@@ -61,6 +61,25 @@ def _visual_messages(content: str, expected) -> list[str]:
 
 def test_valid_expected_record_accepts_entity_decoded_exact_claim() -> None:
     assert _visual_messages(_content(narratives=("x" * 200,)), (_record(),)) == []
+
+
+def test_claim_transfer_preserves_author_boundary_whitespace_exactly() -> None:
+    claim = " A & B are covered "
+    record = replace(
+        _record(),
+        claim=claim,
+        assertions=(Assertion("coverage", claim, ("node-a", "node-b")),),
+    )
+    assert _visual_messages(
+        _content(claim_markup=" A &amp; B are covered "),
+        (record,),
+    ) == []
+
+
+def test_claim_transfer_rejects_dom_only_boundary_whitespace() -> None:
+    for rendered in (" A &amp; B are covered", "A &amp; B are covered "):
+        messages = _visual_messages(_content(claim_markup=rendered), (_record(),))
+        assert any(".ve-claim" in message and "一致" in message for message in messages)
 
 
 def test_non_visual_stage_returns_before_expected_completeness_checks() -> None:
@@ -119,6 +138,17 @@ def test_visual_stage_narrative_limits_are_rechecked_from_rendered_dom() -> None
 
     too_long = _visual_messages(_content(narratives=("x" * 201,)), (_record(),))
     assert any("narrative" in message and "200" in message for message in too_long)
+
+
+def test_artifact_only_narrative_length_counts_author_boundary_whitespace() -> None:
+    for narrative in (
+        (" " * 201) + "x",
+        "x" + (" " * 201),
+        "\n" + ("x" * 200),
+        ("x" * 200) + "\n",
+    ):
+        messages = _visual_messages(_content(narratives=(narrative,)), None)
+        assert any("narrative" in message and "200" in message for message in messages)
 
 
 def test_expected_records_are_matched_to_canonical_instance_not_global_claim_text() -> None:
