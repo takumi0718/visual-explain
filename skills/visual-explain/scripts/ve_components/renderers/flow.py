@@ -227,6 +227,13 @@ def _render_flow_panel(
     markup = claim_before_body(ir, body_markup)
 
     style_assets = select_style_assets(ir, definition.assets)
+    script_assets = tuple(
+        asset for asset in definition.assets
+        if asset.slot == "scripts"
+        and ir.sequence is not None
+        and ir.sequence.mode == "path-spotlight"
+    )
+    selected_assets = style_assets + script_assets
     manifest = RenderManifest(
         component_id=definition.id,
         component_version=definition.version,
@@ -234,15 +241,15 @@ def _render_flow_panel(
         consumed_semantic_ids=ir.semantic_ids(),
         generated_relationship_ids=tuple(e.id for e in flow.edges),
         generated_landmark_ids=(caption_id, summary_id),
-        asset_ids=tuple(a.id for a in style_assets),
-        asset_digests=tuple(a.digest for a in style_assets),
+        asset_ids=tuple(a.id for a in selected_assets),
+        asset_digests=tuple(a.digest for a in selected_assets),
         declared_dependencies=tuple(definition.dependencies),
         fallback_mode=definition.fallback,
     )
     return RenderResult(
         markup=markup,
         style_asset_ids=tuple(a.id for a in style_assets),
-        script_asset_ids=(),
+        script_asset_ids=tuple(a.id for a in script_assets),
         manifest=manifest,
         diagnostics=tuple(diagnostics),
     )

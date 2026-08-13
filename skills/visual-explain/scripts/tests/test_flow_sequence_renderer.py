@@ -11,6 +11,7 @@ import pytest
 
 from fixture_util import canonical_ir
 from ve_components.assembly import render_canonical
+from ve_components.diagnostics import ContractError
 from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry, resolve_component
 from ve_components.renderers.flow import _path_edge_ids, render_flow
@@ -64,6 +65,16 @@ def _sequence_section(mode: str) -> CanonicalSection:
         "text": "起案から公開までの経路を段階的に示す。",
         "coverIds": ["node-draft"],
     }]
+    request = validate_assembly(raw)
+    section = request.sections[1]
+    assert isinstance(section, CanonicalSection)
+    return section
+
+
+def _branched_sequence_section() -> CanonicalSection:
+    raw = json.loads(
+        (TESTS / "component-valid-flow-sequence-branch.json").read_text("utf-8")
+    )
     request = validate_assembly(raw)
     section = request.sections[1]
     assert isinstance(section, CanonicalSection)
@@ -142,6 +153,83 @@ def test_path_panels_keep_station_only_canvas_and_panel_local_connectors() -> No
         assert f'data-ve-to="node-approve--p{number}"' in panel
 
 
+def test_path_emits_runtime_asset_only_for_path_spotlight_with_verified_digest() -> None:
+    runtime_path = SKILL / "assets" / "components" / "visual-stage-flow.js"
+    result = render_flow(_sequence_section("path-spotlight"), FLOW_DEF)
+    runtime = FLOW_DEF.asset_by_id("visual-stage-flow")
+
+    assert runtime is not None
+    assert (runtime.slot, runtime.path) == ("scripts", "visual-stage-flow.js")
+    assert sha256(runtime_path.read_bytes()).hexdigest() == runtime.digest
+    assert result.script_asset_ids == ("visual-stage-flow",)
+    assert result.manifest.asset_ids == (
+        "flow.css", "visual-stage", "visual-stage-flow",
+    )
+    assert result.manifest.asset_digests[-1] == runtime.digest
+
+
+def test_flow_runtime_is_path_only_and_replaces_fixed_output_after_each_trigger() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+
+    assert '[data-stepper][data-ve-sequence-mode="path-spotlight"] [data-connect-scope]' in source
+    assert "requestAnimationFrame" in source
+    assert "window.addEventListener('load'" in source
+    assert "document.addEventListener('visual-explain:stepchange'" in source
+    assert "document.addEventListener('toggle'" in source
+    assert "new ResizeObserver" in source
+    assert "closest('[data-step][hidden]')" in source
+    assert "querySelectorAll('.connector-layer, .connector-warning')" in source
+    assert "connection-text visually-hidden" in source
+
+
+def test_flow_runtime_draws_every_declaration_with_edge_identity_and_state() -> None:
+    source = (
+        SKILL / "assets" / "components" / "visual-stage-flow.js"
+    ).read_text("utf-8")
+
+    assert "querySelectorAll('[data-connect]')" in source
+    assert "non-adjacent" not in source
+    assert "adjacent(" not in source
+    assert "path.setAttribute('data-ve-semantic-id', semanticId)" in source
+    assert "path.classList.add(stateClass)" in source
+    assert "ve-seq-spot" in source
+    assert "ve-seq-dim" in source
+    assert "markerId" in source
+    assert "url(#${markerId})" in source
+
+
+def test_path_scope_and_actual_connector_paths_have_scoped_paint_rules() -> None:
+    css = (SKILL / "assets" / "components" / "visual-stage.css").read_text("utf-8")
+
+    assert re.search(
+        r'\[data-ve-sequence-mode="path-spotlight"\].*?\.ve-flow-scroll\[data-connect-scope\]\s*\{[^}]*position:\s*relative;',
+        css,
+        re.DOTALL,
+    )
+    assert re.search(r'\.ve-flow-connector-layer path\.ve-seq-dim\s*\{[^}]*opacity:', css, re.DOTALL)
+    spot = re.search(r'\.ve-flow-connector-layer path\.ve-seq-spot\s*\{([^}]*)\}', css, re.DOTALL)
+    assert spot is not None
+    assert "stroke:" in spot.group(1)
+    assert set(re.findall(r'([a-z-]+)\s*:', spot.group(1))) <= {"stroke", "stroke-width", "opacity"}
+
+
+def test_branched_path_keeps_non_adjacent_skip_edge_for_opt_in_runtime() -> None:
+    result = render_flow(_branched_sequence_section(), FLOW_DEF)
+
+    for number in (1, 2, 3):
+        panel = _panel(result.markup, number)
+        pairs = _connector_pairs(panel)
+        assert (f"node-draft--p{number}", f"node-approve--p{number}") in pairs
+        assert panel.count('data-ve-semantic-id="edge-') == 4
+        assert f'data-connect="node-draft--p{number}-&gt;node-approve--p{number}"' in panel
+        if number == 1:
+            assert "ve-seq-dim" not in _semantic_classes(panel, "edge-draft-approve")
+        else:
+            assert "ve-seq-dim" in _semantic_classes(panel, "edge-draft-approve")
+
+
 def test_path_highlights_current_nodes_with_within_and_bridge_edges_only() -> None:
     markup = render_flow(_sequence_section("path-spotlight"), FLOW_DEF).markup
     panel_two = _panel(markup, 2)
@@ -166,6 +254,7 @@ def test_state_lens_reuses_complete_flow_and_spots_current_nodes_only() -> None:
     result = render_flow(_sequence_section("state-lens"), FLOW_DEF)
 
     assert 'data-ve-sequence-mode="state-lens"' in result.markup
+    assert result.script_asset_ids == ()
     panel_two = _panel(result.markup, 2)
     panel_three = _panel(result.markup, 3)
     for panel in (panel_two, panel_three):
@@ -218,12 +307,15 @@ def test_legacy_flow_remains_byte_exact_and_passes_the_trust_boundary() -> None:
     assert result.markup in rendered.markup
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="T11 will normalize panel suffixes in render_canonical's flow trust check",
-)
 def test_path_sequence_render_canonical_waits_for_panel_aware_t11() -> None:
     section = _sequence_section("path-spotlight")
     resolved = resolve_component(section.ir.selection, REGISTRY)
 
-    render_canonical(section, resolved)
+    try:
+        render_canonical(section, resolved)
+    except ContractError as exc:
+        assert [diagnostic.message for diagnostic in exc.diagnostics] == [
+            "renderer 'flow@2' の flow ノードが IR と不一致です",
+            "renderer 'flow@2' の flow 端点/関係が IR と不一致です",
+        ]
+        pytest.xfail("T11 will normalize panel suffixes in the flow trust check")

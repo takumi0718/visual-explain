@@ -596,9 +596,10 @@ class StaticFirstTest(unittest.TestCase):
                 self.assertNotIn("<script", scripts)
                 self.assertIn("data-ve-semantic-id=", doc)
 
-    def test_registry_declares_no_script_assets(self) -> None:
+    def test_only_flow_declares_the_opt_in_path_spotlight_script_asset(self) -> None:
         for component in REGISTRY.components:
-            self.assertEqual([a for a in component.assets if a.slot == "scripts"], [])
+            scripts = [a.id for a in component.assets if a.slot == "scripts"]
+            self.assertEqual(scripts, ["visual-stage-flow"] if component.id == "flow" else [])
 
 
 class TrustedAssetTamperTest(unittest.TestCase):
