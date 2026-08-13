@@ -8,6 +8,7 @@ direction and component choice are never inferred from prose.
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal
 from html.parser import HTMLParser
 from pathlib import Path
@@ -75,6 +76,7 @@ from .model import (
     AskOption,
     AskSection,
     AskStep,
+    Assertion,
     NarrativeSection,
     SlopeAxes,
     SlopeItem,
@@ -88,6 +90,8 @@ from .model import (
     PyramidPayload,
     PyramidTier,
     RelationshipDeclaration,
+    SequenceDeclaration,
+    SequenceStep,
     Source,
     StairsPayload,
     StairsStage,
@@ -116,6 +120,8 @@ _COMPAT_REASONS = set(VOCABULARY["compatibility"]["reasons"])
 MAX_TAKEAWAY_TARGETS = 3
 MAX_EMPHASIS_ITEMS = 3
 MAX_EMPHASIS_LABEL_CHARS = 40
+MAX_VISUAL_STAGE_NARRATIVE_SECTIONS = 2
+MAX_VISUAL_STAGE_NARRATIVE_CHARS = 200
 
 # Renderer / DOM / coordinate-shaped keys that must never appear in canonical IR.
 FORBIDDEN_AUTHORING_KEYS = {
@@ -132,6 +138,17 @@ _IR_KEYS = {
     "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
     "slope", "bars", "kpi", "evidence-map",
     "takeawayTargetIds", "takeawayScope", "emphasis",
+    "claim", "sequence", "assertions",
+}
+_SEQUENCE_KEYS = {"mode", "steps"}
+_SEQUENCE_STEP_KEYS = {"id", "label", "targetIds"}
+_ASSERTION_KEYS = {"id", "text", "coverIds"}
+_STAGE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
+_SEQUENCE_MODES = frozenset(VOCABULARY["sequenceModes"])
+_SEQUENCE_COMPONENTS = {
+    "path-spotlight": frozenset({"flow"}),
+    "state-lens": frozenset({"flow", "matrix", "stairs"}),
+    "delta-accumulate": frozenset({"waterfall", "bars"}),
 }
 _RELATIONSHIP_KEYS = {"kind", "capabilities"}
 _SELECTION_KEYS = {"component", "version", "matchedCapabilities"}
@@ -174,7 +191,7 @@ _EVIDENCE_ITEM_KEYS = {"id", "label", "certaintyRef", "sourceRef"}
 _SLOPE_TONES = frozenset({"positive", "warning", "neutral"})
 _DOCUMENT_KEYS = {"id", "title", "summary", "type", "profile"}
 _DOCUMENT_TYPES = frozenset({"proposal", "system", "research"})
-_DOCUMENT_PROFILES = frozenset({"strict", "extended"})
+_DOCUMENT_PROFILES = frozenset({"strict", "extended", "visual-stage"})
 _ASSEMBLY_KEYS = {"schemaVersion", "document", "sections"}
 _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
 _PROVENANCE_KEYS = {"source", "reason", "format"}
@@ -289,6 +306,22 @@ class _AuthorMarkupBanParser(HTMLParser):
                     self.reserved_attrs.append(label)
 
 
+class _PlainTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def _plain_text_length(markup: str) -> int:
+    parser = _PlainTextParser()
+    parser.feed(markup)
+    parser.close()
+    return len("".join(parser.parts))
+
+
 def scan_author_markup_bans(
     markup: str,
     *,
@@ -343,6 +376,71 @@ def _validate_document_structure(sections_raw: list, col: DiagnosticCollector) -
             "closing は最後にちょうど1個必要です",
             "assembly.sections",
         )
+
+
+def _validate_visual_stage_document(
+    sections_raw: list[object],
+    sections: list[object],
+    col: DiagnosticCollector,
+) -> None:
+    if len(sections_raw) < 2 or not isinstance(sections_raw[1], dict) or sections_raw[1].get("kind") != "canonical":
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            "visual-stage は first-screen の直後に canonical 主図が必要です",
+            "assembly.sections",
+        )
+
+    narrative_count = 0
+    for index, raw in enumerate(sections_raw):
+        if not isinstance(raw, dict):
+            continue
+        kind = raw.get("kind")
+        if kind == "compatibility":
+            col.add(
+                INVALID_COMPONENT_PAYLOAD,
+                "visual-stage では compatibility section を使用できません",
+                f"assembly.sections[{index}]",
+            )
+        elif kind == "narrative":
+            narrative_count += 1
+            markup = raw.get("markup")
+            if isinstance(markup, str) and _plain_text_length(markup) > MAX_VISUAL_STAGE_NARRATIVE_CHARS:
+                col.add(
+                    INVALID_NARRATIVE_SECTION,
+                    f"visual-stage の narrative plain text は{MAX_VISUAL_STAGE_NARRATIVE_CHARS}字以内です",
+                    f"assembly.sections[{index}]",
+                )
+    if narrative_count > MAX_VISUAL_STAGE_NARRATIVE_SECTIONS:
+        col.add(
+            INVALID_NARRATIVE_SECTION,
+            f"visual-stage の narrative section は最大{MAX_VISUAL_STAGE_NARRATIVE_SECTIONS}件です",
+            "assembly.sections",
+        )
+
+    seen_step_ids: set[str] = set()
+    seen_assertion_ids: set[str] = set()
+    for section in sections:
+        if not isinstance(section, CanonicalSection):
+            continue
+        sequence = section.ir.sequence
+        if sequence is not None:
+            for step in sequence.steps:
+                if step.id in seen_step_ids:
+                    col.add(
+                        DUPLICATE_SEMANTIC_ID,
+                        f"step.id '{step.id}' は文書内で重複しています",
+                        "assembly.sections",
+                    )
+                seen_step_ids.add(step.id)
+        if section.ir.assertions is not None:
+            for assertion in section.ir.assertions:
+                if assertion.id in seen_assertion_ids:
+                    col.add(
+                        DUPLICATE_SEMANTIC_ID,
+                        f"assertion.id '{assertion.id}' は文書内で重複しています",
+                        "assembly.sections",
+                    )
+                seen_assertion_ids.add(assertion.id)
 
 
 def _is_int(value: object) -> bool:
@@ -421,7 +519,317 @@ def _run_payload_validator(
     return validator(payload_raw, payload_path, col)
 
 
-def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> CanonicalIR | None:
+def _parse_sequence(raw: object, path: str, col: DiagnosticCollector) -> SequenceDeclaration | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "sequence はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _SEQUENCE_KEYS, path, col)
+    mode = raw.get("mode")
+    steps_raw = raw.get("steps")
+    if "mode" not in raw:
+        col.add(MISSING_REQUIRED_SLOT, "sequence.mode は必須です", path)
+    elif not isinstance(mode, str) or mode not in _SEQUENCE_MODES:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"未知の sequence.mode '{mode}'", path)
+    if "steps" not in raw:
+        col.add(MISSING_REQUIRED_SLOT, "sequence.steps は必須です", path)
+    elif not isinstance(steps_raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "sequence.steps は配列である必要があります", path)
+    if not isinstance(steps_raw, list):
+        return None
+    if not 2 <= len(steps_raw) <= 8:
+        col.add(INVALID_COMPONENT_PAYLOAD, "sequence.steps は2〜8件である必要があります", path)
+    steps: list[SequenceStep] = []
+    seen_step_ids: set[str] = set()
+    for index, item in enumerate(steps_raw):
+        step_path = f"{path}.steps[{index}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "sequence step はオブジェクトである必要があります", step_path)
+            continue
+        _check_keys(item, _SEQUENCE_STEP_KEYS, step_path, col)
+        step_id = item.get("id")
+        if "id" not in item:
+            col.add(MISSING_REQUIRED_SLOT, "step.id は必須です", step_path)
+        elif not isinstance(step_id, str) or _STAGE_ID_RE.fullmatch(step_id) is None:
+            col.add(INVALID_COMPONENT_PAYLOAD, "step.id の形式が不正です", step_path)
+        elif step_id in seen_step_ids:
+            col.add(DUPLICATE_SEMANTIC_ID, f"step.id '{step_id}' が重複しています", step_path)
+        if isinstance(step_id, str):
+            seen_step_ids.add(step_id)
+        label = item.get("label")
+        if "label" not in item:
+            col.add(MISSING_REQUIRED_SLOT, "step.label は必須です", step_path)
+        elif not isinstance(label, str) or not 1 <= len(label) <= 40:
+            col.add(INVALID_COMPONENT_PAYLOAD, "step.label は1〜40字である必要があります", step_path)
+        target_ids = item.get("targetIds")
+        if "targetIds" not in item:
+            col.add(MISSING_REQUIRED_SLOT, "step.targetIds は必須です", step_path)
+            target_ids = []
+        elif not isinstance(target_ids, list):
+            col.add(INVALID_COMPONENT_PAYLOAD, "step.targetIds は配列である必要があります", step_path)
+            target_ids = []
+        elif not target_ids:
+            col.add(INVALID_COMPONENT_PAYLOAD, "step.targetIds は非空である必要があります", step_path)
+        clean_target_ids: list[str] = []
+        seen_targets: set[str] = set()
+        for target_id in target_ids:
+            if not isinstance(target_id, str) or not target_id:
+                col.add(INVALID_COMPONENT_PAYLOAD, "step.targetIds の各要素は非空文字列である必要があります", step_path)
+                continue
+            if target_id in seen_targets:
+                col.add(INVALID_COMPONENT_PAYLOAD, f"step.targetIds '{target_id}' が重複しています", step_path)
+            seen_targets.add(target_id)
+            clean_target_ids.append(target_id)
+        steps.append(SequenceStep(
+            id=step_id if isinstance(step_id, str) else "",
+            label=label if isinstance(label, str) else "",
+            target_ids=tuple(clean_target_ids),
+        ))
+    if not isinstance(mode, str) or mode not in _SEQUENCE_MODES:
+        return None
+    return SequenceDeclaration(mode=mode, steps=tuple(steps))
+
+
+def _parse_assertions(raw: object, path: str, col: DiagnosticCollector) -> tuple[Assertion, ...] | None:
+    if not isinstance(raw, list):
+        col.add(INVALID_COMPONENT_PAYLOAD, "assertions は配列である必要があります", path)
+        return None
+    if not raw:
+        col.add(INVALID_COMPONENT_PAYLOAD, "assertions は非空の配列である必要があります", path)
+    assertions: list[Assertion] = []
+    for index, item in enumerate(raw):
+        assertion_path = f"{path}[{index}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "assertion はオブジェクトである必要があります", assertion_path)
+            continue
+        _check_keys(item, _ASSERTION_KEYS, assertion_path, col)
+        assertion_id = item.get("id")
+        if "id" not in item:
+            col.add(MISSING_REQUIRED_SLOT, "assertion.id は必須です", assertion_path)
+        elif not isinstance(assertion_id, str) or _STAGE_ID_RE.fullmatch(assertion_id) is None:
+            col.add(INVALID_COMPONENT_PAYLOAD, "assertion.id の形式が不正です", assertion_path)
+        assertion_text = item.get("text")
+        if "text" not in item:
+            col.add(MISSING_REQUIRED_SLOT, "assertion.text は必須です", assertion_path)
+        elif not isinstance(assertion_text, str) or not 1 <= len(assertion_text) <= 80:
+            col.add(INVALID_COMPONENT_PAYLOAD, "assertion.text は1〜80字である必要があります", assertion_path)
+        cover_ids = item.get("coverIds")
+        if "coverIds" not in item:
+            col.add(MISSING_REQUIRED_SLOT, "assertion.coverIds は必須です", assertion_path)
+            cover_ids = []
+        elif not isinstance(cover_ids, list):
+            col.add(INVALID_COMPONENT_PAYLOAD, "assertion.coverIds は配列である必要があります", assertion_path)
+            cover_ids = []
+        elif not cover_ids:
+            col.add(INVALID_COMPONENT_PAYLOAD, "assertion.coverIds は非空である必要があります", assertion_path)
+        clean_cover_ids: list[str] = []
+        seen_cover_ids: set[str] = set()
+        for cover_id in cover_ids:
+            if not isinstance(cover_id, str) or not cover_id:
+                col.add(INVALID_COMPONENT_PAYLOAD, "assertion.coverIds の各要素は非空文字列である必要があります", assertion_path)
+                continue
+            if cover_id in seen_cover_ids:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"assertion.coverIds '{cover_id}' が重複しています",
+                    assertion_path,
+                )
+            seen_cover_ids.add(cover_id)
+            clean_cover_ids.append(cover_id)
+        assertions.append(Assertion(
+            id=assertion_id if isinstance(assertion_id, str) else "",
+            text=assertion_text if isinstance(assertion_text, str) else "",
+            cover_ids=tuple(clean_cover_ids),
+        ))
+    return tuple(assertions)
+
+
+def _validate_assertion_semantics(
+    claim: str | None,
+    assertions: tuple[Assertion, ...] | None,
+    payload_kind: str,
+    payload: object | None,
+    path: str,
+    col: DiagnosticCollector,
+) -> None:
+    if assertions is None:
+        return
+    payload_ids = _payload_semantic_ids(payload_kind, payload)
+    for assertion in assertions:
+        for cover_id in assertion.cover_ids:
+            if cover_id not in payload_ids:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"coverId '{cover_id}' は payload semantic id ではありません",
+                    path,
+                )
+    if claim is not None and claim not in {assertion.text for assertion in assertions}:
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            "claim は assertions のいずれかの text と一致する必要があります",
+            path,
+        )
+
+
+def _payload_semantic_ids(payload_kind: str, payload: object | None) -> set[str]:
+    if payload is None:
+        return set()
+    if payload_kind == "matrix":
+        return {
+            *(item.id for item in payload.rows),
+            *(item.id for item in payload.columns),
+            *(item.id for item in payload.cells),
+        }
+    if payload_kind == "flow":
+        return {
+            *(item.id for item in payload.nodes),
+            *(item.id for item in payload.edges),
+            *(item.id for item in payload.groups),
+        }
+    if payload_kind == "enumeration":
+        return {item.id for item in payload.items}
+    if payload_kind == "chevron":
+        return {item.id for item in payload.steps}
+    if payload_kind == "pyramid":
+        return {item.id for item in payload.tiers}
+    if payload_kind == "stairs":
+        return {item.id for item in payload.stages}
+    if payload_kind == "waterfall":
+        return {payload.start.id, payload.end.id, *(item.id for item in payload.steps)}
+    if payload_kind == "logic-tree":
+        ids = {payload.root.id, *(item.id for item in payload.branches)}
+        for branch in payload.branches:
+            ids.update(item.id for item in branch.leaves)
+        return ids
+    if payload_kind in {"slope", "bars", "kpi"}:
+        return {item.id for item in payload.items}
+    if payload_kind == "evidence-map":
+        return {payload.conclusion.id, *(item.id for item in payload.evidence)}
+    return set()
+
+
+def _sequence_target_ids(payload_kind: str, payload: object | None, mode: str) -> set[str]:
+    if payload is None:
+        return set()
+    if mode == "path-spotlight" and payload_kind == "flow":
+        return {item.id for item in payload.nodes}
+    if mode == "state-lens":
+        if payload_kind == "flow":
+            return {item.id for item in payload.nodes}
+        if payload_kind == "matrix":
+            return {item.id for item in payload.cells}
+        if payload_kind == "stairs":
+            return {item.id for item in payload.stages}
+    if mode == "delta-accumulate":
+        if payload_kind == "waterfall":
+            return {payload.start.id, payload.end.id, *(item.id for item in payload.steps)}
+        if payload_kind == "bars":
+            return {item.id for item in payload.items}
+    return set()
+
+
+def _validate_path_spotlight(
+    sequence: SequenceDeclaration,
+    payload: FlowPayload,
+    path: str,
+    col: DiagnosticCollector,
+) -> None:
+    edges = {(edge.source, edge.target) for edge in payload.edges}
+    node_ids = {node.id for node in payload.nodes}
+    seen: set[str] = set()
+    previous_last: str | None = None
+    for step in sequence.steps:
+        targets = step.target_ids
+        if len(targets) > 4:
+            col.add(INVALID_COMPONENT_PAYLOAD, "path-spotlight の1 step は最大4ノードです", path)
+        for target_id in targets:
+            if target_id in seen:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"path-spotlight の targetId '{target_id}' は step 間で重複しています",
+                    path,
+                )
+            seen.add(target_id)
+        if not targets or any(target_id not in node_ids for target_id in targets):
+            previous_last = None
+            continue
+        for source, target in zip(targets, targets[1:]):
+            if (source, target) not in edges:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"path-spotlight step 内の node '{source}' から '{target}' へ辺接続がありません",
+                    path,
+                )
+        if previous_last is not None and (previous_last, targets[0]) not in edges:
+            col.add(
+                INVALID_COMPONENT_PAYLOAD,
+                f"path-spotlight step 間の node '{previous_last}' から '{targets[0]}' へ辺接続がありません",
+                path,
+            )
+        previous_last = targets[-1]
+
+
+def _validate_sequence_semantics(
+    sequence: SequenceDeclaration | None,
+    payload_kind: str,
+    payload: object | None,
+    relationship: RelationshipDeclaration | None,
+    selection: ExplicitSelection | None,
+    path: str,
+    col: DiagnosticCollector,
+) -> None:
+    if sequence is None:
+        return
+    if relationship is not None and "typed-sequence" not in relationship.capabilities:
+        col.add(INVALID_RELATIONSHIP_DECLARATION, "relationship に typed-sequence が必要です", path)
+    if selection is not None and "typed-sequence" not in selection.matched_capabilities:
+        col.add(INVALID_COMPONENT_PAYLOAD, "selection に typed-sequence が必要です", path)
+    if payload_kind not in _SEQUENCE_COMPONENTS.get(sequence.mode, frozenset()):
+        col.add(
+            INVALID_COMPONENT_PAYLOAD,
+            f"{sequence.mode} は component '{payload_kind}' では使用できません",
+            path,
+        )
+        return
+
+    payload_ids = _payload_semantic_ids(payload_kind, payload)
+    allowed_targets = _sequence_target_ids(payload_kind, payload, sequence.mode)
+    for step in sequence.steps:
+        for target_id in step.target_ids:
+            if target_id not in payload_ids:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"targetId '{target_id}' は payload semantic id ではありません",
+                    path,
+                )
+            elif target_id not in allowed_targets:
+                labels = {
+                    "path-spotlight": "path-spotlight の対象は flow node id のみです",
+                    "state-lens": "state-lens の対象は状態を持つ payload 要素 id のみです",
+                    "delta-accumulate": "delta-accumulate の対象は定量 payload 要素 id のみです",
+                }
+                col.add(INVALID_COMPONENT_PAYLOAD, labels[sequence.mode], path)
+
+    if sequence.mode == "delta-accumulate":
+        seen: set[str] = set()
+        for step in sequence.steps:
+            for target_id in step.target_ids:
+                if target_id in seen:
+                    col.add(
+                        INVALID_COMPONENT_PAYLOAD,
+                        f"delta-accumulate の targetId '{target_id}' は先行 step と重複しています",
+                        path,
+                    )
+                seen.add(target_id)
+    elif sequence.mode == "path-spotlight" and isinstance(payload, FlowPayload):
+        _validate_path_spotlight(sequence, payload, path, col)
+
+
+def _validate_canonical_ir(
+    raw: object,
+    path: str,
+    col: DiagnosticCollector,
+    document_profile: str = "",
+) -> CanonicalIR | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "canonical IR はオブジェクトである必要があります", path)
         return None
@@ -446,6 +854,40 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
     certainty = _validate_certainty(raw.get("certainty"), f"{path}.certainty", col) if "certainty" in raw else ()
     sources = _validate_sources(raw.get("sources"), f"{path}.sources", col) if "sources" in raw else ()
     accessibility = _validate_accessibility(raw.get("accessibility"), f"{path}.accessibility", col) if "accessibility" in raw else None
+
+    stage_fields = ("claim", "sequence", "assertions")
+    if document_profile != "visual-stage":
+        for field in stage_fields:
+            if field in raw:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"{field} は visual-stage profile でのみ使用できます",
+                    path,
+                )
+    else:
+        for field in ("takeawayTargetIds", "emphasis"):
+            if field in raw:
+                col.add(
+                    INVALID_COMPONENT_PAYLOAD,
+                    f"visual-stage では {field} を使用できません",
+                    path,
+                )
+
+        if "claim" not in raw:
+            col.add(MISSING_REQUIRED_SLOT, "visual-stage canonical には claim が必須です", path)
+        elif not isinstance(raw.get("claim"), str) or not 1 <= len(raw["claim"]) <= 80:
+            col.add(INVALID_COMPONENT_PAYLOAD, "claim は1〜80字である必要があります", path)
+        if "assertions" not in raw:
+            col.add(MISSING_REQUIRED_SLOT, "visual-stage canonical には assertions が必須です", path)
+
+    if document_profile == "visual-stage":
+        claim = raw.get("claim") if isinstance(raw.get("claim"), str) else None
+        sequence = _parse_sequence(raw.get("sequence"), f"{path}.sequence", col) if "sequence" in raw else None
+        assertions = _parse_assertions(raw.get("assertions"), f"{path}.assertions", col) if "assertions" in raw else None
+    else:
+        claim = None
+        sequence = None
+        assertions = None
 
     matrix = None
     flow = None
@@ -504,9 +946,12 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
             elif payload_kind == "kpi":
                 kpi = validated_payload
 
-    takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
-        raw, path, col, caption, payload_kind, validated_payload
-    )
+    if document_profile == "visual-stage":
+        takeaway_target_ids, takeaway_scope, emphasis = (), "targets", ()
+    else:
+        takeaway_target_ids, takeaway_scope, emphasis = _validate_annotations(
+            raw, path, col, caption, payload_kind, validated_payload
+        )
 
     # Cross-consistency: component choice must match the present payload and kind.
     if selection is not None and len(present) == 1:
@@ -520,6 +965,23 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
                         f"relationship.kind '{relationship.kind}' が selection.component '{selection.component}' と矛盾します", path)
 
     _check_capability_scope(relationship, selection, col, path)
+    _validate_sequence_semantics(
+        sequence,
+        payload_kind,
+        validated_payload,
+        relationship,
+        selection,
+        path,
+        col,
+    )
+    _validate_assertion_semantics(
+        claim,
+        assertions,
+        payload_kind,
+        validated_payload,
+        path,
+        col,
+    )
     _check_duplicate_ids(raw, path, col)
 
     if col:
@@ -548,6 +1010,9 @@ def _validate_canonical_ir(raw: object, path: str, col: DiagnosticCollector) -> 
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
+        claim=claim,
+        sequence=sequence,
+        assertions=assertions,
     )
 
 
@@ -2157,12 +2622,15 @@ def validate_assembly(raw: object) -> AssemblyRequest:
         sections_raw = []
     seen_section_ids: set[str] = set()
     doc_type = document.type if document is not None else ""
+    doc_profile = document.profile if document is not None else ""
     for i, item in enumerate(sections_raw):
         p = f"assembly.sections[{i}]"
-        section = _validate_section(item, p, col, seen_section_ids, doc_type)
+        section = _validate_section(item, p, col, seen_section_ids, doc_type, doc_profile)
         if section is not None:
             sections.append(section)
     _validate_document_structure(sections_raw, col)
+    if doc_profile == "visual-stage":
+        _validate_visual_stage_document(sections_raw, sections, col)
     col.raise_if_any()
     assert document is not None
     return AssemblyRequest(schema_version=1, document=document, sections=tuple(sections))
@@ -2181,20 +2649,20 @@ def _validate_document(raw: object, path: str, col: DiagnosticCollector) -> Docu
         col.add(MISSING_REQUIRED_SLOT, "document.type は proposal / system / research のいずれかが必要です", path)
     profile_val = raw.get("profile")
     if not isinstance(profile_val, str) or profile_val not in _DOCUMENT_PROFILES:
-        col.add(MISSING_REQUIRED_SLOT, "document.profile は strict / extended のいずれかが必要です", path)
+        col.add(MISSING_REQUIRED_SLOT, "document.profile は strict / extended / visual-stage のいずれかが必要です", path)
     return DocumentMetadata(id=raw.get("id", ""), title=raw.get("title", ""), summary=raw.get("summary", ""),
                             type=raw.get("type", ""), profile=raw.get("profile", ""))
 
 
 def _validate_section(raw: object, path: str, col: DiagnosticCollector, seen_ids: set[str],
-                      document_type: str = "") -> object | None:
+                      document_type: str = "", document_profile: str = "") -> object | None:
     if not isinstance(raw, dict):
         col.add(INVALID_COMPONENT_PAYLOAD, "section はオブジェクトである必要があります", path)
         return None
     kind = raw.get("kind")
     if kind == "canonical":
         _check_keys(raw, _CANONICAL_SECTION_KEYS, path, col)
-        ir = _validate_canonical_ir(raw.get("ir"), f"{path}.ir", col)
+        ir = _validate_canonical_ir(raw.get("ir"), f"{path}.ir", col, document_profile)
         if ir is None:
             return None
         if ir.id in seen_ids:
