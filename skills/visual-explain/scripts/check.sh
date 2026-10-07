@@ -285,6 +285,16 @@ def check_file(html_path: Path, type_name: str | None, skeleton_path: Path) -> l
         skeleton = skeleton_path.read_bytes()
     except OSError as exc:
         return [f"skeleton.htmlを読めません: {exc}"]
+    version_match = re.search(rb'<html\b[^>]*\sdata-ve-skeleton="([0-9]+)"', candidate)
+    skeleton_version = re.search(rb'<html\b[^>]*\sdata-ve-skeleton="([0-9]+)"', skeleton)
+    wanted = int(version_match.group(1)) if version_match else 1
+    given = int(skeleton_version.group(1)) if skeleton_version else 1
+    if wanted != given:
+        frozen = skeleton_path.parent / f"skeleton-v{wanted}.html"
+        try:
+            skeleton = frozen.read_bytes()
+        except OSError:
+            return [f"未知の skeleton 版です: {wanted}"]
     content_bytes, title_bytes = fixed_regions_match(strip_fixed_controlled(candidate), strip_fixed_controlled(skeleton), errors)
     try:
         full_text = candidate.decode("utf-8")

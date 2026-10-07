@@ -173,6 +173,10 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             ".step-panel.is-current",
             # 接続線を描画できないときに JS が挿入する警告メッセージ（warning = 注意の意味）
             ".connector-warning",
+            # first-screen の結論ブロック（accent = 結論という選択済み判断の強調）
+            ".conclusion",
+            # 概観ナビの番号マーカー（accent = 現在地を示す番号の強調）
+            ".marker-n",
         )
         for rule in style.split("}"):
             if "{" not in rule:
