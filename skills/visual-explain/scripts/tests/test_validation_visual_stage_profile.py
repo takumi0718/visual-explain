@@ -452,8 +452,8 @@ def test_existing_profiles_do_not_receive_visual_stage_document_limits(profile: 
     ir["selection"]["matchedCapabilities"].remove("typed-sequence")
     raw["sections"][1:1] = [
         _narrative("sec-before-main", "前提"),
-        _narrative("sec-long", "あ" * 201),
         _compatibility(),
+        _narrative("sec-long", "あ" * 201),
     ]
 
     request = validate_assembly(raw)

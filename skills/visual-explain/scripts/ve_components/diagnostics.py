@@ -111,6 +111,7 @@ QUANTITATIVE_UNIT_REQUIRED = "quantitative-unit-required"
 
 # S4 — matrix concept presentation codes.
 MATRIX_CONCEPT_LENGTH = "matrix-concept-length"
+REDUNDANT_TEXT = "redundant_text"
 
 ALL_CODES = frozenset({
     INVALID_RELATIONSHIP_DECLARATION,
@@ -165,6 +166,7 @@ ALL_CODES = frozenset({
     NOTATION_CERTAINTY_VOCABULARY,
     QUANTITATIVE_UNIT_REQUIRED,
     MATRIX_CONCEPT_LENGTH,
+    REDUNDANT_TEXT,
 })
 
 

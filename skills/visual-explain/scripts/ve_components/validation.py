@@ -29,6 +29,7 @@ from .diagnostics import (
     LOGIC_TREE_STRUCTURE_VIOLATION,
     MATRIX_CONCEPT_LENGTH,
     MISSING_REQUIRED_SLOT,
+    REDUNDANT_TEXT,
     PYRAMID_STRUCTURE_VIOLATION,
     QUANTITATIVE_UNIT_REQUIRED,
     SLOPE_STRUCTURE_VIOLATION,
@@ -2686,6 +2687,10 @@ def validate_assembly(raw: object) -> AssemblyRequest:
     _validate_overview_links(sections_raw, sections, col)
     if doc_profile == "visual-stage":
         _validate_visual_stage_document(sections_raw, sections, col)
+    if not col.diagnostics:
+        from .repetition import check_repetition
+        for message, where in check_repetition(tuple(sections)):
+            col.add(REDUNDANT_TEXT, message, where)
     col.raise_if_any()
     assert document is not None
     return AssemblyRequest(schema_version=_ASSEMBLY_SCHEMA_VERSION, document=document, sections=tuple(sections))
