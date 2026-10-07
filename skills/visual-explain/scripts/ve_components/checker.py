@@ -1125,6 +1125,9 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
         elif kind == "toc":
             # Build-time TOC: trusted renderer output; no author provenance fields.
             pass
+        elif kind == "overview-nav":
+            # Build-time overview marker list: trusted renderer output.
+            pass
         elif kind == "decision-panel":
             # Build-time decision-recovery panel: trusted renderer output; no
             # author provenance fields.

@@ -2837,7 +2837,11 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
             col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].label は1〜30字です", mp)
         if not _nonblank_str(target):
             col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].target は空にできません", mp)
-        markers.append(OverviewMarker(n=item.get("n"), label=label or "", target=target or ""))
+        n = item.get("n")
+        if isinstance(n, bool) or not isinstance(n, int):
+            col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].n は整数である必要があります", mp)
+            continue
+        markers.append(OverviewMarker(n=n, label=label or "", target=target or ""))
     if [m.n for m in markers] != list(range(1, len(markers) + 1)):
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers の n は1からの連番である必要があります", path)
     return Overview(section=section or "", markers=tuple(markers))

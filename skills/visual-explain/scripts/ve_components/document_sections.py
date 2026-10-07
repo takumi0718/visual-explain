@@ -1,4 +1,4 @@
-"""Typed document sections: first-screen, closing, ask, and the build-time TOC.
+"""Typed document sections: first-screen, closing, ask, and the overview marker list.
 
 These are trusted renderers that bypass the component registry: their inputs are
 validated dataclasses, their markup uses only fixed skeleton classes, and the
@@ -24,12 +24,9 @@ _VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
 })
-_TOC_INSTANCE_ID_PREFIX = "sec-toc"
-_TOC_MIN_ENTRIES = 5
+_OVERVIEW_NAV_INSTANCE_ID_PREFIX = "sec-overview-nav"
 _PANEL_INSTANCE_ID_PREFIX = "sec-decision-panel"
 
-_SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
-                   "research": "この資料が答える問い"}
 _ASK_KIND_LABEL = {
     "decision": "判断してください",
     "request": "お願いする動作",
@@ -41,12 +38,6 @@ _ASK_KIND_LABEL = {
 class WrappedDocumentSection:
     instance_id: str
     markup: str
-
-
-@dataclass(frozen=True)
-class TocEntry:
-    anchor_id: str
-    heading: str
 
 
 def _esc(value: str) -> str:
@@ -111,37 +102,6 @@ def _allocate_instance_id(prefix: str, occupied_ids: frozenset[str] | set[str]) 
         n += 1
 
 
-def allocate_toc_instance_id(occupied_ids: frozenset[str] | set[str]) -> str:
-    """Pick a compose-only TOC instance id that does not collide with section ids.
-
-    Compatibility wrapper around ``_allocate_instance_id``.
-    """
-    return _allocate_instance_id(_TOC_INSTANCE_ID_PREFIX, occupied_ids)
-
-
-def build_toc(
-    entries: tuple[TocEntry, ...],
-    *,
-    occupied_ids: frozenset[str] | set[str] = frozenset(),
-) -> WrappedDocumentSection | None:
-    """Build a flat TOC section when there are at least five headed body sections."""
-    if len(entries) < _TOC_MIN_ENTRIES:
-        return None
-    items = "".join(
-        f'<li><a href="#{_esc(entry.anchor_id)}">{_esc(entry.heading)}</a></li>'
-        for entry in entries
-    )
-    markup = (
-        f'<section data-ve-section-kind="toc">\n'
-        f'<nav aria-label="目次"><ol>{items}</ol></nav>\n'
-        f"</section>"
-    )
-    return WrappedDocumentSection(
-        instance_id=allocate_toc_instance_id(occupied_ids),
-        markup=markup,
-    )
-
-
 def render_first_screen(section: FirstScreenSection, document: DocumentMetadata) -> WrappedDocumentSection:
     markup = (
         f'<section data-ve-section-kind="first-screen"'
@@ -149,10 +109,34 @@ def render_first_screen(section: FirstScreenSection, document: DocumentMetadata)
         f' id="{_esc(section.id)}">\n'
         f'<section class="first-screen" aria-label="最初に伝えること">\n'
         f'  <h1>{_esc(document.title)}</h1>\n'
-        f'  <p class="subtitle">{_esc(section.conclusion)}</p>\n'
+        f'  <p class="conclusion"><strong>結論:</strong> {_esc(section.conclusion)}</p>\n'
         f'</section>\n</section>'
     )
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
+
+
+def build_overview_nav(
+    first: FirstScreenSection,
+    *,
+    occupied_ids: frozenset[str] | set[str] = frozenset(),
+) -> WrappedDocumentSection | None:
+    """Numbered links from the overview figure to the sections it marks."""
+    if first.overview is None:
+        return None
+    items = "".join(
+        f'<li><a href="#{_esc(m.target)}"><span class="marker-n" aria-hidden="true">{m.n}</span>'
+        f'<span>{_esc(m.label)}</span></a></li>'
+        for m in first.overview.markers
+    )
+    markup = (
+        '<section data-ve-section-kind="overview-nav">\n'
+        f'<nav class="overview-markers" aria-label="この資料の論点"><ol>{items}</ol></nav>\n'
+        "</section>"
+    )
+    return WrappedDocumentSection(
+        instance_id=_allocate_instance_id(_OVERVIEW_NAV_INSTANCE_ID_PREFIX, occupied_ids),
+        markup=markup,
+    )
 
 
 def render_closing(section: ClosingSection) -> WrappedDocumentSection:

@@ -363,7 +363,7 @@ class _StructureParser(HTMLParser):
             classes = self._paragraph_classes
             self._paragraph_classes = None
             self._paragraph_parts = []
-            if "subtitle" in classes and "decision" not in classes and text:
+            if (("subtitle" in classes and "decision" not in classes) or "conclusion" in classes) and text:
                 # Attribute summary to the innermost open first-screen section.
                 target = self._current_first_screen()
                 if target is not None:

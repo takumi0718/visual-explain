@@ -264,9 +264,9 @@ class DocumentStructureValidTest(unittest.TestCase):
             document_path="doc.html",
         )
         content, title = _content_and_title(html)
-        # Remove the subtitle paragraph (provisional first-screen render; Task 3 reshapes it).
+        # Remove the conclusion paragraph.
         broken = content.replace(
-            '<p class="subtitle">この提案を採択するか決めます。</p>',
+            '<p class="conclusion"><strong>結論:</strong> この提案を採択するか決めます。</p>',
             "",
             1,
         )
