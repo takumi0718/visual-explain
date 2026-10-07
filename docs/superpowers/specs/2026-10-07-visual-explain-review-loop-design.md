@@ -30,6 +30,7 @@ visual-explain の生成資料を、「読ませる資料」から「見て判�
 | 回答・指摘の仕組みの置き場所 | 資料型は増やさず、既存 3 型（proposal / system / research）すべてに問いカード・指摘層・回収パネルを重ねる |
 | 第一画面 | 題名 → 結論（3 文以内）→ 全体図 1 枚。副題と目次は廃止し、①②③ が目次を兼ねる |
 | 番号の色 | 既存の青系（`--accent`） |
+| skeleton の版 | Phase 1 で版管理を導入（v2: 第一画面）、Phase 2 = v3（回答と指摘）、Phase 3 = v4（見た目） |
 | 回答の場所 | 問いカードの中で選ぶ。末尾の回収パネルは集計とコピーのみ |
 | 指摘の操作 | 指した段落の真下に入力を開く。段落ホバー（スマホはタップ）の ＋ と、文字なぞりの小ボタン |
 | 指摘の種類（チップ） | 8 種: わからない / 図にしてほしい / もっと詳しく / 短くする / 削る / 言い換える / 事実を確認 / ここは良い |
@@ -46,7 +47,17 @@ visual-explain の生成資料を、「読ませる資料」から「見て判�
 - **skeleton は版ごとに不変**: 「1 バイト不変」を「版ごとに 1 バイト不変」に改める。checker は文書が宣言する版の skeleton と照合する。既存の v1 生成物は引き続き検査に通る。
 - **外部の固有名を持ち込まない**: 参考にした他者のスキルの名称を、コード・コメント・コミット・リポジトリ文書に書かない。仕組みは一般語（問いカード、指摘層、回収パネル、試問）で表す。
 
-## Phase 1 — 読み順と反復の削減
+## Phase 1 — 読み順と反復の削減（skeleton v2）
+
+第一画面の CSS（`.first-screen` の `min-height: 60vh` と `align-content: center`）が固定領域にあり、全体図を第一画面に入れるには skeleton の変更が要る。そのため skeleton の版管理を Phase 1 で導入し、第一画面の CSS だけを変えた **skeleton v2** を出す（2026-10-07 本人決定）。
+
+### skeleton の版管理
+
+- 現行の skeleton を `assets/skeleton-v1.html` としてバイト列のまま凍結する。`assets/skeleton.html` は常に最新版で、ビルドはこれを使う。
+- 最新版の skeleton は固定領域の `<html>` 開始タグに `data-ve-skeleton="<版>"` を持つ。属性の無い文書は v1 とみなす。
+- checker は文書が宣言する版の skeleton と固定領域を照合する。宣言版と渡された skeleton の版が異なるときは、`assets/skeleton-v<版>.html`（最新版は `assets/skeleton.html`）を読む。未知の版はエラー。
+- v2 の差分: `data-ve-skeleton="2"`、`.first-screen` の `min-height` と `align-content` の削除と余白の縮小、結論ボックス（`.conclusion`）と番号一覧（`.overview-markers`）のスタイル追加。
+- 既存の v1 生成物と v1 fixture は変更なしで合格する。
 
 ### first-screen IR
 
@@ -103,15 +114,9 @@ visual-explain の生成資料を、「読ませる資料」から「見て判�
 - 見本の再ビルドで、本文 1,400 字以下、かつ全体図より前が h1 と結論だけであることを確認する。
 - `check.sh --selftest` と全テストの通過。
 
-## Phase 2 — 問いカード・指摘層・回収パネル（skeleton v2）
+## Phase 2 — 問いカード・指摘層・回収パネル（skeleton v3）
 
-判断エンジンとコピー処理は skeleton の固定領域（`assets/skeleton.html` の `FIXED DECISION ENGINE CORE` 〜 `FIXED DECISION COLLECTION JS`）にあるため、Phase 2 で skeleton の版管理を導入し、動作を変えた **skeleton v2** を出す。
-
-### skeleton の版管理
-
-- skeleton を `assets/skeleton-v1.html`（現行のバイト列そのもの）と `assets/skeleton-v2.html` に分ける。ビルドは常に最新版を使う。
-- 生成文書は使用した skeleton 版を自己表明する属性を持つ（v1 文書は属性なしを v1 とみなす）。checker は宣言版の skeleton と固定領域を照合する。
-- 既存の v1 生成物と v1 fixture は変更なしで合格する。
+判断エンジンとコピー処理は skeleton の固定領域（`FIXED DECISION ENGINE CORE` 〜 `FIXED DECISION COLLECTION JS`）にあるため、Phase 1 の版管理に乗せて、動作を変えた **skeleton v3** を出す。v2 は `assets/skeleton-v2.html` として凍結する。v1 / v2 の生成物は引き続き合格する。
 
 ### 問いカード（`askType: "decision"`）
 
@@ -176,7 +181,7 @@ Q2. <問い>: (未選択 = お任せ)
 - 回収パネルの常設（decision ask なし文書でも 1 つ）。
 - v1 生成物の後方互換。
 
-## Phase 3 — 見た目の刷新（skeleton v3）
+## Phase 3 — 見た目の刷新（skeleton v4）
 
 ### 書体と余白
 
@@ -208,7 +213,7 @@ Q2. <問い>: (未選択 = お任せ)
 ### 検証
 
 - UI 評価（critique）を再実施し、19/36 から 28/36 以上を目標にする。
-- v3 skeleton の固定領域照合、v1 / v2 生成物の後方互換、fixture と selftest 期待値の更新。
+- v4 skeleton の固定領域照合、v1〜v3 生成物の後方互換、fixture と selftest 期待値の更新。
 
 ## Phase 4 — 個別図（13 番目の canonical 形式 `grid-diagram`）
 
