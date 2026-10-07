@@ -25,7 +25,7 @@ def _assembly(*, type: str = "proposal", closing_blocks: list | None = None) -> 
             {"heading": "不確かな点", "items": ["未確認の利用状況"]},
         ]
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "document": {
             "id": "d",
             "title": "料金改定は限定対象で段階公開する",
@@ -34,7 +34,7 @@ def _assembly(*, type: str = "proposal", closing_blocks: list | None = None) -> 
             "profile": "strict",
         },
         "sections": [
-            {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"},
+            {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"},
             {"kind": "closing", "id": "sec-closing", "blocks": closing_blocks},
         ],
     }

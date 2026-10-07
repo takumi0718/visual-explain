@@ -58,7 +58,7 @@ def _flow_ir() -> dict:
 
 def _assembly(profile: str = "visual-stage", ir: dict | None = None) -> dict:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "document": {
             "id": "doc-1",
             "title": "承認資料",
@@ -67,7 +67,7 @@ def _assembly(profile: str = "visual-stage", ir: dict | None = None) -> dict:
             "profile": profile,
         },
         "sections": [
-            {"kind": "first-screen", "id": "sec-first", "decision": "承認経路を採用します。"},
+            {"kind": "first-screen", "id": "sec-first", "conclusion": "承認経路を採用します。"},
             {"kind": "canonical", "ir": deepcopy(ir if ir is not None else _flow_ir())},
             {
                 "kind": "closing",

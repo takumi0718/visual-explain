@@ -18,7 +18,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "proposal-example",
     "title": "料金改定は限定対象で段階公開する",
@@ -30,11 +30,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "限定対象で開始するか決めます。",
-      "conditions": [
-        "撤回条件を公開前に合意できること",
-        "対象顧客群が根拠と一致していること"
-      ]
+      "conclusion": "限定対象で開始するか決めます。"
     },
     {
       "kind": "narrative",
@@ -70,7 +66,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "system-example",
     "title": "承認地図は根拠と顧客影響を一つの経路で照合する",
@@ -82,7 +78,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この仕組みはなぜ安全か。"
+      "conclusion": "この仕組みはなぜ安全か。"
     },
     {
       "kind": "narrative",
@@ -106,7 +102,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "research-example",
     "title": "見出し列だけで判断できる資料は承認が速い",
@@ -118,7 +114,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "見出し品質は承認速度を左右するか。"
+      "conclusion": "見出し品質は承認速度を左右するか。"
     },
     {
       "kind": "narrative",
@@ -385,7 +381,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-matrix",
     "title": "権限モデルの二軸整理",
@@ -397,7 +393,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -533,7 +529,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-flow",
     "title": "レビュー承認の流れ",
@@ -545,7 +541,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -644,7 +640,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-enum",
     "title": "並列項目の列挙",
@@ -656,7 +652,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -745,7 +741,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-chevron",
     "title": "処理フローの4段階",
@@ -757,7 +753,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -859,7 +855,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-pyramid",
     "title": "優先度の階層",
@@ -871,7 +867,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -953,7 +949,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-stairs",
     "title": "成熟度の階段",
@@ -965,7 +961,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1051,7 +1047,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-logic-tree",
     "title": "構成の分解",
@@ -1063,7 +1059,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1160,7 +1156,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-waterfall",
     "title": "利益ブリッジ",
@@ -1172,7 +1168,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1271,7 +1267,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 `title`・`unitLabel` は必須。`highlightId` で注目系列を1本指定できる（省略可）。
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-slope",
     "title": "2時点比較",
@@ -1283,7 +1279,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1362,7 +1358,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-em",
     "title": "論拠地図",
@@ -1374,7 +1370,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1459,7 +1455,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-bars",
     "title": "棒グラフ比較",
@@ -1471,7 +1467,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1553,7 +1549,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-kpi",
     "title": "KPI 指標",
@@ -1565,7 +1561,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1636,7 +1632,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-mixed",
     "title": "混在資料",
@@ -1648,7 +1644,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1801,7 +1797,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-narrative-mixed",
     "title": "3施策の同時実施判断",
@@ -1813,7 +1809,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",

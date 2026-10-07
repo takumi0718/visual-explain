@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {"id": "vs-stairs-state", "title": "成熟度状態レンズ", "summary": "成熟度の現在対象を切り替える資料。", "type": "system", "profile": "visual-stage"},
   "sections": [
-    {"kind": "first-screen", "id": "first", "decision": "成熟度状態を順に確認します。"},
+    {"kind": "first-screen", "id": "first", "conclusion": "成熟度状態を順に確認します。"},
     {"kind": "canonical", "ir": {
       "id": "stairs-state",
       "relationship": {"kind": "staged-maturity", "capabilities": ["maturity-staging", "typed-sequence"]},

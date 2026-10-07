@@ -71,6 +71,8 @@ from .model import (
     EvidenceItem,
     EvidenceMapPayload,
     FirstScreenSection,
+    Overview,
+    OverviewMarker,
     ClosingBlock,
     ClosingSection,
     AskClaim,
@@ -222,7 +224,15 @@ _COMPAT_SECTION_KEYS = {"kind", "id", "markup", "provenance"}
 _PROVENANCE_KEYS = {"source", "reason", "format"}
 _CANONICAL_SECTION_KEYS = {"kind", "ir"}
 _NARRATIVE_SECTION_KEYS = {"kind", "id", "markup"}
-_FIRST_SCREEN_SECTION_KEYS = {"kind", "id", "decision", "conditions"}
+_FIRST_SCREEN_SECTION_KEYS = {"kind", "id", "conclusion", "overview"}
+_OVERVIEW_KEYS = {"section", "markers"}
+_OVERVIEW_MARKER_KEYS = {"n", "label", "target"}
+_ASSEMBLY_SCHEMA_VERSION = 2
+_MAX_CONCLUSION_SENTENCES = 3
+_MAX_CONCLUSION_SENTENCE_CHARS = 80
+_MAX_OVERVIEW_MARKERS = 5
+_MAX_OVERVIEW_LABEL_CHARS = 30
+_SENTENCE_RE = re.compile(r"[^。！？!?]+[。！？!?]")
 _CLOSING_SECTION_KEYS = {"kind", "id", "blocks"}
 _CLOSING_BLOCK_KEYS = {"heading", "items"}
 _ASK_SECTION_KEYS = {
@@ -246,7 +256,8 @@ _CLOSING_REQUIRED = {
 _SENTENCE_TERMINATORS = frozenset("。！？!?")
 
 # Reserved tokens for narrative / freeform author markup (Global Constraints).
-_RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain", "decision-panel"})
+_RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain", "decision-panel",
+                               "conclusion", "overview-markers"})
 _RESERVED_DATA_EXACT = frozenset({
     "data-connect",
     "data-connect-scope",
@@ -486,6 +497,14 @@ def _is_single_sentence(value: str) -> bool:
     if not value or value[-1] not in _SENTENCE_TERMINATORS:
         return False
     return sum(1 for ch in value if ch in _SENTENCE_TERMINATORS) == 1
+
+
+def split_sentences(text: str) -> tuple[str, ...] | None:
+    """Split on 。！？!?; None when any text is left without a terminator or a sentence is empty."""
+    parts = tuple(_SENTENCE_RE.findall(text))
+    if not parts or "".join(parts) != text:
+        return None
+    return parts
 
 
 def _check_keys(obj: dict, allowed: set[str], path: str, col: DiagnosticCollector,
@@ -2642,8 +2661,13 @@ def validate_assembly(raw: object) -> AssemblyRequest:
     if not isinstance(raw, dict):
         raise ContractError.single(INVALID_COMPONENT_PAYLOAD, "assembly はオブジェクトである必要があります", "assembly")
     _check_keys(raw, _ASSEMBLY_KEYS, "assembly", col)
-    if raw.get("schemaVersion") != 1:
-        col.add(INVALID_COMPONENT_PAYLOAD, f"未知の schemaVersion '{raw.get('schemaVersion')}'", "assembly")
+    version = raw.get("schemaVersion")
+    if version == 1:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "schemaVersion 1 は廃止されました（first-screen を conclusion / overview で書き直してください）",
+                "assembly")
+    elif version != _ASSEMBLY_SCHEMA_VERSION:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"未知の schemaVersion '{version}'", "assembly")
     document = _validate_document(raw.get("document"), "assembly.document", col)
     sections_raw = raw.get("sections")
     sections: list[object] = []
@@ -2659,11 +2683,12 @@ def validate_assembly(raw: object) -> AssemblyRequest:
         if section is not None:
             sections.append(section)
     _validate_document_structure(sections_raw, col)
+    _validate_overview_links(sections_raw, sections, col)
     if doc_profile == "visual-stage":
         _validate_visual_stage_document(sections_raw, sections, col)
     col.raise_if_any()
     assert document is not None
-    return AssemblyRequest(schema_version=1, document=document, sections=tuple(sections))
+    return AssemblyRequest(schema_version=_ASSEMBLY_SCHEMA_VERSION, document=document, sections=tuple(sections))
 
 
 def _validate_document(raw: object, path: str, col: DiagnosticCollector) -> DocumentMetadata | None:
@@ -2765,29 +2790,86 @@ def _validate_first_screen_section(raw: dict, path: str, col: DiagnosticCollecto
     sid = raw.get("id")
     if not _nonblank_str(sid):
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.id は空にできません", path)
-    decision = raw.get("decision")
-    if not _nonblank_str(decision):
-        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.decision は空にできません", path)
-    elif isinstance(decision, str) and not _is_single_sentence(decision):
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                "first-screen.decision は1文（末尾の 。！？!? がちょうど1個）である必要があります", path)
-    conditions_raw = raw.get("conditions", [])
-    conditions: tuple[str, ...] = ()
-    if not isinstance(conditions_raw, list):
-        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は文字列配列である必要があります", path)
-    elif len(conditions_raw) > 2:
-        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions は最大2件です", path)
-    elif not all(isinstance(c, str) and c.strip() != "" for c in conditions_raw):
-        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conditions の各要素は非空文字列である必要があります", path)
+    conclusion = raw.get("conclusion")
+    if not _nonblank_str(conclusion):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.conclusion は空にできません", path)
     else:
-        conditions = tuple(conditions_raw)
+        sentences = split_sentences(conclusion)
+        if sentences is None or len(sentences) > _MAX_CONCLUSION_SENTENCES:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    "first-screen.conclusion は文末（。！？!?）で終わる1〜3文である必要があります", path)
+        else:
+            for sentence in sentences:
+                if len(sentence) > _MAX_CONCLUSION_SENTENCE_CHARS:
+                    col.add(INVALID_COMPONENT_PAYLOAD,
+                            f"first-screen.conclusion の各文は80字以内です（{len(sentence)}字）", path)
+    overview = _validate_overview(raw.get("overview"), f"{path}.overview", col) if "overview" in raw else None
     if len(col.diagnostics) > before:
         return None
     if sid in seen_ids:
         col.add(DUPLICATE_SEMANTIC_ID, f"section id '{sid}' が重複しています", path)
         return None
     seen_ids.add(sid)
-    return FirstScreenSection(id=sid, decision=decision, conditions=conditions)
+    return FirstScreenSection(id=sid, conclusion=conclusion, overview=overview)
+
+
+def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Overview | None:
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview はオブジェクトである必要があります", path)
+        return None
+    _check_keys(raw, _OVERVIEW_KEYS, path, col)
+    section = raw.get("section")
+    if not _nonblank_str(section):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.section は空にできません", path)
+    markers_raw = raw.get("markers")
+    if not isinstance(markers_raw, list) or not 1 <= len(markers_raw) <= _MAX_OVERVIEW_MARKERS:
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers は1〜5件の配列である必要があります", path)
+        return None
+    markers: list[OverviewMarker] = []
+    for i, item in enumerate(markers_raw):
+        mp = f"{path}.markers[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers の各要素はオブジェクトである必要があります", mp)
+            continue
+        _check_keys(item, _OVERVIEW_MARKER_KEYS, mp, col)
+        label, target = item.get("label"), item.get("target")
+        if not _nonblank_str(label) or len(label) > _MAX_OVERVIEW_LABEL_CHARS:
+            col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].label は1〜30字です", mp)
+        if not _nonblank_str(target):
+            col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].target は空にできません", mp)
+        markers.append(OverviewMarker(n=item.get("n"), label=label or "", target=target or ""))
+    if [m.n for m in markers] != list(range(1, len(markers) + 1)):
+        col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers の n は1からの連番である必要があります", path)
+    return Overview(section=section or "", markers=tuple(markers))
+
+
+def _validate_overview_links(sections_raw: list, sections: list[object], col: DiagnosticCollector) -> None:
+    """Cross-section rules for the overview: placement, marker targets, and when it is required."""
+    from .document_sections import extract_first_h2_h3
+
+    first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
+    if first is None:
+        return
+    headed = sum(1 for s in sections
+                 if isinstance(s, NarrativeSection) and extract_first_h2_h3(s.markup) is not None)
+    asks = sum(1 for s in sections if isinstance(s, AskSection))
+    if first.overview is None:
+        if headed >= 3 or asks >= 3:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    "h2 節または ask が3つ以上ある資料では first-screen.overview が必要です",
+                    "assembly.sections[0]")
+        return
+    second = sections[1] if len(sections) > 1 else None
+    if not (isinstance(second, CanonicalSection) and second.ir.id == first.overview.section):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "first-screen.overview.section は first-screen 直後の canonical セクションの id である必要があります",
+                "assembly.sections[0].overview")
+    linkable = {s.id for s in sections if isinstance(s, (AskSection, NarrativeSection, ClosingSection))}
+    for i, marker in enumerate(first.overview.markers):
+        if marker.target not in linkable:
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"first-screen.overview.markers[{i}].target '{marker.target}' は ask / narrative / closing セクションの id である必要があります",
+                    "assembly.sections[0].overview")
 
 
 def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):

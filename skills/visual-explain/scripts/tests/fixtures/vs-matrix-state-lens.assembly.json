@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {"id": "vs-matrix-state", "title": "権限状態レンズ", "summary": "権限セルの現在対象を切り替える資料。", "type": "system", "profile": "visual-stage"},
   "sections": [
-    {"kind": "first-screen", "id": "first", "decision": "対象権限を順に確認します。"},
+    {"kind": "first-screen", "id": "first", "conclusion": "対象権限を順に確認します。"},
     {"kind": "canonical", "ir": {
       "id": "matrix-state",
       "relationship": {"kind": "two-axis", "capabilities": ["two-axis-classification", "intersection-comparison", "typed-sequence"]},

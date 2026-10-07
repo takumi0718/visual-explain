@@ -205,7 +205,7 @@ class DomainMarkerTest(unittest.TestCase):
 
     def test_build_document_passes_with_https_source_link(self) -> None:
         raw = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "document": {
                 "id": "doc",
                 "title": "出典リンク検証",
@@ -214,7 +214,7 @@ class DomainMarkerTest(unittest.TestCase):
                 "profile": "strict",
             },
             "sections": [
-                {"kind": "first-screen", "id": "sec-first", "decision": "出典を確認する。"},
+                {"kind": "first-screen", "id": "sec-first", "conclusion": "出典を確認する。"},
                 {
                     "kind": "narrative",
                     "id": "sec-body",

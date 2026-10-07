@@ -31,10 +31,10 @@ def _doc() -> dict:
 
 def _assembly(section: dict) -> dict:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "document": _doc(),
         "sections": [
-            {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"},
+            {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"},
             section,
             {
                 "kind": "closing",

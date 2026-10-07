@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "chevron-loop-demo",
     "title": "閉ループの改善サイクル",
@@ -11,7 +11,7 @@
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",

@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from build_explainer import build_document
+from first_screen_ir import CANONICAL
 from ve_components.document_sections import TocEntry, build_toc
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
@@ -15,7 +16,7 @@ COMPONENTS_DIR = SKILL_DIR / "assets" / "components"
 REGISTRY = load_registry(COMPONENTS_DIR / "registry.json")
 
 BASE = {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "document": {
         "id": "doc",
         "title": "長い資料の目次検証",
@@ -24,7 +25,12 @@ BASE = {
         "profile": "strict",
     },
 }
-FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+FIRST = {
+    "kind": "first-screen",
+    "id": "sec-first",
+    "conclusion": "決めます。",
+    "overview": {"section": "sec-map", "markers": [{"n": 1, "label": "限界", "target": "sec-closing"}]},
+}
 CLOSING = {
     "kind": "closing",
     "id": "sec-closing",
@@ -43,7 +49,7 @@ def _narr(sec_id: str, heading: str | None) -> dict:
 
 
 def _assembly(*middle: dict) -> dict:
-    return {**BASE, "sections": [FIRST, *middle, CLOSING]}
+    return {**BASE, "sections": [FIRST, CANONICAL, *middle, CLOSING]}
 
 
 def test_build_toc_returns_none_when_fewer_than_five_entries():

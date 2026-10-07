@@ -28,11 +28,11 @@ REGISTRY = load_registry(COMPONENTS_DIR / "registry.json")
 TESTS_DIR = SKILL_DIR / "scripts" / "tests"
 CHECK = SKILL_DIR / "scripts" / "check.sh"
 
-BASE = {"schemaVersion": 1,
+BASE = {"schemaVersion": 2,
         "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。",
                      "type": "system", "profile": "strict"}}
 
-FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+FIRST = {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"}
 CLOSING = {
     "kind": "closing",
     "id": "sec-closing",

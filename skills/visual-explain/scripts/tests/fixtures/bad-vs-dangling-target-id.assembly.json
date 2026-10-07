@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "vs-flow-path",
     "title": "承認経路ステッパー",
@@ -11,7 +11,7 @@
     {
       "kind": "first-screen",
       "id": "first",
-      "decision": "承認経路を順に確認します。"
+      "conclusion": "承認経路を順に確認します。"
     },
     {
       "kind": "canonical",

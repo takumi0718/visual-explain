@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "enumeration-demo",
     "title": "並列項目の列挙",
@@ -11,7 +11,7 @@
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
