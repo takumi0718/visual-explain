@@ -45,6 +45,7 @@ from ve_components.model import (  # noqa: E402
     FirstScreenSection,
     NarrativeSection,
 )
+from ve_components.metrics import format_metrics, text_metrics  # noqa: E402
 from ve_components.registry import Registry, load_registry  # noqa: E402
 from ve_components.renderers import TRUSTED_RENDERERS  # noqa: E402
 from ve_components.validation import validate_assembly  # noqa: E402
@@ -160,12 +161,13 @@ def main(argv: list[str]) -> int:
         output=Path(args.output),
     )
     try:
-        build_to_path(raw_assembly, paths)
+        result = build_to_path(raw_assembly, paths)
     except ContractError as exc:
         for diagnostic in exc.diagnostics:
             print(f"FAIL: {diagnostic}", file=sys.stderr)
         return 1
     print(f"OK: {paths.output}")
+    print(format_metrics(text_metrics(result.html)))
     return 0
 
 
