@@ -587,5 +587,36 @@ class NestedSectionMarginTest(unittest.TestCase):
             "[data-ve-section-kind] section:not([data-ve-section-kind] > section, [data-lane]) "
             "{ margin-block: 0; }", _style())
 
+class QuestionFormLayoutTest(unittest.TestCase):
+    def test_memo_label_sits_above_a_full_width_textarea(self):
+        css = _style()
+        self.assertIn(".ask-memo label { display: grid; gap: var(--space-1); color: var(--text-dim); "
+                      "font-size: var(--fs-small); font-weight: 700; }", css)
+        rule = next(line for line in css.splitlines()
+                    if line.strip().startswith(".ask-memo textarea, .decision-panel textarea {"))
+        self.assertIn("width: 100%;", rule)
+        self.assertIn("font-size: var(--fs-body); font-weight: 400;", rule)
+
+    def test_copy_button_has_top_spacing(self):
+        self.assertIn(".decision-panel > .button-primary { margin-top: var(--space-2); }", _style())
+
+    def test_card_status_reads_as_a_state_line(self):
+        # The default ("お任せ") is a state, not a third option: it is shown as a
+        # dashed slot aligned with the option cards and turns solid once chosen.
+        css = _style()
+        self.assertIn(".ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; "
+                      "gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); "
+                      "border: 1px dashed var(--text-faint); border-radius: var(--radius);", css)
+        self.assertIn('.ask-card-status::before { content: "いまの回答";', css)
+        self.assertIn(".ask:has([data-ask-selected]) .ask-card-status { border-style: solid; color: var(--text); }", css)
+        self.assertIn('.ask:has([data-ask-selected]) .ask-card-status::after '
+                      '{ content: "選んだ案をもう一度押すとお任せに戻る";', css)
+
+    def test_panel_rows_stack_question_and_status(self):
+        css = _style()
+        self.assertIn(".panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }", css)
+        self.assertIn(".panel-asks li { display: grid; gap: 0; }", css)
+        self.assertIn(".panel-status { color: var(--text-dim); font-size: var(--fs-small); }", css)
+
 if __name__ == "__main__":
     unittest.main()

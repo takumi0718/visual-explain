@@ -230,7 +230,10 @@
     .ask-options [data-ask-withdrawn] .ask-option-head::before { border-style: dashed; border-color: var(--text-faint); }
     .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
     .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-    .ask-card-status { margin: var(--space-1) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); border: 1px dashed var(--text-faint); border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+    .ask-card-status::before { content: "いまの回答"; color: var(--text-faint); font-weight: 400; }
+    .ask:has([data-ask-selected]) .ask-card-status { border-style: solid; color: var(--text); }
+    .ask:has([data-ask-selected]) .ask-card-status::after { content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-faint); font-weight: 400; }
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
@@ -241,14 +244,18 @@
     .ask-options [data-ask-option]:not([data-ask-withdrawn]):not([data-ask-selected]):hover { border-color: var(--text-faint); }
     .ask-options [data-ask-option][data-ask-selected] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
     .ask-memo { display: grid; gap: var(--space-1); margin-top: var(--space-2); }
-    .ask-memo textarea, .decision-panel textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; max-width: 100%; }
+    .ask-memo label { display: grid; gap: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+    .ask-memo textarea, .decision-panel textarea { font: inherit; font-size: var(--fs-body); font-weight: 400; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; width: 100%; max-width: 100%; }
     .decision-panel { max-width: var(--w-narrative); padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
     .decision-panel h2 { margin-top: 0; }
-    .panel-asks { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
-    .panel-status { color: var(--text-dim); }
+    .panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .panel-asks li { display: grid; gap: 0; }
+    .panel-question { font-weight: 700; }
+    .panel-status { color: var(--text-dim); font-size: var(--fs-small); }
     .panel-review-count { margin: var(--space-1) 0 0; color: var(--text-dim); }
     .panel-memo { display: block; color: var(--text-dim); white-space: pre-wrap; }
     .panel-copy-status { margin: var(--space-1) 0 0; color: var(--text-dim); }
+    .decision-panel > .button-primary { margin-top: var(--space-2); }
     .panel-copy-fallback { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); white-space: pre-wrap; }
 
     [data-ve-blk]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
