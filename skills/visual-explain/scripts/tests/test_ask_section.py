@@ -270,7 +270,7 @@ class AskSectionTest(unittest.TestCase):
                              default_id="opt-b")
         wrapped = render_ask(section)
         self.assertIn('<textarea data-ask-memo></textarea>', wrapped.markup)
-        self.assertIn('メモ（この判断について）', wrapped.markup)
+        self.assertIn('補足（任意）', wrapped.markup)
 
     def test_digest_ids_cannot_collide_across_field_boundaries(self) -> None:
         from ve_components.document_sections import compute_ask_digest_from_pairs

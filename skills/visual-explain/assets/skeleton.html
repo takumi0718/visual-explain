@@ -192,18 +192,26 @@
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
 
-    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: .5rem; }
     .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
     .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
     .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: var(--bg); }
     .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: var(--bg); }
-    /* request は警告ではないためモノクロ。意味色は decision のチップ（選択=青）と既定案（推奨=緑）のみ */
+    /* Semantic colors are limited to selection (accent) and the recommended badge (positive); request stays monochrome. */
     .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
     .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
-    .ask-options [data-ask-option] { display: grid; grid-template-columns: minmax(8rem, .35fr) 1fr; gap: var(--space-2); padding: var(--space-1); border-radius: .3rem; }
-    .ask-options [data-ask-default] { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); }
-    .ask-options [data-ask-default] > :first-child::after { content: "既定案"; margin-left: var(--space-1); color: var(--positive); font-size: var(--fs-small); font-weight: 700; }
-    .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: 1fr; gap: 0; padding: var(--space-1) var(--space-2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+    .ask-option-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-weight: 700; }
+    .ask-option-head::before { content: ""; flex: none; width: .9rem; height: .9rem; border: 2px solid var(--text-dim); border-radius: 50%; }
+    .ask-options [data-ask-option][data-ask-selected] .ask-option-head::before { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
+    .ask-badge { padding: 0 var(--space-1); border-radius: 999px; color: var(--positive); background: color-mix(in srgb, var(--positive) 12%, var(--surface)); font-size: var(--fs-small); }
+    .ask-benefit, .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); font-size: var(--fs-figure); }
+    .ask-options [data-ask-withdrawn] { cursor: not-allowed; color: var(--text-faint); background: transparent; }
+    .ask-options [data-ask-withdrawn] .ask-option-label { text-decoration: line-through; }
+    .ask-options [data-ask-withdrawn] .ask-option-head::before { border-style: dashed; border-color: var(--text-faint); }
+    .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
+    .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-card-status { margin: var(--space-1) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }

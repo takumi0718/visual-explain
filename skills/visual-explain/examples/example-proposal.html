@@ -192,18 +192,26 @@
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
 
-    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: .5rem; }
     .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
     .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
     .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: var(--bg); }
     .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: var(--bg); }
-    /* request は警告ではないためモノクロ。意味色は decision のチップ（選択=青）と既定案（推奨=緑）のみ */
+    /* Semantic colors are limited to selection (accent) and the recommended badge (positive); request stays monochrome. */
     .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
     .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
-    .ask-options [data-ask-option] { display: grid; grid-template-columns: minmax(8rem, .35fr) 1fr; gap: var(--space-2); padding: var(--space-1); border-radius: .3rem; }
-    .ask-options [data-ask-default] { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); }
-    .ask-options [data-ask-default] > :first-child::after { content: "既定案"; margin-left: var(--space-1); color: var(--positive); font-size: var(--fs-small); font-weight: 700; }
-    .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: 1fr; gap: 0; padding: var(--space-1) var(--space-2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+    .ask-option-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-weight: 700; }
+    .ask-option-head::before { content: ""; flex: none; width: .9rem; height: .9rem; border: 2px solid var(--text-dim); border-radius: 50%; }
+    .ask-options [data-ask-option][data-ask-selected] .ask-option-head::before { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
+    .ask-badge { padding: 0 var(--space-1); border-radius: 999px; color: var(--positive); background: color-mix(in srgb, var(--positive) 12%, var(--surface)); font-size: var(--fs-small); }
+    .ask-benefit, .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); font-size: var(--fs-figure); }
+    .ask-options [data-ask-withdrawn] { cursor: not-allowed; color: var(--text-faint); background: transparent; }
+    .ask-options [data-ask-withdrawn] .ask-option-label { text-decoration: line-through; }
+    .ask-options [data-ask-withdrawn] .ask-option-head::before { border-style: dashed; border-color: var(--text-faint); }
+    .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
+    .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-card-status { margin: var(--space-1) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
@@ -434,10 +442,11 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
 <div class="ask" data-ask="decision">
   <p class="ask-kind">判断してください</p>
   <p class="ask-question">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>
+  <p class="ask-evidence">根拠: 照合シートの試算「契約例外 12 件のうち 9 件が同じ顧客群に集中」</p>
   <ul class="ask-options">
-    <li data-ask-option data-ask-option-id="limited" data-ask-default><span>限定対象で段階公開する</span><span class="ask-tradeoff">対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li><li data-ask-option data-ask-option-id="all"><span>全顧客へ一斉公開する</span><span class="ask-tradeoff">例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>
+    <li data-ask-option data-ask-option-id="limited" data-ask-default><span class="ask-option-head"><span class="ask-option-label">限定対象で段階公開する</span><span class="ask-badge">推奨</span></span><span class="ask-benefit">利点: 誤りの影響を限定対象に閉じたまま照合の効果を確かめられる</span><span class="ask-tradeoff">代償: 対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li><li data-ask-option data-ask-option-id="all"><span class="ask-option-head"><span class="ask-option-label">全顧客へ一斉公開する</span></span><span class="ask-benefit">利点: 告知と請求の切替が一度で済み運用が二重にならない</span><span class="ask-tradeoff">代償: 例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>
   </ul>
-  <div class="ask-memo"><label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>
+  <div class="ask-memo"><label>補足（任意）<textarea data-ask-memo></textarea></label></div>
 </div>
 </section>
     <section data-ve-section-kind="closing" id="sec-closing">

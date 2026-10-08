@@ -185,20 +185,29 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
     options_html: list[str] = []
     for opt in section.options:
         attrs = f'data-ask-option data-ask-option-id="{_esc(opt.id)}"'
-        if section.default_id is not None and opt.id == section.default_id:
+        badge = ""
+        if opt.id == section.default_id:
             attrs += " data-ask-default"
+            badge = '<span class="ask-badge">推奨</span>'
+        if opt.withdrawn:
+            attrs += " data-ask-withdrawn"
+            badge = '<span class="ask-withdrawn-note">取り下げ</span>'
         options_html.append(
-            f"<li {attrs}><span>{_esc(opt.label)}</span>"
-            f'<span class="ask-tradeoff">{_esc(opt.tradeoff)}</span></li>'
+            f"<li {attrs}>"
+            f'<span class="ask-option-head"><span class="ask-option-label">{_esc(opt.label)}</span>{badge}</span>'
+            f'<span class="ask-benefit">利点: {_esc(opt.benefit)}</span>'
+            f'<span class="ask-tradeoff">代償: {_esc(opt.tradeoff)}</span>'
+            "</li>"
         )
     memo = (
         '\n  <div class="ask-memo">'
-        '<label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>'
+        '<label>補足（任意）<textarea data-ask-memo></textarea></label></div>'
     )
     return (
         f'<div class="ask" data-ask="decision">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
         f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
+        f'  <p class="ask-evidence">根拠: {_esc(section.evidence)}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
         f"  </ul>{memo}\n"
