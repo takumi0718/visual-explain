@@ -438,8 +438,25 @@ class ReviewLayerSkeletonTest(unittest.TestCase):
             "[data-ve-blk][data-ve-annotated] { border-left: 3px solid var(--accent); "
             "padding-left: var(--space-1); }", style)
         self.assertIn(
-            '.review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); '
-            "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }", style)
+            '.review-editor .review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); '
+            "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); "
+            "box-shadow: inset 0 0 0 1px var(--accent); font-weight: 700; }", style)
+
+    def test_editor_controls_share_one_size_and_add_is_primary(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(".review-editor :is(.review-chip, .review-actions button, .review-list button) "
+                      "{ padding: 0 var(--space-2); font-size: var(--fs-small); line-height: 2; }", style)
+        self.assertIn(".review-editor .button-primary:disabled { background: var(--bg); border-color: var(--border); "
+                      "border-style: dashed; color: var(--text-dim); font-weight: 400; }", style)
+        self.assertIn('.review-chip[aria-checked="true"]::before { content: "✓ "; content: "✓ " / ""; }', style)
+        self.assertIn("add.className = 'button-primary';", SKELETON)
+        self.assertIn("chipTag.className = 'review-list-chip';", SKELETON)
+
+    def test_body_relevant_metadata_is_not_faint(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(".certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-dim); }", style)
+        self.assertIn('.ask-card-status::before { content: "いまの回答"; color: var(--text-dim);', style)
+        self.assertIn('content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-dim);', style)
 
 
 class ControlsV4Test(unittest.TestCase):
@@ -651,12 +668,13 @@ class ClosingCardTest(unittest.TestCase):
 class CertaintyBadgeTest(unittest.TestCase):
     def test_inferred_and_unverified_differ_beyond_the_border_style(self):
         # Dotted vs dashed alone is hard to tell apart at 13px: inferred also gets
-        # the grey tint, unverified fades to the faint ink on an empty pill.
+        # the grey tint, unverified keeps an empty pill with a faint dotted border
+        # (its text stays at the readable --text-dim).
         css = _style()
         self.assertIn(".certainty.inferred { border-style: dashed; "
                       "background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }", css)
         self.assertIn(".certainty.unverified { border-style: dotted; border-color: var(--text-faint); "
-                      "color: var(--text-faint); }", css)
+                      "color: var(--text-dim); }", css)
 
 class CardTextStepTest(unittest.TestCase):
     """Body text inside skeleton-styled cards uses one step between body and notes."""

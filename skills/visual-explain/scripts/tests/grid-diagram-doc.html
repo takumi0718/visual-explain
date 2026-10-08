@@ -196,7 +196,7 @@
     .certainty-tail { white-space: nowrap; }
     .certainty.confirmed { border-style: solid; }
     .certainty.inferred { border-style: dashed; background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
-    .certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-faint); }
+    .certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-dim); }
     details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
     details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
     details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
@@ -238,9 +238,9 @@
     .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
     .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
     .ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-card); font-weight: 700; }
-    .ask-card-status::before { content: "いまの回答"; color: var(--text-faint); font-weight: 400; }
+    .ask-card-status::before { content: "いまの回答"; color: var(--text-dim); font-weight: 400; }
     .ask:has([data-ask-selected]) .ask-card-status { color: var(--text); }
-    .ask:has([data-ask-selected]) .ask-card-status::after { content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-faint); font-weight: 400; }
+    .ask:has([data-ask-selected]) .ask-card-status::after { content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-dim); font-weight: 400; }
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
     .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
@@ -272,11 +272,18 @@
     .review-editor { display: grid; gap: var(--space-1); max-width: var(--w-narrative); margin: var(--space-1) 0 var(--space-2); padding: var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-figure); }
     .review-head { margin: 0; color: var(--text-dim); }
     .review-chips, .review-actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-    .review-chip { padding: 0 var(--space-1); border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
-    .review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .review-editor :is(.review-chip, .review-actions button, .review-list button) { padding: 0 var(--space-2); font-size: var(--fs-small); line-height: 2; }
+    .review-chip { border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+    .review-editor .review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 700; }
+    .review-chip[aria-checked="true"]::before { content: "✓ "; content: "✓ " / ""; }
+    .review-editor .button-primary:disabled { background: var(--bg); border-color: var(--border); border-style: dashed; color: var(--text-dim); font-weight: 400; }
     .review-note { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); }
-    .review-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
-    .review-list li { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; }
+    .review-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+    .review-list:empty { display: none; }
+    .review-list li { display: flex; gap: var(--space-2); align-items: baseline; justify-content: space-between; padding: var(--space-1) 0; border-top: 1px solid var(--border); }
+    .review-list li > span { flex: 1; min-width: 0; color: var(--text); }
+    .review-list-chip { margin-right: var(--space-1); font-weight: 700; }
+    .review-list li > button { flex: none; }
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -931,6 +938,7 @@ figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-3 { m
       note.setAttribute('aria-label', 'ひとこと（任意）');
       const add = document.createElement('button');
       add.type = 'button';
+      add.className = 'button-primary';
       add.textContent = '追加';
       const close = document.createElement('button');
       close.type = 'button';
@@ -1020,7 +1028,10 @@ figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-3 { m
       editor.list.replaceChildren(...engine.annotationsFor(state, n).map((item) => {
         const row = document.createElement('li');
         const label = document.createElement('span');
-        label.textContent = `[${item.chip}]${item.quote ? ` 「${item.quote}」` : ''}${item.note ? ` ${item.note}` : ''}`;
+        const chipTag = document.createElement('strong');
+        chipTag.className = 'review-list-chip';
+        chipTag.textContent = item.chip;
+        label.append(chipTag, `${item.quote ? `「${item.quote}」` : ''}${item.note ? ` ${item.note}` : ''}`);
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.textContent = '削除';
