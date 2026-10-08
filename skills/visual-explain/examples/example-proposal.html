@@ -123,6 +123,8 @@
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure .ve-matrix-scroll { margin-inline: 0; }
     [data-ve-section-kind] figure[data-ve-component] > figcaption[class] { font-size: var(--fs-h3); }
+    [data-ve-section-kind] .layers > [data-lane]:first-child { margin-block-start: 0; }
+    [data-ve-section-kind] .layers > [data-lane]:last-child { margin-block-end: 0; }
     .overview-markers ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
     .overview-markers a { display: inline-flex; gap: var(--space-1); align-items: baseline; color: var(--text); text-decoration: none; }
     .overview-markers .marker-n { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
