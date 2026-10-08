@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ja" data-theme-storage-key="visual-explain-theme" data-ve-skeleton="4">
+<html lang="ja" data-theme-storage-key="visual-explain-theme" data-ve-skeleton="3">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <!-- TITLE:BEGIN -->
-  <title>資料タイトル</title>
+  <title>顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。</title>
   <!-- TITLE:END -->
   <style>
     :root {
@@ -265,6 +265,48 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <style data-ve-component="matrix" data-ve-contract-version="2" data-ve-asset="matrix.css" data-ve-digest="fe9fd5f86063dcb93790a9549a7630a162d674082446e2dd5f86c540bd6b692c">figure[data-ve-component="matrix"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="matrix"] .ve-matrix-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll { overflow-x: auto; }
+figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; min-width: 32rem; border-collapse: collapse; }
+figure[data-ve-component="matrix"] .ve-mx-grid { display: grid; gap: var(--space-1); max-width: 34rem; }
+figure[data-ve-component="matrix"] .ve-mx-cols-2 { grid-template-columns: 8rem repeat(2, minmax(0, 1fr)); }
+figure[data-ve-component="matrix"] .ve-mx-cols-3 { grid-template-columns: 8rem repeat(3, minmax(0, 1fr)); }
+figure[data-ve-component="matrix"] .ve-mx-cols-4 { grid-template-columns: 8rem repeat(4, minmax(0, 1fr)); }
+figure[data-ve-component="matrix"] .ve-mx-colhead {
+  display: grid; place-items: center; padding: var(--space-1);
+  background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; }
+figure[data-ve-component="matrix"] .ve-mx-rowhead {
+  display: grid; place-items: center; padding: var(--space-1);
+  background: var(--dg-neutral); color: var(--text); font-weight: 700; }
+figure[data-ve-component="matrix"] .ve-mx-cell {
+  display: grid; place-items: center; padding: var(--space-1);
+  border: 1.5px solid var(--dg-primary); font-weight: 700; font-size: 1.0625rem; }
+figure[data-ve-component="matrix"] .ve-mx-cell.ve-dg-highlight { background: var(--dg-primary-light); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th {
+  color: var(--text); font-weight: 800; text-align: left;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="col"] { border-bottom: 1.5px solid var(--border-strong); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { border-bottom: 1px solid var(--border); vertical-align: top; }
+figure[data-ve-component="matrix"] .ve-matrix-scroll td {
+  border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
+figure[data-ve-component="matrix"] .ve-matrix-bullets { margin: 0; padding: 0; list-style: none; }
+figure[data-ve-component="matrix"] .ve-matrix-bullets li { margin: 0; padding-left: var(--space-2); text-indent: calc(-1 * var(--space-2)); }
+figure[data-ve-component="matrix"] .ve-matrix-bullets li::before { content: "・"; }
+figure[data-ve-component="matrix"] .ve-matrix-bullets li + li { margin-top: var(--space-1); }
+figure[data-ve-component="matrix"] .ve-matrix-scroll .ve-matrix-corner { background: transparent; border: 0; border-bottom: 1.5px solid var(--border-strong); }
+figure[data-ve-component="matrix"] .ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+figure[data-ve-component="matrix"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+figure[data-ve-component="matrix"] .ve-matrix-refs { display: block; margin-top: var(--space-1); }
+figure[data-ve-component="matrix"] .ve-cert { display: inline-block; margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; border-bottom: 1px solid var(--text-dim); }
+figure[data-ve-component="matrix"] .ve-cert-confirmed { color: var(--text-dim); }
+figure[data-ve-component="matrix"] .ve-cert-inferred { color: var(--text-dim); border-bottom-style: dashed; }
+figure[data-ve-component="matrix"] .ve-cert-unverified { color: var(--text-dim); border-bottom-style: dotted; }
+figure[data-ve-component="matrix"] .ve-src { display: inline-block; font-size: var(--fs-small); color: var(--text-dim); }
+figure[data-ve-component="matrix"] .ve-matrix-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
+</style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
   /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
@@ -332,13 +374,119 @@
   <main>
     <!-- CONTENT:BEGIN -->
     <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <section data-ve-section-kind="first-screen" data-ve-document-type="proposal" data-ve-profile="strict" id="sec-first-screen">
+<section class="first-screen" aria-label="最初に伝えること">
+  <h1>顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。</h1>
+  <p class="conclusion" data-ve-blk="1"><strong>結論:</strong> 限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。</p>
+</section>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="matrix" data-ve-contract-version="2" data-ve-instance="sec-alternatives" data-ve-fallback="static-content">
+<figure data-ve-component="matrix" role="group" aria-label="案の比較" aria-describedby="sec-alternatives-summary" data-ve-blk="2"><figcaption id="sec-alternatives-caption" class="ve-matrix-caption">見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。</figcaption><p id="sec-alternatives-summary" class="ve-matrix-summary">行が案、列が主な利点と主なトレードオフの比較表。</p><div class="ve-matrix-scroll"><table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td><th scope="col" data-ve-semantic-id="col-benefit">主な利点</th><th scope="col" data-ve-semantic-id="col-tradeoff">主なトレードオフ</th></tr></thead><tbody><tr><th scope="row" data-ve-semantic-id="opt-all">全顧客へ一斉公開</th><td data-ve-semantic-id="cell-all-benefit" data-ve-row-id="opt-all" data-ve-column-id="col-benefit">対象を分けずに早く反映できる</td><td data-ve-semantic-id="cell-all-tradeoff" data-ve-row-id="opt-all" data-ve-column-id="col-tradeoff">例外や計算誤りの影響範囲も最初から広い</td></tr><tr><th scope="row" data-ve-semantic-id="opt-hold">変更を保留</th><td data-ve-semantic-id="cell-hold-benefit" data-ve-row-id="opt-hold" data-ve-column-id="col-benefit">新しい請求影響を発生させない</td><td data-ve-semantic-id="cell-hold-tradeoff" data-ve-row-id="opt-hold" data-ve-column-id="col-tradeoff">料金改定の目的を達成できず、判断材料も増えない</td></tr><tr><th scope="row" data-ve-semantic-id="opt-proposal">提案: 限定対象で段階公開</th><td class="ve-dg-highlight" data-ve-semantic-id="cell-proposal-benefit" data-ve-row-id="opt-proposal" data-ve-column-id="col-benefit">照合した顧客群で影響と撤回条件を確かめられる</td><td data-ve-semantic-id="cell-proposal-tradeoff" data-ve-row-id="opt-proposal" data-ve-column-id="col-tradeoff">対象選定、承認、顧客対応を追加で運用する必要がある</td></tr></tbody></table></div><ul class="ve-matrix-notes"><li data-ve-semantic-id="cert-alternatives"><strong>推論:</strong> 全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。</li><li data-ve-semantic-id="src-alternatives"><strong>出典 料金改定の比較検討メモ</strong>（各案の利点と代償を承認者向けに整理した表。）</li></ul></figure>
+</section>
+    <section data-ve-section-kind="overview-nav">
+<nav class="overview-markers" aria-label="この資料の論点"><ol><li data-ve-blk="3"><a href="#sec-current-problem"><span class="marker-n" aria-hidden="true">1</span><span>部門別確認の限界</span></a></li><li data-ve-blk="4"><a href="#sec-approval-map-intro"><span class="marker-n" aria-hidden="true">2</span><span>承認地図での照合</span></a></li><li data-ve-blk="5"><a href="#sec-ask-decision"><span class="marker-n" aria-hidden="true">3</span><span>限定対象で開始するか</span></a></li></ol></nav>
+</section>
+    <section data-ve-section-kind="narrative" data-ve-instance="sec-current-problem" id="sec-current-problem">
+<section aria-labelledby="current-problem">
+  <h2 id="current-problem" data-ve-blk="6">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>
+  <p class="claim" data-ve-blk="7">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class="certainty unverified">未確認</span></p>
+</section>
+</section>
+    <section data-ve-section-kind="narrative" data-ve-instance="sec-approval-map-intro" id="sec-approval-map-intro">
+<section aria-labelledby="approval-map">
+  <h2 id="approval-map" data-ve-blk="8">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>
+  <p class="claim" data-ve-blk="9">承認者は、根拠と顧客影響を共同承認で照合し、限定対象で公開します。<span class="certainty inferred">推論</span></p>
+</section>
+</section>
+    <section data-ve-section-kind="compatibility" data-ve-compat-source="legacy-html-insertion" data-ve-compat-reason="unmigrated-format" data-ve-instance="sec-approval-map">
+<figure class="figure" data-ve-blk="10">
+        <div class="layers" data-connect="contract-exception->billing-calculation, price-change->billing-calculation, price-change->notification-audience, billing-calculation->joint-approval, notification-audience->joint-approval, joint-approval->limited-release">
+          <section class="lane" data-lane>
+            <p class="lane-label">根拠</p>
+            <div class="lane-nodes">
+              <div class="flow-node" id="contract-exception">契約例外</div>
+              <div class="flow-node" id="price-change">料金改定案</div>
+            </div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">顧客影響</p>
+            <div class="lane-nodes">
+              <div class="flow-node" id="billing-calculation">請求計算と対象顧客</div>
+              <div class="flow-node" id="notification-audience">告知対象と文面</div>
+            </div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">共同承認</p>
+            <div class="lane-nodes"><div class="flow-node" id="joint-approval">法務・請求・顧客対応が例外、価格、顧客群を照合</div></div>
+          </section>
+          <section class="lane" data-lane>
+            <p class="lane-label">公開と保護</p>
+            <div class="lane-nodes">
+              <div class="flow-node" id="limited-release">限定対象で公開</div>
+              <div class="flow-node" id="rollback-condition">撤回条件を監視</div>
+            </div>
+          </section>
+        </div>
+        <figcaption>根拠・顧客影響・承認・撤回を一つの経路でたどれるため、部門をまたぐ不整合に気づける。</figcaption>
+      </figure>
+</section>
+    <section data-ve-section-kind="compatibility" data-ve-compat-source="legacy-html-insertion" data-ve-compat-reason="unmigrated-format" data-ve-instance="sec-before-after-compare">
+<div class="compare">
+  <section class="compare-frame">
+    <h3 data-ve-blk="11">Before: 部門別の確認</h3>
+    <p data-ve-blk="12">法務は契約例外、請求は計算、顧客対応は告知を個別に確認します。</p>
+    <p data-ve-blk="13">承認者は、例外が誰の請求と通知に影響するかを資料間でつなぎ直します。</p>
+  </section>
+  <section class="compare-frame">
+    <h3 data-ve-blk="14">After: 共同の承認地図</h3>
+    <p data-ve-blk="15">同じ顧客群に対する根拠、計算、通知、撤回条件を一つの経路で照合します。</p>
+    <p data-ve-blk="16">開始前に責任者と限定対象を明示し、問題時は撤回条件へ戻れます。</p>
+  </section>
+</div>
+</section>
+    <section data-ve-section-kind="ask" data-ve-ask-type="hypothesis" id="sec-ask-hypothesis">
+<div class="ask" data-ask="hypothesis">
+  <p class="ask-kind">検証待ちの仮説</p>
+  <p class="ask-claim" data-ve-blk="17">承認地図での照合は、部門別の確認より前に例外と顧客影響の不整合を見つけられる <span class="certainty inferred">推論</span></p>
+  <p class="ask-verify" data-ve-blk="18">検証方法: 限定対象の1グループで承認地図の照合と従来の部門別確認を並行し、見つかる不整合の件数と発見時点を比べる</p>
+</div>
+</section>
+    <section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">
+<div class="ask" data-ask="decision">
+  <p class="ask-kind">判断してください</p>
+  <p class="ask-question" data-ve-blk="19">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>
+  <p class="ask-evidence" data-ve-blk="20">根拠: 照合シートの試算「契約例外 12 件のうち 9 件が同じ顧客群に集中」</p>
+  <ul class="ask-options">
+    <li data-ask-option data-ask-option-id="limited" data-ask-default><span class="ask-option-head"><span class="ask-option-label">限定対象で段階公開する</span><span class="ask-badge">推奨</span></span><span class="ask-benefit">利点: 誤りの影響を限定対象に閉じたまま照合の効果を確かめられる</span><span class="ask-tradeoff">代償: 対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li><li data-ask-option data-ask-option-id="all"><span class="ask-option-head"><span class="ask-option-label">全顧客へ一斉公開する</span></span><span class="ask-benefit">利点: 告知と請求の切替が一度で済み運用が二重にならない</span><span class="ask-tradeoff">代償: 例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>
+  </ul>
+  <div class="ask-memo"><label>補足（任意）<textarea data-ask-memo></textarea></label></div>
+</div>
+</section>
+    <section data-ve-section-kind="closing" id="sec-closing">
+<section class="closing-section" aria-label="判断材料">
+  <h2 data-ve-blk="21">リスクと弱い前提</h2>
+  <ul><li data-ve-blk="22">限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。</li><li data-ve-blk="23">この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。</li></ul>
+  <h2 data-ve-blk="24">不確かな点</h2>
+  <ul><li data-ve-blk="25">実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。</li><li data-ve-blk="26">開始判断の前に、それぞれの担当者と確認が必要です。</li><li data-ve-blk="27">この資料は説明用の想定で、実在の顧客・契約・請求データは使っていません。</li></ul>
+</section>
+</section>
+    <section data-ve-section-kind="decision-panel" data-ve-document-id="example-proposal" data-ve-schema-version="2" data-ve-ask-digest="8fe4c53ec0891f78" data-ve-document-path="skills/visual-explain/examples/example-proposal.html" id="sec-decision-panel">
+<section class="decision-panel" aria-label="回答と指摘の回収">
+  <h2>回答と指摘の回収</h2>
+  <ul class="panel-asks">
+    <li data-ve-panel-ask="sec-ask-decision"><span class="panel-question">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</span><span class="panel-status" data-ve-panel-status>お任せ（推奨: 限定対象で段階公開する）</span><span class="panel-memo" data-ve-panel-memo hidden></span></li>
+  </ul>
+  <p class="panel-review-count" data-ve-panel-review-count>指摘 0 件</p>
+  <div class="ask-memo"><label>全体メモ<textarea data-ve-panel-global-memo></textarea></label></div>
+  <p class="panel-note">選択・指摘の保存とコピーは、ブラウザのJavaScript が有効なときに使えます。</p>
+</section>
+</section>
     <!-- VE-CONTROLLED:CONTENT:END -->
     <!-- CONTENT:END -->
   </main>
   <footer>AI が生成した資料</footer>
 
-  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN -->
-  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN --><!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
   <script>
   /* FIXED CONNECTOR JS: DO NOT MODIFY. */
   (() => {

@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets"
-LATEST_SKELETON_VERSION = 3
+LATEST_SKELETON_VERSION = 4
 
 _HTML_TAG_RE = re.compile(r"<html\b[^>]*>", re.IGNORECASE)
 _VERSION_ATTR_RE = re.compile(r'\sdata-ve-skeleton="([0-9]+)"')
