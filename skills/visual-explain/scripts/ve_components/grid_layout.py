@@ -179,11 +179,22 @@ def region_label_box(region) -> Rect:
     return Rect(x, y - REGION_FONT, x + len(region.label) * REGION_FONT, y + 3)
 
 
+def marker_box(node) -> Rect:
+    """Square around the marker circle on the node's top-right corner."""
+    cx, cy = marker_position(node)
+    return Rect(cx - MARKER_R, cy - MARKER_R, cx + MARKER_R, cy + MARKER_R)
+
+
 def route_edge(edge, rects: dict[str, Rect], width: int, height: int,
-               taken: Sequence[Rect] = ()) -> EdgeRoute | str:
+               taken: Sequence[Rect] = (), *, avoid: Sequence[Rect] = (),
+               drawn: Sequence[tuple[tuple[int, int], tuple[int, int]]] = ()) -> EdgeRoute | str:
     """Route one edge; return the route or the diagnostic message explaining why it cannot.
 
-    ``taken`` holds label boxes already placed by earlier edges; a label may not overlap them.
+    ``taken`` holds boxes a label may not overlap (region labels, earlier edge
+    labels, marker circles). ``avoid`` holds boxes the line itself may not
+    cross (earlier edge labels, marker circles). ``drawn`` holds the line
+    segments of earlier edges, which a label may not cover. The bends are
+    tried in order, so a conflict moves the edge to its other bend first.
     """
     source, target = rects[edge.source], rects[edge.target]
     others = [rect for node_id, rect in rects.items() if node_id not in (edge.source, edge.target)]
@@ -192,14 +203,20 @@ def route_edge(edge, rects: dict[str, Rect], width: int, height: int,
                         for p, q in zip(points, points[1:]) for rect in others)]
     if not clear:
         return f"辺 '{edge.id}' は他のノードを横切らずに引けません（折れは1回まで）"
+    free = [points for points in clear
+            if not any(_segment_hits(p, q, box) for p, q in zip(points, points[1:]) for box in avoid)]
+    if not free:
+        return f"辺 '{edge.id}' の線が他の辺のラベルか番号の丸に重なります"
     if not edge.label:
-        return EdgeRoute(points=clear[0], label_at=None)
+        return EdgeRoute(points=free[0], label_at=None)
     bounds = Rect(0, 0, width, height)
-    for points in clear:
+    for points in free:
         box, anchor = label_box(points, edge.label)
         inside = bounds.x0 <= box.x0 and box.x1 <= bounds.x1 and bounds.y0 <= box.y0 and box.y1 <= bounds.y1
+        segments = list(drawn) + list(zip(points, points[1:]))
         if (inside and not any(box.overlaps(rect) for rect in rects.values())
-                and not any(box.overlaps(other) for other in taken)):
+                and not any(box.overlaps(other) for other in taken)
+                and not any(_segment_hits(p, q, box) for p, q in segments)):
             return EdgeRoute(points=points, label_at=anchor)
     return f"辺 '{edge.id}' のラベルを置く場所がありません"
 
@@ -207,19 +224,30 @@ def route_edge(edge, rects: dict[str, Rect], width: int, height: int,
 def route_edges(payload) -> tuple[EdgeRoute | str, ...]:
     """Route every edge in payload order; the renderer and check_layout both call this.
 
-    Region label boxes are reserved up front, and each placed edge label box is
-    reserved for the edges after it, so the build draws exactly the routes the
-    check accepted.
+    Region label boxes and marker circles are reserved up front; each placed
+    edge's label box and line segments are reserved for the edges after it.
+    Later lines avoid earlier labels and later labels avoid earlier lines, so
+    no label is drawn over a line and no marker over a line or label, and the
+    build draws exactly the routes the check accepted.
     """
     rects = {node.id: node_rect(node) for node in payload.nodes}
+    by_id = {node.id: node for node in payload.nodes}
+    markers = [marker_box(by_id[m.target]) for m in payload.markers if m.target in by_id]
     width, height = payload.cols * COL_W, payload.rows * ROW_H
-    taken: list[Rect] = [region_label_box(region) for region in payload.regions]
+    taken: list[Rect] = [region_label_box(region) for region in payload.regions] + markers
+    avoid: list[Rect] = list(markers)
+    drawn: list[tuple[tuple[int, int], tuple[int, int]]] = []
     routes: list[EdgeRoute | str] = []
     for edge in payload.edges:
-        route = route_edge(edge, rects, width, height, taken)
+        route = route_edge(edge, rects, width, height, taken, avoid=avoid, drawn=drawn)
         routes.append(route)
-        if not isinstance(route, str) and edge.label:
-            taken.append(label_box(route.points, edge.label)[0])
+        if isinstance(route, str):
+            continue
+        drawn.extend(zip(route.points, route.points[1:]))
+        if edge.label:
+            box = label_box(route.points, edge.label)[0]
+            taken.append(box)
+            avoid.append(box)
     return tuple(routes)
 
 

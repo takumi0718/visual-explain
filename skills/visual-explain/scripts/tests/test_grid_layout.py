@@ -8,6 +8,7 @@ from ve_components.grid_layout import (
     Rect,
     arrow_lines,
     check_layout,
+    marker_box,
     marker_position,
     node_label_lines,
     node_label_positions,
@@ -15,18 +16,20 @@ from ve_components.grid_layout import (
     region_rect,
     _segment_hits,
     route_edge,
+    route_edges,
     split_label,
     viewbox,
 )
-from ve_components.model import GridDiagramPayload, GridEdge, GridNode, GridRegion
+from ve_components.model import GridDiagramPayload, GridEdge, GridMarker, GridNode, GridRegion
 
 
 def node(node_id: str, col: int, row: int, label: str = "ノード", span=(1, 1)) -> GridNode:
     return GridNode(id=node_id, label=label, col=col, row=row, span_cols=span[0], span_rows=span[1])
 
 
-def payload(nodes, edges=(), regions=(), cols=4, rows=3) -> GridDiagramPayload:
-    return GridDiagramPayload(cols=cols, rows=rows, nodes=tuple(nodes), regions=tuple(regions), edges=tuple(edges))
+def payload(nodes, edges=(), regions=(), cols=4, rows=3, markers=()) -> GridDiagramPayload:
+    return GridDiagramPayload(cols=cols, rows=rows, nodes=tuple(nodes), regions=tuple(regions), edges=tuple(edges),
+                              markers=tuple(markers))
 
 
 class GeometryTest(unittest.TestCase):
@@ -203,6 +206,55 @@ class OverlapRulesTest(unittest.TestCase):
         self.assertTrue(_segment_hits((134, 0), (134, 96), rect))   # grazing the border
         self.assertFalse(_segment_hits((150, 0), (150, 96), rect))  # inside the 32px gap
         self.assertFalse(_segment_hits((134, 48), (300, 48), rect))  # leaving from the edge point
+
+
+class LineAndMarkerOverlapTest(unittest.TestCase):
+    """Labels never cover a line, lines never cross a label, markers stay clear of both."""
+
+    LABEL = "八文字のラベル"
+
+    def test_label_takes_the_other_bend_to_stay_off_an_earlier_line(self) -> None:
+        nodes = (node("a", 2, 1), node("b", 3, 3), node("c", 1, 2))
+        edges = (GridEdge("e1", "c", "a"), GridEdge("e2", "c", "b", self.LABEL))
+        layout = payload(nodes, edges=edges)
+        self.assertEqual(check_layout(layout), [])
+        self.assertEqual(route_edges(layout)[1].points, ((75, 170), (75, 240), (316, 240)))
+
+    def test_label_reported_when_every_bend_covers_an_earlier_line(self) -> None:
+        nodes = (node("a", 3, 1), node("b", 1, 1), node("c", 4, 2), node("d", 2, 2))
+        edges = (GridEdge("e1", "d", "a"), GridEdge("e2", "c", "d", self.LABEL))
+        self.assertEqual(check_layout(payload(nodes, edges=edges)), ["辺 'e2' のラベルを置く場所がありません"])
+
+    def test_line_takes_the_other_bend_around_an_earlier_label(self) -> None:
+        nodes = (node("a", 1, 3), node("b", 1, 1), node("c", 3, 3), node("d", 2, 2))
+        edges = (GridEdge("e1", "b", "a", self.LABEL), GridEdge("e2", "d", "b"))
+        layout = payload(nodes, edges=edges)
+        self.assertEqual(check_layout(layout), [])
+        self.assertEqual(route_edges(layout)[1].points, ((225, 118), (225, 48), (134, 48)))
+
+    def test_line_over_an_earlier_label_is_reported(self) -> None:
+        nodes = (node("a", 4, 3), node("b", 2, 2), node("c", 4, 2), node("d", 3, 1))
+        edges = (GridEdge("e1", "a", "b", self.LABEL), GridEdge("e2", "d", "a", self.LABEL))
+        self.assertEqual(check_layout(payload(nodes, edges=edges)),
+                         ["辺 'e2' の線が他の辺のラベルか番号の丸に重なります"])
+
+    def test_label_may_not_cover_a_marker(self) -> None:
+        nodes = (node("a", 1, 1), node("b", 1, 2), node("c", 2, 1), node("d", 1, 3))
+        edges = (GridEdge("e1", "a", "b"), GridEdge("e2", "b", "c", self.LABEL))
+        self.assertEqual(check_layout(payload(nodes, edges=edges)), [])
+        self.assertEqual(check_layout(payload(nodes, edges=edges, markers=(GridMarker(n=1, target="b"),))),
+                         ["辺 'e2' のラベルを置く場所がありません"])
+
+    def test_line_may_not_cross_a_marker(self) -> None:
+        a, b, c = node("a", 1, 1), node("b", 3, 1), node("c", 2, 2)
+        circle = marker_box(c)  # a marker-sized box set on the line
+        crossing = Rect(circle.x0, 38, circle.x1, 58)
+        route = route_edge(GridEdge("e", "a", "b"), {"a": node_rect(a), "b": node_rect(b)}, 600, 288,
+                           avoid=(crossing,))
+        self.assertEqual(route, "辺 'e' の線が他の辺のラベルか番号の丸に重なります")
+
+    def test_marker_box_is_the_circle_bounds(self) -> None:
+        self.assertEqual(marker_box(node("b", 3, 2)), Rect(424, 108, 444, 128))
 
 
 def _box(route, edge):
