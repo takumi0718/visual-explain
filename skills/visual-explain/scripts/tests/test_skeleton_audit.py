@@ -618,5 +618,13 @@ class QuestionFormLayoutTest(unittest.TestCase):
         self.assertIn(".panel-asks li { display: grid; gap: 0; }", css)
         self.assertIn(".panel-status { color: var(--text-dim); font-size: var(--fs-small); }", css)
 
+class ClosingCardTest(unittest.TestCase):
+    def test_closing_uses_the_shared_card_frame(self):
+        css = _style()
+        self.assertIn(".closing-section { padding: var(--space-3); background: var(--bg); "
+                      "border: 1px solid var(--border); border-radius: var(--radius); }", css)
+        self.assertNotIn("border-top: 1px solid var(--border-strong)", css)
+        self.assertIn(".closing-section h2 { margin-top: 0; font-size: var(--fs-h2); }", css)
+
 if __name__ == "__main__":
     unittest.main()
