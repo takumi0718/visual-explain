@@ -112,6 +112,14 @@ class _FirstHeadingFinder(HTMLParser):
             self.found[tag] = self.getpos()
 
 
+def has_marker_heading(markup: str) -> bool:
+    """True when the markup has an h2 or h3 that can carry an overview marker echo."""
+    finder = _FirstHeadingFinder()
+    finder.feed(markup)
+    finder.close()
+    return bool(finder.found)
+
+
 def mark_first_heading(markup: str, n: int) -> str:
     """Stamp ``data-ve-marker="n"`` on the first h2 (else h3) of trusted-validated markup.
 

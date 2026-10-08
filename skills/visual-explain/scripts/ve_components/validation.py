@@ -3101,7 +3101,7 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
 
 def _validate_overview_links(sections_raw: list, sections: list[object], col: DiagnosticCollector) -> None:
     """Cross-section rules for the overview: placement, marker targets, and when it is required."""
-    from .document_sections import extract_first_h2
+    from .document_sections import extract_first_h2, has_marker_heading
 
     first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
     if first is None:
@@ -3120,11 +3120,18 @@ def _validate_overview_links(sections_raw: list, sections: list[object], col: Di
         col.add(INVALID_COMPONENT_PAYLOAD,
                 "first-screen.overview.section は first-screen 直後の canonical セクションの id である必要があります",
                 "assembly.sections[0].overview")
-    linkable = {s.id for s in sections if isinstance(s, (AskSection, NarrativeSection, ClosingSection))}
+    linkable = {s.id: s for s in sections if isinstance(s, (AskSection, NarrativeSection, ClosingSection))}
     for i, marker in enumerate(first.overview.markers):
-        if marker.target not in linkable:
+        target = linkable.get(marker.target)
+        if target is None:
             col.add(INVALID_COMPONENT_PAYLOAD,
                     f"first-screen.overview.markers[{i}].target '{marker.target}' は ask / narrative / closing セクションの id である必要があります",
+                    "assembly.sections[0].overview")
+        elif isinstance(target, NarrativeSection) and not has_marker_heading(target.markup):
+            # The number is echoed on the narrative's first h2 (else h3); without one the
+            # final v4 marker check would fail after rendering, so say it here instead.
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"first-screen.overview.markers[{i}].target '{marker.target}' の narrative には番号を付ける h2 か h3 が必要です",
                     "assembly.sections[0].overview")
 
 

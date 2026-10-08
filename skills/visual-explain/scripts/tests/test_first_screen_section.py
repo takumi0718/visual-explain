@@ -69,6 +69,15 @@ class OverviewValidationTest(unittest.TestCase):
         self.assertIn("first-screen.overview.markers[0].target 'sec-map' は ask / narrative / closing セクションの id である必要があります",
                       _messages(_assembly(first, CANONICAL)))
 
+    def test_narrative_marker_target_needs_a_heading_for_the_echo(self) -> None:
+        headless = {"kind": "narrative", "id": "sec-a", "markup": "<p>見出しの無い本文。</p>"}
+        self.assertIn("first-screen.overview.markers[0].target 'sec-a' の narrative には番号を付ける h2 か h3 が必要です",
+                      _messages(_assembly(self._first(), CANONICAL, headless)))
+
+    def test_narrative_with_only_an_h3_is_a_valid_marker_target(self) -> None:
+        h3_only = {"kind": "narrative", "id": "sec-a", "markup": "<h3>小見出し</h3><p>本文。</p>"}
+        self.assertEqual(_messages(_assembly(self._first(), CANONICAL, h3_only)), [])
+
     def test_marker_n_must_be_real_int(self) -> None:
         for bad in (True, 1.0):
             first = self._first(markers=[{"n": bad, "label": "背景", "target": "sec-a"}])
