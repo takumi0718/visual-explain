@@ -1839,6 +1839,8 @@ class _SvgSubtreeParser(HTMLParser):
 
     def _check_value(self, tag: str, name: str, value: str) -> None:
         if name == "viewBox":
+            if self._component_key.startswith("grid-diagram") and self._expected_viewbox is None:
+                return  # the missing/invalid data-ve-grid diagnostic already fails the document
             expected = self._expected_viewbox or _RENDERER_SVG_VIEWBOX.get(
                 self._component_key, _RENDERER_SVG_VIEWBOX["slope@2"])
             if value != expected:
@@ -2258,7 +2260,9 @@ def _check_grid_diagram_artifact(body: str, parser: _DomSemanticParser) -> list[
             fail("grid-diagram ノードは rect.ve-gd-node-box を1つだけ持つ必要があります")
     edges = re.findall(r"<g\s+[^>]*\bve-gd-edge\b", body)
     markers = re.findall(r"<g\s+[^>]*\bve-gd-marker\b[^>]*>(.*?)</g>", body, re.DOTALL)
-    for kind, count in (("node", len(nodes)), ("edge", len(edges)), ("marker", len(markers))):
+    regions = re.findall(r'<g\s+class="ve-gd-region"', body)
+    for kind, count in (("node", len(nodes)), ("region", len(regions)), ("edge", len(edges)),
+                        ("marker", len(markers))):
         if len(re.findall(rf'<li class="ve-gd-rel-{kind}"', body)) != count:
             fail("grid-diagram の読み上げ一覧が図と一致しません")
             break

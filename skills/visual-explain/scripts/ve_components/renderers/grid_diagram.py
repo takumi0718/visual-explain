@@ -99,13 +99,17 @@ def render_grid_svg(payload: GridDiagramPayload, *, svg_id: str, label: str,
 
 
 def relation_items(payload: GridDiagramPayload) -> list[str]:
-    """Text twin of the picture: one item per node, edge and marker, in that order."""
+    """Text twin of the picture: one item per node, region, edge and marker, in that order."""
     names = {node.id: node.label for node in payload.nodes}
     items: list[str] = []
     for node in payload.nodes:
         inside = [r.label for r in payload.regions if node_cells(node) <= region_cells(r)]
         where = f"（{'・'.join(inside)}）" if inside else ""
         items.append(f'<li class="ve-gd-rel-node">{_esc(node.label)}{_esc(where)}</li>')
+    for region in payload.regions:
+        members = [n.label for n in payload.nodes if node_cells(n) <= region_cells(region)]
+        content = "・".join(members) if members else "中は空"
+        items.append(f'<li class="ve-gd-rel-region">{_esc(region.label)}: {_esc(content)}</li>')
     for edge in payload.edges:
         tail = f"（{edge.label}）" if edge.label else ""
         items.append(

@@ -114,6 +114,15 @@ class RendererTest(unittest.TestCase):
         self.assertIn('<li class="ve-gd-rel-edge">契約例外 → 共同承認（照合）</li>', self.markup)
         self.assertIn('<li class="ve-gd-rel-edge">料金改定案 → 共同承認</li>', self.markup)
 
+    def test_region_is_listed_with_the_nodes_inside_it(self) -> None:
+        self.assertIn('<li class="ve-gd-rel-region">根拠: 契約例外・料金改定案</li>', self.markup)
+
+    def test_region_without_nodes_says_so(self) -> None:
+        raw = raw_fixture()
+        raw["sections"][1]["ir"]["grid-diagram"]["regions"].append(
+            {"id": "spare", "label": "予備", "from": [4, 1], "to": [4, 2]})
+        self.assertIn('<li class="ve-gd-rel-region">予備: 中は空</li>', build(raw))
+
     def test_manifest_declares_the_svg_root_and_landmarks(self) -> None:
         manifest = self.result.manifest
         self.assertEqual(manifest.svg_root_ids, ("sec-grid-svg",))
@@ -141,6 +150,14 @@ class FinalCheckTest(unittest.TestCase):
     def test_missing_grid_attribute_is_rejected(self) -> None:
         forged = self.html.replace(' data-ve-grid="4x3"', "", 1)
         self.assertIn("grid-diagram の figure に1〜6の data-ve-grid がありません", check(forged))
+
+    def test_reading_list_must_describe_every_region(self) -> None:
+        forged = self.html.replace('<li class="ve-gd-rel-region">根拠: 契約例外・料金改定案</li>', "", 1)
+        self.assertIn("grid-diagram の読み上げ一覧が図と一致しません", check(forged))
+
+    def test_unknown_grid_attribute_reports_only_itself(self) -> None:
+        forged = self.html.replace('data-ve-grid="4x3"', 'data-ve-grid="7x3"', 1)
+        self.assertEqual(check(forged), ["grid-diagram の figure に1〜6の data-ve-grid がありません"])
 
     def test_path_element_is_still_outside_the_allowlist(self) -> None:
         forged = self.html.replace('<g class="ve-gd-region"', '<path></path><g class="ve-gd-region"', 1)
