@@ -9,7 +9,7 @@ visual-explain は、複雑な提案・仕組み・調査結果を自己完結�
 ## コマンド
 
 ```bash
-# 全テスト（1289件前後）— 必ず scripts/ から python3 -m pytest のモジュール形式で実行する。
+# 全テスト（1470件前後）— 必ず scripts/ から python3 -m pytest のモジュール形式で実行する。
 # テストは ve_components を cwd 経由で import するため、他ディレクトリからは collection が失敗する。
 cd skills/visual-explain/scripts && python3 -m pytest tests -q
 
@@ -55,10 +55,11 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 
 - セクションは `first-screen`（先頭・ちょうど1）/ `narrative`（限定 HTML の散文）/ `canonical`（IR 宣言の図）/ `compatibility`（legacy HTML・`provenance` 必須）/ `ask` / `closing`（末尾・ちょうど1）で、読み順に並ぶ。`document.type` / `document.profile` は IR 必須で、first-screen wrapper の data 属性として自己表明する。
 - 回収パネル（`decision-panel`）は `document_sections.py` が closing の後に常に1つ生成する（v3 以降）。パネルは IR に書かず、DOM 上の decision ask option-id から `compute_ask_digest_from_pairs` で計算した digest を自己保持し、検査群③が再照合する。content 内の `p, h2, h3, li, figure, blockquote, pre, table` には `review_blocks.py` が `data-ve-blk`（1 からの連番）を付け、checker は同じ規則で再計算して照合する（v3 以降の文書のみ）。decision ask は `benefit` / `tradeoff` / `defaultId` / `evidence` 必須、1資料4問まで。
-- canonical 12 形式: `matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`。定義は `assets/components/registry.json`、CSS は `assets/components/*.css`。
+- canonical 13 形式: `matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi` / `grid-diagram`。定義は `assets/components/registry.json`、CSS は `assets/components/*.css`。
+- grid-diagram: 幾何は `grid_layout.py`（validation / renderer / checker が共有）。重なり・囲みの境界またぎ・線の横切り・線ラベル同士や囲みラベルとの重なり・文字の収まり・参照切れ（id 重複は全モードで検出）は fail-closed の診断で、自動再配置はしない。`markers` は first-screen の全体図にだけ書け、overview の番号と一致必須。decision の選択肢は `figure`（3×3 以内・1〜9 ノード・markers なしの小図）を持てる（取り下げていない選択肢は全員付けるか全員付けない）。読み上げ用の `visually-hidden` / `ve-gd-relations` は予約クラスで、本文字数に数えない。
 - 設計判断: 関係（`relationship.kind`）と `capabilities` は IR で明示宣言する。散文からの推測・自動選択・ランキングはしない。canonical 生成の失敗は診断を返して報告し、compatibility へ暗黙に縮退しない。first-screen / closing / ask を narrative 生 HTML で書く旧方式は受理しない。
 - 数値の扱い: waterfall は Decimal ＋ `displayPrecision` 必須で、binary float は fail-closed（`numeric.py`）。
-- レンダラ発 SVG は二重ゲート（allowlist は `slope@1` のみ・要素/属性完全一致・viewBox 固定・整数座標。`test_renderer_svg_gate.py`）。
+- レンダラ発 SVG は二重ゲート（allowlist は `slope@2` / `waterfall@2` / `grid-diagram@2`・要素/属性完全一致・整数座標。viewBox は slope / waterfall が固定値、grid-diagram は figure の `data-ve-grid` から計算した値。decision の選択肢の小図だけ ask 内の SVG を許す。`test_renderer_svg_gate.py`）。
 
 ### 検証（`check.sh` — 四層）
 

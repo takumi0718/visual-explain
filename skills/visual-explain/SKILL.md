@@ -42,7 +42,7 @@ license: MIT
 1. **ゲート判定:** 上の 3 条件を確認する。NO なら通常のテキスト説明へ戻り、資料は作らない。
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
-4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
+4. **図フォーマットを選ぶ:** canonical 13 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi` / `grid-diagram`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
 5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。`askType: "decision"` の ask は問いカードになる。各選択肢に `benefit`（利点）と `tradeoff`（代償）、ask に `defaultId`（推奨）と `evidence`（`file:line` か「」で囲んだ実行結果の引用）を必ず書く。事実は読者に聞かず根拠で示し、読者には判断だけを聞く。decision ask は1資料4問まで。回収パネルは decision ask の有無に関わらず末尾 `closing` の後にビルドが1つ自動生成し、本文の各ブロックにはビルドが指摘用の番号（`data-ve-blk`）を付ける。**パネル自体を IR に書いてはならない**。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。ビルドは同じ主張の反復を止める（h2 と直後の主張行、図キャプションと直前の h2 の言い換え、同じ文の 2 回以上の出現、全体図の無い資料で最初の図より前の本文 200 字超）。診断が出たら片方を削って再ビルドする。成功時の「本文 N 字 / 図より前 M 字 / 図 K 点」を見て、文字量を確かめる（図より前 M 字は h1 と結論を除いた字数で、200 字の上限と同じ数え方。問いカードの固定ラベル「判断してください」「根拠:」「利点:」「代償:」「推奨」「補足（任意）」「取り下げ」などは本文に数えない）。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class（`first-screen` / `closing-section` / `conclusion` / `overview-markers` / `link-domain` / `decision-panel` / `ask` と、問いカードの固定ラベルを表す `ask-kind` / `ask-badge` / `ask-withdrawn-note` / `ask-memo` / `ask-prefix`）/ 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。`schemaVersion` は `2`。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
 6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・外部リンクのドメインマーカーに加え、回収パネル（decision-panel。v3 以降の文書では常にちょうど1つ）の存在・個数・closing 後の位置・ask 契約 digest・自己表明属性・本文ブロック番号の連番を検証し、自己閉じタグによる偽装も fail-closed で検出する。v4 文書ではさらに、概要の各行き先に番号の印がちょうど1つあること（行き先の narrative に h2 か h3 が必要）と、印が h2 / h3 / p 以外に無いことを検証する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
@@ -64,11 +64,11 @@ license: MIT
 
 `document.type` / `document.profile` を IR で宣言する。第一画面・末尾節・ask は型付きセクション（`first-screen` / `closing` / `ask`）で書き、レンダラが構成する。h1 と `<title>` の正本は `document.title` のみ（first-screen が描画する）。
 
-第一画面は「題名（`document.title`）→ 結論 → 全体図 → 番号一覧」の順にビルドが描く。IR の first-screen には `conclusion`（1〜3 文、各文 80 字以内）を書き、h2 付きの節か ask が 3 つ以上ある資料では `overview` を書く。`overview.section` は first-screen 直後に置いた canonical セクションの id、`overview.markers` は 1〜5 件で、各番号の行き先（ask / narrative / closing の id）とラベル（30 字以内）を持つ。ビルドは行き先の見出し（narrative は最初の h2（h2 が無ければ最初の h3）、closing は最初の h2、ask は先頭の一行で、request は種別ラベル、hypothesis は主張、decision は問い）に同じ番号の丸印を付けるので、ラベルは行き先の見出しを短く言い直した語にする。番号一覧が目次を兼ねるので、目次は生成しない。`document.summary` はメタ情報で、画面には出ない。
+第一画面は「題名（`document.title`）→ 結論 → 全体図 → 番号一覧」の順にビルドが描く。IR の first-screen には `conclusion`（1〜3 文、各文 80 字以内）を書き、h2 付きの節か ask が 3 つ以上ある資料では `overview` を書く。`overview.section` は first-screen 直後に置いた canonical セクションの id、`overview.markers` は 1〜5 件で、各番号の行き先（ask / narrative / closing の id）とラベル（30 字以内）を持つ。ビルドは行き先の見出し（narrative は最初の h2（h2 が無ければ最初の h3）、closing は最初の h2、ask は先頭の一行で、request は種別ラベル、hypothesis は主張、decision は問い）に同じ番号の丸印を付けるので、ラベルは行き先の見出しを短く言い直した語にする。番号一覧が目次を兼ねるので、目次は生成しない。全体図を `grid-diagram` にしたときは、その `markers` に overview と同じ番号をすべて書き、各番号を置くノードを `target` で指す（番号はノードの右上に描かれ、番号一覧も併記される）。全体図以外の `grid-diagram` には `markers` を書かない。`document.summary` はメタ情報で、画面には出ない。
 
 ### 提案承認型（`type: "proposal"`）
 
-`first-screen` の `conclusion` には提案または推奨の結論を書く（トピック名禁止）。判断の中身は `kind: "ask"`（`askType: "decision"`）が担う。
+`first-screen` の `conclusion` には提案または推奨の結論を書く（トピック名禁止）。判断の中身は `kind: "ask"`（`askType: "decision"`）が担う。案ごとに見た目（範囲・順序・配置）が違うなら、取り下げていない選択肢すべてに `figure`（3×3 以内の `grid-diagram`）を付け、案を絵で比べられるようにする。
 
 同じ判断文を末尾に重複させない。第三者が第一画面を 3 秒見て「何の話か」「何を判断するか」を答えられなければ作り直す。新出用語が多いときだけ用語表を先に置き、現状と問題、等サイズで並べた before/after、代替案とトレードオフの比較を続ける。`closing` の「リスクと弱い前提」「不確かな点」は省略しない。
 
@@ -92,7 +92,7 @@ license: MIT
 
 判断を変え得る主張には、対象の直近に **確認済み**、**推論**、**未確認** のいずれかをテキストで示す。出所と確度を混同せず、出所は局所注釈または節末参照に置く。未確認を確定事実として図示しない。注釈は hover 専用にせず、クリック、タップ、キーボードフォーカスでも開ける形にする。
 
-ライブラリで表せない場合だけ、自由なインライン SVG を使える。使う直前に SVG を使う理由を HTML コメントで残し、描画規則に従うこと。弱いモデルはこの例外を使わず固定ライブラリ内で完結させる。同じ需要が繰り返されるなら、図フォーマットへの昇格を検討する。
+配置そのものが意味を持つとき（近さ＝関係、上下＝優先、囲み＝責任範囲）だけ `grid-diagram` を使う。12 形式で表せるならそちらを使う。`grid-diagram` では格子（列×行）と、ノードを置くマス・囲み・線・番号だけを IR に書き、座標・線の経路・色はビルドに任せる。重なり・囲みの境界またぎ・線の横切り・線のラベルの重なり・線が囲みのラベルに重なること・ラベルのはみ出し・参照切れ（id の重複、文字列でない参照を含む）はビルドが診断を返すので、マスを置き直して再ビルドする。自由なインライン SVG は書かない（checker が拒否する）。
 
 ## 動きの判定と部品契約
 
@@ -138,6 +138,7 @@ license: MIT
 - [ ] 未確認事項を事実として描いていない。推論・未確認は対象の直近に直接表記した。
 - [ ] 紫グラデーションや過剰装飾による generic な AI 見た目になっていない。
 - [ ] 回収パネルが closing の後に1つだけあり、推奨（`defaultId`）が選択済み扱いされていない。問いカードの各選択肢に利点・代償があり、推奨でない選択肢を選ぶ理由が読める。
+- [ ] `grid-diagram` の図は、線がノードを横切らず、全体図なら番号がノードの右上と番号一覧の両方にある。選択肢の小図を使うなら、取り下げていない選択肢すべてに付いている。
 
 ## 保存規約と縮退規則
 
@@ -158,19 +159,19 @@ git リポジトリ内では `<repo-root>/.visual-explain/`、リポジトリ外
 - 許される推論には対象の直近で **推論** と明記する。
 - 因果・順序に確信がなければ、`matrix`、`terms`、または簡潔な文章へ縮退し、flow 図にしない。
 
-## カノニカルなコンポーネント（canonical 12 形式）
+## カノニカルなコンポーネント（canonical 13 形式）
 
-二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree`、加算的ブリッジ（開始→増減→終了）は `waterfall`、同一単位の2時点比較は `slope`、結論と根拠の1段マッピングは `evidence-map`、単軸の定量比較・ランキングは `bars`、主要指標の強調（リング型）は `kpi` を、次の1つの意思決定列で使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止、waterfall vs bars、slope の3点以上禁止、evidence-map の階層1段、bars vs waterfall、kpi vs slope など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。1項目に複数の並列箇条書き → 見出しなしマトリックス（`showColumnHeaders: false` ＋ セル `content` 配列）。
+二軸分類・交差比較は `matrix`、明示的な順序・有向遷移・分岐は `flow`、順序を持たない並列列挙は `enumeration`、分岐のない線形順序は `chevron`、優先の階層は `pyramid`、到達したら留まる成熟度段階は `stairs`、構成の階層分解は `logic-tree`、加算的ブリッジ（開始→増減→終了）は `waterfall`、同一単位の2時点比較は `slope`、結論と根拠の1段マッピングは `evidence-map`、単軸の定量比較・ランキングは `bars`、主要指標の強調（リング型）は `kpi`、配置そのものが意味を持つ図（近さ＝関係、上下＝優先、囲み＝責任範囲）は `grid-diagram` を、次の1つの意思決定列で使う。`grid-diagram` は 12 形式で表せないときだけ使う。昇格済みコンポーネントが四層検証を通過したため、これが通常経路である。選択ガイド（enumeration vs chevron、logic-tree vs decision-tree、pyramid 誤用防止、waterfall vs bars、slope の3点以上禁止、evidence-map の階層1段、bars vs waterfall、kpi vs slope など）は `references/patterns.md` の「箇条書き種別 → 図」を参照する。1項目に複数の並列箇条書き → 見出しなしマトリックス（`showColumnHeaders: false` ＋ セル `content` 配列）。
 
 enumeration / chevron ではコンセプト（`label` または番号＋必須`title`）だけを図形内に置き、任意の`description`は縦型で右、横型で下の説明欄へ分離する。description は全有/全無で、全省略時はコンセプトだけを表示する。
 
-1. **関係を宣言する** — canonical IR に `relationship.kind`（`two-axis`、`directed-graph`、`parallel-enumeration`、`ordered-sequence`、`layered-priority`、`staged-maturity`、`hierarchical-decomposition`、`additive-bridge` など）と `capabilities` を書く。散文から方向やコンポーネントを推測させない。
+1. **関係を宣言する** — canonical IR に `relationship.kind`（`two-axis`、`directed-graph`、`parallel-enumeration`、`ordered-sequence`、`layered-priority`、`staged-maturity`、`hierarchical-decomposition`、`additive-bridge`、`spatial-layout` など）と `capabilities` を書く。散文から方向やコンポーネントを推測させない。
 2. **レジストリで発見する** — 宣言した関係とケイパビリティで候補を絞る（集合包含のみ、ランキングなし）。
 3. **決定的な候補から明示選択する** — `selection.component` と `version` を候補集合から明示的に選ぶ。
 4. **一致ケイパビリティの理由を記録する** — `selection.matchedCapabilities` は宣言とレジストリの両方に存在する必要がある。
 5. **ビルドして検証する** — 型付きセクション（`first-screen` / `closing` / `ask`）と散文（`narrative`）・図（`canonical`）を同じ assembly に読み順で共存させる。`python3 scripts/build_explainer.py --assembly <IR.json> --output <html>` で生成し、`bash scripts/check.sh <html>`（`--type` 不要、経路自動検出）で四層（安全/固定領域・IR/選択・コンポーネント/マニフェスト・最終文書＝検査群③を含む）を検証する。
 
-matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
+matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi/grid-diagram の canonical 生成が失敗した場合は、診断を返して**報告**する。**互換マークアップへ暗黙に切り替えない**。canonical 認可書式には HTML/CSS/JavaScript/DOM 操作/座標を一切書かない。完全な JSON 例は `references/patterns.md` を参照する。
 
 ## 弱モデル劣化と互換節
 
