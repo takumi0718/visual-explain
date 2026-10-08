@@ -2839,6 +2839,7 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers は1〜5件の配列である必要があります", path)
         return None
     markers: list[OverviewMarker] = []
+    bad_n = False
     for i, item in enumerate(markers_raw):
         mp = f"{path}.markers[{i}]"
         if not isinstance(item, dict):
@@ -2853,9 +2854,11 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
         n = item.get("n")
         if isinstance(n, bool) or not isinstance(n, int):
             col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].n は整数である必要があります", mp)
+            bad_n = True
             continue
         markers.append(OverviewMarker(n=n, label=label or "", target=target or ""))
-    if [m.n for m in markers] != list(range(1, len(markers) + 1)):
+    # A non-integer n is already reported; its gap must not also read as a sequence error.
+    if not bad_n and [m.n for m in markers] != list(range(1, len(markers) + 1)):
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers の n は1からの連番である必要があります", path)
     return Overview(section=section or "", markers=tuple(markers))
 

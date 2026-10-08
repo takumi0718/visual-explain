@@ -9,13 +9,22 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
+from .metrics import _VOID_TAGS
 from .model import AskSection, CanonicalSection, ClosingSection, CompatibilitySection, FirstScreenSection, NarrativeSection
 
 SIMILARITY_THRESHOLD = 0.6
 MAX_CHARS_BEFORE_FIGURE = 200
 _MIN_DUPLICATE_CHARS = 10
 _NOISE_RE = re.compile(r"[\s、。，．,.！？!?「」『』（）()・:：;；\-—]")
-_SENTENCE_RE = re.compile(r"[^。！？!?]+[。！？!?]")
+# A trailing run without a terminator is a sentence too, so unterminated
+# list items and labels take part in the duplicate check.
+_SENTENCE_RE = re.compile(r"[^。！？!?]+(?:[。！？!?]|$)")
+_BLOCK_TAGS = frozenset({"h2", "h3", "p", "li", "figcaption"})
+# Start tags that end an open <p> whose </p> the author omitted.
+_P_CLOSERS = frozenset({
+    "p", "h2", "h3", "h4", "li", "ul", "ol", "dl", "div", "section", "figure",
+    "figcaption", "table", "blockquote", "pre", "details", "nav",
+})
 
 
 def normalize_sentence(text: str) -> str:
@@ -31,31 +40,66 @@ def bigram_jaccard(a: str, b: str) -> float:
 
 
 class _Blocks(HTMLParser):
-    """Collect (tag, classes, text) for h2/h3/p/li, ignoring certainty badges."""
+    """Collect (tag, classes, text) for h2/h3/p/li/figcaption.
+
+    Any element with class ``certainty`` is skipped with its whole subtree,
+    whatever its tag. Omitted ``</p>`` and ``</li>`` are implied the way a
+    browser implies them for these cases, and an end tag closes every element
+    opened after its start tag.
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.blocks: list[tuple[str, frozenset[str], str]] = []
-        self._open: list[tuple[str, frozenset[str], list[str]]] = []
-        self._skip = 0
+        # (tag, classes, text parts for block tags else None, starts a skipped subtree)
+        self._stack: list[tuple[str, frozenset[str], list[str] | None, bool]] = []
+
+    def _skipping(self) -> bool:
+        return any(entry[3] for entry in self._stack)
+
+    def _pop(self) -> None:
+        tag, classes, parts, _skip = self._stack.pop()
+        if parts is not None:
+            self.blocks.append((tag, classes, "".join(parts).strip()))
 
     def handle_starttag(self, tag, attrs):
-        classes = frozenset((dict(attrs).get("class") or "").split())
-        if "certainty" in classes:
-            self._skip += 1
-        elif tag in {"h2", "h3", "p", "li"}:
-            self._open.append((tag, classes, []))
+        if self._stack and self._stack[-1][0] == "p" and tag in _P_CLOSERS:
+            self._pop()
+        if tag == "li" and self._stack and self._stack[-1][0] == "li":
+            self._pop()
+        if tag in _VOID_TAGS:
+            return
+        classes = frozenset(" ".join(v or "" for k, v in attrs if k == "class").split())
+        skip = "certainty" in classes
+        collect = tag in _BLOCK_TAGS and not skip and not self._skipping()
+        self._stack.append((tag, classes, [] if collect else None, skip))
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in _VOID_TAGS:
+            self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
-        if self._skip and tag == "span":
-            self._skip -= 1
-        elif self._open and self._open[-1][0] == tag:
-            t, c, parts = self._open.pop()
-            self.blocks.append((t, c, "".join(parts).strip()))
+        if not any(entry[0] == tag for entry in self._stack):
+            return
+        while self._stack:
+            closing = self._stack[-1][0] == tag
+            self._pop()
+            if closing:
+                return
 
     def handle_data(self, data):
-        if not self._skip and self._open:
-            self._open[-1][2].append(data)
+        if self._skipping():
+            return
+        for entry in reversed(self._stack):
+            if entry[2] is not None:
+                entry[2].append(data)
+                return
+
+    def close(self) -> None:
+        super().close()
+        while self._stack:
+            self._pop()
 
 
 def _blocks(markup: str) -> list[tuple[str, frozenset[str], str]]:
@@ -65,11 +109,32 @@ def _blocks(markup: str) -> list[tuple[str, frozenset[str], str]]:
     return parser.blocks
 
 
+def chars_before_first_figure(sections: tuple[object, ...]) -> int:
+    """Visible characters before the first figure, counted like the build report.
+
+    The first-screen (h1 and conclusion) is excluded. Narrative and ask
+    sections are measured on the markup the build emits for them, including
+    the link-domain markers the build appends to external links.
+    """
+    from .assembly import insert_link_domain_markers
+    from .document_sections import render_ask
+    from .metrics import visible_chars
+
+    total = 0
+    for section in sections:
+        if isinstance(section, (CanonicalSection, CompatibilitySection)):
+            break
+        if isinstance(section, NarrativeSection):
+            total += visible_chars(insert_link_domain_markers(section.markup))
+        elif isinstance(section, AskSection):
+            total += visible_chars(render_ask(section).markup)
+    return total
+
+
 def check_repetition(sections: tuple[object, ...]) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     sentences: list[str] = []
     last_h2: str | None = None
-    chars_before_figure = 0
     seen_figure = False
     first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
 
@@ -85,11 +150,8 @@ def check_repetition(sections: tuple[object, ...]) -> list[tuple[str, str]]:
                     if nxt and "claim" in nxt[1] and bigram_jaccard(text, nxt[2]) >= SIMILARITY_THRESHOLD:
                         out.append((f"見出しと主張行がほぼ同じ文です（{section.id}）。主張行を削るか、見出しと別の情報を書いてください",
                                     section.id))
-                if tag in {"p", "li"}:
+                if tag in {"p", "li", "figcaption"}:
                     sentences += _SENTENCE_RE.findall(text)
-                if not seen_figure:
-                    chars_before_figure += len(normalize_sentence(text)) + sum(
-                        1 for ch in text if ch in "。！？!?")
         elif isinstance(section, CanonicalSection):
             seen_figure = True
             caption = section.ir.caption or ""
@@ -97,8 +159,13 @@ def check_repetition(sections: tuple[object, ...]) -> list[tuple[str, str]]:
                 out.append((f"図のキャプションが直前の見出しの言い換えです（{section.ir.id}）。キャプションには「何を見るか」を書いてください",
                             section.ir.id))
             sentences += _SENTENCE_RE.findall(caption)
+            last_h2 = None  # a later figure is not "right after" this heading
         elif isinstance(section, CompatibilitySection):
             seen_figure = True
+            for tag, _classes, text in _blocks(section.markup):
+                if tag == "figcaption":
+                    sentences += _SENTENCE_RE.findall(text)
+            last_h2 = None
         elif isinstance(section, AskSection):
             for text in (section.question, section.claim.text if section.claim else None, section.verify):
                 if text:
@@ -117,9 +184,11 @@ def check_repetition(sections: tuple[object, ...]) -> list[tuple[str, str]]:
         counts[key] = (n + 1, original)
     for n, original in counts.values():
         if n >= 2:
-            out.append((f"同じ文が{n}回出てきます: 「{original}」", "assembly.sections"))
+            out.append((f"同じ文が{n}回出てきます: 「{original.strip()}」", "assembly.sections"))
 
     has_overview = first is not None and first.overview is not None
-    if seen_figure and not has_overview and chars_before_figure > MAX_CHARS_BEFORE_FIGURE:
-        out.append((f"最初の図より前の本文が{chars_before_figure}字あります（上限200字）", "assembly.sections"))
+    if seen_figure and not has_overview:
+        chars = chars_before_first_figure(sections)
+        if chars > MAX_CHARS_BEFORE_FIGURE:
+            out.append((f"最初の図より前の本文が{chars}字あります（上限200字）", "assembly.sections"))
     return out

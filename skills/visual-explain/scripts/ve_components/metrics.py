@@ -1,4 +1,9 @@
-"""Reader-facing text volume of a built document (reported, never enforced)."""
+"""Reader-facing text volume of a built document (reported, never enforced).
+
+``visible_chars`` is the single counting rule for "text before the first
+figure": the build report and the repetition gate both use it, so the number
+an author sees after a build is the number the gate enforces.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,7 +13,11 @@ _BEGIN = "<!-- VE-CONTROLLED:CONTENT:BEGIN -->"
 _END = "<!-- VE-CONTROLLED:CONTENT:END -->"
 _FIGURE_KINDS = frozenset({"canonical", "compatibility"})
 _EXCLUDED_KINDS = frozenset({"decision-panel"})
-_VOID_TAGS = frozenset({"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"})
+_NOT_BEFORE_FIGURE_KINDS = frozenset({"first-screen"})
+_VOID_TAGS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+})
 
 
 @dataclass(frozen=True)
@@ -34,25 +43,45 @@ class _Counter(HTMLParser):
             self.seen_figure = True
         self.stack.append(kind if kind else (self.stack[-1] if self.stack else None))
 
+    def handle_startendtag(self, tag, attrs):
+        # <br/> must not pop the parent; <span/> opens and closes nothing.
+        if tag in _VOID_TAGS:
+            return
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
     def handle_endtag(self, tag):
+        if tag in _VOID_TAGS:
+            return
         if self.stack:
             self.stack.pop()
 
     def handle_data(self, data):
-        if self.stack and self.stack[-1] in _EXCLUDED_KINDS:
+        kind = self.stack[-1] if self.stack else None
+        if kind in _EXCLUDED_KINDS:
             return
         n = sum(1 for ch in data if not ch.isspace())
         self.body += n
-        if not self.seen_figure:
+        if not self.seen_figure and kind not in _NOT_BEFORE_FIGURE_KINDS:
             self.before += n
+
+
+def _count(markup: str) -> _Counter:
+    counter = _Counter()
+    counter.feed(markup)
+    counter.close()
+    return counter
+
+
+def visible_chars(markup: str) -> int:
+    """Non-whitespace characters of the text in ``markup`` (tags and comments excluded)."""
+    return _count(markup).body
 
 
 def text_metrics(document: str) -> TextMetrics:
     start, end = document.find(_BEGIN), document.find(_END)
     content = document[start + len(_BEGIN):end] if 0 <= start < end else ""
-    counter = _Counter()
-    counter.feed(content)
-    counter.close()
+    counter = _count(content)
     return TextMetrics(counter.body, counter.before, counter.figures)
 
 

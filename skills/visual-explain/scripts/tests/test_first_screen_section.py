@@ -80,6 +80,13 @@ class OverviewValidationTest(unittest.TestCase):
         self.assertIn("first-screen.overview.markers の n は1からの連番である必要があります",
                       _messages(_assembly(first, CANONICAL, _narr("sec-a", "背景の見出し"))))
 
+    def test_bad_marker_n_is_reported_once(self) -> None:
+        first = self._first(markers=[{"n": "1", "label": "背景", "target": "sec-a"},
+                                     {"n": 2, "label": "決定", "target": "sec-a"}])
+        msgs = _messages(_assembly(first, CANONICAL, _narr("sec-a", "背景の見出し")))
+        self.assertIn("first-screen.overview.markers[].n は整数である必要があります", msgs)
+        self.assertNotIn("first-screen.overview.markers の n は1からの連番である必要があります", msgs)
+
     def test_overview_required_with_three_headed_sections(self) -> None:
         raw = _assembly({"conclusion": "限定対象で開始する。"},
                         _narr("sec-a", "一つ目の見出し"), _narr("sec-b", "二つ目の見出し"), _narr("sec-c", "三つ目の見出し"))
