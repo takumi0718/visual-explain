@@ -2219,7 +2219,7 @@ def check_document_structure(
         return diagnostics
     if skeleton_version >= 3:
         diagnostics.extend(check_review_blocks(content_markup))
-    diagnostics.extend(check_section_markers(content_markup))
+    diagnostics.extend(check_section_markers(content_markup, skeleton_version))
     first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
     if not first_nodes:
         diagnostics.append(Diagnostic(

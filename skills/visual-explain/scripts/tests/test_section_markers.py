@@ -103,5 +103,59 @@ class MarkerCheckTest(unittest.TestCase):
         self.assertIn("論点番号 1 の印が複数あります", messages)
 
 
+    def test_missing_echo_on_an_overview_target_is_rejected_from_v4(self) -> None:
+        stripped = self.content.replace(' data-ve-marker="2"', "", 1)
+        messages = [d.message for d in check_document_structure(stripped, skeleton_version=4)]
+        self.assertIn("概要の番号 2 の飛び先に論点番号の印がありません", messages)
+        older = [d.message for d in check_document_structure(stripped, skeleton_version=3)]
+        self.assertNotIn("概要の番号 2 の飛び先に論点番号の印がありません", older)
+
+    def test_echo_on_an_element_the_build_never_stamps_is_rejected_from_v4(self) -> None:
+        moved = self.content.replace(' data-ve-marker="3"', "", 1)
+        forged = moved.replace('<span class="ask-prefix">根拠:', '<span data-ve-marker="3" class="ask-prefix">根拠:', 1)
+        self.assertNotEqual(forged, moved)
+        messages = [d.message for d in check_document_structure(forged, skeleton_version=4)]
+        self.assertIn("論点番号の印は h2 / h3 / p 以外の要素 <span> には付けられません", messages)
+        older = [d.message for d in check_document_structure(forged, skeleton_version=3)]
+        self.assertNotIn("論点番号の印は h2 / h3 / p 以外の要素 <span> には付けられません", older)
+
+
+class AskMarkerTest(unittest.TestCase):
+    """Request asks echo on .ask-kind, hypothesis asks on .ask-claim."""
+
+    def _ask_html(self, ask_type: str) -> str:
+        raw = _raw()
+        if ask_type == "request":
+            ask = {"kind": "ask", "id": "sec-ask-request", "askType": "request",
+                   "steps": [{"role": "user", "roleLabel": "あなた", "text": "承認地図を確認する"}]}
+            closing = next(i for i, s in enumerate(raw["sections"]) if s.get("kind") == "closing")
+            raw["sections"].insert(closing, ask)
+        else:
+            ask = next(s for s in raw["sections"] if s.get("kind") == "ask" and s.get("askType") == ask_type)
+        raw["sections"][0]["overview"]["markers"][2]["target"] = ask["id"]
+        return _content(_build(raw))
+
+    def test_request_ask_marker_sits_on_ask_kind(self) -> None:
+        content = self._ask_html("request")
+        self.assertRegex(content, r'<p class="ask-kind" data-ve-marker="3"')
+        self.assertEqual(check_document_structure(content, skeleton_version=4), [])
+
+    def test_hypothesis_ask_marker_sits_on_ask_claim(self) -> None:
+        content = self._ask_html("hypothesis")
+        self.assertRegex(content, r'<p class="ask-claim" data-ve-marker="3"')
+        self.assertEqual(check_document_structure(content, skeleton_version=4), [])
+
+
+class NarrativeH3FallbackTest(unittest.TestCase):
+    def test_narrative_without_h2_is_marked_on_its_first_h3_through_the_pipeline(self) -> None:
+        raw = _raw()
+        target = next(s for s in raw["sections"] if s.get("kind") == "narrative" and s["id"] == "sec-current-problem")
+        target["markup"] = target["markup"].replace("<h2", "<h3").replace("</h2>", "</h3>")
+        content = _content(_build(raw))
+        self.assertRegex(content, r'<h3 data-ve-marker="1"')
+        self.assertEqual(len(re.findall(r"data-ve-marker=", content)), 3)
+        self.assertEqual(check_document_structure(content, skeleton_version=4), [])
+
+
 if __name__ == "__main__":
     unittest.main()
