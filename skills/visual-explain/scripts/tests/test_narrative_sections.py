@@ -1,12 +1,11 @@
 import json
-from dataclasses import replace
 import subprocess
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from build_explainer import build_document
+from build_explainer import build_document, compose_document
 from ve_components.assembly import (
     compose_sections,
     process_canonical_section,
@@ -19,7 +18,6 @@ from ve_components.flatten import flatten_document
 from ve_components.model import CanonicalSection, NarrativeSection
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
-from ve_components.review_blocks import stamp_review_sections
 from ve_components.validation import validate_assembly
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -138,36 +136,10 @@ def test_final_provenance_rejects_narrative_without_instance():
 
 
 def _build_composition_and_document(raw):
-    # Mirrors build_document's own dispatch/compose/flatten steps, but keeps
-    # the intermediate CompositionResult around so the test can pass it as
-    # ``expected`` to check_final_document directly (build_document only
-    # returns the final HTML string).
-    from ve_components.document_sections import (
-        render_ask, render_closing, render_decision_panel, render_first_screen,
-    )
-    from ve_components.model import AskSection, ClosingSection, FirstScreenSection
-
+    # The real build pipeline, stopping before the final check so the test can
+    # pass the CompositionResult to check_final_document as ``expected``.
     request = validate_assembly(raw)
-    items = []
-    for section in request.sections:
-        if isinstance(section, CanonicalSection):
-            items.append(process_canonical_section(section, REGISTRY, TRUSTED_RENDERERS))
-        elif isinstance(section, NarrativeSection):
-            items.append(process_narrative_section(section))
-        elif isinstance(section, FirstScreenSection):
-            items.append(render_first_screen(section, request.document))
-        elif isinstance(section, ClosingSection):
-            items.append(render_closing(section))
-        elif isinstance(section, AskSection):
-            items.append(render_ask(section))
-        else:
-            items.append(process_compatibility_section(section))
-    items.append(render_decision_panel(
-        tuple(s for s in request.sections if isinstance(s, AskSection)),
-        request.document, request.schema_version, "doc.html",
-        occupied_ids=frozenset(i.instance_id for i in items)))
-    composition = compose_sections(items)
-    composition = replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
+    composition = compose_document(request, REGISTRY, TRUSTED_RENDERERS, document_path="doc.html")
     document = flatten_document(composition, SKELETON, COMPONENTS_DIR, request.document.title)
     return composition, document
 
@@ -199,3 +171,10 @@ def test_narrative_mixed_fixture_passes_check_sh():
         assert "PASS" in proc.stdout + proc.stderr
     finally:
         out.unlink(missing_ok=True)
+
+
+def test_compose_document_is_the_build_pipeline():
+    raw = json.loads((TESTS_DIR / "component-valid-narrative-mixed.json").read_text("utf-8"))
+    _composition, document = _build_composition_and_document(raw)
+    assert document == build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR,
+                                      document_path="doc.html")

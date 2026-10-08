@@ -147,7 +147,6 @@ _IR_KEYS = {
 _SEQUENCE_KEYS = {"mode", "steps"}
 _SEQUENCE_STEP_KEYS = {"id", "label", "targetIds"}
 _ASSERTION_KEYS = {"id", "text", "coverIds"}
-_BLOCK_ATTR_RE = re.compile(r"\sdata-ve-blk\b", re.IGNORECASE)
 _STAGE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 SEQUENCE_MODES = frozenset(VOCABULARY["sequenceModes"])
 # Single source of truth for panel DOM-ID rewriting and later normalization.
@@ -345,6 +344,28 @@ class _AuthorMarkupBanParser(HTMLParser):
                 if label not in self._seen_attrs:
                     self._seen_attrs.add(label)
                     self.reserved_attrs.append(label)
+
+
+class _BlockNumberAttrParser(HTMLParser):
+    """Find a start tag carrying an attribute named exactly ``data-ve-blk``."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.found = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if any((name or "").lower() == "data-ve-blk" for name, _value in attrs):
+            self.found = True
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+
+def _has_block_number_attr(markup: str) -> bool:
+    parser = _BlockNumberAttrParser()
+    parser.feed(markup)
+    parser.close()
+    return parser.found
 
 
 class _PlainTextParser(HTMLParser):
@@ -3117,7 +3138,7 @@ def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollect
             code=INVALID_COMPATIBILITY_PROVENANCE,
         ):
             col.add(code, message, path)
-        if _BLOCK_ATTR_RE.search(markup):
+        if _has_block_number_attr(markup):
             col.add(INVALID_COMPATIBILITY_PROVENANCE,
                     "compatibility に data-ve-blk は書けません（ビルドが付与します）", path)
     prov = raw.get("provenance")

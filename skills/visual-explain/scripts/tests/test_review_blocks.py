@@ -117,6 +117,24 @@ class BuildTest(unittest.TestCase):
         self.assertIn("compatibility に data-ve-blk は書けません（ビルドが付与します）",
                       messages(assembly({"conclusion": "限定対象で開始する。"}, compat)))
 
+    def _compat_messages(self, markup: str) -> list[str]:
+        compat = {"kind": "compatibility", "id": "sec-c", "markup": markup,
+                  "provenance": {"source": "legacy-html-insertion", "reason": "unmigrated-format",
+                                 "format": "layers"}}
+        return messages(assembly({"conclusion": "限定対象で開始する。"}, compat))
+
+    def test_prose_mentioning_the_attribute_is_not_a_block_number(self) -> None:
+        msgs = self._compat_messages('<div class="figure"><p>属性 data-ve-blk はビルドが付けます</p></div>')
+        self.assertNotIn("compatibility に data-ve-blk は書けません（ビルドが付与します）", msgs)
+
+    def test_similar_attribute_name_is_not_a_block_number(self) -> None:
+        msgs = self._compat_messages('<div class="figure"><p data-ve-blk-note="x">本文</p></div>')
+        self.assertNotIn("compatibility に data-ve-blk は書けません（ビルドが付与します）", msgs)
+
+    def test_upper_case_attribute_is_still_rejected(self) -> None:
+        msgs = self._compat_messages('<div class="figure"><p DATA-VE-BLK="2">本文</p></div>')
+        self.assertIn("compatibility に data-ve-blk は書けません（ビルドが付与します）", msgs)
+
 
 class StampEdgeCaseTest(unittest.TestCase):
     def test_unquoted_value_before_self_closing_slash_is_preserved(self) -> None:

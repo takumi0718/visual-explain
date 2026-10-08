@@ -40,6 +40,7 @@ from ve_components.document_sections import (  # noqa: E402
 )
 from ve_components.flatten import flatten_document  # noqa: E402
 from ve_components.model import (  # noqa: E402
+    AssemblyRequest,
     AskSection,
     CanonicalSection,
     ClosingSection,
@@ -79,16 +80,14 @@ def _section_instance_id(section) -> str:
     return section.id
 
 
-def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: str,
-                   components_dir: Path, *, document_path: str) -> CompositionResult | str:
-    """Validate, compose, flatten, and finally check. Raises on any failure."""
-    declared = declared_skeleton_version(skeleton_text)
-    if declared != LATEST_SKELETON_VERSION:
-        raise ContractError([Diagnostic(
-            FIXED_REGION_MISMATCH,
-            f"ビルドは最新の skeleton 版（{LATEST_SKELETON_VERSION}）だけを使えます: {declared}",
-        )])
-    request = validate_assembly(raw_assembly)
+def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
+                     document_path: str) -> CompositionResult:
+    """Render every validated section in reading order and number review blocks.
+
+    Validation guarantees sections[0] is the first-screen and, when it declares
+    an overview, sections[1] is the overview figure; the marker list goes right
+    after that figure and the collection panel goes last.
+    """
     occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
     first = request.sections[0]
     nav = build_overview_nav(first, occupied_ids=occupied_ids)
@@ -117,7 +116,20 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)
     composition = compose_sections(items)
-    composition = replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
+    return replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
+
+
+def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: str,
+                   components_dir: Path, *, document_path: str) -> CompositionResult | str:
+    """Validate, compose, flatten, and finally check. Raises on any failure."""
+    declared = declared_skeleton_version(skeleton_text)
+    if declared != LATEST_SKELETON_VERSION:
+        raise ContractError([Diagnostic(
+            FIXED_REGION_MISMATCH,
+            f"ビルドは最新の skeleton 版（{LATEST_SKELETON_VERSION}）だけを使えます: {declared}",
+        )])
+    request = validate_assembly(raw_assembly)
+    composition = compose_document(request, registry, renderers, document_path=document_path)
     document = flatten_document(composition, skeleton_text, components_dir, request.document.title)
     diagnostics = check_final_document(document, skeleton_text, registry, expected=composition,
                                        components_dir=components_dir)
