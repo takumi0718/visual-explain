@@ -1125,6 +1125,9 @@ def validate_final_provenance(content: str) -> list[Diagnostic]:
         elif kind == "toc":
             # Build-time TOC: trusted renderer output; no author provenance fields.
             pass
+        elif kind == "overview-nav":
+            # Build-time overview marker list: trusted renderer output.
+            pass
         elif kind == "decision-panel":
             # Build-time decision-recovery panel: trusted renderer output; no
             # author provenance fields.
@@ -2576,7 +2579,16 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
     skel = skeleton.decode("utf-8") if isinstance(skeleton, bytes) else skeleton
     if not is_component_document(text):
         return []
+    from .skeletons import declared_skeleton_version, resolve_skeleton
+    resolved = resolve_skeleton(text, skel)
     diagnostics: list[Diagnostic] = []
+    if resolved is None:
+        diagnostics.append(Diagnostic(
+            FIXED_REGION_MISMATCH,
+            f"未知の skeleton 版です: {declared_skeleton_version(text)}",
+        ))
+        resolved = skel
+    skel = resolved
     slots, marker_diags = extract_controlled_slots(text)
     diagnostics += marker_diags
     diagnostics += normalized_fixed_regions(text, skel)

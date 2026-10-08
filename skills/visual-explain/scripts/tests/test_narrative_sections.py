@@ -28,11 +28,11 @@ REGISTRY = load_registry(COMPONENTS_DIR / "registry.json")
 TESTS_DIR = SKILL_DIR / "scripts" / "tests"
 CHECK = SKILL_DIR / "scripts" / "check.sh"
 
-BASE = {"schemaVersion": 1,
+BASE = {"schemaVersion": 2,
         "document": {"id": "doc", "title": "検証資料", "summary": "narrative 検証。",
                      "type": "system", "profile": "strict"}}
 
-FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+FIRST = {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"}
 CLOSING = {
     "kind": "closing",
     "id": "sec-closing",
@@ -102,13 +102,14 @@ def _mixed_narrative_assembly():
 def test_build_document_orders_narrative_and_canonical_sections():
     raw = _mixed_narrative_assembly()
     doc = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR, document_path="doc.html")
-    i_first = doc.index('data-ve-section-kind="first-screen"')
+    body_html = doc[doc.index("<body"):]  # skeleton CSS also mentions section-kind selectors
+    i_first = doc.index('data-ve-section-kind="first-screen"', doc.index("<body"))
     i_canonical = doc.index('data-ve-instance="sec-enum-list"')
     i_body = doc.index('data-ve-instance="sec-body"')
     i_closing = doc.index('data-ve-section-kind="closing"')
     assert i_first < i_canonical < i_body < i_closing
-    assert doc.count('data-ve-section-kind="narrative"') == 1
-    assert doc.count('data-ve-section-kind="canonical"') == 1
+    assert body_html.count('data-ve-section-kind="narrative"') == 1
+    assert body_html.count('data-ve-section-kind="canonical"') == 1
 
 
 def test_compose_sections_rejects_duplicate_id_across_narrative_and_canonical():

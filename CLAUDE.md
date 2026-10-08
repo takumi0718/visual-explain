@@ -39,7 +39,7 @@ CI はない。マージ前はテスト全通過と `check.sh --selftest` を手
 - `<!-- TITLE:BEGIN/END -->` と `<!-- CONTENT:BEGIN/END -->` の区間（生成コンテンツ）
 - `VE-CONTROLLED:COMPONENT-STYLES / COMPONENT-SCRIPTS` スロット（ビルド時にハッシュ検証済みのコンポーネントアセットを注入）
 
-それ以外の固定領域は checker が skeleton と SHA-256 でバイト一致比較する。つまり skeleton の 1 バイトの変更もチェッカー・全テスト・既存生成物に波及する。生成 HTML を手で直すことは禁止で、修正は常に IR を直して再ビルドする。
+それ以外の固定領域は checker が skeleton と SHA-256 でバイト一致比較する。skeleton は版ごとに不変で、最新版が `assets/skeleton.html`（`<html data-ve-skeleton="N">`）、旧版は `assets/skeleton-vN.html` に凍結する。checker は文書が宣言する版と照合する。つまり skeleton の 1 バイトの変更もチェッカー・全テスト・既存生成物に波及する。生成 HTML を手で直すことは禁止で、修正は常に IR を直して再ビルドする。
 
 ### ビルドパイプライン（`scripts/build_explainer.py` → `ve_components/`）
 
@@ -48,7 +48,7 @@ assembly IR（JSON）を入力に、次の単一経路で HTML を生成する�
 ```
 validation.py（schema/契約検証・型付きセクション位置不変条件）
 → registry.py（relationship 宣言による候補絞り込み＝集合包含のみ・明示選択の検証）
-→ document_sections.py（first-screen / closing / ask / 目次の信頼レンダラ）＋ renderers/（canonical）
+→ document_sections.py（first-screen / closing / ask / overview マーカー一覧の信頼レンダラ）＋ renderers/（canonical）
 → assembly.py + flatten.py（canonical/compatibility/narrative/typed 共通の composer/flattener）
 → checker.py + document_checks.py + final_checks.py（最終検査・検査群③）→ 全通過後にのみ atomic write
 ```
@@ -62,7 +62,7 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 
 ### 検証（`check.sh` — 四層）
 
-依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・summary 描画・外部リンクのドメインマーカーに加え、decision-panel の存在（decision ask の有無との整合）・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）に加え、構造予約属性（`data-ve-section-kind` / `data-ve-ask-type` は `section`、`data-ve-panel-ask` は `li`）が指定タグ以外に付与されていないかを検証する（compatibility 等の非構造セクションに紛れ込んだ偽装パネル/ask の fail-closed）。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
+依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・first-screen の結論（`p.conclusion`）描画・外部リンクのドメインマーカーに加え、decision-panel の存在（decision ask の有無との整合）・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）に加え、構造予約属性（`data-ve-section-kind` / `data-ve-ask-type` は `section`、`data-ve-panel-ask` は `li`）が指定タグ以外に付与されていないかを検証する（compatibility 等の非構造セクションに紛れ込んだ偽装パネル/ask の fail-closed）。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
 
 ### テスト構成（`scripts/tests/`）
 

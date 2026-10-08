@@ -1,4 +1,4 @@
-"""Typed document sections: first-screen, closing, ask, and the build-time TOC.
+"""Typed document sections: first-screen, closing, ask, and the overview marker list.
 
 These are trusted renderers that bypass the component registry: their inputs are
 validated dataclasses, their markup uses only fixed skeleton classes, and the
@@ -24,12 +24,9 @@ _VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
 })
-_TOC_INSTANCE_ID_PREFIX = "sec-toc"
-_TOC_MIN_ENTRIES = 5
+_OVERVIEW_NAV_INSTANCE_ID_PREFIX = "sec-overview-nav"
 _PANEL_INSTANCE_ID_PREFIX = "sec-decision-panel"
 
-_SUBTITLE_LABEL = {"proposal": "あなたが決めること", "system": "この資料が答える問い",
-                   "research": "この資料が答える問い"}
 _ASK_KIND_LABEL = {
     "decision": "判断してください",
     "request": "お願いする動作",
@@ -43,12 +40,6 @@ class WrappedDocumentSection:
     markup: str
 
 
-@dataclass(frozen=True)
-class TocEntry:
-    anchor_id: str
-    heading: str
-
-
 def _esc(value: str) -> str:
     return html.escape(value)
 
@@ -56,8 +47,9 @@ def _esc(value: str) -> str:
 class _FirstH2H3Parser(HTMLParser):
     """Extract the first h2/h3 text the same way as check.sh ContentInspector.headings."""
 
-    def __init__(self) -> None:
+    def __init__(self, levels: frozenset[str] = frozenset({"h2", "h3"})) -> None:
         super().__init__(convert_charrefs=True)
+        self._levels = levels
         self.stack: list[str] = []
         self.active: tuple[int, list[str]] | None = None
         self.result: str | None = None
@@ -67,7 +59,7 @@ class _FirstH2H3Parser(HTMLParser):
         if tag not in _VOID_TAGS:
             self.stack.append(tag)
         depth = len(self.stack)
-        if self.result is None and self.active is None and tag in {"h2", "h3"}:
+        if self.result is None and self.active is None and tag in self._levels:
             self.active = (depth, [])
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -99,6 +91,14 @@ def extract_first_h2_h3(markup: str) -> str | None:
     return parser.result
 
 
+def extract_first_h2(markup: str) -> str | None:
+    """Return the text of the first h2 in markup (h3 ignored), or None if absent/blank."""
+    parser = _FirstH2H3Parser(frozenset({"h2"}))
+    parser.feed(markup)
+    parser.close()
+    return parser.result
+
+
 def _allocate_instance_id(prefix: str, occupied_ids: frozenset[str] | set[str]) -> str:
     """Pick a compose-only instance id that does not collide with section ids."""
     if prefix not in occupied_ids:
@@ -111,54 +111,41 @@ def _allocate_instance_id(prefix: str, occupied_ids: frozenset[str] | set[str]) 
         n += 1
 
 
-def allocate_toc_instance_id(occupied_ids: frozenset[str] | set[str]) -> str:
-    """Pick a compose-only TOC instance id that does not collide with section ids.
-
-    Compatibility wrapper around ``_allocate_instance_id``.
-    """
-    return _allocate_instance_id(_TOC_INSTANCE_ID_PREFIX, occupied_ids)
-
-
-def build_toc(
-    entries: tuple[TocEntry, ...],
-    *,
-    occupied_ids: frozenset[str] | set[str] = frozenset(),
-) -> WrappedDocumentSection | None:
-    """Build a flat TOC section when there are at least five headed body sections."""
-    if len(entries) < _TOC_MIN_ENTRIES:
-        return None
-    items = "".join(
-        f'<li><a href="#{_esc(entry.anchor_id)}">{_esc(entry.heading)}</a></li>'
-        for entry in entries
-    )
-    markup = (
-        f'<section data-ve-section-kind="toc">\n'
-        f'<nav aria-label="目次"><ol>{items}</ol></nav>\n'
-        f"</section>"
-    )
-    return WrappedDocumentSection(
-        instance_id=allocate_toc_instance_id(occupied_ids),
-        markup=markup,
-    )
-
-
 def render_first_screen(section: FirstScreenSection, document: DocumentMetadata) -> WrappedDocumentSection:
-    conditions = ""
-    if section.conditions:
-        items = "".join(f"<li>{_esc(c)}</li>" for c in section.conditions)
-        conditions = f'\n  <ul class="conditions">{items}</ul>'
-    label = _SUBTITLE_LABEL[document.type]
     markup = (
         f'<section data-ve-section-kind="first-screen"'
         f' data-ve-document-type="{_esc(document.type)}" data-ve-profile="{_esc(document.profile)}"'
         f' id="{_esc(section.id)}">\n'
         f'<section class="first-screen" aria-label="最初に伝えること">\n'
         f'  <h1>{_esc(document.title)}</h1>\n'
-        f'  <p class="subtitle decision"><strong>{label}:</strong> {_esc(section.decision)}</p>\n'
-        f'  <p class="subtitle">{_esc(document.summary)}</p>{conditions}\n'
+        f'  <p class="conclusion"><strong>結論:</strong> {_esc(section.conclusion)}</p>\n'
         f'</section>\n</section>'
     )
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
+
+
+def build_overview_nav(
+    first: FirstScreenSection,
+    *,
+    occupied_ids: frozenset[str] | set[str] = frozenset(),
+) -> WrappedDocumentSection | None:
+    """Numbered links from the overview figure to the sections it marks."""
+    if first.overview is None:
+        return None
+    items = "".join(
+        f'<li><a href="#{_esc(m.target)}"><span class="marker-n" aria-hidden="true">{m.n}</span>'
+        f'<span>{_esc(m.label)}</span></a></li>'
+        for m in first.overview.markers
+    )
+    markup = (
+        '<section data-ve-section-kind="overview-nav">\n'
+        f'<nav class="overview-markers" aria-label="この資料の論点"><ol>{items}</ol></nav>\n'
+        "</section>"
+    )
+    return WrappedDocumentSection(
+        instance_id=_allocate_instance_id(_OVERVIEW_NAV_INSTANCE_ID_PREFIX, occupied_ids),
+        markup=markup,
+    )
 
 
 def render_closing(section: ClosingSection) -> WrappedDocumentSection:

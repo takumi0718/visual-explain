@@ -6,7 +6,7 @@ import unittest
 from ve_components.diagnostics import ContractError
 from ve_components.validation import validate_assembly
 
-_FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+_FIRST = {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"}
 _CLOSING = {
     "kind": "closing",
     "id": "sec-closing",
@@ -17,7 +17,7 @@ _CLOSING = {
 }
 
 BASE = {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "document": {"id": "doc-1", "title": "タイトル", "summary": "要約。",
                  "type": "proposal", "profile": "strict"},
     "sections": [_FIRST, _CLOSING],

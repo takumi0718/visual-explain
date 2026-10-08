@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja" data-theme-storage-key="visual-explain-theme">
+<html lang="ja" data-theme-storage-key="visual-explain-theme" data-ve-skeleton="2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -107,7 +107,12 @@
     button:hover:not(:disabled) { background: var(--border); }
     button:disabled { color: var(--text-dim); cursor: not-allowed; }
 
-    .first-screen { display: grid; gap: var(--space-4); padding: var(--space-6) 0; background: transparent; border-left: 0; min-height: 60vh; align-content: center; }
+    .first-screen { display: grid; gap: var(--space-3); padding: var(--space-4) 0 var(--space-2); margin-block: 0; background: transparent; border-left: 0; }
+    .conclusion { margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); font-size: var(--fs-body); color: var(--text); }
+    [data-ve-section-kind="first-screen"] + [data-ve-section-kind="canonical"], [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
+    .overview-markers ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+    .overview-markers a { display: inline-flex; gap: var(--space-1); align-items: baseline; color: var(--text); text-decoration: none; }
+    .overview-markers .marker-n { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
     .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
     .decision strong { color: var(--accent-strong); }
     .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }

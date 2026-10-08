@@ -465,10 +465,23 @@ class NarrativeSection:
 
 
 @dataclass(frozen=True)
+class OverviewMarker:
+    n: int
+    label: str
+    target: str
+
+
+@dataclass(frozen=True)
+class Overview:
+    section: str
+    markers: tuple[OverviewMarker, ...]
+
+
+@dataclass(frozen=True)
 class FirstScreenSection:
     id: str
-    decision: str          # proposal: 判断文 / system・research: この資料が答える問い（1 文）
-    conditions: tuple[str, ...] = ()   # 最大 2 件
+    conclusion: str                     # 1-3 sentences, each <= 80 chars
+    overview: Optional[Overview] = None
 
 
 @dataclass(frozen=True)

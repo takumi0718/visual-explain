@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {"id": "vs-flow-state", "title": "承認状態レンズ", "summary": "承認フローの現在対象を切り替える資料。", "type": "system", "profile": "visual-stage"},
   "sections": [
-    {"kind": "first-screen", "id": "first", "decision": "承認状態を順に確認します。"},
+    {"kind": "first-screen", "id": "first", "conclusion": "承認状態を順に確認します。"},
     {"kind": "canonical", "ir": {
       "id": "flow-state",
       "relationship": {"kind": "directed-graph", "capabilities": ["ordered-transition", "typed-sequence"]},

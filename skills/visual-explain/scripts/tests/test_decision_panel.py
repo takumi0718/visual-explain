@@ -36,7 +36,7 @@ _REQUEST_ASK = AskSection(
 
 
 def _assembly(*, decision_ask: bool) -> dict:
-    sections = [{"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}]
+    sections = [{"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"}]
     if decision_ask:
         sections.append({
             "kind": "ask",
@@ -58,7 +58,7 @@ def _assembly(*, decision_ask: bool) -> dict:
         ],
     })
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "document": {
             "id": "doc-1",
             "title": "料金改定は限定対象で段階公開する",
@@ -168,13 +168,13 @@ class BuildCliDocumentPathTest(unittest.TestCase):
 class NarrativeRejectsDecisionPanelClassTest(unittest.TestCase):
     def test_narrative_with_decision_panel_class_rejected(self) -> None:
         raw = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "document": {
                 "id": "d", "title": "t", "summary": "s",
                 "type": "proposal", "profile": "strict",
             },
             "sections": [
-                {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"},
+                {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"},
                 {
                     "kind": "narrative",
                     "id": "sec-fake-panel",

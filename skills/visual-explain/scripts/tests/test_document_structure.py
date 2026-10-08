@@ -14,7 +14,7 @@ _DOC = {
     "profile": "strict",
 }
 
-_FIRST = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
+_FIRST = {"kind": "first-screen", "id": "sec-first", "conclusion": "決めます。"}
 _CLOSING = {
     "kind": "closing",
     "id": "sec-closing",
@@ -50,7 +50,7 @@ _RESERVED_CLASS_CASES = (
 
 
 def _assembly(*sections: dict) -> dict:
-    return {"schemaVersion": 1, "document": dict(_DOC), "sections": list(sections)}
+    return {"schemaVersion": 2, "document": dict(_DOC), "sections": list(sections)}
 
 
 def _messages(exc: ContractError) -> str:
@@ -64,7 +64,7 @@ class DocumentStructureTest(unittest.TestCase):
         self.assertIn("first-screen は先頭にちょうど1個必要です", _messages(ctx.exception))
 
     def test_rejects_two_first_screens(self) -> None:
-        second = {"kind": "first-screen", "id": "sec-first-2", "decision": "別の判断をします。"}
+        second = {"kind": "first-screen", "id": "sec-first-2", "conclusion": "別の判断をします。"}
         with self.assertRaises(ContractError) as ctx:
             validate_assembly(_assembly(_FIRST, second, _CLOSING))
         self.assertIn("first-screen は先頭にちょうど1個必要です", _messages(ctx.exception))

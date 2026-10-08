@@ -1,105 +1,97 @@
-"""型付き first-screen: h1 は document.title 由来、subtitle は型で切替。"""
+"""first-screen v2: title h1, conclusion (1-3 sentences), optional overview."""
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
-from build_explainer import build_document
-from ve_components.assembly import compose_sections
-from ve_components.diagnostics import ContractError
-from ve_components.document_sections import render_first_screen
-from ve_components.model import DocumentMetadata, FirstScreenSection
-from ve_components.registry import load_registry
-from ve_components.renderers import TRUSTED_RENDERERS
-from ve_components.validation import validate_assembly
-
-DOC = DocumentMetadata(id="doc-1", title="料金改定は限定対象で段階公開する", summary="要約文。",
-                       type="proposal", profile="strict")
-
-SKILL_DIR = Path(__file__).resolve().parents[2]
-SKELETON = (SKILL_DIR / "assets" / "skeleton.html").read_text("utf-8")
-COMPONENTS_DIR = SKILL_DIR / "assets" / "components"
-REGISTRY = load_registry(COMPONENTS_DIR / "registry.json")
+from first_screen_ir import CANONICAL, assembly as _assembly, messages as _messages, narr as _narr
+from ve_components.model import FirstScreenSection, Overview, OverviewMarker
+from ve_components.validation import split_sentences, validate_assembly
 
 
-def _first_screen_assembly(**section_extra):
-    section = {"kind": "first-screen", "id": "sec-first", "decision": "決めます。"}
-    section.update(section_extra)
-    return {
-        "schemaVersion": 1,
-        "document": {
-            "id": "d",
-            "title": "料金改定は限定対象で段階公開する",
-            "summary": "要約文。",
-            "type": "proposal",
-            "profile": "strict",
-        },
-        "sections": [
-            section,
-            {
-                "kind": "closing",
-                "id": "sec-closing",
-                "blocks": [
-                    {"heading": "リスクと弱い前提", "items": ["前提Aが弱い"]},
-                    {"heading": "不確かな点", "items": ["未確認の利用状況"]},
-                ],
-            },
-        ],
-    }
+class SplitSentencesTest(unittest.TestCase):
+    def test_splits_on_terminators(self) -> None:
+        self.assertEqual(split_sentences("限定で始める。前提は二つ！"), ("限定で始める。", "前提は二つ！"))
+
+    def test_trailing_text_without_terminator_is_none(self) -> None:
+        self.assertIsNone(split_sentences("限定で始める。前提は二つ"))
+
+    def test_empty_sentence_is_none(self) -> None:
+        self.assertIsNone(split_sentences("限定で始める。。"))
 
 
-class FirstScreenRenderTest(unittest.TestCase):
-    def test_h1_comes_from_document_title(self) -> None:
-        section = FirstScreenSection(id="sec-first", decision="限定対象で開始するか決めます。",
-                                     conditions=("撤回条件を先に合意できること",))
-        wrapped = render_first_screen(section, DOC)
-        self.assertIn("<h1>料金改定は限定対象で段階公開する</h1>", wrapped.markup)
-        self.assertIn("data-ve-document-type=\"proposal\"", wrapped.markup)
-        self.assertIn("data-ve-profile=\"strict\"", wrapped.markup)
-        self.assertIn("要約文。", wrapped.markup)  # summary が描画される
-        self.assertIn("あなたが決めること", wrapped.markup)
+class ConclusionValidationTest(unittest.TestCase):
+    def test_valid_conclusion_builds_section(self) -> None:
+        request = validate_assembly(_assembly({"conclusion": "限定対象で開始する。撤回条件の合意が前提。"}))
+        self.assertEqual(request.schema_version, 2)
+        first = request.sections[0]
+        self.assertIsInstance(first, FirstScreenSection)
+        self.assertEqual(first.conclusion, "限定対象で開始する。撤回条件の合意が前提。")
+        self.assertIsNone(first.overview)
 
-    def test_system_uses_question_subtitle(self) -> None:
-        doc = DocumentMetadata(id="d", title="T", summary="S。", type="system", profile="strict")
-        section = FirstScreenSection(id="sec-first", decision="この仕組みはなぜ安全か。", conditions=())
-        wrapped = render_first_screen(section, doc)
-        self.assertIn("この資料が答える問い", wrapped.markup)
-        self.assertNotIn("あなたが決めること", wrapped.markup)
+    def test_four_sentences_rejected(self) -> None:
+        self.assertIn("first-screen.conclusion は文末（。！？!?）で終わる1〜3文である必要があります",
+                      _messages(_assembly({"conclusion": "一。二。三。四。"})))
 
-    def test_more_than_two_conditions_rejected_by_validation(self) -> None:
-        raw = _first_screen_assembly(conditions=["a", "b", "c"])
-        with self.assertRaises(ContractError) as ctx:
-            validate_assembly(raw)
-        self.assertTrue(any("conditions" in str(d) for d in ctx.exception.diagnostics))
+    def test_long_sentence_rejected(self) -> None:
+        long = "あ" * 80 + "。"
+        self.assertIn("first-screen.conclusion の各文は80字以内です（81字）",
+                      _messages(_assembly({"conclusion": long})))
 
-    def test_null_conditions_rejected_by_validation(self) -> None:
-        raw = _first_screen_assembly(conditions=None)
-        with self.assertRaises(ContractError) as ctx:
-            validate_assembly(raw)
-        self.assertTrue(any("conditions" in str(d) for d in ctx.exception.diagnostics))
+    def test_legacy_decision_field_rejected(self) -> None:
+        self.assertIn("未知のフィールド 'decision'",
+                      _messages(_assembly({"conclusion": "決める。", "decision": "決めます。"})))
 
-    def test_omitted_conditions_defaults_to_empty(self) -> None:
-        req = validate_assembly(_first_screen_assembly())
-        section = req.sections[0]
-        self.assertIsInstance(section, FirstScreenSection)
-        self.assertEqual(section.conditions, ())
+    def test_schema_version_1_rejected_with_migration_hint(self) -> None:
+        raw = _assembly({"conclusion": "決める。"})
+        raw["schemaVersion"] = 1
+        self.assertIn("schemaVersion 1 は廃止されました（first-screen を conclusion / overview で書き直してください）",
+                      _messages(raw))
 
-    def test_compose_sections_accepts_wrapped_document_section(self) -> None:
-        section = FirstScreenSection(id="sec-first", decision="決めます。", conditions=("a",))
-        wrapped = render_first_screen(section, DOC)
-        composition = compose_sections([wrapped])
-        self.assertEqual(composition.sections_markup, (wrapped.markup,))
 
-    def test_build_document_includes_first_screen(self) -> None:
-        html = build_document(
-            _first_screen_assembly(conditions=["撤回条件を先に合意できること"]),
-            REGISTRY,
-            TRUSTED_RENDERERS,
-            SKELETON,
-            COMPONENTS_DIR,
-            document_path="doc.html",
-        )
-        self.assertIn('data-ve-section-kind="first-screen"', html)
-        self.assertIn("<h1>料金改定は限定対象で段階公開する</h1>", html)
-        self.assertIn("要約文。", html)
-        self.assertIn("あなたが決めること", html)
+class OverviewValidationTest(unittest.TestCase):
+    def _first(self, **overview) -> dict:
+        base = {"section": "sec-map", "markers": [{"n": 1, "label": "背景", "target": "sec-a"}]}
+        base.update(overview)
+        return {"conclusion": "限定対象で開始する。", "overview": base}
+
+    def test_valid_overview(self) -> None:
+        request = validate_assembly(_assembly(self._first(), CANONICAL, _narr("sec-a", "背景の見出し")))
+        self.assertEqual(request.sections[0].overview,
+                         Overview(section="sec-map", markers=(OverviewMarker(1, "背景", "sec-a"),)))
+
+    def test_overview_must_point_at_next_canonical(self) -> None:
+        msgs = _messages(_assembly(self._first(), _narr("sec-a", "背景の見出し"), CANONICAL))
+        self.assertIn("first-screen.overview.section は first-screen 直後の canonical セクションの id である必要があります",
+                      msgs)
+
+    def test_marker_target_must_be_linkable(self) -> None:
+        first = self._first(markers=[{"n": 1, "label": "図", "target": "sec-map"}])
+        self.assertIn("first-screen.overview.markers[0].target 'sec-map' は ask / narrative / closing セクションの id である必要があります",
+                      _messages(_assembly(first, CANONICAL)))
+
+    def test_marker_n_must_be_real_int(self) -> None:
+        for bad in (True, 1.0):
+            first = self._first(markers=[{"n": bad, "label": "背景", "target": "sec-a"}])
+            self.assertIn("first-screen.overview.markers[].n は整数である必要があります",
+                          _messages(_assembly(first, CANONICAL, _narr("sec-a", "背景の見出し"))))
+
+    def test_markers_must_be_sequential(self) -> None:
+        first = self._first(markers=[{"n": 2, "label": "背景", "target": "sec-a"}])
+        self.assertIn("first-screen.overview.markers の n は1からの連番である必要があります",
+                      _messages(_assembly(first, CANONICAL, _narr("sec-a", "背景の見出し"))))
+
+    def test_overview_required_with_three_headed_sections(self) -> None:
+        raw = _assembly({"conclusion": "限定対象で開始する。"},
+                        _narr("sec-a", "一つ目の見出し"), _narr("sec-b", "二つ目の見出し"), _narr("sec-c", "三つ目の見出し"))
+        self.assertIn("h2 節または ask が3つ以上ある資料では first-screen.overview が必要です", _messages(raw))
+
+    def test_overview_not_required_with_h3_only_narratives(self) -> None:
+        def h3(sid: str) -> dict:
+            return {"kind": "narrative", "id": sid,
+                    "markup": f'<section aria-labelledby="{sid}-h"><h3 id="{sid}-h">小見出し{sid}</h3><p>本文。</p></section>'}
+        raw = _assembly({"conclusion": "限定対象で開始する。"}, h3("sec-a"), h3("sec-b"), h3("sec-c"))
+        self.assertNotIn("h2 節または ask が3つ以上ある資料では first-screen.overview が必要です", _messages(raw))
+
+
+if __name__ == "__main__":
+    unittest.main()

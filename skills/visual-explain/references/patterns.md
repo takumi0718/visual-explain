@@ -1,6 +1,6 @@
 # 構成と図フォーマットの契約
 
-この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
+この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。first-screen の IR は `conclusion`（1〜3 文、各文 80 字以内）と、h2 付きの節か ask が 3 つ以上ある資料で書く `overview`（`section` は first-screen 直後に置く canonical セクションの id、`markers` は 1〜5 件で `n` / `label`（30 字以内）/ `target`（ask / narrative / closing の id））から成る。`decision` / `conditions` は持たず、目次も生成しない（番号一覧が兼ねる）。`document.summary` はメタ情報で画面には出ない。`schemaVersion` は `2`。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
 ## 共通契約
 
@@ -18,7 +18,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "proposal-example",
     "title": "料金改定は限定対象で段階公開する",
@@ -30,11 +30,133 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "限定対象で開始するか決めます。",
-      "conditions": [
-        "撤回条件を公開前に合意できること",
-        "対象顧客群が根拠と一致していること"
-      ]
+      "conclusion": "限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。",
+      "overview": {
+        "section": "sec-alternatives",
+        "markers": [
+          {
+            "n": 1,
+            "label": "部門別確認の限界",
+            "target": "sec-problem"
+          },
+          {
+            "n": 2,
+            "label": "限定対象で開始するか",
+            "target": "sec-ask-decision"
+          },
+          {
+            "n": 3,
+            "label": "リスクと未検証点",
+            "target": "sec-closing"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-alternatives",
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "caption": "見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。",
+        "certainty": [
+          {
+            "id": "cert-alternatives",
+            "level": "inferred",
+            "statement": "全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-alternatives",
+            "label": "説明用シナリオ",
+            "detail": "外部の顧客・契約・請求データを用いない canonical proposal example の想定。"
+          }
+        ],
+        "accessibility": {
+          "label": "案の比較",
+          "summary": "行が案、列が主な利点と主なトレードオフの比較表。"
+        },
+        "matrix": {
+          "presentation": "dense",
+          "highlightId": "cell-proposal-benefit",
+          "rows": [
+            {
+              "id": "opt-all",
+              "label": "全顧客へ一斉公開"
+            },
+            {
+              "id": "opt-hold",
+              "label": "変更を保留"
+            },
+            {
+              "id": "opt-proposal",
+              "label": "提案: 限定対象で段階公開"
+            }
+          ],
+          "columns": [
+            {
+              "id": "col-benefit",
+              "label": "主な利点"
+            },
+            {
+              "id": "col-tradeoff",
+              "label": "主なトレードオフ"
+            }
+          ],
+          "cells": [
+            {
+              "id": "cell-all-benefit",
+              "rowId": "opt-all",
+              "columnId": "col-benefit",
+              "content": "対象を分けずに早く反映できる"
+            },
+            {
+              "id": "cell-all-tradeoff",
+              "rowId": "opt-all",
+              "columnId": "col-tradeoff",
+              "content": "例外や計算誤りの影響範囲も最初から広い"
+            },
+            {
+              "id": "cell-hold-benefit",
+              "rowId": "opt-hold",
+              "columnId": "col-benefit",
+              "content": "新しい請求影響を発生させない"
+            },
+            {
+              "id": "cell-hold-tradeoff",
+              "rowId": "opt-hold",
+              "columnId": "col-tradeoff",
+              "content": "料金改定の目的を達成できず、判断材料も増えない"
+            },
+            {
+              "id": "cell-proposal-benefit",
+              "rowId": "opt-proposal",
+              "columnId": "col-benefit",
+              "content": "照合した顧客群で影響と撤回条件を確かめられる"
+            },
+            {
+              "id": "cell-proposal-tradeoff",
+              "rowId": "opt-proposal",
+              "columnId": "col-tradeoff",
+              "content": "対象選定、承認、顧客対応を追加で運用する必要がある"
+            }
+          ]
+        }
+      }
     },
     {
       "kind": "narrative",
@@ -70,7 +192,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "system-example",
     "title": "承認地図は根拠と顧客影響を一つの経路で照合する",
@@ -82,7 +204,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この仕組みはなぜ安全か。"
+      "conclusion": "この仕組みはなぜ安全か。"
     },
     {
       "kind": "narrative",
@@ -106,7 +228,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "research-example",
     "title": "見出し列だけで判断できる資料は承認が速い",
@@ -118,7 +240,7 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "見出し品質は承認速度を左右するか。"
+      "conclusion": "見出し品質は承認速度を左右するか。"
     },
     {
       "kind": "narrative",
@@ -385,7 +507,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-matrix",
     "title": "権限モデルの二軸整理",
@@ -397,7 +519,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -533,7 +655,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-flow",
     "title": "レビュー承認の流れ",
@@ -545,7 +667,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -644,7 +766,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-enum",
     "title": "並列項目の列挙",
@@ -656,7 +778,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -745,7 +867,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-chevron",
     "title": "処理フローの4段階",
@@ -757,7 +879,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -859,7 +981,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-pyramid",
     "title": "優先度の階層",
@@ -871,7 +993,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -953,7 +1075,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-stairs",
     "title": "成熟度の階段",
@@ -965,7 +1087,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1051,7 +1173,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-logic-tree",
     "title": "構成の分解",
@@ -1063,7 +1185,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1160,7 +1282,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-waterfall",
     "title": "利益ブリッジ",
@@ -1172,7 +1294,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1271,7 +1393,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 `title`・`unitLabel` は必須。`highlightId` で注目系列を1本指定できる（省略可）。
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-slope",
     "title": "2時点比較",
@@ -1283,7 +1405,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1362,7 +1484,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-em",
     "title": "論拠地図",
@@ -1374,7 +1496,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1459,7 +1581,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-bars",
     "title": "棒グラフ比較",
@@ -1471,7 +1593,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1553,7 +1675,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-kpi",
     "title": "KPI 指標",
@@ -1565,7 +1687,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1636,7 +1758,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-mixed",
     "title": "混在資料",
@@ -1648,7 +1770,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",
@@ -1801,7 +1923,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "doc-narrative-mixed",
     "title": "3施策の同時実施判断",
@@ -1813,7 +1935,7 @@ canonical セクションと互換節を1つの資料に順序どおり並べる
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "この資料の判断を進めます。"
+      "conclusion": "この資料の判断を進めます。"
     },
     {
       "kind": "canonical",

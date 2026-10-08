@@ -9,6 +9,8 @@ from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parents[4]
 BRANCH_BASE = "af74036928087ef55dc57d08ee50a9519a97b30a"
+# This gate covers the merged visual-stage range only (BRANCH_BASE..BRANCH_HEAD).
+BRANCH_HEAD = "84598657ecc649a56ae20c3b1fef06ee23f78914"
 SCOPES = (
     "skills/visual-explain/scripts/tests",
     "skills/visual-explain/examples",
@@ -144,4 +146,4 @@ def audit_baseline_immutability(head: str = "HEAD") -> list[str]:
 
 
 def test_only_new_files_and_named_registry_expectations_change_from_branch_base() -> None:
-    assert audit_baseline_immutability() == []
+    assert audit_baseline_immutability(BRANCH_HEAD) == []

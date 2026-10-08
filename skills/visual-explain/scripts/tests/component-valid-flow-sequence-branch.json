@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {
     "id": "flow-sequence-branch-demo",
     "title": "分岐を含む承認経路",
@@ -11,7 +11,7 @@
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "decision": "分岐を含む承認経路を確認します。"
+      "conclusion": "分岐を含む承認経路を確認します。"
     },
     {
       "kind": "canonical",

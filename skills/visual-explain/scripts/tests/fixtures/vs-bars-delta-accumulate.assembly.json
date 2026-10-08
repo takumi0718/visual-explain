@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "document": {"id": "vs-bars-delta", "title": "比較項目の累積", "summary": "到達済みの比較項目を累積表示する資料。", "type": "system", "profile": "visual-stage"},
   "sections": [
-    {"kind": "first-screen", "id": "first", "decision": "比較項目を順に確認します。"},
+    {"kind": "first-screen", "id": "first", "conclusion": "比較項目を順に確認します。"},
     {"kind": "canonical", "ir": {
       "id": "bars-delta",
       "relationship": {"kind": "quantitative-comparison", "capabilities": ["single-axis-quantity", "ranked-comparison", "typed-sequence"]},

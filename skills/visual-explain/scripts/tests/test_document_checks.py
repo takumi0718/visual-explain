@@ -49,14 +49,13 @@ def _valid_assembly(**doc_extra) -> dict:
     }
     document.update(doc_extra)
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "document": document,
         "sections": [
             {
                 "kind": "first-screen",
                 "id": "sec-first",
-                "decision": "この提案を採択するか決めます。",
-                "conditions": ["前提を共有できること"],
+                "conclusion": "この提案を採択するか決めます。",
             },
             {
                 "kind": "narrative",
@@ -265,9 +264,9 @@ class DocumentStructureValidTest(unittest.TestCase):
             document_path="doc.html",
         )
         content, title = _content_and_title(html)
-        # Remove the summary paragraph (plain subtitle, not .decision).
+        # Remove the conclusion paragraph.
         broken = content.replace(
-            '<p class="subtitle">要約テキストです。</p>',
+            '<p class="conclusion"><strong>結論:</strong> この提案を採択するか決めます。</p>',
             "",
             1,
         )

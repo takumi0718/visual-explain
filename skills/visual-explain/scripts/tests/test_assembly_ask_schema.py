@@ -193,13 +193,13 @@ class AskSchemaArbitraryIdRegressionTest(unittest.TestCase):
 
     def _assembly_with_ids(self, ask_id: str, option_ids: list[str]) -> dict:
         return {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "document": {
                 "id": "arbitrary-id-doc", "title": "任意ID文書", "summary": "要約。",
                 "type": "proposal", "profile": "strict",
             },
             "sections": [
-                {"kind": "first-screen", "id": "sec-first", "decision": "採否を決めます。"},
+                {"kind": "first-screen", "id": "sec-first", "conclusion": "採否を決めます。"},
                 {
                     "kind": "ask", "id": ask_id, "askType": "decision",
                     "question": "進めますか？",
