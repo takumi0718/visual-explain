@@ -563,6 +563,7 @@ class ChevronV4Test(unittest.TestCase):
             f"{prefix} .ve-chevron-step {{ display: grid; grid-row: span 3; grid-template-rows: subgrid; "
             "align-items: stretch; min-width: 0; max-width: none; }",
             f"{prefix} .ve-chv-box {{ align-content: center; }}",
+            f"{prefix} .ve-chevron-description {{ padding-inline-end: var(--space-2); }}",
         ):
             self.assertIn(needle, block)
         self.assertNotIn("flex-wrap", block)
