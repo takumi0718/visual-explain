@@ -29,8 +29,8 @@
       --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
       --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
       --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
-      --fs-hero: 1.953rem; --fs-h2: 1.563rem; --fs-h3: 1.25rem; --fs-body: 1rem; --fs-small: .8rem; --fs-figure: .8rem;
-      --lh-body: 1.75; --lh-heading: 1.45;
+      --fs-hero: 1.953rem; --fs-h2: 1.563rem; --fs-h3: 1.25rem; --fs-body: 1rem; --fs-card: .9375rem; --fs-small: .8rem; --fs-figure: .8rem;
+      --lh-body: 1.75; --lh-heading: 1.45; --lh-card: 1.7;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
       --space-5: 3rem; --space-6: 4rem; --space-7: 5.5rem;
       --w-narrative: 45rem;
@@ -154,7 +154,7 @@
     .lane-label { color: var(--text-dim); font-weight: 700; font-size: var(--fs-figure); }
     .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); min-width: 0; font-size: var(--fs-figure); }
     .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-card); line-height: var(--lh-card); }
     .compare-frame h3 { margin-top: 0; }
     .matrix { max-width: 100%; overflow: auto; }
     .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
@@ -188,7 +188,8 @@
     .term dt { color: var(--text); font-weight: 800; }
     .term dd { margin: var(--space-1) 0 0; color: var(--text-dim); }
 
-    .certainty { display: inline-flex; align-items: center; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty { display: inline-block; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty-tail { white-space: nowrap; }
     .certainty.confirmed { border-style: solid; }
     .certainty.inferred { border-style: dashed; background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
     .certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-faint); }
@@ -226,19 +227,19 @@
     .ask-option-head::before { content: ""; flex: none; width: .9rem; height: .9rem; border: 2px solid var(--text-dim); border-radius: 50%; }
     .ask-options [data-ask-option][data-ask-selected] .ask-option-head::before { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
     .ask-badge { padding: 0 var(--space-1); border-radius: 999px; color: var(--positive); background: color-mix(in srgb, var(--positive) 12%, var(--surface)); font-size: var(--fs-small); }
-    .ask-benefit, .ask-tradeoff { color: var(--text-dim); font-size: var(--fs-figure); }
+    .ask-benefit, .ask-tradeoff { color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
     .ask-options [data-ask-withdrawn] { cursor: not-allowed; color: var(--text-faint); background: transparent; }
     .ask-options [data-ask-withdrawn] .ask-option-label { text-decoration: line-through; }
     .ask-options [data-ask-withdrawn] .ask-option-head::before { border-style: dashed; border-color: var(--text-faint); }
     .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
     .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-    .ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); border: 1px dashed var(--text-faint); border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+    .ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-card); font-weight: 700; }
     .ask-card-status::before { content: "いまの回答"; color: var(--text-faint); font-weight: 400; }
-    .ask:has([data-ask-selected]) .ask-card-status { border-style: solid; color: var(--text); }
+    .ask:has([data-ask-selected]) .ask-card-status { color: var(--text); }
     .ask:has([data-ask-selected]) .ask-card-status::after { content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-faint); font-weight: 400; }
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
-    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
 
     /* 図表記法 */
     .dg-em { color: var(--dg-emphasis); font-weight: 700; }
@@ -253,7 +254,7 @@
     .panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
     .panel-asks li { display: grid; gap: 0; }
     .panel-question { font-weight: 700; }
-    .panel-status { color: var(--text-dim); font-size: var(--fs-small); }
+    .panel-status { color: var(--text-dim); font-size: var(--fs-card); }
     .panel-review-count { margin: var(--space-1) 0 0; color: var(--text-dim); }
     .panel-memo { display: block; color: var(--text-dim); white-space: pre-wrap; }
     .panel-copy-status { margin: var(--space-1) 0 0; color: var(--text-dim); }

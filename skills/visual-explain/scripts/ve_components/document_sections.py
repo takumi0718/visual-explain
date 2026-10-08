@@ -350,11 +350,14 @@ def _render_hypothesis_body(section: AskSection, kind_label: str, marker_attr: s
     assert section.claim is not None
     certainty = section.claim.certainty
     certainty_label = CERTAINTY_LABEL[certainty]
+    # Keep the chip on the same line as the claim's last character.
+    head, tail = section.claim.text[:-1], section.claim.text[-1:]
     return (
         f'<div class="ask" data-ask="hypothesis">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
-        f'  <p class="ask-claim"{marker_attr}>{_esc(section.claim.text)} '
-        f'<span class="certainty {certainty}">{_esc(certainty_label)}</span></p>\n'
+        f'  <p class="ask-claim"{marker_attr}>{_esc(head)}'
+        f'<span class="certainty-tail">{_esc(tail)} '
+        f'<span class="certainty {certainty}">{_esc(certainty_label)}</span></span></p>\n'
         f'  <p class="ask-verify">{_esc(section.verify or "")}</p>\n'
         f"</div>"
     )

@@ -604,13 +604,15 @@ class QuestionFormLayoutTest(unittest.TestCase):
 
     def test_card_status_reads_as_a_state_line(self):
         # The default ("お任せ") is a state, not a third option: it is shown as a
-        # dashed slot aligned with the option cards and turns solid once chosen.
+        # state line aligned with the option cards whose ink darkens once chosen.
         css = _style()
+        # Solid frame with the accent rule: dotted/dashed lines are reserved for certainty chips.
         self.assertIn(".ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; "
                       "gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); "
-                      "border: 1px dashed var(--text-faint); border-radius: var(--radius);", css)
+                      "border: 1px solid var(--border); border-left: 3px solid var(--accent); "
+                      "border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-card);", css)
         self.assertIn('.ask-card-status::before { content: "いまの回答";', css)
-        self.assertIn(".ask:has([data-ask-selected]) .ask-card-status { border-style: solid; color: var(--text); }", css)
+        self.assertIn(".ask:has([data-ask-selected]) .ask-card-status { color: var(--text); }", css)
         self.assertIn('.ask:has([data-ask-selected]) .ask-card-status::after '
                       '{ content: "選んだ案をもう一度押すとお任せに戻る";', css)
 
@@ -618,7 +620,7 @@ class QuestionFormLayoutTest(unittest.TestCase):
         css = _style()
         self.assertIn(".panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }", css)
         self.assertIn(".panel-asks li { display: grid; gap: 0; }", css)
-        self.assertIn(".panel-status { color: var(--text-dim); font-size: var(--fs-small); }", css)
+        self.assertIn(".panel-status { color: var(--text-dim); font-size: var(--fs-card); }", css)
 
 class ClosingCardTest(unittest.TestCase):
     def test_closing_uses_the_shared_card_frame(self):
@@ -637,6 +639,38 @@ class CertaintyBadgeTest(unittest.TestCase):
                       "background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }", css)
         self.assertIn(".certainty.unverified { border-style: dotted; border-color: var(--text-faint); "
                       "color: var(--text-faint); }", css)
+
+class CardTextStepTest(unittest.TestCase):
+    """Body text inside skeleton-styled cards uses one step between body and notes."""
+
+    def test_card_step_tokens_exist(self):
+        self.assertIn("--fs-card: .9375rem;", SKELETON)
+        self.assertIn("--lh-card: 1.7;", SKELETON)
+
+    def test_card_body_text_uses_the_card_step(self):
+        css = _style()
+        for needle in (
+            ".ask-benefit, .ask-tradeoff { color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }",
+            ".ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }",
+            "border-radius: .4rem; font-size: var(--fs-card); line-height: var(--lh-card); }",
+        ):
+            self.assertIn(needle, css)
+        compare = next(line for line in css.splitlines() if line.strip().startswith(".compare-frame {"))
+        self.assertIn("font-size: var(--fs-card); line-height: var(--lh-card);", compare)
+
+    def test_notes_keep_the_small_step(self):
+        css = _style()
+        self.assertIn(".ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }", css)
+
+
+class CertaintyChipWrapTest(unittest.TestCase):
+    def test_chip_stays_whole_and_glues_to_the_last_character(self):
+        css = _style()
+        rule = next(line for line in css.splitlines() if line.strip().startswith(".certainty {"))
+        self.assertIn("display: inline-block;", rule)
+        self.assertIn("white-space: nowrap;", rule)
+        self.assertIn(".certainty-tail { white-space: nowrap; }", css)
+
 
 if __name__ == "__main__":
     unittest.main()

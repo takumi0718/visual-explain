@@ -229,6 +229,9 @@ class AskSectionTest(unittest.TestCase):
         self.assertIn("推論", wrapped.markup)
         self.assertIn('class="ask-verify"', wrapped.markup)
         self.assertEqual(validate_ask_blocks(wrapped.markup), [])
+        # The chip is glued to the last character so it never sits alone on a line.
+        self.assertIn('見出しだけで判断でき<span class="certainty-tail">る '
+                      '<span class="certainty inferred">推論</span></span></p>', wrapped.markup)
 
     def test_decision_with_no_default_reason_is_rejected(self) -> None:
         section = _decision_section(noDefaultReason="判断材料が拮抗しているため")
