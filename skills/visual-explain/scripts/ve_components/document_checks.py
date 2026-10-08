@@ -1797,6 +1797,7 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         ("main", "width", expected_main_width),
         ("main", "width", "min(100% - var(--space-2), var(--w-narrative))"),
         ("main", "padding", "var(--space-4) 0 var(--space-6)"),
+        ("main", "padding", "var(--space-2) 0 var(--space-6)"),
         ("main", "padding-top", "var(--space-2)"),
         ("main", "margin", "0 auto"),
         ("body", "margin", "0"),

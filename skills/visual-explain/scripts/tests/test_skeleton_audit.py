@@ -8,6 +8,10 @@ COMPONENT_CSS = [
     for name in ("matrix.css", "flow.css")
 ]
 
+def _style():
+    return SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+
+
 _HEX = re.compile(r"^#([0-9a-fA-F]{6})$")
 
 
@@ -143,9 +147,62 @@ class SpacingGridAuditTest(unittest.TestCase):
 
 class TypeScaleTest(unittest.TestCase):
     def test_five_step_scale_tokens_exist(self):
-        for token in ("--fs-hero: 1.875rem", "--fs-h2: 1.25rem", "--fs-body: 1rem", "--fs-small: .8125rem", "--fs-figure: .875rem"):
+        for token in ("--fs-hero: 1.953rem", "--fs-h2: 1.563rem", "--fs-h3: 1.25rem", "--fs-body: 1rem",
+                      "--fs-small: .8rem", "--fs-figure: .8rem"):
             self.assertIn(token, SKELETON)
 
+    def test_headings_and_captions_use_the_scale(self):
+        style = _style()
+        self.assertIn("h1 { margin: 0; font-size: var(--fs-hero);", style)
+        self.assertIn("h3 { font-size: var(--fs-h3); font-weight: 700; line-height: var(--lh-heading);", style)
+        self.assertIn(".claim { margin-bottom: var(--space-2); font-size: var(--fs-h3); font-weight: 700; }", style)
+        self.assertIn("[data-ve-section-kind] figure[data-ve-component] > figcaption[class] "
+                      "{ font-size: var(--fs-h3); }", style)
+
+
+class FirstScreenFoldTest(unittest.TestCase):
+    """v4: h1, conclusion, overview figure and markers fit the first 900px at 1280px."""
+
+    def test_sections_use_space_5(self):
+        style = _style()
+        self.assertIn("section { min-width: 0; margin-block: var(--space-5); }", style)
+        self.assertNotIn("var(--space-7)", style)
+
+    def test_no_leading_whitespace_above_h1(self):
+        style = _style()
+        self.assertIn("main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; "
+                      "padding: var(--space-2) 0 var(--space-6); }", style)
+        self.assertIn('[data-ve-section-kind="first-screen"] { margin-block: 0 var(--space-3); }', style)
+        self.assertIn(".first-screen { display: grid; gap: var(--space-2); padding: 0; margin-block: 0;", style)
+
+    def test_overview_figure_hugs_its_markers(self):
+        style = _style()
+        self.assertIn('[data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) '
+                      "{ margin-bottom: var(--space-2); }", style)
+        self.assertIn(".overview-markers ol { list-style: none; margin: 0; padding: 0; display: flex; "
+                      "flex-wrap: wrap; gap: var(--space-1) var(--space-3); }", style)
+
+    def test_surface_is_only_under_the_overview_figure(self):
+        style = _style()
+        self.assertIn('[data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure '
+                      "{ margin-block: 0; padding: var(--space-3); background: var(--surface); "
+                      "border-radius: var(--radius); }", style)
+        for selector in (".ask {", ".decision-panel {", "details.deep-dive {", ".figure {"):
+            rule = next(line for line in style.splitlines() if line.strip().startswith(selector))
+            self.assertNotIn("var(--surface)", rule, selector)
+            self.assertIn("1px solid var(--border)", rule, selector)
+
+    def test_no_layout_rule_targets_main_by_name(self):
+        # The visual-stage 1212px audit treats any selector naming main/html/body/:root
+        # as main sizing; component overrides must use the [data-ve-section-kind] prefix.
+        for chunk in _style().split("}"):
+            if "{" not in chunk:
+                continue
+            selector = chunk.rsplit("{", 1)[0].split("{")[-1].strip()
+            if selector in {"main", "html", "body", ":root", "*", "*, *::before, *::after"} \
+                    or selector.startswith((":root", "@media")):
+                continue
+            self.assertIsNone(re.search(r"(?<![-\w])(main|html|body)(?![-\w])|:root", selector), selector)
 
 class ColorDisciplineAuditTest(unittest.TestCase):
     def test_component_css_is_monochrome(self):
