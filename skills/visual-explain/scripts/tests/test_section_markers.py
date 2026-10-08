@@ -101,6 +101,13 @@ class MarkerCheckTest(unittest.TestCase):
         messages = [d.message for d in check_document_structure(forged, skeleton_version=4)]
         self.assertIn("論点番号 1 の印が、概要の番号 1 の飛び先ではない場所にあります", messages)
 
+    def test_second_echo_in_the_same_target_is_rejected_for_any_number(self) -> None:
+        for number, expected in (("1", "論点番号 1 の印が複数あります"),
+                                 ("2", "論点番号 2 の印が、概要の番号 2 の飛び先ではない場所にあります")):
+            forged = self.content.replace('<p class="claim" data-ve-blk="7"', f'<p class="claim" data-ve-marker="{number}" data-ve-blk="7"', 1)
+            messages = [d.message for d in check_document_structure(forged, skeleton_version=4)]
+            self.assertIn(expected, messages)
+
     def test_duplicate_marker_is_rejected(self) -> None:
         forged = self.content.replace('<p class="claim"', '<p class="claim" data-ve-marker="1"', 1)
         messages = [d.message for d in check_document_structure(forged, skeleton_version=4)]

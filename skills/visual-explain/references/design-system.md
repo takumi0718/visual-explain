@@ -46,7 +46,7 @@
 
 **余白（7）— 8px グリッド。この7段だけで間隔を作れ。任意の px を書くな。**
 
-- `--space-1`（.5rem）〜 `--space-7`（5.5rem）を、近接するものほど小さく、節の切れ目ほど大きく使う。`section` の縦マージンは `--space-5`（v4）。第一画面は上に余白を持たず、全体図と番号一覧は `--space-2` で詰める。型付きセクション（`data-ve-section-kind`）の中にある入れ子の `section`（closing の `closing-section` など）はマージンを持たず、外側の節の間隔だけで並ぶ（レーン `[data-lane]` を除く）。
+- `--space-1`（.5rem）〜 `--space-7`（5.5rem）を、近接するものほど小さく、節の切れ目ほど大きく使う。`section` の縦マージンは `--space-5`（v4）。第一画面は上に余白を持たず、全体図と番号一覧は `--space-2` で詰める。型付きセクション（`data-ve-section-kind`）の直下の `section`（narrative の根の `section`、closing の `closing-section` など）は `--space-5` を保つ。それより深く入れ子になった `section` だけがマージンを失い、外側の間隔だけで並ぶ（レーン `[data-lane]` は対象外）。
 
 **幅（2階層）— 本文は単一幅。適格の密な図だけ対称に張り出す。**
 
