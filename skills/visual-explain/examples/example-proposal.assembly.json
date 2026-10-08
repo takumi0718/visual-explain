@@ -13,7 +13,7 @@
       "id": "sec-first-screen",
       "conclusion": "限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。",
       "overview": {
-        "section": "sec-alternatives",
+        "section": "sec-approval-map",
         "markers": [
           {
             "n": 1,
@@ -36,104 +36,180 @@
     {
       "kind": "canonical",
       "ir": {
-        "id": "sec-alternatives",
+        "id": "sec-approval-map",
         "relationship": {
-          "kind": "two-axis",
+          "kind": "spatial-layout",
           "capabilities": [
-            "two-axis-classification",
-            "intersection-comparison"
+            "spatial-placement"
           ]
         },
         "selection": {
-          "component": "matrix",
+          "component": "grid-diagram",
           "version": 2,
           "matchedCapabilities": [
-            "two-axis-classification",
-            "intersection-comparison"
+            "spatial-placement"
           ]
         },
-        "caption": "見るところ: 提案の行。影響を絞って確かめられるのは限定公開だけ。",
+        "caption": "見るところ: 根拠と顧客影響は共同承認で合流する。",
         "certainty": [
           {
-            "id": "cert-alternatives",
+            "id": "cert-approval-map",
             "level": "inferred",
-            "statement": "全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。"
+            "statement": "説明用の承認経路で、各部門の実際の手順とは照合していません。"
           }
         ],
         "sources": [
           {
-            "id": "src-alternatives",
-            "label": "料金改定の比較検討メモ",
-            "detail": "各案の利点と代償を承認者向けに整理した表。"
+            "id": "src-approval-map",
+            "label": "料金改定の承認手順メモ"
           }
         ],
         "accessibility": {
-          "label": "案の比較",
-          "summary": "行が案、列が主な利点と主なトレードオフの比較表。"
+          "label": "承認地図",
+          "summary": "左から根拠、顧客影響、共同承認、公開と保護の順に並ぶ。"
         },
-        "matrix": {
-          "presentation": "dense",
-          "highlightId": "cell-proposal-benefit",
-          "rows": [
+        "grid-diagram": {
+          "grid": {
+            "cols": 4,
+            "rows": 3
+          },
+          "nodes": [
             {
-              "id": "opt-all",
-              "label": "全顧客へ一斉公開"
+              "id": "contract-exception",
+              "label": "契約例外",
+              "cell": [
+                1,
+                1
+              ]
             },
             {
-              "id": "opt-hold",
-              "label": "変更を保留"
+              "id": "price-change",
+              "label": "料金改定案",
+              "cell": [
+                1,
+                2
+              ]
             },
             {
-              "id": "opt-proposal",
-              "label": "提案: 限定対象で段階公開"
+              "id": "billing-calculation",
+              "label": "請求計算と 対象顧客",
+              "cell": [
+                2,
+                1
+              ]
+            },
+            {
+              "id": "notification-audience",
+              "label": "告知対象と文面",
+              "cell": [
+                2,
+                3
+              ]
+            },
+            {
+              "id": "joint-approval",
+              "label": "三部門の 共同承認",
+              "cell": [
+                3,
+                2
+              ],
+              "tone": "primary"
+            },
+            {
+              "id": "limited-release",
+              "label": "限定対象で公開",
+              "cell": [
+                4,
+                2
+              ],
+              "tone": "primary"
+            },
+            {
+              "id": "rollback-condition",
+              "label": "撤回条件",
+              "cell": [
+                4,
+                3
+              ],
+              "tone": "warning"
             }
           ],
-          "columns": [
+          "regions": [
             {
-              "id": "col-benefit",
-              "label": "主な利点"
+              "id": "region-basis",
+              "label": "根拠",
+              "from": [
+                1,
+                1
+              ],
+              "to": [
+                1,
+                2
+              ]
             },
             {
-              "id": "col-tradeoff",
-              "label": "主なトレードオフ"
+              "id": "region-impact",
+              "label": "顧客影響",
+              "from": [
+                2,
+                1
+              ],
+              "to": [
+                2,
+                3
+              ]
             }
           ],
-          "cells": [
+          "edges": [
             {
-              "id": "cell-all-benefit",
-              "rowId": "opt-all",
-              "columnId": "col-benefit",
-              "content": "対象を分けずに早く反映できる"
+              "id": "e-exception-billing",
+              "from": "contract-exception",
+              "to": "billing-calculation"
             },
             {
-              "id": "cell-all-tradeoff",
-              "rowId": "opt-all",
-              "columnId": "col-tradeoff",
-              "content": "例外や計算誤りの影響範囲も最初から広い"
+              "id": "e-price-billing",
+              "from": "price-change",
+              "to": "billing-calculation"
             },
             {
-              "id": "cell-hold-benefit",
-              "rowId": "opt-hold",
-              "columnId": "col-benefit",
-              "content": "新しい請求影響を発生させない"
+              "id": "e-price-notice",
+              "from": "price-change",
+              "to": "notification-audience"
             },
             {
-              "id": "cell-hold-tradeoff",
-              "rowId": "opt-hold",
-              "columnId": "col-tradeoff",
-              "content": "料金改定の目的を達成できず、判断材料も増えない"
+              "id": "e-billing-approval",
+              "from": "billing-calculation",
+              "to": "joint-approval"
             },
             {
-              "id": "cell-proposal-benefit",
-              "rowId": "opt-proposal",
-              "columnId": "col-benefit",
-              "content": "照合した顧客群で影響と撤回条件を確かめられる"
+              "id": "e-notice-approval",
+              "from": "notification-audience",
+              "to": "joint-approval"
             },
             {
-              "id": "cell-proposal-tradeoff",
-              "rowId": "opt-proposal",
-              "columnId": "col-tradeoff",
-              "content": "対象選定、承認、顧客対応を追加で運用する必要がある"
+              "id": "e-approval-release",
+              "from": "joint-approval",
+              "to": "limited-release"
+            },
+            {
+              "id": "e-rollback-release",
+              "from": "rollback-condition",
+              "to": "limited-release",
+              "label": "見張る"
+            }
+          ],
+          "markers": [
+            {
+              "n": 1,
+              "target": "billing-calculation"
+            },
+            {
+              "n": 2,
+              "target": "joint-approval"
+            },
+            {
+              "n": 3,
+              "target": "limited-release"
             }
           ]
         }
@@ -148,16 +224,6 @@
       "kind": "narrative",
       "id": "sec-approval-map-intro",
       "markup": "<section aria-labelledby=\"approval-map\">\n  <h2 id=\"approval-map\">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>\n  <p class=\"claim\">承認者は、根拠と顧客影響を共同承認で照合し、限定対象で公開します。<span class=\"certainty inferred\">推論</span></p>\n</section>"
-    },
-    {
-      "kind": "compatibility",
-      "id": "sec-approval-map",
-      "markup": "<figure class=\"figure\">\n        <div class=\"layers\" data-connect=\"contract-exception->billing-calculation, price-change->billing-calculation, price-change->notification-audience, billing-calculation->joint-approval, notification-audience->joint-approval, joint-approval->limited-release\">\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">根拠</p>\n            <div class=\"lane-nodes\">\n              <div class=\"flow-node\" id=\"contract-exception\">契約例外</div>\n              <div class=\"flow-node\" id=\"price-change\">料金改定案</div>\n            </div>\n          </section>\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">顧客影響</p>\n            <div class=\"lane-nodes\">\n              <div class=\"flow-node\" id=\"billing-calculation\">請求計算と対象顧客</div>\n              <div class=\"flow-node\" id=\"notification-audience\">告知対象と文面</div>\n            </div>\n          </section>\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">共同承認</p>\n            <div class=\"lane-nodes\"><div class=\"flow-node\" id=\"joint-approval\">法務・請求・顧客対応が例外、価格、顧客群を照合</div></div>\n          </section>\n          <section class=\"lane\" data-lane>\n            <p class=\"lane-label\">公開と保護</p>\n            <div class=\"lane-nodes\">\n              <div class=\"flow-node\" id=\"limited-release\">限定対象で公開</div>\n              <div class=\"flow-node\" id=\"rollback-condition\">撤回条件を監視</div>\n            </div>\n          </section>\n        </div>\n        <figcaption>根拠・顧客影響・承認・撤回を一つの経路でたどれるため、部門をまたぐ不整合に気づける。</figcaption>\n      </figure>",
-      "provenance": {
-        "source": "legacy-html-insertion",
-        "reason": "unmigrated-format",
-        "format": "layers"
-      }
     },
     {
       "kind": "compatibility",
@@ -190,13 +256,95 @@
           "id": "limited",
           "label": "限定対象で段階公開する",
           "benefit": "誤りの影響を限定対象に閉じたまま照合の効果を確かめられる",
-          "tradeoff": "対象選定と承認・顧客対応の運用を追加で用意する必要がある"
+          "tradeoff": "対象選定と承認・顧客対応の運用を追加で用意する必要がある",
+          "figure": {
+            "grid": {
+              "cols": 3,
+              "rows": 1
+            },
+            "nodes": [
+              {
+                "id": "limited",
+                "label": "限定対象で公開",
+                "cell": [
+                  1,
+                  1
+                ],
+                "tone": "primary"
+              },
+              {
+                "id": "check",
+                "label": "影響を確認",
+                "cell": [
+                  2,
+                  1
+                ]
+              },
+              {
+                "id": "expand",
+                "label": "全顧客へ拡大",
+                "cell": [
+                  3,
+                  1
+                ]
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "from": "limited",
+                "to": "check"
+              },
+              {
+                "id": "e2",
+                "from": "check",
+                "to": "expand"
+              }
+            ]
+          }
         },
         {
           "id": "all",
           "label": "全顧客へ一斉公開する",
           "benefit": "告知と請求の切替が一度で済み運用が二重にならない",
-          "tradeoff": "例外や計算誤りの影響範囲が最初から全顧客に及ぶ"
+          "tradeoff": "例外や計算誤りの影響範囲が最初から全顧客に及ぶ",
+          "figure": {
+            "grid": {
+              "cols": 3,
+              "rows": 1
+            },
+            "nodes": [
+              {
+                "id": "all",
+                "label": "全顧客へ一斉公開",
+                "cell": [
+                  1,
+                  1
+                ],
+                "span": [
+                  2,
+                  1
+                ],
+                "tone": "primary"
+              },
+              {
+                "id": "risk",
+                "label": "誤りも全体へ",
+                "cell": [
+                  3,
+                  1
+                ],
+                "tone": "warning"
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "from": "all",
+                "to": "risk"
+              }
+            ]
+          }
         }
       ],
       "defaultId": "limited"

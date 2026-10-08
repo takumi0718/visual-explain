@@ -70,6 +70,22 @@ class ExampleProposalTest(unittest.TestCase):
         self.assertTrue(all(t in {"p.conclusion", "strong"} for t in tags[1:]), tags)
         self.assertIn("p.conclusion", tags)
 
+    def test_overview_figure_is_a_grid_diagram_with_the_numbers_on_nodes(self) -> None:
+        html = _build()
+        self.assertIn('data-ve-component="grid-diagram" data-ve-contract-version="2"'
+                      ' data-ve-instance="sec-approval-map"', html)
+        self.assertEqual(html.count('<g class="ve-gd-marker">'), 3)
+        self.assertNotIn('data-ve-compat-reason="unmigrated-format" data-ve-instance="sec-approval-map"', html)
+
+    def test_every_node_of_the_approval_map_is_connected(self) -> None:
+        raw = json.loads((EXAMPLES / "example-proposal.assembly.json").read_text("utf-8"))
+        grid = raw["sections"][1]["ir"]["grid-diagram"]
+        touched = {e["from"] for e in grid["edges"]} | {e["to"] for e in grid["edges"]}
+        self.assertEqual(touched, {n["id"] for n in grid["nodes"]})
+
+    def test_both_decision_options_are_pictured(self) -> None:
+        self.assertEqual(_build().count('class="ve-gd ve-gd-thumb"'), 2)
+
     def test_checked_in_html_matches_fresh_build(self) -> None:
         checked_in = (EXAMPLES / "example-proposal.html").read_text("utf-8")
         self.assertIn(f'data-ve-document-path="{DOC_PATH}"', checked_in)
