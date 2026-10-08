@@ -65,6 +65,10 @@ def _render_dense_table(
         f'<th scope="col" data-ve-semantic-id="{_esc(col.id)}">{_esc(col.label)}</th>'
         for col in matrix.columns
     )
+    def label_attr(col) -> str:
+        # Mobile cards print the column label above each cell; hidden headers stay hidden.
+        return f' data-ve-col-label="{_esc(col.label)}"' if show_column_headers else ""
+
     body_rows = []
     for row in matrix.rows:
         cells = [f'<th scope="row" data-ve-semantic-id="{_esc(row.id)}">{_esc(row.label)}</th>']
@@ -72,7 +76,7 @@ def _render_dense_table(
             cell = cell_by_key.get((row.id, col.id))
             if cell is None:
                 cells.append(
-                    f'<td data-ve-row-id="{_esc(row.id)}" data-ve-column-id="{_esc(col.id)}"'
+                    f'<td data-ve-row-id="{_esc(row.id)}" data-ve-column-id="{_esc(col.id)}"{label_attr(col)}'
                     f' aria-label="該当なし">—</td>'
                 )
                 continue
@@ -94,7 +98,7 @@ def _render_dense_table(
             )
             cells.append(
                 f'<td{cls_attr} data-ve-semantic-id="{_esc(cell.id)}" data-ve-row-id="{_esc(row.id)}"'
-                f' data-ve-column-id="{_esc(col.id)}"{takeaway_attr}>{_cell_content_html(cell.content)}'
+                f' data-ve-column-id="{_esc(col.id)}"{label_attr(col)}{takeaway_attr}>{_cell_content_html(cell.content)}'
                 f'{emphasis_html}{refs_html}</td>'
             )
         body_rows.append("<tr>" + "".join(cells) + "</tr>")

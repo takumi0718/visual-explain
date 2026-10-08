@@ -99,6 +99,50 @@ def extract_first_h2(markup: str) -> str | None:
     return parser.result
 
 
+class _FirstHeadingFinder(HTMLParser):
+    """Record the source position of the first h2 and the first h3 start tag."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.found: dict[str, tuple[int, int]] = {}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag in {"h2", "h3"} and tag not in self.found:
+            self.found[tag] = self.getpos()
+
+
+def has_marker_heading(markup: str) -> bool:
+    """True when the markup has an h2 or h3 that can carry an overview marker echo."""
+    finder = _FirstHeadingFinder()
+    finder.feed(markup)
+    finder.close()
+    return bool(finder.found)
+
+
+def mark_first_heading(markup: str, n: int) -> str:
+    """Stamp ``data-ve-marker="n"`` on the first h2 (else h3) of trusted-validated markup.
+
+    The skeleton draws the number with CSS, so the heading text, copy output
+    and text counts stay exactly as authored. Markup without a heading is
+    returned unchanged.
+    """
+    finder = _FirstHeadingFinder()
+    finder.feed(markup)
+    finder.close()
+    tag = "h2" if "h2" in finder.found else "h3" if "h3" in finder.found else None
+    if tag is None:
+        return markup
+    lineno, col = finder.found[tag]
+    lines = markup.split("\n")
+    index = sum(len(line) + 1 for line in lines[:lineno - 1]) + col + 1 + len(tag)
+    return f'{markup[:index]} data-ve-marker="{n}"{markup[index:]}'
+
+
+def _marker_attr(marker: int | None) -> str:
+    return f' data-ve-marker="{marker}"' if marker is not None else ""
+
+
 def _allocate_instance_id(prefix: str, occupied_ids: frozenset[str] | set[str]) -> str:
     """Pick a compose-only instance id that does not collide with section ids."""
     if prefix not in occupied_ids:
@@ -148,11 +192,12 @@ def build_overview_nav(
     )
 
 
-def render_closing(section: ClosingSection) -> WrappedDocumentSection:
+def render_closing(section: ClosingSection, *, marker: int | None = None) -> WrappedDocumentSection:
     parts: list[str] = []
-    for block in section.blocks:
+    for i, block in enumerate(section.blocks):
         items = "".join(f"<li>{_esc(item)}</li>" for item in block.items)
-        parts.append(f"  <h2>{_esc(block.heading)}</h2>\n  <ul>{items}</ul>")
+        attr = _marker_attr(marker) if i == 0 else ""
+        parts.append(f"  <h2{attr}>{_esc(block.heading)}</h2>\n  <ul>{items}</ul>")
     body = "\n".join(parts)
     markup = (
         f'<section data-ve-section-kind="closing" id="{_esc(section.id)}">\n'
@@ -163,15 +208,17 @@ def render_closing(section: ClosingSection) -> WrappedDocumentSection:
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
 
 
-def render_ask(section: AskSection) -> WrappedDocumentSection:
+def render_ask(section: AskSection, *, marker: int | None = None) -> WrappedDocumentSection:
+    """Render a question card; ``marker`` echoes an overview number on its lead line."""
     kind = section.ask_type
     kind_label = _ASK_KIND_LABEL[kind]
+    attr = _marker_attr(marker)
     if kind == "decision":
-        body = _render_decision_body(section, kind_label)
+        body = _render_decision_body(section, kind_label, attr)
     elif kind == "request":
-        body = _render_request_body(section, kind_label)
+        body = _render_request_body(section, kind_label, attr)
     else:
-        body = _render_hypothesis_body(section, kind_label)
+        body = _render_hypothesis_body(section, kind_label, attr)
     markup = (
         f'<section data-ve-section-kind="ask" data-ve-ask-type="{_esc(kind)}"'
         f' id="{_esc(section.id)}">\n'
@@ -181,32 +228,42 @@ def render_ask(section: AskSection) -> WrappedDocumentSection:
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
 
 
-def _render_decision_body(section: AskSection, kind_label: str) -> str:
+def _render_decision_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
+    from .renderers.grid_diagram import render_option_figure
+
     options_html: list[str] = []
-    for opt in section.options:
+    for index, opt in enumerate(section.options, start=1):
+        figure = ""
+        if opt.figure is not None:
+            figure = render_option_figure(opt.figure, id_base=f"{section.id}-opt-{index}",
+                                          label=f"{opt.label} の図")
         attrs = f'data-ask-option data-ask-option-id="{_esc(opt.id)}"'
-        if section.default_id is not None and opt.id == section.default_id:
+        badge = ""
+        if opt.id == section.default_id:
             attrs += " data-ask-default"
+            badge = '<span class="ask-badge">推奨</span>'
+        if opt.withdrawn:
+            attrs += " data-ask-withdrawn"
+            badge = '<span class="ask-withdrawn-note">取り下げ</span>'
         options_html.append(
-            f"<li {attrs}><span>{_esc(opt.label)}</span>"
-            f'<span class="ask-tradeoff">{_esc(opt.tradeoff)}</span></li>'
-        )
-    reason = ""
-    if section.no_default_reason:
-        reason = (
-            f'\n  <p class="ask-no-default-reason">{_esc(section.no_default_reason)}</p>'
+            f"<li {attrs}>"
+            f'<span class="ask-option-head"><span class="ask-option-label">{_esc(opt.label)}</span>{badge}</span>'
+            f'<span class="ask-benefit"><span class="ask-prefix">利点:</span> {_esc(opt.benefit)}</span>'
+            f'<span class="ask-tradeoff"><span class="ask-prefix">代償:</span> {_esc(opt.tradeoff)}</span>'
+            f"{figure}</li>"
         )
     memo = (
         '\n  <div class="ask-memo">'
-        '<label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>'
+        '<label>補足（任意）<textarea data-ask-memo></textarea></label></div>'
     )
     return (
         f'<div class="ask" data-ask="decision">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
-        f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
+        f'  <p class="ask-question"{marker_attr}>{_esc(section.question or "")}</p>\n'
+        f'  <p class="ask-evidence"><span class="ask-prefix">根拠:</span> {_esc(section.evidence)}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
-        f"  </ul>{reason}{memo}\n"
+        f"  </ul>{memo}\n"
         f"</div>"
     )
 
@@ -235,28 +292,28 @@ def render_decision_panel(
     document_path: str,
     *,
     occupied_ids: frozenset[str] | set[str] = frozenset(),
-) -> WrappedDocumentSection | None:
-    """Build the decision-recovery panel inserted after closing.
+) -> WrappedDocumentSection:
+    """Build the collection panel inserted after closing (always exactly one).
 
-    Returns ``None`` when there are no decision-type asks (an empty panel is
-    never emitted). Static markup only: JS-driven selection sync, copy
-    controls, and status updates are Task 5.
+    It lists decision asks when there are any, and always carries the
+    annotation count and the global memo. Selection sync, drafts, and the
+    copy control are the skeleton's fixed collection JS.
     """
     decisions = tuple(a for a in asks if a.ask_type == "decision")
-    if not decisions:
-        return None
     digest = compute_ask_digest(asks)
-    items_html = "".join(_render_panel_ask_item(a) for a in decisions)
     instance_id = _allocate_instance_id(_PANEL_INSTANCE_ID_PREFIX, occupied_ids)
+    asks_html = ""
+    if decisions:
+        items_html = "".join(_render_panel_ask_item(a) for a in decisions)
+        asks_html = f'  <ul class="panel-asks">\n    {items_html}\n  </ul>\n'
     body = (
-        '<section class="decision-panel" aria-label="判断の回収">\n'
-        "  <h2>判断の回収</h2>\n"
-        '  <ul class="panel-asks">\n'
-        f"    {items_html}\n"
-        "  </ul>\n"
+        '<section class="decision-panel" aria-label="回答と指摘の回収">\n'
+        "  <h2>回答と指摘の回収</h2>\n"
+        f"{asks_html}"
+        '  <p class="panel-review-count" data-ve-panel-review-count>指摘 0 件</p>\n'
         '  <div class="ask-memo"><label>全体メモ'
         "<textarea data-ve-panel-global-memo></textarea></label></div>\n"
-        '  <p class="panel-note">選択の反映・メモの保存・コピーはブラウザの'
+        '  <p class="panel-note">選択・指摘の保存とコピーは、ブラウザの'
         "JavaScript が有効なときに使えます。</p>\n"
         "</section>"
     )
@@ -274,12 +331,10 @@ def render_decision_panel(
 
 
 def _render_panel_ask_item(section: AskSection) -> str:
-    default_label = None
-    if section.default_id is not None:
-        default_label = next(
-            (opt.label for opt in section.options if opt.id == section.default_id), None
-        )
-    status = f"未選択（既定案: {default_label}）" if default_label is not None else "未選択（既定案なし）"
+    default_label = next(
+        opt.label for opt in section.options if opt.id == section.default_id
+    )
+    status = f"お任せ（推奨: {default_label}）"
     return (
         f'<li data-ve-panel-ask="{_esc(section.id)}">'
         f'<span class="panel-question">{_esc(section.question or "")}</span>'
@@ -289,7 +344,7 @@ def _render_panel_ask_item(section: AskSection) -> str:
     )
 
 
-def _render_request_body(section: AskSection, kind_label: str) -> str:
+def _render_request_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
     steps_html = "".join(
         f'<li data-ask-role="{_esc(step.role)}" '
         f'data-ask-role-label="{_esc(step.role_label)}">{_esc(step.text)}</li>'
@@ -297,7 +352,7 @@ def _render_request_body(section: AskSection, kind_label: str) -> str:
     )
     return (
         f'<div class="ask" data-ask="request">\n'
-        f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
+        f'  <p class="ask-kind"{marker_attr}>{_esc(kind_label)}</p>\n'
         f'  <ol class="ask-steps">\n'
         f"    {steps_html}\n"
         f"  </ol>\n"
@@ -305,15 +360,18 @@ def _render_request_body(section: AskSection, kind_label: str) -> str:
     )
 
 
-def _render_hypothesis_body(section: AskSection, kind_label: str) -> str:
+def _render_hypothesis_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
     assert section.claim is not None
     certainty = section.claim.certainty
     certainty_label = CERTAINTY_LABEL[certainty]
+    # Keep the chip on the same line as the claim's last character.
+    head, tail = section.claim.text[:-1], section.claim.text[-1:]
     return (
         f'<div class="ask" data-ask="hypothesis">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
-        f'  <p class="ask-claim">{_esc(section.claim.text)} '
-        f'<span class="certainty {certainty}">{_esc(certainty_label)}</span></p>\n'
+        f'  <p class="ask-claim"{marker_attr}>{_esc(head)}'
+        f'<span class="certainty-tail">{_esc(tail)} '
+        f'<span class="certainty {certainty}">{_esc(certainty_label)}</span></span></p>\n'
         f'  <p class="ask-verify">{_esc(section.verify or "")}</p>\n'
         f"</div>"
     )

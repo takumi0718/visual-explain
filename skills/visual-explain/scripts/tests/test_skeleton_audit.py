@@ -8,6 +8,10 @@ COMPONENT_CSS = [
     for name in ("matrix.css", "flow.css")
 ]
 
+def _style():
+    return SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+
+
 _HEX = re.compile(r"^#([0-9a-fA-F]{6})$")
 
 
@@ -56,6 +60,10 @@ PAIRS = [
     ("accent", "surface", 4.5, "選択/面"),
     ("accent-strong", "bg", 4.5, "選択強/背景"),
     ("accent-strong", ("mix", "accent", "surface", 0.12), 4.5, "選択チップ文字/淡青面"),
+    ("accent-strong", "surface", 4.5, "指摘の番号札/面"),
+    ("bg", "accent", 4.5, "主ボタン文字/accent 面"),
+    ("bg", "accent-strong", 4.5, "主ボタン文字/hover 面"),
+    ("text-dim", ("mix", "text-dim", "surface", 0.12), 4.5, "要望・仮説チップ文字/淡灰面"),
     ("positive", "bg", 4.5, "推奨/背景"),
     ("positive", ("mix", "positive", "surface", 0.12), 4.5, "既定案マーク/淡緑面"),
     ("positive-strong", "bg", 4.5, "推奨強/背景"),
@@ -142,9 +150,62 @@ class SpacingGridAuditTest(unittest.TestCase):
 
 class TypeScaleTest(unittest.TestCase):
     def test_five_step_scale_tokens_exist(self):
-        for token in ("--fs-hero: 1.875rem", "--fs-h2: 1.25rem", "--fs-body: 1rem", "--fs-small: .8125rem", "--fs-figure: .875rem"):
+        for token in ("--fs-hero: 1.953rem", "--fs-h2: 1.563rem", "--fs-h3: 1.25rem", "--fs-body: 1rem",
+                      "--fs-small: .8rem", "--fs-figure: .8rem"):
             self.assertIn(token, SKELETON)
 
+    def test_headings_and_captions_use_the_scale(self):
+        style = _style()
+        self.assertIn("h1 { margin: 0; font-size: var(--fs-hero);", style)
+        self.assertIn("h3 { font-size: var(--fs-h3); font-weight: 700; line-height: var(--lh-heading);", style)
+        self.assertIn(".claim { margin-bottom: var(--space-2); font-size: var(--fs-h3); font-weight: 400; }", style)
+        self.assertIn("[data-ve-section-kind] figure[data-ve-component] > figcaption[class] "
+                      "{ font-size: var(--fs-h3); }", style)
+
+
+class FirstScreenFoldTest(unittest.TestCase):
+    """v4: h1, conclusion, overview figure and markers fit the first 900px at 1280px."""
+
+    def test_sections_use_space_5(self):
+        style = _style()
+        self.assertIn("section { min-width: 0; margin-block: var(--space-5); }", style)
+        self.assertNotIn("var(--space-7)", style)
+
+    def test_no_leading_whitespace_above_h1(self):
+        style = _style()
+        self.assertIn("main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; "
+                      "padding: var(--space-2) 0 var(--space-6); }", style)
+        self.assertIn('[data-ve-section-kind="first-screen"] { margin-block: 0 var(--space-3); }', style)
+        self.assertIn(".first-screen { display: grid; gap: var(--space-2); padding: 0; margin-block: 0;", style)
+
+    def test_overview_figure_hugs_its_markers(self):
+        style = _style()
+        self.assertIn('[data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) '
+                      "{ margin-bottom: var(--space-2); }", style)
+        self.assertIn(".overview-markers ol { list-style: none; margin: 0; padding: 0; display: flex; "
+                      "flex-wrap: wrap; gap: var(--space-1) var(--space-3); }", style)
+
+    def test_surface_is_only_under_the_overview_figure(self):
+        style = _style()
+        self.assertIn('[data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure '
+                      "{ margin-block: 0; padding: var(--space-3); background: var(--surface); "
+                      "border-radius: var(--radius); --ve-gd-canvas-bg: var(--surface); }", style)
+        for selector in (".ask {", ".decision-panel {", "details.deep-dive {", ".figure {"):
+            rule = next(line for line in style.splitlines() if line.strip().startswith(selector))
+            self.assertNotIn("var(--surface)", rule, selector)
+            self.assertIn("1px solid var(--border)", rule, selector)
+
+    def test_no_layout_rule_targets_main_by_name(self):
+        # The visual-stage 1212px audit treats any selector naming main/html/body/:root
+        # as main sizing; component overrides must use the [data-ve-section-kind] prefix.
+        for chunk in _style().split("}"):
+            if "{" not in chunk:
+                continue
+            selector = chunk.rsplit("{", 1)[0].split("{")[-1].strip()
+            if selector in {"main", "html", "body", ":root", "*", "*, *::before, *::after"} \
+                    or selector.startswith((":root", "@media")):
+                continue
+            self.assertIsNone(re.search(r"(?<![-\w])(main|html|body)(?![-\w])|:root", selector), selector)
 
 class ColorDisciplineAuditTest(unittest.TestCase):
     def test_component_css_is_monochrome(self):
@@ -177,6 +238,17 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             ".conclusion",
             # 概観ナビの番号マーカー（accent = 現在地を示す番号の強調）
             ".marker-n",
+            # 概観の番号を飛び先の見出しに付けた印（.marker-n と同じ意味・同じ見た目）
+            "[data-ve-marker]",
+            # 作者が highlightId で指したセルの行（accent = 作者が選んだ注目箇所）
+            ".ve-dg-highlight",
+            # 指摘層の選択チップと番号札（accent = 読者が指した場所・選んだ種類の強調）
+            ".review-tag",
+            ".review-chip[aria-checked",
+            # 指摘済みブロックの左縦線（accent = 読者が指した場所）
+            "[data-ve-annotated]",
+            # 主ボタン（accent = この資料で最初に押す操作。コピーだけに付ける）
+            ".button-primary",
         )
         for rule in style.split("}"):
             if "{" not in rule:
@@ -215,12 +287,6 @@ class DecisionOptionCardInteractionTest(unittest.TestCase):
         self.assertNotIn("'data-ask-select'", block)
         self.assertNotIn("'ask-select'", block)
 
-    def test_option_item_becomes_the_interactive_surface(self):
-        block = self._collection_block()
-        self.assertIn("item.setAttribute('role', 'button')", block)
-        self.assertIn("item.setAttribute('tabindex', '0')", block)
-        self.assertIn("item.addEventListener('click', select)", block)
-
     def test_option_item_responds_to_enter_and_space(self):
         block = self._collection_block()
         self.assertIn("item.addEventListener('keydown'", block)
@@ -228,10 +294,38 @@ class DecisionOptionCardInteractionTest(unittest.TestCase):
         self.assertIn("event.key !== ' '", block)
         self.assertIn("event.preventDefault()", block)
 
-    def test_aria_pressed_syncs_on_the_item_itself(self):
+    def test_option_item_is_a_radio(self):
         block = self._collection_block()
-        self.assertIn("item.setAttribute('aria-pressed', String(selected))", block)
-        self.assertNotIn("querySelector('button[data-ask-select]')", block)
+        self.assertIn("list.setAttribute('role', 'radiogroup')", block)
+        self.assertIn("item.setAttribute('role', 'radio')", block)
+        self.assertIn("item.setAttribute('tabindex', '0')", block)
+        self.assertIn("item.addEventListener('click', select)", block)
+
+    def test_option_name_comes_from_its_label_only(self):
+        # The option li holds benefit, tradeoff and a hidden relation list; its
+        # radio name must be the label alone, the rest a description.
+        block = self._collection_block()
+        self.assertIn("const label = item.querySelector('.ask-option-label');", block)
+        self.assertIn("item.setAttribute('aria-labelledby', ensureId(label, `${section.id}-opt-${index + 1}-label`));", block)
+        self.assertIn("item.querySelectorAll('.ask-option-head .ask-badge, .ask-option-head .ask-withdrawn-note, .ask-benefit, .ask-tradeoff')", block)
+        self.assertIn("item.setAttribute('aria-describedby'", block)
+        self.assertNotIn("ve-gd-relations", block)
+
+    def test_aria_checked_syncs_on_the_item_itself(self):
+        block = self._collection_block()
+        self.assertIn("item.setAttribute('aria-checked', String(selected))", block)
+        self.assertNotIn("aria-pressed", block)
+
+    def test_withdrawn_option_is_not_interactive(self):
+        self.assertIn("item.setAttribute('aria-disabled', 'true')", self._collection_block())
+
+    def test_copy_button_label(self):
+        self.assertIn("copyButton.textContent = '回答と指摘をコピー';", self._collection_block())
+
+    def test_manual_copy_fallback_is_wired(self):
+        block = self._collection_block()
+        self.assertIn("fallback.hidden = false;", block)
+        self.assertIn("クリップボードを使えないため、以下を手動でコピーしてください。", block)
 
     def test_option_focus_style_extends_to_the_option_card(self):
         style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
@@ -311,6 +405,331 @@ class ResponsiveLayoutTest(unittest.TestCase):
             ".ask-options [data-ask-option] { grid-template-columns: 1fr; "
             "gap: var(--space-1); }",
             mobile)
+
+
+class ReviewLayerSkeletonTest(unittest.TestCase):
+    """Review layer: add/pick buttons, the editor below a block and number tags are built by fixed JS."""
+
+    _collection_block = DecisionOptionCardInteractionTest._collection_block
+
+    def test_review_layer_hooks_exist(self):
+        block = self._collection_block()
+        for needle in (
+            "block.setAttribute('tabindex', '0')",
+            "if (event.target !== block || event.key !== 'Enter') return;",
+            "chip.setAttribute('role', 'radio')",
+            "chips.setAttribute('role', 'radiogroup')",
+            "makeButton('review-add', '＋')",
+            "makeButton('review-pick', '指摘')",
+            "document.addEventListener('selectionchange'",
+            "engine.addAnnotation(state, n, editor.chip, editor.quote, note.value, contract)",
+            "      renderReview();\n",
+            "if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;",
+            "const target = left[at] || left[at - 1] || editor.root.querySelector('.review-chip');",
+            "    const render = () => {\n      fallback.hidden = true;\n      copyStatus.textContent = '';\n",
+            "if (block.tagName === 'LI') block.append(root);",
+            "else block.after(root);",
+        ):
+            self.assertIn(needle, block)
+
+    def test_annotated_block_uses_accent_line(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(
+            "[data-ve-blk][data-ve-annotated] { border-left: 3px solid var(--accent); "
+            "padding-left: var(--space-1); }", style)
+        self.assertIn(
+            '.review-editor .review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); '
+            "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); "
+            "box-shadow: inset 0 0 0 1px var(--accent); font-weight: 700; }", style)
+
+    def test_editor_controls_share_one_size_and_add_is_primary(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(".review-editor :is(.review-chip, .review-actions button, .review-list button) "
+                      "{ padding: 0 var(--space-2); font-size: var(--fs-small); line-height: 2; }", style)
+        self.assertIn(".review-editor .button-primary:disabled { background: var(--bg); border-color: var(--border); "
+                      "border-style: dashed; color: var(--text-dim); font-weight: 400; }", style)
+        self.assertIn('.review-chip[aria-checked="true"]::before { content: "✓ "; content: "✓ " / ""; }', style)
+        self.assertIn("add.className = 'button-primary';", SKELETON)
+        self.assertIn("chipTag.className = 'review-list-chip';", SKELETON)
+
+    def test_body_relevant_metadata_is_not_faint(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(".certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-dim); }", style)
+        self.assertIn('.ask-card-status::before { content: "いまの回答"; color: var(--text-dim);', style)
+        self.assertIn('content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-dim);', style)
+
+
+class ControlsV4Test(unittest.TestCase):
+    _collection_block = DecisionOptionCardInteractionTest._collection_block
+
+    def test_primary_and_secondary_buttons(self):
+        style = _style()
+        self.assertIn("button { font: inherit; color: inherit; background: transparent; "
+                      "border: 1px solid var(--border); border-radius: var(--radius);", style)
+        self.assertIn(".button-primary { background: var(--accent); border-color: var(--accent); "
+                      "color: var(--bg); font-weight: 700; }", style)
+        self.assertIn(".button-primary:hover:not(:disabled) { background: var(--accent-strong); "
+                      "border-color: var(--accent-strong); }", style)
+        self.assertIn("copyButton.className = 'button-primary';", self._collection_block())
+
+    def test_option_hover_and_selected(self):
+        style = _style()
+        self.assertIn(".ask-options [data-ask-option]:not([data-ask-withdrawn]):not([data-ask-selected]):hover "
+                      "{ border-color: var(--text-faint); }", style)
+        self.assertIn(".ask-options [data-ask-option][data-ask-selected] { border-color: var(--accent); "
+                      "box-shadow: inset 0 0 0 1px var(--accent);", style)
+
+    def test_dead_no_default_reason_selector_removed(self):
+        self.assertNotIn("ask-no-default-reason", _style())
+
+    def test_js_only_note_hidden_after_init(self):
+        self.assertIn("panel.querySelectorAll('.panel-note').forEach((note) => { note.hidden = true; });",
+                      self._collection_block())
+
+    def test_transitions_respect_reduced_motion(self):
+        style = _style()
+        self.assertEqual(style.count("transition:"), 1)
+        gate = style.split("@media (prefers-reduced-motion: no-preference) {", 1)
+        self.assertEqual(len(gate), 2)
+        self.assertIn("transition: background-color 150ms ease, border-color 150ms ease, "
+                      "color 150ms ease, box-shadow 150ms ease;", gate[1].split("\n    }", 1)[0])
+        self.assertNotIn("infinite", style)
+
+    def test_request_and_hypothesis_chips_have_visible_pill(self):
+        style = _style()
+        pill = "background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }"
+        self.assertIn('.ask[data-ask="request"] .ask-kind { color: var(--text-dim); ' + pill, style)
+        self.assertIn('.ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); ' + pill, style)
+
+
+class ThemeToggleTest(unittest.TestCase):
+    def _theme_js(self):
+        return SKELETON.split("/* FIXED THEME CONTROL JS: DO NOT MODIFY. */", 1)[1].split("</script>", 1)[0]
+
+    def test_icon_only_round_button(self):
+        button = re.search(r"<button[^>]*data-theme-toggle[^>]*>(.*?)</button>", SKELETON, re.S)
+        self.assertIsNotNone(button)
+        tag = button.group(0).split(">", 1)[0]
+        for attr in ('class="theme-toggle"', 'aria-label="テーマを切り替える"',
+                     'title="テーマを切り替える"', 'aria-pressed="false"'):
+            self.assertIn(attr, tag)
+        inner = button.group(1)
+        self.assertEqual(re.sub(r"<[^>]+>", "", inner).strip(), "")
+        self.assertIn('class="theme-icon-sun"', inner)
+        self.assertIn('class="theme-icon-moon"', inner)
+        self.assertEqual(inner.count('aria-hidden="true"'), 2)
+        self.assertNotIn("#", inner)
+        style = _style()
+        self.assertIn(".theme-toggle { display: inline-grid; place-items: center; width: 32px; height: 32px; "
+                      "padding: 0; border-radius: 50%; color: var(--text-dim); }", style)
+        self.assertIn('.theme-toggle[aria-pressed="true"] .theme-icon-sun, '
+                      '.theme-toggle[aria-pressed="false"] .theme-icon-moon { display: none; }', style)
+
+    def test_label_describes_state_and_action(self):
+        js = self._theme_js()
+        self.assertIn("const text = `テーマ: ${label(current)}（${label(next)}に切替）`;", js)
+        self.assertIn("button.setAttribute('aria-label', text);", js)
+        self.assertIn("button.setAttribute('title', text);", js)
+        self.assertIn("button.setAttribute('aria-pressed', String(current === 'dark'));", js)
+        self.assertNotIn("textContent", js)
+
+    def test_two_states_only_and_storage_key_kept(self):
+        self.assertIn('data-theme-storage-key="visual-explain-theme"', SKELETON)
+        js = self._theme_js()
+        self.assertIn("window.localStorage.setItem(root.dataset.themeStorageKey, theme);", js)
+        self.assertNotIn("auto", js)
+        self.assertNotIn("removeItem", js)
+
+
+class MobileV4Test(unittest.TestCase):
+    _collection_block = DecisionOptionCardInteractionTest._collection_block
+
+    def _mobile(self):
+        return _style().split("@media (max-width: 42rem) {", 1)[1]
+
+    def test_sixteen_pixel_gutter(self):
+        style = _style()
+        self.assertIn("main { width: min(100% - var(--space-4), var(--w-narrative));", style)
+        self.assertNotIn("100% - var(--space-2)", style)
+
+    def test_dense_matrix_becomes_cards(self):
+        mobile = self._mobile()
+        prefix = '[data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll'
+        for needle in (
+            f"{prefix} {{ overflow-x: visible; }}",
+            f"{prefix} :is(table, tbody, tr, th, td) {{ display: block; width: auto; min-width: 0; }}",
+            f"{prefix} tr {{ margin: 0 0 var(--space-2); padding: var(--space-2); "
+            "border: 1px solid var(--border); border-radius: var(--radius); }",
+            f"{prefix} td[data-ve-col-label]::before {{ content: attr(data-ve-col-label); display: block; "
+            "color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }",
+        ):
+            self.assertIn(needle, mobile)
+
+    def test_lane_nodes_stay_on_one_row(self):
+        # Stacking a lane's nodes would make the drawn connectors run through
+        # the lower node; keeping one row keeps every arrow pointing at its node.
+        self.assertIn("[data-ve-section-kind] .lane-nodes { grid-template-columns: none; "
+                      "grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }", self._mobile())
+
+    def test_text_blocks_reserve_room_for_the_add_button(self):
+        gate = _style().split("@media (max-width: 52rem) {", 1)
+        self.assertEqual(len(gate), 2)
+        self.assertIn("[data-ve-section-kind] :is(p, li, h2, h3, blockquote)[data-ve-blk] "
+                      "{ padding-right: var(--space-4); }", gate[1].split("\n    }", 1)[0])
+
+    def test_add_button_never_covers_text(self):
+        block = self._collection_block()
+        for needle in (
+            "const place = (button, rect, below, block) => {",
+            "if (block && /^(FIGURE|TABLE|PRE)$/.test(block.tagName)) top = rect.top - button.offsetHeight - 4;",
+            "left = Math.max(0, Math.min(left, document.documentElement.clientWidth - width));",
+            "place(addButton, block.getBoundingClientRect(), false, block);",
+        ):
+            self.assertIn(needle, block)
+
+
+class ChevronV4Test(unittest.TestCase):
+    def test_horizontal_steps_share_one_row_and_equal_heights(self):
+        gate = _style().split("@media (width > 42rem) {", 1)
+        self.assertEqual(len(gate), 2)
+        block = gate[1].split("\n    }", 1)[0]
+        prefix = '[data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal'
+        for needle in (
+            f"{prefix} {{ display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); "
+            "grid-template-rows: auto auto auto; }",
+            f"{prefix} .ve-chevron-step {{ display: grid; grid-row: span 3; grid-template-rows: subgrid; "
+            "align-items: stretch; min-width: 0; max-width: none; }",
+            f"{prefix} .ve-chv-box {{ align-content: center; }}",
+            f"{prefix} .ve-chevron-description {{ padding-inline-end: var(--space-2); }}",
+        ):
+            self.assertIn(needle, block)
+        self.assertNotIn("flex-wrap", block)
+
+
+class NestedSectionMarginTest(unittest.TestCase):
+    def test_outer_lanes_drop_the_section_margin(self):
+        # Inner lanes keep the section margin: the fixed connector script picks
+        # vertical anchors only when lanes sit farther apart than nodes do sideways.
+        css = _style()
+        self.assertIn(
+            "[data-ve-section-kind] .layers > [data-lane]:first-child { margin-block-start: 0; }", css)
+        self.assertIn(
+            "[data-ve-section-kind] .layers > [data-lane]:last-child { margin-block-end: 0; }", css)
+
+    def test_nested_sections_drop_the_section_margin(self):
+        # The global `section { margin-block }` rule leaks into sections nested inside
+        # content (Before/After frames). Inside a grid those margins do not collapse
+        # and open ~100px bands; only direct children of a wrapper keep it.
+        self.assertIn(
+            "[data-ve-section-kind] section:not([data-ve-section-kind] > section, [data-lane]) "
+            "{ margin-block: 0; }", _style())
+
+class QuestionFormLayoutTest(unittest.TestCase):
+    def test_memo_label_sits_above_a_full_width_textarea(self):
+        css = _style()
+        self.assertIn(".ask-memo label { display: grid; gap: var(--space-1); color: var(--text-dim); "
+                      "font-size: var(--fs-small); font-weight: 700; }", css)
+        rule = next(line for line in css.splitlines()
+                    if line.strip().startswith(".ask-memo textarea, .decision-panel textarea {"))
+        self.assertIn("width: 100%;", rule)
+        self.assertIn("font-size: var(--fs-body); font-weight: 400;", rule)
+
+    def test_copy_button_has_top_spacing(self):
+        self.assertIn(".decision-panel > .button-primary { margin-top: var(--space-2); }", _style())
+
+    def test_card_status_reads_as_a_state_line(self):
+        # The default ("お任せ") is a state, not a third option: it is shown as a
+        # state line aligned with the option cards whose ink darkens once chosen.
+        css = _style()
+        # Solid frame with the accent rule: dotted/dashed lines are reserved for certainty chips.
+        self.assertIn(".ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; "
+                      "gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); "
+                      "border: 1px solid var(--border); border-left: 3px solid var(--accent); "
+                      "border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-card);", css)
+        self.assertIn('.ask-card-status::before { content: "いまの回答";', css)
+        self.assertIn(".ask:has([data-ask-selected]) .ask-card-status { color: var(--text); }", css)
+        self.assertIn('.ask:has([data-ask-selected]) .ask-card-status::after '
+                      '{ content: "選んだ案をもう一度押すとお任せに戻る";', css)
+
+    def test_panel_rows_stack_question_and_status(self):
+        css = _style()
+        self.assertIn(".panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }", css)
+        self.assertIn(".panel-asks li { display: grid; gap: 0; }", css)
+        self.assertIn(".panel-status { color: var(--text-dim); font-size: var(--fs-card); }", css)
+
+class ClosingCardTest(unittest.TestCase):
+    def test_closing_uses_the_shared_card_frame(self):
+        css = _style()
+        self.assertIn(".closing-section { padding: var(--space-3); background: var(--bg); "
+                      "border: 1px solid var(--border); border-radius: var(--radius); }", css)
+        self.assertNotIn("border-top: 1px solid var(--border-strong)", css)
+        self.assertIn(".closing-section h2 { margin-top: 0; font-size: var(--fs-h2); }", css)
+
+class CertaintyBadgeTest(unittest.TestCase):
+    def test_inferred_and_unverified_differ_beyond_the_border_style(self):
+        # Dotted vs dashed alone is hard to tell apart at 13px: inferred also gets
+        # the grey tint, unverified keeps an empty pill with a faint dotted border
+        # (its text stays at the readable --text-dim).
+        css = _style()
+        self.assertIn(".certainty.inferred { border-style: dashed; "
+                      "background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }", css)
+        self.assertIn(".certainty.unverified { border-style: dotted; border-color: var(--text-faint); "
+                      "color: var(--text-dim); }", css)
+
+class CardTextStepTest(unittest.TestCase):
+    """Body text inside skeleton-styled cards uses one step between body and notes."""
+
+    def test_card_step_tokens_exist(self):
+        self.assertIn("--fs-card: .9375rem;", SKELETON)
+        self.assertIn("--lh-card: 1.7;", SKELETON)
+
+    def test_card_body_text_uses_the_card_step(self):
+        css = _style()
+        for needle in (
+            ".ask-benefit, .ask-tradeoff { color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }",
+            ".ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }",
+            "border-radius: .4rem; font-size: var(--fs-card); line-height: var(--lh-card); }",
+        ):
+            self.assertIn(needle, css)
+        compare = next(line for line in css.splitlines() if line.strip().startswith(".compare-frame {"))
+        self.assertIn("font-size: var(--fs-card); line-height: var(--lh-card);", compare)
+
+    def test_notes_keep_the_small_step(self):
+        css = _style()
+        self.assertIn(".ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }", css)
+
+
+class DenseMatrixHighlightRowTest(unittest.TestCase):
+    """The dense table shows the author's highlighted cell as an emphasized row."""
+
+    _ROW = ('[data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll '
+            'tr:has(> .ve-dg-highlight)')
+    _TABLE = ('[data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll '
+              'table:has(.ve-dg-highlight) th[scope="row"]')
+
+    def test_desktop_row_gets_tint_and_accent_rule(self):
+        self.assertIn(self._ROW + " > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }",
+                      _style())
+        # The scroll wrapper clips anything drawn outside the table, so the rule is
+        # an inset shadow and every row header of that table moves in by the same step.
+        self.assertIn(self._TABLE + " { padding-left: var(--space-2); }", _style())
+        self.assertIn(self._ROW + " > th[scope=\"row\"] { box-shadow: inset 3px 0 0 var(--accent); }", _style())
+
+    def test_phone_card_gets_the_same_rule(self):
+        mobile = _style().split("@media (max-width: 42rem) {", 1)[1]
+        self.assertIn(self._ROW + " { border-left: 3px solid var(--accent); "
+                      "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }", mobile)
+        self.assertIn(self._TABLE + " { padding-left: 0; }", mobile)
+        self.assertIn(self._ROW + " > th[scope=\"row\"] { box-shadow: none; }", mobile)
+
+
+class CertaintyChipWrapTest(unittest.TestCase):
+    def test_chip_stays_whole_and_glues_to_the_last_character(self):
+        css = _style()
+        rule = next(line for line in css.splitlines() if line.strip().startswith(".certainty {"))
+        self.assertIn("display: inline-block;", rule)
+        self.assertIn("white-space: nowrap;", rule)
+        self.assertIn(".certainty-tail { white-space: nowrap; }", css)
 
 
 if __name__ == "__main__":

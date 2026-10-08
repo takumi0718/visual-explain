@@ -39,10 +39,12 @@ from .diagnostics import (
     WATERFALL_STRUCTURE_VIOLATION,
     BARS_ITEM_LIMIT,
     KPI_ITEM_LIMIT,
+    GRID_DIAGRAM_STRUCTURE_VIOLATION,
     ContractError,
     DiagnosticCollector,
 )
 from .flow_layout import assign_rails, check_row_budget, check_topology, edge_spans, order_index
+from .grid_layout import MAX_GRID, MAX_THUMB_GRID, check_layout
 from .numeric import is_numeric, to_decimal, waterfall_axis_max, waterfall_scale_values
 from .model import (
     AccessibilityInfo,
@@ -71,6 +73,11 @@ from .model import (
     EvidenceConclusion,
     EvidenceItem,
     EvidenceMapPayload,
+    GridDiagramPayload,
+    GridEdge,
+    GridMarker,
+    GridNode,
+    GridRegion,
     FirstScreenSection,
     Overview,
     OverviewMarker,
@@ -140,7 +147,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
     "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
-    "slope", "bars", "kpi", "evidence-map",
+    "slope", "bars", "kpi", "evidence-map", "grid-diagram",
     "takeawayTargetIds", "takeawayScope", "emphasis",
     "claim", "sequence", "assertions",
 }
@@ -237,16 +244,19 @@ _SENTENCE_RE = re.compile(r"[^。！？!?]+[。！？!?]")
 _CLOSING_SECTION_KEYS = {"kind", "id", "blocks"}
 _CLOSING_BLOCK_KEYS = {"heading", "items"}
 _ASK_SECTION_KEYS = {
-    "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason",
+    "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason", "evidence",
     "steps", "claim", "verify",
 }
-_ASK_OPTION_KEYS = {"id", "label", "tradeoff"}
+_ASK_OPTION_KEYS = {"id", "label", "benefit", "tradeoff", "withdrawn", "figure"}
 _ASK_STEP_KEYS = {"role", "roleLabel", "text"}
 _ASK_CLAIM_KEYS = {"text", "certainty"}
 _ASK_TYPES = frozenset({"decision", "request", "hypothesis"})
 _ASK_ROLES = frozenset({"user", "agent", "third-party"})
 _ASK_CERTAINTY = frozenset({"confirmed", "inferred", "unverified"})
-_DECISION_ONLY_KEYS = frozenset({"question", "options", "defaultId", "noDefaultReason"})
+_DECISION_ONLY_KEYS = frozenset({"question", "options", "defaultId", "noDefaultReason", "evidence"})
+_MAX_DECISION_ASKS = 4
+_MAX_EVIDENCE_CHARS = 200
+_EVIDENCE_RE = re.compile(r"[^\s:：「」]+:\d+|「[^」]+」")
 _REQUEST_ONLY_KEYS = frozenset({"steps"})
 _HYPOTHESIS_ONLY_KEYS = frozenset({"claim", "verify"})
 _CLOSING_REQUIRED = {
@@ -258,7 +268,10 @@ _SENTENCE_TERMINATORS = frozenset("。！？!?")
 
 # Reserved tokens for narrative / freeform author markup (Global Constraints).
 _RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain", "decision-panel",
-                               "conclusion", "overview-markers"})
+                               "conclusion", "overview-markers", "ask-kind", "ask-badge",
+                               "ask-withdrawn-note", "ask-memo", "ask-prefix",
+                               # Text in these is not counted by metrics (screen-reader twins).
+                               "visually-hidden", "ve-gd-relations"})
 _RESERVED_DATA_EXACT = frozenset({
     "data-connect",
     "data-connect-scope",
@@ -341,6 +354,28 @@ class _AuthorMarkupBanParser(HTMLParser):
                 if label not in self._seen_attrs:
                     self._seen_attrs.add(label)
                     self.reserved_attrs.append(label)
+
+
+class _BlockNumberAttrParser(HTMLParser):
+    """Find a start tag carrying an attribute named exactly ``data-ve-blk``."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.found = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if any((name or "").lower() == "data-ve-blk" for name, _value in attrs):
+            self.found = True
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+
+def _has_block_number_attr(markup: str) -> bool:
+    parser = _BlockNumberAttrParser()
+    parser.feed(markup)
+    parser.close()
+    return parser.found
 
 
 class _PlainTextParser(HTMLParser):
@@ -754,6 +789,8 @@ def _payload_semantic_ids(payload_kind: str, payload: object | None) -> set[str]
         return {item.id for item in payload.items}
     if payload_kind == "evidence-map":
         return {payload.conclusion.id, *(item.id for item in payload.evidence)}
+    if payload_kind == "grid-diagram":
+        return {*(n.id for n in payload.nodes), *(r.id for r in payload.regions), *(e.id for e in payload.edges)}
     return set()
 
 
@@ -951,6 +988,7 @@ def _validate_canonical_ir(
     bars = None
     kpi = None
     evidence_map = None
+    grid_diagram = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
     if len(present) == 0:
@@ -995,6 +1033,8 @@ def _validate_canonical_ir(
                 bars = validated_payload
             elif payload_kind == "kpi":
                 kpi = validated_payload
+            elif payload_kind == "grid-diagram":
+                grid_diagram = validated_payload
 
     if document_profile == "visual-stage":
         takeaway_target_ids, takeaway_scope, emphasis = (), "targets", ()
@@ -1057,6 +1097,7 @@ def _validate_canonical_ir(
         bars=bars,
         kpi=kpi,
         evidence_map=evidence_map,
+        grid_diagram=grid_diagram,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
@@ -2550,11 +2591,208 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
         if isinstance(conclusion, dict) and isinstance(conclusion.get("id"), str):
             ids.append(conclusion["id"])
         collect(evidence_map.get("evidence"))
+    grid_diagram = raw.get("grid-diagram")
+    if isinstance(grid_diagram, dict):
+        # The grid validator already reports ids repeated inside the picture;
+        # keep one of each here so only clashes with other ids are reported.
+        start = len(ids)
+        collect(grid_diagram.get("nodes"))
+        collect(grid_diagram.get("regions"))
+        collect(grid_diagram.get("edges"))
+        ids[start:] = list(dict.fromkeys(ids[start:]))
     seen: set[str] = set()
     for value in ids:
         if value in seen:
             col.add(DUPLICATE_SEMANTIC_ID, f"意味 ID '{value}' が重複しています", path)
         seen.add(value)
+
+
+# ---------------------------------------------------------------------------
+# grid-diagram (Phase 4)
+# ---------------------------------------------------------------------------
+
+_GRID_DIAGRAM_KEYS = {"grid", "nodes", "regions", "edges", "markers"}
+_GRID_THUMB_KEYS = {"grid", "nodes", "regions", "edges"}
+_GRID_SIZE_KEYS = {"cols", "rows"}
+_GRID_NODE_KEYS = {"id", "label", "cell", "span", "tone"}
+_GRID_REGION_KEYS = {"id", "label", "from", "to"}
+_GRID_EDGE_KEYS = {"id", "from", "to", "label"}
+_GRID_MARKER_KEYS = {"n", "target", "ask"}
+_GRID_TONES = frozenset({"base", "primary", "warning"})
+_MAX_GRID_NODE_LABEL = 14
+_MAX_GRID_EDGE_LABEL = 10
+_MAX_GRID_REGION_LABEL = 8
+_MAX_GRID_EDGES = 16
+_MAX_GRID_REGIONS = 4
+_MAX_GRID_MARKERS = 5
+
+
+def _grid_pair(value: object) -> tuple[int, int] | None:
+    if isinstance(value, list) and len(value) == 2 and all(_is_int(v) and v >= 1 for v in value):
+        return value[0], value[1]
+    return None
+
+
+def _validate_grid_diagram(raw: object, path: str, col: DiagnosticCollector, *,
+                           thumbnail: bool = False) -> GridDiagramPayload | None:
+    """Parse a grid-diagram payload, then run the shared layout checks (fail-closed)."""
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "grid-diagram はオブジェクトである必要があります", path)
+        return None
+    before = len(col.diagnostics)
+    _check_keys(raw, _GRID_THUMB_KEYS if thumbnail else _GRID_DIAGRAM_KEYS, path, col)
+    max_grid = MAX_THUMB_GRID if thumbnail else MAX_GRID
+    grid = raw.get("grid")
+    cols = rows = 0
+    if not isinstance(grid, dict):
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "grid は cols と rows を持つオブジェクトである必要があります", path)
+    else:
+        _check_keys(grid, _GRID_SIZE_KEYS, f"{path}.grid", col)
+        cols, rows = grid.get("cols"), grid.get("rows")
+        if not (_is_int(cols) and _is_int(rows) and 1 <= cols <= max_grid and 1 <= rows <= max_grid):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                    f"grid.cols と grid.rows は1〜{max_grid}の整数です", f"{path}.grid")
+    low, high = (1, max_grid * max_grid) if thumbnail else (2, 12)
+    nodes_raw = raw.get("nodes")
+    if not isinstance(nodes_raw, list) or not low <= len(nodes_raw) <= high:
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"nodes は{low}〜{high}件の配列である必要があります", path)
+    nodes_raw = nodes_raw if isinstance(nodes_raw, list) else []
+    known_ids = {item.get("id") for item in nodes_raw
+                 if isinstance(item, dict) and _nonblank_str(item.get("id"))}
+    nodes: list[GridNode] = []
+    for i, item in enumerate(nodes_raw):
+        p = f"{path}.nodes[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "node はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _GRID_NODE_KEYS, p, col)
+        node_id, label, tone = item.get("id"), item.get("label"), item.get("tone", "base")
+        cell, span = _grid_pair(item.get("cell")), _grid_pair(item.get("span", [1, 1]))
+        if not _nonblank_str(node_id):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.id は空にできません", p)
+        if not _nonblank_str(label) or len(label) > _MAX_GRID_NODE_LABEL:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.label は1〜14字です", p)
+        if cell is None:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.cell は [列, 行] の1以上の整数2個です", p)
+        if span is None:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.span は [幅, 高さ] の1以上の整数2個です", p)
+        tone_ok = isinstance(tone, str) and tone in _GRID_TONES
+        if not tone_ok:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"未知の tone '{tone}'", p)
+        if _nonblank_str(node_id) and _nonblank_str(label) and cell and span and tone_ok:
+            nodes.append(GridNode(id=node_id, label=label, col=cell[0], row=cell[1],
+                                  span_cols=span[0], span_rows=span[1], tone=tone))
+    regions_raw = raw.get("regions", [])
+    if not isinstance(regions_raw, list) or len(regions_raw) > _MAX_GRID_REGIONS:
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "regions は0〜4件の配列である必要があります", path)
+        regions_raw = regions_raw if isinstance(regions_raw, list) else []
+    regions: list[GridRegion] = []
+    for i, item in enumerate(regions_raw):
+        p = f"{path}.regions[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "region はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _GRID_REGION_KEYS, p, col)
+        region_id, label = item.get("id"), item.get("label")
+        start, end = _grid_pair(item.get("from")), _grid_pair(item.get("to"))
+        if not _nonblank_str(region_id):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.id は空にできません", p)
+        if not _nonblank_str(label) or len(label) > _MAX_GRID_REGION_LABEL:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.label は1〜8字です", p)
+        if start is None or end is None:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.from と region.to は [列, 行] の1以上の整数2個です", p)
+        elif start[0] > end[0] or start[1] > end[1]:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.from は region.to の左上にある必要があります", p)
+        elif _nonblank_str(region_id) and _nonblank_str(label):
+            regions.append(GridRegion(id=region_id, label=label, from_col=start[0], from_row=start[1],
+                                      to_col=end[0], to_row=end[1]))
+    edges_raw = raw.get("edges", [])
+    if not isinstance(edges_raw, list) or len(edges_raw) > _MAX_GRID_EDGES:
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edges は0〜16件の配列である必要があります", path)
+        edges_raw = edges_raw if isinstance(edges_raw, list) else []
+    edges: list[GridEdge] = []
+    pairs: set[tuple[str, str]] = set()
+    for i, item in enumerate(edges_raw):
+        p = f"{path}.edges[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "edge はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _GRID_EDGE_KEYS, p, col)
+        edge_id, source, target, label = item.get("id"), item.get("from"), item.get("to"), item.get("label", "")
+        if not _nonblank_str(edge_id):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.id は空にできません", p)
+        if not isinstance(source, str) or source not in known_ids:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"edge.from '{source}' がノードにありません", p)
+        if not isinstance(target, str) or target not in known_ids:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"edge.to '{target}' がノードにありません", p)
+        if source == target:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.from と edge.to は別のノードである必要があります", p)
+        elif not (isinstance(source, str) and isinstance(target, str)):
+            pass
+        elif (source, target) in pairs:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"辺 '{source}' → '{target}' が重複しています", p)
+        elif (target, source) in pairs:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"辺 '{source}' → '{target}' は逆向きの辺と重なります", p)
+        if not isinstance(label, str) or len(label) > _MAX_GRID_EDGE_LABEL:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.label は10字以内です", p)
+        if isinstance(source, str) and isinstance(target, str):
+            pairs.add((source, target))
+            if _nonblank_str(edge_id) and isinstance(label, str):
+                edges.append(GridEdge(id=edge_id, source=source, target=target, label=label))
+    markers: list[GridMarker] = []
+    if "markers" in raw and not thumbnail:
+        markers_raw = raw.get("markers")
+        if not isinstance(markers_raw, list) or not 1 <= len(markers_raw) <= _MAX_GRID_MARKERS:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "markers は1〜5件の配列である必要があります", path)
+            markers_raw = []
+        seen_n: set[int] = set()
+        marked: set[str] = set()
+        for i, item in enumerate(markers_raw):
+            p = f"{path}.markers[{i}]"
+            if not isinstance(item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "marker はオブジェクトである必要があります", p)
+                continue
+            _check_keys(item, _GRID_MARKER_KEYS, p, col)
+            n, target, ask = item.get("n"), item.get("target"), item.get("ask")
+            if not _is_int(n) or not 1 <= n <= _MAX_GRID_MARKERS:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "marker.n は1〜5の整数です", p)
+            elif n in seen_n:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"marker.n {n} が重複しています", p)
+            if not isinstance(target, str) or target not in known_ids:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"marker.target '{target}' がノードにありません", p)
+            elif target in marked:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"ノード '{target}' に番号が2つあります", p)
+            if ask is not None and not _nonblank_str(ask):
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "marker.ask は空にできません", p)
+            if _is_int(n):
+                seen_n.add(n)
+            if isinstance(target, str):
+                marked.add(target)
+                if _is_int(n) and (ask is None or _nonblank_str(ask)):
+                    markers.append(GridMarker(n=n, target=target, ask=ask))
+    # Ids are semantic ids in the final DOM, so they must be unique across the whole picture;
+    # check_layout also assumes unique node ids (it keys nodes by id).
+    seen_ids: set[str] = set()
+    for item_id in [n.id for n in nodes] + [r.id for r in regions] + [e.id for e in edges]:
+        if item_id in seen_ids:
+            col.add(DUPLICATE_SEMANTIC_ID, f"図の id '{item_id}' が重複しています", path)
+        seen_ids.add(item_id)
+    if len(col.diagnostics) > before:
+        return None
+    payload = GridDiagramPayload(cols=cols, rows=rows, nodes=tuple(nodes), regions=tuple(regions),
+                                 edges=tuple(edges), markers=tuple(markers))
+    for message in check_layout(payload):
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, message, path)
+    return None if len(col.diagnostics) > before else payload
+
+
+def validate_grid_diagram(raw: object, *, thumbnail: bool = False) -> GridDiagramPayload:
+    """Validate one grid-diagram payload on its own (tests, option thumbnails)."""
+    col = DiagnosticCollector()
+    payload = _validate_grid_diagram(raw, "grid-diagram", col, thumbnail=thumbnail)
+    col.raise_if_any()
+    assert payload is not None
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -2573,6 +2811,7 @@ _PAYLOAD_VALIDATORS = {
     "slope": _validate_slope,
     "bars": _validate_bars,
     "kpi": _validate_kpi,
+    "grid-diagram": _validate_grid_diagram,
 }
 
 
@@ -2683,8 +2922,13 @@ def validate_assembly(raw: object) -> AssemblyRequest:
         section = _validate_section(item, p, col, seen_section_ids, doc_type, doc_profile)
         if section is not None:
             sections.append(section)
+    decision_count = sum(1 for s in sections if isinstance(s, AskSection) and s.ask_type == "decision")
+    if decision_count > _MAX_DECISION_ASKS:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"decision ask は1資料4問までです（{decision_count}問）",
+                "assembly.sections")
     _validate_document_structure(sections_raw, col)
     _validate_overview_links(sections_raw, sections, col)
+    _validate_grid_markers(sections, col)
     if doc_profile == "visual-stage":
         _validate_visual_stage_document(sections_raw, sections, col)
     if not col.diagnostics:
@@ -2831,6 +3075,7 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers は1〜5件の配列である必要があります", path)
         return None
     markers: list[OverviewMarker] = []
+    bad_n = False
     for i, item in enumerate(markers_raw):
         mp = f"{path}.markers[{i}]"
         if not isinstance(item, dict):
@@ -2845,16 +3090,18 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
         n = item.get("n")
         if isinstance(n, bool) or not isinstance(n, int):
             col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers[].n は整数である必要があります", mp)
+            bad_n = True
             continue
         markers.append(OverviewMarker(n=n, label=label or "", target=target or ""))
-    if [m.n for m in markers] != list(range(1, len(markers) + 1)):
+    # A non-integer n is already reported; its gap must not also read as a sequence error.
+    if not bad_n and [m.n for m in markers] != list(range(1, len(markers) + 1)):
         col.add(INVALID_COMPONENT_PAYLOAD, "first-screen.overview.markers の n は1からの連番である必要があります", path)
     return Overview(section=section or "", markers=tuple(markers))
 
 
 def _validate_overview_links(sections_raw: list, sections: list[object], col: DiagnosticCollector) -> None:
     """Cross-section rules for the overview: placement, marker targets, and when it is required."""
-    from .document_sections import extract_first_h2
+    from .document_sections import extract_first_h2, has_marker_heading
 
     first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
     if first is None:
@@ -2873,12 +3120,47 @@ def _validate_overview_links(sections_raw: list, sections: list[object], col: Di
         col.add(INVALID_COMPONENT_PAYLOAD,
                 "first-screen.overview.section は first-screen 直後の canonical セクションの id である必要があります",
                 "assembly.sections[0].overview")
-    linkable = {s.id for s in sections if isinstance(s, (AskSection, NarrativeSection, ClosingSection))}
+    linkable = {s.id: s for s in sections if isinstance(s, (AskSection, NarrativeSection, ClosingSection))}
     for i, marker in enumerate(first.overview.markers):
-        if marker.target not in linkable:
+        target = linkable.get(marker.target)
+        if target is None:
             col.add(INVALID_COMPONENT_PAYLOAD,
                     f"first-screen.overview.markers[{i}].target '{marker.target}' は ask / narrative / closing セクションの id である必要があります",
                     "assembly.sections[0].overview")
+        elif isinstance(target, NarrativeSection) and not has_marker_heading(target.markup):
+            # The number is echoed on the narrative's first h2 (else h3); without one the
+            # final v4 marker check would fail after rendering, so say it here instead.
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    f"first-screen.overview.markers[{i}].target '{marker.target}' の narrative には番号を付ける h2 か h3 が必要です",
+                    "assembly.sections[0].overview")
+
+
+def _validate_grid_markers(sections: list[object], col: DiagnosticCollector) -> None:
+    """Numbers on a grid-diagram are the overview's numbers: only on the overview figure, all of them."""
+    first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
+    overview = first.overview if first is not None else None
+    overview_id = overview.section if overview is not None else None
+    for section in sections:
+        if not isinstance(section, CanonicalSection) or section.ir.grid_diagram is None:
+            continue
+        grid = section.ir.grid_diagram
+        where = f"assembly.sections[{sections.index(section)}]"
+        if section.ir.id != overview_id:
+            if grid.markers:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                        "grid-diagram の markers は first-screen.overview の図にだけ付けられます", where)
+            continue
+        targets = {m.n: m.target for m in overview.markers}
+        if {m.n for m in grid.markers} != set(targets):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                    "全体図の grid-diagram の markers は first-screen.overview.markers と同じ番号を持つ必要があります",
+                    where)
+        for marker in grid.markers:
+            if marker.ask is not None and targets.get(marker.n) != marker.ask:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                        f"grid-diagram の marker {marker.n} の ask '{marker.ask}' は"
+                        f" first-screen.overview.markers の同じ番号の target と一致する必要があります",
+                        where)
 
 
 def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
@@ -2927,6 +3209,19 @@ def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> As
     question = raw.get("question")
     if not _nonblank_str(question):
         col.add(INVALID_COMPONENT_PAYLOAD, "decision.question は空にできません", path)
+    evidence = raw.get("evidence")
+    if not _nonblank_str(evidence):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision.evidence は空にできません（file:line か実行結果の引用）", path)
+    elif len(evidence) > _MAX_EVIDENCE_CHARS:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"decision.evidence は200字以内です（{len(evidence)}字）", path)
+    elif not _EVIDENCE_RE.search(evidence):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision.evidence には file:line か「」で囲んだ実行結果の引用が必要です", path)
+    if "noDefaultReason" in raw:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision.noDefaultReason は廃止されました。推奨案を defaultId で示してください", path)
+    default_id = raw.get("defaultId")
     options_raw = raw.get("options")
     options: list[AskOption] = []
     option_ids: set[str] = set()
@@ -2954,37 +3249,43 @@ def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> As
             tradeoff = item.get("tradeoff")
             if not _nonblank_str(tradeoff):
                 col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].tradeoff は空にできません", op)
-            if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff):
-                options.append(AskOption(id=oid, label=label, tradeoff=tradeoff))
-    has_default = "defaultId" in raw and raw.get("defaultId") is not None
-    has_reason = "noDefaultReason" in raw and raw.get("noDefaultReason") is not None
-    default_id = raw.get("defaultId") if has_default else None
-    no_default_reason = raw.get("noDefaultReason") if has_reason else None
-    if has_default and has_reason:
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                "decision の defaultId と noDefaultReason は同時に指定できません", path)
-    elif not has_default and not has_reason:
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                "decision には defaultId か noDefaultReason のどちらか一方が必要です", path)
-    else:
-        if has_default:
-            if not _nonblank_str(default_id):
-                col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は空にできません", path)
-            elif default_id not in option_ids:
+            benefit = item.get("benefit")
+            if not _nonblank_str(benefit):
+                if accepted_id and oid != default_id:
+                    col.add(INVALID_COMPONENT_PAYLOAD,
+                            f"推奨でない選択肢 '{oid}' にも benefit（選ぶ理由）が必要です", op)
+                else:
+                    col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].benefit は空にできません", op)
+            withdrawn = item.get("withdrawn", False)
+            if not isinstance(withdrawn, bool):
                 col.add(INVALID_COMPONENT_PAYLOAD,
-                        f"decision.defaultId '{default_id}' が options にありません", path)
-        if has_reason and not _nonblank_str(no_default_reason):
-            col.add(INVALID_COMPONENT_PAYLOAD, "decision.noDefaultReason は空にできません", path)
+                        "decision.options[].withdrawn は true / false のいずれかです", op)
+                withdrawn = False
+            figure = None
+            if "figure" in item:
+                figure = _validate_grid_diagram(item["figure"], f"{op}.figure", col, thumbnail=True)
+            if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff) and _nonblank_str(benefit):
+                options.append(AskOption(id=oid, label=label, tradeoff=tradeoff,
+                                         benefit=benefit, withdrawn=withdrawn, figure=figure))
+        if len(options) == len(options_raw) and sum(1 for o in options if not o.withdrawn) < 2:
+            col.add(INVALID_COMPONENT_PAYLOAD, "decision の取り下げていない選択肢は2件以上必要です", path)
+        pictured = [isinstance(item, dict) and "figure" in item
+                    for item in options_raw if not (isinstance(item, dict) and item.get("withdrawn") is True)]
+        if any(pictured) and not all(pictured):
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    "選択肢の図は、取り下げていない選択肢すべてに付ける必要があります", path)
+    if default_id is None:
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision には推奨案の defaultId が必要です", path)
+    elif not _nonblank_str(default_id):
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は空にできません", path)
+    elif default_id not in option_ids:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"decision.defaultId '{default_id}' が options にありません", path)
+    elif any(o.id == default_id and o.withdrawn for o in options):
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は取り下げた選択肢を指せません", path)
     if len(col.diagnostics) > before:
         return None
-    return AskSection(
-        id=raw["id"],
-        ask_type="decision",
-        question=question,
-        options=tuple(options),
-        default_id=default_id,
-        no_default_reason=no_default_reason,
-    )
+    return AskSection(id=raw["id"], ask_type="decision", question=question,
+                      options=tuple(options), default_id=default_id, evidence=evidence)
 
 
 def _validate_ask_request(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
@@ -3095,6 +3396,9 @@ def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollect
             code=INVALID_COMPATIBILITY_PROVENANCE,
         ):
             col.add(code, message, path)
+        if _has_block_number_attr(markup):
+            col.add(INVALID_COMPATIBILITY_PROVENANCE,
+                    "compatibility に data-ve-blk は書けません（ビルドが付与します）", path)
     prov = raw.get("provenance")
     provenance = None
     if not isinstance(prov, dict):

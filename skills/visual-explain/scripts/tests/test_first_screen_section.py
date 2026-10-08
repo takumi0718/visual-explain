@@ -69,6 +69,15 @@ class OverviewValidationTest(unittest.TestCase):
         self.assertIn("first-screen.overview.markers[0].target 'sec-map' は ask / narrative / closing セクションの id である必要があります",
                       _messages(_assembly(first, CANONICAL)))
 
+    def test_narrative_marker_target_needs_a_heading_for_the_echo(self) -> None:
+        headless = {"kind": "narrative", "id": "sec-a", "markup": "<p>見出しの無い本文。</p>"}
+        self.assertIn("first-screen.overview.markers[0].target 'sec-a' の narrative には番号を付ける h2 か h3 が必要です",
+                      _messages(_assembly(self._first(), CANONICAL, headless)))
+
+    def test_narrative_with_only_an_h3_is_a_valid_marker_target(self) -> None:
+        h3_only = {"kind": "narrative", "id": "sec-a", "markup": "<h3>小見出し</h3><p>本文。</p>"}
+        self.assertEqual(_messages(_assembly(self._first(), CANONICAL, h3_only)), [])
+
     def test_marker_n_must_be_real_int(self) -> None:
         for bad in (True, 1.0):
             first = self._first(markers=[{"n": bad, "label": "背景", "target": "sec-a"}])
@@ -79,6 +88,13 @@ class OverviewValidationTest(unittest.TestCase):
         first = self._first(markers=[{"n": 2, "label": "背景", "target": "sec-a"}])
         self.assertIn("first-screen.overview.markers の n は1からの連番である必要があります",
                       _messages(_assembly(first, CANONICAL, _narr("sec-a", "背景の見出し"))))
+
+    def test_bad_marker_n_is_reported_once(self) -> None:
+        first = self._first(markers=[{"n": "1", "label": "背景", "target": "sec-a"},
+                                     {"n": 2, "label": "決定", "target": "sec-a"}])
+        msgs = _messages(_assembly(first, CANONICAL, _narr("sec-a", "背景の見出し")))
+        self.assertIn("first-screen.overview.markers[].n は整数である必要があります", msgs)
+        self.assertNotIn("first-screen.overview.markers の n は1からの連番である必要があります", msgs)
 
     def test_overview_required_with_three_headed_sections(self) -> None:
         raw = _assembly({"conclusion": "限定対象で開始する。"},

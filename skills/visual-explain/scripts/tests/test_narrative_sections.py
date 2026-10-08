@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from build_explainer import build_document
+from build_explainer import build_document, compose_document
 from ve_components.assembly import (
     compose_sections,
     process_canonical_section,
@@ -79,6 +79,22 @@ def test_process_narrative_wraps_with_instance():
     assert 'data-ve-instance="sec-intro"' in wrapped.markup
 
 
+def test_certainty_chip_is_glued_to_the_last_character_before_it():
+    sec = NarrativeSection(id="sec-c", markup=(
+        '<p>検証できません。<span class="certainty unverified">未確認</span></p>'
+        '<p>A &amp; B<span class="certainty inferred">推論</span></p>'))
+    markup = process_narrative_section(sec).markup
+    assert ('検証できません<span class="certainty-tail">。<span class="certainty unverified">未確認</span></span>'
+            in markup)
+    assert 'A &amp; <span class="certainty-tail">B<span class="certainty inferred">推論</span></span>' in markup
+
+
+def test_certainty_chip_after_an_entity_keeps_the_entity_whole():
+    sec = NarrativeSection(id="sec-c", markup='<p>A &amp;<span class="certainty inferred">推論</span></p>')
+    markup = process_narrative_section(sec).markup
+    assert 'A <span class="certainty-tail">&amp;<span class="certainty inferred">推論</span></span>' in markup
+
+
 def test_process_narrative_rejects_forbidden_markup():
     sec = NarrativeSection(id="sec-bad", markup='<script>alert(1)</script>')
     with pytest.raises(ContractError) as exc:
@@ -136,29 +152,10 @@ def test_final_provenance_rejects_narrative_without_instance():
 
 
 def _build_composition_and_document(raw):
-    # Mirrors build_document's own dispatch/compose/flatten steps, but keeps
-    # the intermediate CompositionResult around so the test can pass it as
-    # ``expected`` to check_final_document directly (build_document only
-    # returns the final HTML string).
-    from ve_components.document_sections import render_ask, render_closing, render_first_screen
-    from ve_components.model import AskSection, ClosingSection, FirstScreenSection
-
+    # The real build pipeline, stopping before the final check so the test can
+    # pass the CompositionResult to check_final_document as ``expected``.
     request = validate_assembly(raw)
-    items = []
-    for section in request.sections:
-        if isinstance(section, CanonicalSection):
-            items.append(process_canonical_section(section, REGISTRY, TRUSTED_RENDERERS))
-        elif isinstance(section, NarrativeSection):
-            items.append(process_narrative_section(section))
-        elif isinstance(section, FirstScreenSection):
-            items.append(render_first_screen(section, request.document))
-        elif isinstance(section, ClosingSection):
-            items.append(render_closing(section))
-        elif isinstance(section, AskSection):
-            items.append(render_ask(section))
-        else:
-            items.append(process_compatibility_section(section))
-    composition = compose_sections(items)
+    composition = compose_document(request, REGISTRY, TRUSTED_RENDERERS, document_path="doc.html")
     document = flatten_document(composition, SKELETON, COMPONENTS_DIR, request.document.title)
     return composition, document
 
@@ -170,7 +167,9 @@ def test_manifest_to_dom_flags_narrative_section_removed_from_final_dom():
     assert check_final_document(document, SKELETON, REGISTRY, expected=composition,
                                  components_dir=COMPONENTS_DIR) == []
     removed = composition.narrative[-1]
-    mutated = document.replace(removed.markup, "")
+    stamped = next(m for m in composition.sections_markup
+                   if f'data-ve-instance="{removed.instance_id}"' in m)
+    mutated = document.replace(stamped, "")
     assert mutated != document
     diags = check_final_document(mutated, SKELETON, REGISTRY, expected=composition,
                                   components_dir=COMPONENTS_DIR)
@@ -188,3 +187,10 @@ def test_narrative_mixed_fixture_passes_check_sh():
         assert "PASS" in proc.stdout + proc.stderr
     finally:
         out.unlink(missing_ok=True)
+
+
+def test_compose_document_is_the_build_pipeline():
+    raw = json.loads((TESTS_DIR / "component-valid-narrative-mixed.json").read_text("utf-8"))
+    _composition, document = _build_composition_and_document(raw)
+    assert document == build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR,
+                                      document_path="doc.html")

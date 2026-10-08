@@ -344,7 +344,7 @@ class DocumentationConsistencyTest(unittest.TestCase):
                     self.assertIn(section.provenance.reason, reasons)
                 # first-screen / closing / ask: typed sections, no vocabulary tokens.
 
-    def test_docs_have_canonical_examples_for_all_twelve_components(self) -> None:
+    def test_docs_have_canonical_examples_for_all_canonical_components(self) -> None:
         text = Path("../references/patterns.md").read_text(encoding="utf-8")
         for comp in [
             "matrix",
@@ -359,6 +359,7 @@ class DocumentationConsistencyTest(unittest.TestCase):
             "evidence-map",
             "bars",
             "kpi",
+            "grid-diagram",
         ]:
             self.assertIn(f'"component": "{comp}"', text, comp)
 
@@ -367,7 +368,7 @@ class DocumentationConsistencyTest(unittest.TestCase):
         self.assertIn("--dg-primary", ds)
         self.assertIn("dg-em", ds)
 
-    _TWELVE_COMPONENTS = (
+    _CANONICAL_COMPONENTS = (
         "matrix",
         "flow",
         "enumeration",
@@ -380,6 +381,7 @@ class DocumentationConsistencyTest(unittest.TestCase):
         "evidence-map",
         "bars",
         "kpi",
+        "grid-diagram",
     )
 
     def test_patterns_canonical_assembly_blocks_declare_version_two(self) -> None:
@@ -392,7 +394,7 @@ class DocumentationConsistencyTest(unittest.TestCase):
                 comp = selection["component"]
                 self.assertEqual(selection["version"], 2, comp)
                 seen.add(comp)
-        self.assertEqual(seen, set(self._TWELVE_COMPONENTS))
+        self.assertEqual(seen, set(self._CANONICAL_COMPONENTS))
 
     def test_patterns_canonical_section_headers_mark_at2(self) -> None:
         text = Path("../references/patterns.md").read_text(encoding="utf-8")
@@ -409,6 +411,7 @@ class DocumentationConsistencyTest(unittest.TestCase):
             "### evidence-map（論拠地図）@2",
             "### bars（単軸定量比較）@2",
             "### kpi（主要指標・リング型）@2",
+            "### grid-diagram（格子上の配置）@2",
         ):
             self.assertIn(header, text, header)
 

@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import html
 import re
-from dataclasses import dataclass
+from html.parser import HTMLParser
+from dataclasses import dataclass, replace
 
 from .checker import extract_flow_dom, validate_content_markup, RENDERER_SVG_ALLOWLIST
 from .diagnostics import DUPLICATE_SECTION_ID, RENDERER_FAILURE, ContractError, Diagnostic
@@ -340,11 +341,15 @@ def process_narrative_section(
     section: NarrativeSection,
     *,
     include_anchor_id: bool = False,
+    marker: int | None = None,
 ) -> WrappedNarrative:
     diagnostics = validate_content_markup(section.markup, section_kind="narrative")
     if diagnostics:
         raise ContractError(diagnostics)
-    body = insert_link_domain_markers(section.markup)
+    body = glue_certainty_chips(insert_link_domain_markers(section.markup))
+    if marker is not None:
+        from .document_sections import mark_first_heading
+        body = mark_first_heading(body, marker)
     id_attr = f' id="{_attr(section.id)}"' if include_anchor_id else ""
     wrapper = (
         f'<section data-ve-section-kind="narrative"'
@@ -352,6 +357,74 @@ def process_narrative_section(
         f'{body}\n</section>'
     )
     return WrappedNarrative(instance_id=section.id, markup=wrapper)
+
+
+_CHIP_AFTER_TEXT = re.compile(
+    r'(&[#A-Za-z0-9]+;|[^\s<>;])(\s*)(<span class="certainty(?: [a-z-]+)*">[^<]*</span>)')
+
+
+def glue_certainty_chips(markup: str) -> str:
+    """Wrap a certainty chip with the character before it so the chip never starts a line alone.
+
+    Runs on validated narrative markup; the wrapper adds no text, so counts are unchanged.
+    """
+    return _CHIP_AFTER_TEXT.sub(r'<span class="certainty-tail">\1\2\3</span>', markup)
+
+
+def option_figure_ids(asks) -> frozenset[str]:
+    """DOM ids the option pictures generate (svg and text twin), per ask and option number."""
+    return frozenset(
+        f"{ask.id}-opt-{index}-{suffix}"
+        for ask in asks for index, option in enumerate(ask.options, start=1)
+        if option.figure is not None for suffix in ("svg", "relations"))
+
+
+class _IdCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.ids: list[str] = []
+
+    def handle_starttag(self, tag, attrs) -> None:
+        for name, value in attrs:
+            if name == "id" and value is not None:
+                self.ids.append(value)
+
+
+def rendered_dom_ids(markup: str) -> list[str]:
+    """Every id attribute value in rendered markup, duplicates kept."""
+    collector = _IdCollector()
+    collector.feed(markup)
+    collector.close()
+    return collector.ids
+
+
+def option_figure_id_clashes(asks, rendered_markups, semantic_ids) -> list[str]:
+    """Option-picture ids that some other generated DOM id or IR semantic id already uses.
+
+    The pictures' own ids appear once in their ask's markup, so any second
+    occurrence anywhere in the rendered sections (canonical figures, overview
+    list, panels) or any equal semantic id is a clash.
+    """
+    picture_ids = option_figure_ids(asks)
+    counts: dict[str, int] = {}
+    for markup in rendered_markups:
+        for value in rendered_dom_ids(markup):
+            counts[value] = counts.get(value, 0) + 1
+    taken = set(semantic_ids)
+    return sorted(i for i in picture_ids if counts.get(i, 0) > 1 or i in taken)
+
+
+def add_option_figure_assets(composition: CompositionResult, asks, registry: Registry) -> CompositionResult:
+    """Option pictures reuse the grid-diagram stylesheet, even with no canonical grid-diagram."""
+    if not any(option.figure is not None for ask in asks for option in ask.options):
+        return composition
+    component = registry.find("grid-diagram", 2)
+    asset = component.asset_by_id("grid-diagram.css") if component is not None else None
+    if asset is None:
+        raise ContractError([Diagnostic(RENDERER_FAILURE, "選択肢の図には grid-diagram の資産が必要です")])
+    if any(ref.asset.id == asset.id for ref in composition.style_assets):
+        return composition
+    return replace(composition, style_assets=composition.style_assets + (AssetRef("grid-diagram", 2, asset),))
 
 
 def compose_sections(items) -> CompositionResult:

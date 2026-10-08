@@ -49,3 +49,24 @@ def messages(raw: dict) -> list[str]:
     except ContractError as exc:
         return [d.message for d in exc.diagnostics]
     return []
+
+
+DECISION_EVIDENCE = "scripts/build_explainer.py:1"
+
+
+def decision_ask(sid: str = "sec-ask-decision", *, question: str = "限定対象で開始しますか？",
+                 default: str = "limited", **extra) -> dict:
+    """A valid question-card decision ask; tests mutate the returned dict."""
+    section = {
+        "kind": "ask", "id": sid, "askType": "decision", "question": question,
+        "evidence": DECISION_EVIDENCE,
+        "options": [
+            {"id": "limited", "label": "限定対象で公開する", "benefit": "影響範囲を絞れる",
+             "tradeoff": "運用が追加で必要"},
+            {"id": "all", "label": "一斉公開する", "benefit": "切替が一度で済む",
+             "tradeoff": "影響範囲が最初から広い"},
+        ],
+        "defaultId": default,
+    }
+    section.update(extra)
+    return section

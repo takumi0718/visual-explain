@@ -312,6 +312,55 @@ class EvidenceMapPayload:
     evidence: tuple[EvidenceItem, ...]
 
 
+@dataclass(frozen=True)
+class GridNode:
+    """A labelled box placed on 1-based grid cells (col, row), spanning cells."""
+    id: str
+    label: str
+    col: int
+    row: int
+    span_cols: int = 1
+    span_rows: int = 1
+    tone: str = "base"  # base | primary | warning
+
+
+@dataclass(frozen=True)
+class GridRegion:
+    """A labelled enclosure covering the inclusive cell range from..to."""
+    id: str
+    label: str
+    from_col: int
+    from_row: int
+    to_col: int
+    to_row: int
+
+
+@dataclass(frozen=True)
+class GridEdge:
+    id: str
+    source: str
+    target: str
+    label: str = ""
+
+
+@dataclass(frozen=True)
+class GridMarker:
+    """Overview number ``n`` drawn on node ``target``; ``ask`` optionally names the ask section."""
+    n: int
+    target: str
+    ask: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class GridDiagramPayload:
+    cols: int
+    rows: int
+    nodes: tuple[GridNode, ...]
+    regions: tuple[GridRegion, ...] = ()
+    edges: tuple[GridEdge, ...] = ()
+    markers: tuple[GridMarker, ...] = ()
+
+
 # ---------------------------------------------------------------------------
 # Stage-deck declarations
 # ---------------------------------------------------------------------------
@@ -363,6 +412,7 @@ class CanonicalIR:
     bars: Optional[BarsPayload] = None
     kpi: Optional[KpiPayload] = None
     evidence_map: Optional[EvidenceMapPayload] = None
+    grid_diagram: Optional[GridDiagramPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
@@ -396,6 +446,8 @@ class CanonicalIR:
             return "kpi"
         if self.evidence_map is not None:
             return "evidence-map"
+        if self.grid_diagram is not None:
+            return "grid-diagram"
         raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
@@ -436,6 +488,10 @@ class CanonicalIR:
         if self.evidence_map is not None:
             ids.append(self.evidence_map.conclusion.id)
             ids.extend(item.id for item in self.evidence_map.evidence)
+        if self.grid_diagram is not None:
+            ids.extend(node.id for node in self.grid_diagram.nodes)
+            ids.extend(region.id for region in self.grid_diagram.regions)
+            ids.extend(edge.id for edge in self.grid_diagram.edges)
         return tuple(ids)
 
 
@@ -501,6 +557,9 @@ class AskOption:
     id: str
     label: str
     tradeoff: str
+    benefit: str = ""
+    withdrawn: bool = False
+    figure: Optional[GridDiagramPayload] = None  # option picture: grid-diagram, 3x3 or smaller
 
 
 @dataclass(frozen=True)
@@ -520,7 +579,7 @@ class AskClaim:
 class AskSection:
     """Discriminated union over ask_type ∈ {decision, request, hypothesis}.
 
-    decision: question + options + (default_id XOR no_default_reason)
+    decision: question + options + default_id (recommended) + evidence
     request: steps
     hypothesis: claim + verify
     Unused arms are None / empty.
@@ -530,10 +589,10 @@ class AskSection:
     question: Optional[str] = None
     options: tuple[AskOption, ...] = ()
     default_id: Optional[str] = None
-    no_default_reason: Optional[str] = None
     steps: tuple[AskStep, ...] = ()
     claim: Optional[AskClaim] = None
     verify: Optional[str] = None
+    evidence: str = ""
 
 
 @dataclass(frozen=True)

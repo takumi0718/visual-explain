@@ -258,8 +258,8 @@ def test_width_contract_is_tied_to_unique_effective_path_layout_declarations(mut
             "width: 30rem",
         ),
         SKELETON.replace(
-            "padding: var(--space-4) 0 var(--space-6)",
-            "padding: var(--space-4) 5rem var(--space-6)",
+            "padding: var(--space-2) 0 var(--space-6)",
+            "padding: var(--space-2) 5rem var(--space-6)",
         ),
         SKELETON.replace(
             "section { min-width: 0;",
@@ -642,3 +642,9 @@ def test_bad_css_is_not_scanned_for_non_visual_stage_profile() -> None:
     style = '<style data-ve-asset="visual-stage">.ve-seq-spot { width: 1px; }</style>'
     messages = check_visual_stage_document_css(strict, style, SKELETON)
     assert not any("visual-stage CSS" in item.message for item in messages)
+
+
+def test_frozen_v3_skeleton_still_satisfies_the_width_contract() -> None:
+    v3 = (ROOT / "assets" / "skeleton-v3.html").read_text("utf-8")
+    assert not [item.message for item in check_visual_stage_css(VISUAL_STAGE_CSS, v3)
+                if "skeleton" in item.message]

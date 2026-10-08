@@ -15,7 +15,7 @@ import json
 import os
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 
@@ -23,13 +23,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ve_components.assembly import (  # noqa: E402
     CompositionResult,
+    add_option_figure_assets,
+    option_figure_ids,
+    option_figure_id_clashes,
     compose_sections,
     process_canonical_section,
     process_compatibility_section,
     process_narrative_section,
 )
 from ve_components.checker import check_final_document  # noqa: E402
-from ve_components.diagnostics import ContractError, Diagnostic, FINAL_CHECK_FAILURE  # noqa: E402
+from ve_components.diagnostics import ContractError, Diagnostic, DUPLICATE_SECTION_ID, FINAL_CHECK_FAILURE, FIXED_REGION_MISMATCH  # noqa: E402
+from ve_components.skeletons import LATEST_SKELETON_VERSION, declared_skeleton_version  # noqa: E402
 from ve_components.document_sections import (  # noqa: E402
     build_overview_nav,
     render_ask,
@@ -39,6 +43,7 @@ from ve_components.document_sections import (  # noqa: E402
 )
 from ve_components.flatten import flatten_document  # noqa: E402
 from ve_components.model import (  # noqa: E402
+    AssemblyRequest,
     AskSection,
     CanonicalSection,
     ClosingSection,
@@ -47,6 +52,7 @@ from ve_components.model import (  # noqa: E402
 )
 from ve_components.metrics import format_metrics, text_metrics  # noqa: E402
 from ve_components.registry import Registry, load_registry  # noqa: E402
+from ve_components.review_blocks import stamp_review_sections  # noqa: E402
 from ve_components.renderers import TRUSTED_RENDERERS  # noqa: E402
 from ve_components.validation import validate_assembly  # noqa: E402
 
@@ -77,39 +83,66 @@ def _section_instance_id(section) -> str:
     return section.id
 
 
-def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: str,
-                   components_dir: Path, *, document_path: str) -> CompositionResult | str:
-    """Validate, compose, flatten, and finally check. Raises on any failure."""
-    request = validate_assembly(raw_assembly)
+def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
+                     document_path: str) -> CompositionResult:
+    """Render every validated section in reading order and number review blocks.
+
+    Validation guarantees sections[0] is the first-screen and, when it declares
+    an overview, sections[1] is the overview figure; the marker list goes right
+    after that figure and the collection panel goes last.
+    """
     occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
+    asks = tuple(s for s in request.sections if isinstance(s, AskSection))
+    clashes = sorted(option_figure_ids(asks) & occupied_ids)
+    if clashes:
+        raise ContractError([Diagnostic(
+            DUPLICATE_SECTION_ID, f"選択肢の図の id '{clashes[0]}' が他のセクション id と重複しています")])
     first = request.sections[0]
     nav = build_overview_nav(first, occupied_ids=occupied_ids)
-    marked = {m.target for m in first.overview.markers} if first.overview is not None else set()
+    marked = {m.target: m.n for m in first.overview.markers} if first.overview is not None else {}
     items = []
     for section in request.sections:
         if isinstance(section, CanonicalSection):
             items.append(process_canonical_section(section, registry, renderers))
         elif isinstance(section, NarrativeSection):
             items.append(process_narrative_section(
-                section, include_anchor_id=section.id in marked))
+                section, include_anchor_id=section.id in marked, marker=marked.get(section.id)))
         elif isinstance(section, FirstScreenSection):
             items.append(render_first_screen(section, request.document))
         elif isinstance(section, ClosingSection):
-            items.append(render_closing(section))
+            items.append(render_closing(section, marker=marked.get(section.id)))
         elif isinstance(section, AskSection):
-            items.append(render_ask(section))
+            items.append(render_ask(section, marker=marked.get(section.id)))
         else:
             items.append(process_compatibility_section(section))
     panel = render_decision_panel(
-        tuple(s for s in request.sections if isinstance(s, AskSection)),
+        asks,
         request.document, request.schema_version, document_path,
         occupied_ids=occupied_ids | ({nav.instance_id} if nav is not None else frozenset()))
-    if panel is not None:
-        items.append(panel)
+    items.append(panel)
     if nav is not None:
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)
-    composition = compose_sections(items)
+    semantic_ids = [i for s in request.sections if isinstance(s, CanonicalSection) for i in s.ir.semantic_ids()]
+    dom_clashes = option_figure_id_clashes(asks, [item.markup for item in items], semantic_ids)
+    if dom_clashes:
+        raise ContractError([Diagnostic(
+            DUPLICATE_SECTION_ID, f"選択肢の図の id '{dom_clashes[0]}' が資料内の他の id と重複しています")])
+    composition = add_option_figure_assets(compose_sections(items), asks, registry)
+    return replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
+
+
+def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: str,
+                   components_dir: Path, *, document_path: str) -> CompositionResult | str:
+    """Validate, compose, flatten, and finally check. Raises on any failure."""
+    declared = declared_skeleton_version(skeleton_text)
+    if declared != LATEST_SKELETON_VERSION:
+        raise ContractError([Diagnostic(
+            FIXED_REGION_MISMATCH,
+            f"ビルドは最新の skeleton 版（{LATEST_SKELETON_VERSION}）だけを使えます: {declared}",
+        )])
+    request = validate_assembly(raw_assembly)
+    composition = compose_document(request, registry, renderers, document_path=document_path)
     document = flatten_document(composition, skeleton_text, components_dir, request.document.title)
     diagnostics = check_final_document(document, skeleton_text, registry, expected=composition,
                                        components_dir=components_dir)

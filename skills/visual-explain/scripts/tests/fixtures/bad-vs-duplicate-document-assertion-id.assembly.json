@@ -167,7 +167,7 @@
             "typed-sequence"
           ]
         },
-        "caption": "起案から公開までの承認経路",
+        "caption": "公開後の差し戻し経路",
         "certainty": [
           {
             "id": "flow-cert",

@@ -20,6 +20,8 @@ from urllib.parse import urlsplit
 
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
 from .document_sections import compute_ask_digest_from_pairs
+from .review_blocks import check_review_blocks
+from .section_markers import check_section_markers
 from .validation import (
     _CLOSING_REQUIRED,
     _DOCUMENT_PROFILES,
@@ -1796,6 +1798,7 @@ def check_visual_stage_css(css: str, skeleton_markup: str) -> list[Diagnostic]:
         ("main", "width", expected_main_width),
         ("main", "width", "min(100% - var(--space-2), var(--w-narrative))"),
         ("main", "padding", "var(--space-4) 0 var(--space-6)"),
+        ("main", "padding", "var(--space-2) 0 var(--space-6)"),
         ("main", "padding-top", "var(--space-2)"),
         ("main", "margin", "0 auto"),
         ("body", "margin", "0"),
@@ -2170,8 +2173,12 @@ def check_document_structure(
     *,
     title: str | None = None,
     expected=None,
+    skeleton_version: int = 1,
 ) -> list[Diagnostic]:
     """Inspect flattened content markup for group-3 structure invariants.
+
+    ``skeleton_version`` is the skeleton version the document declares (default 1,
+    the legacy rules); review block numbering is checked only from version 3 on.
 
     ``title`` is the document ``<title>`` text (from the TITLE slot; may still
     contain character references). When omitted, the title↔h1 equality check
@@ -2210,6 +2217,9 @@ def check_document_structure(
             "content",
         ))
         return diagnostics
+    if skeleton_version >= 3:
+        diagnostics.extend(check_review_blocks(content_markup))
+    diagnostics.extend(check_section_markers(content_markup, skeleton_version))
     first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
     if not first_nodes:
         diagnostics.append(Diagnostic(
@@ -2282,7 +2292,7 @@ def check_document_structure(
     diagnostics.extend(_check_external_link_markers(content_markup))
     if profile == "strict":
         diagnostics.extend(_check_strict_excludes_extended(structure))
-    diagnostics.extend(_check_decision_panel(structure))
+    diagnostics.extend(_check_decision_panel(structure, skeleton_version))
     if profile == _VISUAL_STAGE_PROFILE:
         diagnostics.extend(_check_visual_stage_completeness(structure, expected))
         diagnostics.extend(_check_visual_stage_sequences(content_markup, expected))
@@ -2463,13 +2473,16 @@ def _check_external_link_markers(content: str) -> list[Diagnostic]:
     return parser.diagnostics
 
 
-def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
+def _check_decision_panel(structure: _DocStructure, skeleton_version: int = 1) -> list[Diagnostic]:
     """Group-3: decision-recovery panel presence, position, and digest integrity.
 
     Only typed ask wrappers (``data-ve-section-kind="ask"`` with
     ``data-ve-ask-type="decision"``) count toward the decision-ask tally; the
     panel's own summary ``<li>`` elements use a distinct attribute name and
     never leak into ``option_ids``.
+
+    From skeleton v3 on there is always exactly one panel; v1/v2 require the
+    panel to exist exactly when a decision ask does.
     """
     ask_nodes = [
         s for s in structure.sections
@@ -2477,21 +2490,23 @@ def _check_decision_panel(structure: _DocStructure) -> list[Diagnostic]:
     ]
     panel_nodes = [s for s in structure.sections if s.kind == "decision-panel"]
 
-    if not ask_nodes:
-        if panel_nodes:
+    if skeleton_version < 3:
+        if not ask_nodes:
+            if panel_nodes:
+                return [Diagnostic(
+                    DOCUMENT_STRUCTURE_VIOLATION,
+                    "decision ask がないのに回収パネルがあります",
+                    "content",
+                )]
+            return []
+        if not panel_nodes:
             return [Diagnostic(
                 DOCUMENT_STRUCTURE_VIOLATION,
-                "decision ask がないのに回収パネルがあります",
+                "decision ask があるのに回収パネルがありません",
                 "content",
             )]
-        return []
-
-    if not panel_nodes:
-        return [Diagnostic(
-            DOCUMENT_STRUCTURE_VIOLATION,
-            "decision ask があるのに回収パネルがありません",
-            "content",
-        )]
+    elif not panel_nodes:
+        return [Diagnostic(DOCUMENT_STRUCTURE_VIOLATION, "回収パネルがありません", "content")]
     if len(panel_nodes) != 1:
         return [Diagnostic(
             DOCUMENT_STRUCTURE_VIOLATION,

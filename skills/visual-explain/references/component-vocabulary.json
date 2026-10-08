@@ -63,6 +63,11 @@
       "contractVersion": 2,
       "relationshipKind": "headline-metrics",
       "capabilities": ["metric-highlight"]
+    },
+    "grid-diagram": {
+      "contractVersion": 2,
+      "relationshipKind": "spatial-layout",
+      "capabilities": ["spatial-placement"]
     }
   },
   "compatibility": {

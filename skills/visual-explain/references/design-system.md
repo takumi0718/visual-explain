@@ -2,7 +2,7 @@
 
 固定骨格をそのまま使い、`TITLE:BEGIN` と `TITLE:END` の間には非空のプレーンテキスト文書名を持つ `<title>` 要素を1つだけ、本文は `CONTENT:BEGIN` と `CONTENT:END` の間だけに入れよ。未解決プレースホルダーやタイトル内のマークアップは使わず、ほかの領域は変更しない。追加の CSS、JavaScript、外部アセット、座標計算を加えるな。情報の正確さを装飾より優先せよ。
 
-このスキルのビジュアル基準 v3 は3層で構成する。**構造層**（何を主張し、どの順で読ませるか）、**記法層**（同じ意味を同じ見た目で表す統一記法・注釈・ask）、**表層**（タイプスケール・グリッド・幅・面）である。以下はこの3層を生成時にどう満たすかの命令である。各規範の出典は `sources.md` を参照せよ。
+このスキルのビジュアル基準 v4 は3層で構成する。**構造層**（何を主張し、どの順で読ませるか）、**記法層**（同じ意味を同じ見た目で表す統一記法・注釈・ask）、**表層**（タイプスケール・グリッド・幅・面）である。以下はこの3層を生成時にどう満たすかの命令である。各規範の出典は `sources.md` を参照せよ。
 
 ## トークン
 
@@ -11,7 +11,7 @@
 **階調（7）— 面・境界・文字の明暗差だけを担う。意味を持たせるな。**
 
 - `--bg`: ページ背景と最も引っ込んだ面
-- `--surface`: カード・図・折りたたみの面
+- `--surface`: 第一画面の全体図の面と、図の中の部品（ノード・カード）の面。問いカード・回収パネル・legacy の図・折りたたみには敷かない
 - `--border`: 通常の境界と控えめな区切り
 - `--border-strong`: 強い区切り（表頭の下罫、タイムラインの軸、節の境目）
 - `--text`: 本文
@@ -26,23 +26,27 @@
 - `--accent-warm`: `--warning` の別名。暖色が必要な既存記述との後方互換だけに使い、新規では `--warning` を使え
 - `--focus`: キーボードフォーカスの輪郭。ほかの用途に流用するな
 
-色は選択・推奨・注意の意味があるときだけ使え。**確度はモノクロバッジ＋線種で表し、意味色を使うな**（confirmed=実線・inferred=破線・unverified=点線）。`request` の ask-kind チップもモノクロにせよ。（ask ブロックでは）意味色が出るのは `decision` の選択チップ（選択＝`--accent`）と `decision` の既定案（推奨＝`--positive`）だけである。
+色は選択・推奨・注意の意味があるときだけ使え。**確度はモノクロバッジ＋線種で表し、意味色を使うな**（confirmed=実線・inferred=破線・unverified=点線）。`request` の ask-kind チップもモノクロにせよ。（ask ブロックでは）意味色が出るのは問いカードの選択中の丸印と枠（選択＝`--accent`）と「推奨」バッジ（推奨＝`--positive` を薄めた面に `--positive` の文字）だけである。取り下げた選択肢は `--text-faint` と取り消し線で示す。指摘層では、指摘済みブロックの左縦線と選択中のチップ（読者が指した場所＝`--accent`）、番号札（`--accent-strong`）だけが意味色を持つ。
 
-**タイプスケール（5）＋行間（2）**
+**タイプスケール（7）＋行間（3）**
 
-- `--fs-hero`（1.875rem）: h1・第一画面の主張・KPI 値
-- `--fs-h2`（1.25rem）: h2・節の主張（`.claim`）・図キャプション・第一画面の結論ボックス `.conclusion`（本文サイズ・`--text`・左に `--accent` の罫線。内部の `strong` は「結論:」の見出し語）
-- `--fs-body`（1rem）: 本文
-- `--fs-figure`（.875rem／14px・400）: 図解コンテンツ（ノード・セル・レーン・凡例・比較枠・タイムライン・KPIカード本体・用語カードなど図の中身）
-- `--fs-small`（.8125rem）: フッター・チップ・補足注記
+- 段は 1.25 倍刻み（skeleton v4）。
+- `--fs-hero`（1.953rem）: h1・KPI 値
+- `--fs-h2`（1.563rem）: h2
+- `--fs-h3`（1.25rem）: h3・節の主張（`.claim`）・図キャプション
+- `--fs-body`（1rem）: 本文・第一画面の結論ボックス `.conclusion`（`--text`・左に `--accent` の罫線。内部の `strong` は「結論:」の見出し語）
+- `--fs-figure`（.8rem）: 図解コンテンツ（ノード・セル・レーン・凡例・比較枠・タイムライン・KPIカード本体・用語カードなど図の中身）
+- `--fs-card`（.9375rem）: カード内の本文（問いカードの利点・代償・検証方法、比較枠、回収パネルの状態行）。本文と図の中身の中間の段で、行間は `--lh-card`（1.7）
+- `--fs-small`（.8rem）: フッター・チップ・補足注記
 - `--lh-body`（1.75）: 本文の行間
 - `--lh-heading`（1.45）: 見出しの行間
+- `--lh-card`（1.7）: カード内の本文の行間
 
 図解内の入れ子バッジ（確度バッジ・出典バッジ・強調ラベルなど）は `--fs-small` の絶対値を使い、em による複合縮小（`--fs-figure` の内側でさらに縮小されて可読性を割ること）を禁止する。
 
 **余白（7）— 8px グリッド。この7段だけで間隔を作れ。任意の px を書くな。**
 
-- `--space-1`（.5rem）〜 `--space-7`（5.5rem）を、近接するものほど小さく、節の切れ目ほど大きく使う。`section` の縦マージンは `--space-7`。
+- `--space-1`（.5rem）〜 `--space-7`（5.5rem）を、近接するものほど小さく、節の切れ目ほど大きく使う。`section` の縦マージンは `--space-5`（v4）。第一画面は上に余白を持たず、全体図と番号一覧は `--space-2` で詰める。型付きセクション（`data-ve-section-kind`）の直下の `section`（narrative の根の `section`、closing の `closing-section` など）は `--space-5` を保つ。それより深く入れ子になった `section` だけがマージンを失い、外側の間隔だけで並ぶ（レーン `[data-lane]` は対象外）。
 
 **幅（2階層）— 本文は単一幅。適格の密な図だけ対称に張り出す。**
 
@@ -104,11 +108,12 @@
 
 ### 表層 — 見た目の一貫性
 
-- **5段タイプスケール**: 見出し・本文・図解コンテンツ・補足は上記のタイプトークンだけで作れ。任意のフォントサイズを書くな。
+- **7段タイプスケール**: 見出し・本文・図解コンテンツ・補足は上記のタイプトークンだけで作れ。任意のフォントサイズを書くな。
 - **8px グリッド**: 間隔は `--space-*` だけで作れ。
 - **二層幅**: 本文と非適格の図は `--w-narrative` 一本のカラムに収め、左右のエッジを共有する。適格の図（幅の節の閉じた列挙）だけが広い画面で中心軸から対称に張り出す。密な表・flow は各自の横スクロールコンテナ内で溢れさせる。
 - **流体ルートスケール**: ルート文字サイズは 960→1760px で 16→20px に流体スケールする。タイプ・余白・幅のトークン値と1行の字数は不変。
-- **枠線は面で代替**: カード・図・折りたたみは枠線ではなく `--surface` の面で区切れ。罫線は表の横罫と節の境目に限定する。
+- **面は全体図だけ**: `--surface` の面は第一画面の全体図にだけ敷く。問いカード・回収パネル・legacy の図・折りたたみは `--bg` に 1px の `--border` で区切る。
+- **操作部品**: 主ボタン（回答と指摘のコピー）は `--accent` 塗りに `--bg` の文字。ほかのボタンは枠線だけ。テーマ切替は右上の 32px の丸ボタンで、現在のテーマを太陽 / 月のアイコンで示し、文言は `aria-label` と `title`（「テーマ: ライト（ダークに切替）」）に持つ。「自動」は無い。状態変化の遷移は 150ms で、動きを減らす設定では付かない。
 
 ## 密度上限
 
@@ -162,11 +167,13 @@
 
 Pi 上の Katsura Qwen では、必須事実の因果文言を原文どおりに保持するか引用する。順序が明示的な必須事実でない限り、矢印や連番を使わない。許される推論は対象の直近で **推論** と示し、因果・順序に確信がなければ `matrix`、`terms`、または文章へ縮退する。この規則は同モデル専用の追加制約であり、一般規則を緩めない。
 
-## 回収パネル（decision ask）の目視規範
+## 回収パネルと指摘層の目視規範
 
-decision ask（`askType: "decision"`）を含む資料は、末尾節のさらに後にビルドが「判断の回収」パネル（`.decision-panel`、`data-ve-section-kind="decision-panel"`）を自動生成する。IR にパネル自体を書く必要はない。
+全資料の末尾節のさらに後に、ビルドが回収パネル（`.decision-panel`、`data-ve-section-kind="decision-panel"`）を1つ自動生成する。IR にパネル自体を書く必要はない。
 
-- **選択状態**: 選択済みの選択肢だけが `--accent` のアウトラインと淡背景（`[data-ask-selected]`）を持つ。既定案（`defaultId`）は初期状態では選択済み扱いにせず、読者が明示的に選ぶまでパネルの各行は「未選択（既定案: …）」とテキストで示す。
+- **選択状態**: 選択中の選択肢だけが丸印の塗りと `--accent` の内枠・淡背景（`[data-ask-selected]`）を持つ。推奨（`defaultId`）は「推奨」バッジで示し、選択済み扱いにしない。未選択の問いはカードとパネルに「お任せ（推奨: …）」と出る。
+- **現在の回答の行**: 問いカードの選択肢の直下に、固定 JS が「いまの回答」の状態行（`.ask-card-status`）を出す。未選択なら「お任せ（推奨: …）」、選択済みなら「選択: 案名」を示し、選択済みのときだけ「選んだ案をもう一度押すとお任せに戻る」を添える。
+- **指摘層**: ＋ ボタンと「指摘」ボタンは枠線だけの小さなボタンで、本文の色を変えない。＋ は左に余白があればブロックの左外側、無い画面（52rem 以下）では段落・見出し・項目が右に確保した余白の中、図・表・コードでは右上の外側に出て、文字に重ならない。入力欄は指したブロックの直下に開き、指摘済みブロックは左の `--accent` 縦線と `#N` 札で示す。
 - **配置**: パネルは読み順の**最後**（末尾節「リスクと弱い前提」「不確かな点」等の後）にのみ現れる。第一画面・narrative・closing の途中に割り込まない。判断材料をすべて読み終えてからのみ回収動線を提示するためである。
 - **構成**: パネルは固定 JS が生成する3部品だけで構成する。各 ask の質問文と選択状態を示す行のリスト（`.panel-asks`）、任意の全体メモ欄（`textarea[data-ve-panel-global-memo]`）、結果をコピーするボタンと失敗時のフォールバック表示領域。追加の装飾・色・フォーム部品は足さない。
 - **コピー導線**: コピー結果のステータス表示とフォールバックのテキスト領域はパネル内にのみ現れ、パネル外や複数箇所に重複させない。
@@ -184,7 +191,7 @@ decision ask（`askType: "decision"`）を含む資料は、末尾節のさら�
 
 - 図は骨格の `flow`、`layers`、`compare`、`matrix`、`timeline`、`kpi`、`bars`、`terms` を優先して使え。座標や絶対配置を指定するな。
 - before/after と代替案は `compare-frame` を等しい大きさで並べよ。片方だけを視覚的に大きくするな。
-- 表は `matrix` の中のセマンティックな `table` として書け。小さい画面で横スクロールできることを前提に、列を増やしすぎるな。
+- 表は `matrix` の中のセマンティックな `table` として書け。42rem 以下では、列見出しを持つ matrix は行ごとのカード（行見出しが題、各セルの上に列見出し）に切り替わる。スマホ幅ではレーンの行ごとにノードを 1 行に並べる。密な matrix で `highlightId` が指すセルは、その行全体を `--accent` の淡い面と左の縦線で強調した行として示す（42rem 以下のカード表示では行のカード全体に同じ強調）。横型 chevron は 42rem より広い画面で 1 行に並び、全段の箱の高さが揃う。左右の余白はどの幅でも 16px。
 - 定量比較は `bar-track` と `bar-fill` を使い、棒の長さを百分率で宣言せよ。棒だけで値を伝えず、数値を併記せよ。
 - 詳細は `deep-dive` にだけ格納し、判断の核心、制約、反証は初期表示に残せ。
 - 1セクション1問いを守り、主張を1行、根拠を2〜3行の目安に抑えよ。概ね1画面に収まるかを目視確認せよ。
@@ -194,23 +201,24 @@ decision ask（`askType: "decision"`）を含む資料は、末尾節のさら�
 
 描画はビルド時レンダラが保証する。目視では次を確認する。
 
-- **概要マーカー**: first-screen が `overview` を宣言したとき、first-screen 直後の図に続けて、番号付きの `.overview-markers` リスト（`nav[data-ve-section-kind="overview-nav"]`）が現れる。各項目は IR の `n` / `label` / `target` に対応し、アンカーは対象セクション wrapper の `id` を指す。目次は出さない。h2 節または ask が 3 つ以上ある資料では overview が必須である。
+- **概要マーカー**: first-screen が `overview` を宣言したとき、first-screen 直後の図に続けて、番号付きの `.overview-markers` リスト（`nav[data-ve-section-kind="overview-nav"]`）が現れる。各項目は IR の `n` / `label` / `target` に対応し、アンカーは対象セクション wrapper の `id` を指す。目次は出さない。ビルドは各行き先の見出しに同じ番号の丸印を CSS で再掲する（`data-ve-marker`。narrative は最初の h2、無ければ最初の h3。closing は最初の h2。ask は先頭の一行で、request は種別ラベル `.ask-kind`、hypothesis は主張 `.ask-claim`、decision は問い `.ask-question`）。番号は装飾でスクリーンリーダーには読ませず、見出しの文字・コピー結果・字数は変えない。h2 節または ask が 3 つ以上ある資料では overview が必須である。
 - **ドメインマーカー**: narrative / 型付きセクション内の外部 `https:` リンクは、リンク文言の末尾に `‹hostname›` 形式の `.link-domain` が見えること。マーカーはモデル入力ではなくレンダラ生成である。`http:`・相対 URL・`javascript:` 等は資料に残ってはならない。
 
-## コンポーネント資産の所有権（canonical 12 形式）
+## コンポーネント資産の所有権（canonical 13 形式）
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は骨格とコンポーネントで所有権を分ける。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi`、`grid-diagram` は骨格とコンポーネントで所有権を分ける。
 
 - **骨格**がグローバルトークン・固定領域・テーマ・固定 JavaScript を所有する。これらのバイトは1つも変更しない。
-- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]`、slope は `[data-ve-component="slope"]`、evidence-map は `[data-ve-component="evidence-map"]`、bars は `[data-ve-component="bars"]`、kpi は `[data-ve-component="kpi"]` を根に持つ規則だけを書き、骨格トークン（`--dg-*` を含む）を再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
+- **コンポーネント**は名前空間化した最小 CSS だけを所有する。matrix は `[data-ve-component="matrix"]`、flow は `[data-ve-component="flow"]`、enumeration は `[data-ve-component="enumeration"]`、chevron は `[data-ve-component="chevron"]`、pyramid は `[data-ve-component="pyramid"]`、stairs は `[data-ve-component="stairs"]`、logic-tree は `[data-ve-component="logic-tree"]`、waterfall は `[data-ve-component="waterfall"]`、slope は `[data-ve-component="slope"]`、evidence-map は `[data-ve-component="evidence-map"]`、bars は `[data-ve-component="bars"]`、kpi は `[data-ve-component="kpi"]`、grid-diagram は `[data-ve-component="grid-diagram"]` を根に持つ規則だけを書き、骨格トークン（`--dg-*` を含む）を再利用する。新しい色・書体・余白系・アニメーション・装飾を足さない。
 - **二層幅のための閉じた例外**: 骨格は二層幅レイアウトに限り、コンポーネント名前空間セレクタ（`figure[data-ve-component="matrix"] .ve-matrix-scroll`）を対象にでき、その `max-width` を上書きできる。それ以外の名前空間規則は引き続きコンポーネントが所有する。
-- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
+- 本番レジストリの**スクリプト資産は空**である。matrix/flow/enumeration/chevron/pyramid/stairs/logic-tree/waterfall/slope/evidence-map/bars/kpi/grid-diagram は script を出さない。空スクリプトスロットを削っても、意味 ID・可視の関係ラベルと方向・caption・確度・出典がすべて残り検査を通過する（static-first）。
 - CSS は意味の可読性・既存トークン・名前空間・静的アクセシビリティ・レスポンシブ順序だけに限る。狭い画面では積み重ねてよいが、意味的な読み順を反転しない。美的レビューは本スライスの範囲外。
 - **図コンテナ内の中央揃え例外**: enumeration の縦リスト（`presentation: "list"`）、chevron の縦型（`orientation: "vertical"`）、pyramid の tier 列だけ、figure 内で `width: fit-content; margin-inline: auto` による中央揃えを許可する。骨格全体の中央揃え規則は変えない。二層幅の対称張り出しと、その張り出しコンテナ内で matrix の table を中心軸に中央揃えすることは、中央軸に対する対称配置であり、この規則とは独立である。
 - **コンセプトと説明を分離する**: enumeration / chevron は `label` または番号＋`title` だけを図形内に置く。description は縦型で右、横型で下の兄弟領域へ置き、全省略時は空領域を作らない。意味 ID はコンセプト＋説明の外側項目に置き、takeaway の可視枠はコンセプト図形だけに付ける。
-- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は期首・期末込み最大7本（`steps` 最大5件）、slope は最大5項目、evidence-map は根拠4件、bars は最大10行、kpi は最大5個（1行3個まで）。超過は分割か縮退。
+- **密度上限**: enumeration は最大6項目（`presentation: "columns"` は最大4項目）、chevron は最大6段、pyramid は最大4層、stairs は最大5段、logic-tree は枝4・leaf 各2、waterfall は期首・期末込み最大7本（`steps` 最大5件）、slope は最大5項目、evidence-map は根拠4件、bars は最大10行、kpi は最大5個（1行3個まで）、grid-diagram は格子 6×6・ノード 12・線 16・囲み 4・番号 5（選択肢の小図は 3×3）。超過は分割か縮退。
 - **waterfall の幾何は renderer-SVG・valueText が主**: `waterfall@2` はレンダラが単一 SVG（`viewBox` 完全一致 `0 0 640 360`）を生成する。Y 座標は `displayPrecision` と `Decimal` 規約で算出し整数座標へ丸める。読者への数値伝達は必ず `valueText` で行い、負の delta は `▲` 表記を使う。旧 CSS 版の整数百分率クラス（`ve-wf-start-*` / `ve-wf-len-*`）は廃止した。
-- **renderer-svg ゲート（slope / waterfall）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@2", "waterfall@2"}` の canonical セクション内だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（slope: `viewBox` 完全一致 `0 0 600 220`、waterfall: `0 0 640 360`）。互換節経由の SVG 持込も拒否する。
+- **renderer-svg ゲート（slope / waterfall / grid-diagram）**: SVG は `RENDERER_SVG_ALLOWLIST = {"slope@2", "waterfall@2", "grid-diagram@2"}` の canonical セクション内と、decision ask の選択肢の小図（`figure[data-ve-thumb]`、grid-diagram 3×3 以内）の中だけ許可。`RenderManifest.svg_root_ids` でルート id を宣言し、`assembly.render_canonical` と `checker.validate_renderer_svg` の二重ゲートで照合する。要素/属性は閉じた許可リストのみ（`svg` / `g` / `rect` / `line` / `circle` / `text` / `title` / `desc`。`path` は無い）。viewBox は slope が `0 0 600 220`、waterfall が `0 0 640 360` の完全一致、grid-diagram は figure の `data-ve-grid="列x行"` から `grid_layout.viewbox`（1 マス 150×96）で計算した値の完全一致。互換節経由の SVG 持込も拒否する。
+- **grid-diagram の幾何と色**: 幾何は `grid_layout.py` だけが決め、validation・レンダラ・checker が同じ関数を使う（ノードはマスから左右 16・上下 22 内側、線は直交 1 回折れ、矢じりは短い `line` 2 本、番号はノード右上の `circle`＋`text`）。SVG 内の文字は 13px / 11px（viewBox 単位。rem にすると収まり検査と一致しない）。色は `base`＝`--dg-primary-light` に `--text`、`primary`＝`--dg-primary` に `--dg-on-primary`、`warning`＝`--bg` に `--dg-negative` の枠、線と囲みの破線は `--dg-line`、番号は `--accent` の丸に `--bg` の数字。狭い画面では最小幅（列数×7.5rem）を保ち、図の枠の中で横にスクロールする。ノード・線・番号を読み上げ用の一覧（`.visually-hidden`）に重ねて出し、本文字数には数えない。
 - **信頼アセットは単一の fail-closed ゲート**として扱う。レジストリの ID/バージョン/ダイジェスト、レンダラ許可リスト、マニフェスト宣言、名前空間、スロット種別、CSP、外部参照なしをまとめて満たさない資産は拒否する。CSS を変更したら `shasum -a 256` で再計算し、`registry.json` のダイジェストをワイルドカードや初回信頼ではなく厳密な値で更新する。
 
 ## 新コンポーネントの拡張ゲート（10 手順）

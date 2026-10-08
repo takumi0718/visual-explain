@@ -103,9 +103,10 @@ class AskSchemaDiscriminatedUnionTest(unittest.TestCase):
         both_defaults = {
             "kind": "ask", "id": "x", "askType": "decision",
             "question": "進めますか？",
+            "evidence": "scripts/build_explainer.py:1",
             "options": [
-                {"id": "a", "label": "A", "tradeoff": "t1"},
-                {"id": "b", "label": "B", "tradeoff": "t2"},
+                {"id": "a", "label": "A", "tradeoff": "t1", "benefit": "選ぶ理由がある"},
+                {"id": "b", "label": "B", "tradeoff": "t2", "benefit": "選ぶ理由がある"},
             ],
             "defaultId": "a",
             "noDefaultReason": "拮抗しているため",
@@ -114,9 +115,10 @@ class AskSchemaDiscriminatedUnionTest(unittest.TestCase):
         with_default = {
             "kind": "ask", "id": "x", "askType": "decision",
             "question": "進めますか？",
+            "evidence": "scripts/build_explainer.py:1",
             "options": [
-                {"id": "a", "label": "A", "tradeoff": "t1"},
-                {"id": "b", "label": "B", "tradeoff": "t2"},
+                {"id": "a", "label": "A", "tradeoff": "t1", "benefit": "選ぶ理由がある"},
+                {"id": "b", "label": "B", "tradeoff": "t2", "benefit": "選ぶ理由がある"},
             ],
             "defaultId": "a",
         }
@@ -124,13 +126,14 @@ class AskSchemaDiscriminatedUnionTest(unittest.TestCase):
         with_reason = {
             "kind": "ask", "id": "x", "askType": "decision",
             "question": "進めますか？",
+            "evidence": "scripts/build_explainer.py:1",
             "options": [
-                {"id": "a", "label": "A", "tradeoff": "t1"},
-                {"id": "b", "label": "B", "tradeoff": "t2"},
+                {"id": "a", "label": "A", "tradeoff": "t1", "benefit": "選ぶ理由がある"},
+                {"id": "b", "label": "B", "tradeoff": "t2", "benefit": "選ぶ理由がある"},
             ],
             "noDefaultReason": "拮抗しているため",
         }
-        self.assertTrue(schema_accepts_ask(with_reason))
+        self.assertFalse(schema_accepts_ask(with_reason))
 
     def test_request_requires_steps_rejects_decision_fields(self) -> None:
         bare = {"kind": "ask", "id": "x", "askType": "request"}
@@ -173,7 +176,7 @@ class AskSchemaSafeIdScopeTest(unittest.TestCase):
     quoted/Japanese/whitespace/digit-leading ids that worked before."""
 
     def test_decision_id_and_option_id_have_no_ascii_token_pattern(self) -> None:
-        for name in ("askDecisionWithDefault", "askDecisionNoDefault"):
+        for name in ("askDecisionWithDefault",):
             branch = ASSEMBLY_SCHEMA["$defs"][name]
             self.assertNotIn("pattern", branch["properties"]["id"], name)
         option = ASSEMBLY_SCHEMA["$defs"]["askOption"]
@@ -203,9 +206,10 @@ class AskSchemaArbitraryIdRegressionTest(unittest.TestCase):
                 {
                     "kind": "ask", "id": ask_id, "askType": "decision",
                     "question": "進めますか？",
+                    "evidence": "scripts/build_explainer.py:1",
                     "options": [
-                        {"id": option_ids[0], "label": "A", "tradeoff": "t1"},
-                        {"id": option_ids[1], "label": "B", "tradeoff": "t2"},
+                        {"id": option_ids[0], "label": "A", "tradeoff": "t1", "benefit": "選ぶ理由がある"},
+                        {"id": option_ids[1], "label": "B", "tradeoff": "t2", "benefit": "選ぶ理由がある"},
                     ],
                     "defaultId": option_ids[0],
                 },
@@ -248,9 +252,10 @@ class AskSchemaRegressionTest(unittest.TestCase):
             "id": "sec-ask-decision",
             "askType": "decision",
             "question": "限定対象で開始しますか？",
+            "evidence": "scripts/build_explainer.py:1",
             "options": [
-                {"id": "limited", "label": "限定対象で公開する", "tradeoff": "運用が追加で必要"},
-                {"id": "all", "label": "一斉公開する", "tradeoff": "影響範囲が最初から広い"},
+                {"id": "limited", "label": "限定対象で公開する", "tradeoff": "運用が追加で必要", "benefit": "選ぶ理由がある"},
+                {"id": "all", "label": "一斉公開する", "tradeoff": "影響範囲が最初から広い", "benefit": "選ぶ理由がある"},
             ],
             "defaultId": "limited",
         }

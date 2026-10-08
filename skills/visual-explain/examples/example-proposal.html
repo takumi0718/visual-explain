@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja" data-theme-storage-key="visual-explain-theme" data-ve-skeleton="2">
+<html lang="ja" data-theme-storage-key="visual-explain-theme" data-ve-skeleton="4">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,8 +29,8 @@
       --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
       --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
       --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
-      --fs-hero: 1.875rem; --fs-h2: 1.25rem; --fs-body: 1rem; --fs-small: .8125rem; --fs-figure: .875rem;
-      --lh-body: 1.75; --lh-heading: 1.45;
+      --fs-hero: 1.953rem; --fs-h2: 1.563rem; --fs-h3: 1.25rem; --fs-body: 1rem; --fs-card: .9375rem; --fs-small: .8rem; --fs-figure: .8rem;
+      --lh-body: 1.75; --lh-heading: 1.45; --lh-card: 1.7;
       --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
       --space-5: 3rem; --space-6: 4rem; --space-7: 5.5rem;
       --w-narrative: 45rem;
@@ -91,38 +91,60 @@
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
     }
 
+    @media (prefers-reduced-motion: no-preference) {
+      button, .ask-options [data-ask-option], .overview-markers .marker-n { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease; }
+    }
+
     * { box-sizing: border-box; }
     html { background: var(--bg); color: var(--text); font-size: clamp(1rem, 0.7rem + 0.5vw, 1.25rem); }
     body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
-    main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-4) 0 var(--space-6); }
-    section { min-width: 0; margin-block: var(--space-7); }
+    main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-2) 0 var(--space-6); }
+    section { min-width: 0; margin-block: var(--space-5); }
     h1, h2, h3, p { min-width: 0; }
     p, ul, ol, .claim, .evidence { max-width: var(--w-narrative); }
-    h1 { font-size: var(--fs-hero); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h1 { margin: 0; font-size: var(--fs-hero); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
     h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h3 { font-size: var(--fs-h3); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
     a { color: var(--accent-strong); }
     button, summary, a { outline-offset: 3px; }
     button:focus-visible, summary:focus-visible, a:focus-visible, .ask-options [data-ask-option]:focus-visible { outline: 3px solid var(--focus); }
-    button { font: inherit; color: inherit; background: var(--surface); border: 0; border-radius: .4rem; padding: var(--space-1) var(--space-2); cursor: pointer; }
-    button:hover:not(:disabled) { background: var(--border); }
+    button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1) var(--space-2); cursor: pointer; }
+    button:hover:not(:disabled) { background: var(--surface); border-color: var(--text-faint); }
+    .button-primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
+    .button-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
     button:disabled { color: var(--text-dim); cursor: not-allowed; }
 
-    .first-screen { display: grid; gap: var(--space-3); padding: var(--space-4) 0 var(--space-2); margin-block: 0; background: transparent; border-left: 0; }
+    .first-screen { display: grid; gap: var(--space-2); padding: 0; margin-block: 0; background: transparent; border-left: 0; }
+    [data-ve-section-kind="first-screen"] { margin-block: 0 var(--space-3); }
     .conclusion { margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); font-size: var(--fs-body); color: var(--text); }
-    [data-ve-section-kind="first-screen"] + [data-ve-section-kind="canonical"], [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
-    .overview-markers ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+    [data-ve-section-kind="first-screen"] + [data-ve-section-kind="canonical"] { margin-top: var(--space-3); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) { margin-bottom: var(--space-2); }
+    [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); --ve-gd-canvas-bg: var(--surface); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure .ve-matrix-scroll { margin-inline: 0; }
+    /* Dense tables have no cell fill for highlightId: show it as an emphasized row (tint + accent rule on the header). */
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll table:has(.ve-dg-highlight) th[scope="row"] { padding-left: var(--space-2); }
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > th[scope="row"] { box-shadow: inset 3px 0 0 var(--accent); }
+    [data-ve-section-kind] figure[data-ve-component] > figcaption[class] { font-size: var(--fs-h3); }
+    [data-ve-section-kind] .layers > [data-lane]:first-child { margin-block-start: 0; }
+    [data-ve-section-kind] .layers > [data-lane]:last-child { margin-block-end: 0; }
+    [data-ve-section-kind] section:not([data-ve-section-kind] > section, [data-lane]) { margin-block: 0; }
+    .overview-markers ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
     .overview-markers a { display: inline-flex; gap: var(--space-1); align-items: baseline; color: var(--text); text-decoration: none; }
     .overview-markers .marker-n { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+    /* The overview number echoed on the heading it links to (stamped by the build, drawn here so the text stays as written). */
+    [data-ve-section-kind] [data-ve-marker]::before { content: attr(data-ve-marker); content: attr(data-ve-marker) / ""; display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-right: var(--space-1); border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); line-height: 1; font-variant-numeric: tabular-nums; vertical-align: .2em; }
     .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
     .decision strong { color: var(--accent-strong); }
     .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
     .conditions { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); color: var(--text-dim); }
 
-    .claim { margin-bottom: var(--space-2); font-size: var(--fs-h2); font-weight: 700; }
-    .figure { position: relative; min-width: 0; margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border: 0; border-radius: .5rem; overflow: auto; }
+    .claim { margin-bottom: var(--space-2); font-size: var(--fs-h3); font-weight: 400; }
+    .figure { position: relative; min-width: 0; margin: var(--space-3) 0; padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; }
     .figure figcaption { margin-top: var(--space-2); color: var(--text-dim); font-size: var(--fs-body); }
     .evidence { margin-top: var(--space-2); padding-left: var(--space-2); border-left: .2rem solid var(--border); color: var(--text-dim); font-size: var(--fs-body); }
-    details.deep-dive { margin-top: var(--space-2); padding: var(--space-1) var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; }
+    details.deep-dive { margin-top: var(--space-2); padding: var(--space-1) var(--space-2); background: transparent; border: 1px solid var(--border); border-radius: var(--radius); }
     details.deep-dive summary { cursor: pointer; font-weight: 700; }
     pre { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); }
 
@@ -136,7 +158,7 @@
     .lane-label { color: var(--text-dim); font-weight: 700; font-size: var(--fs-figure); }
     .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); min-width: 0; font-size: var(--fs-figure); }
     .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-card); line-height: var(--lh-card); }
     .compare-frame h3 { margin-top: 0; }
     .matrix { max-width: 100%; overflow: auto; }
     .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
@@ -170,10 +192,11 @@
     .term dt { color: var(--text); font-weight: 800; }
     .term dd { margin: var(--space-1) 0 0; color: var(--text-dim); }
 
-    .certainty { display: inline-flex; align-items: center; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty { display: inline-block; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty-tail { white-space: nowrap; }
     .certainty.confirmed { border-style: solid; }
-    .certainty.inferred { border-style: dashed; }
-    .certainty.unverified { border-style: dotted; }
+    .certainty.inferred { border-style: dashed; background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    .certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-dim); }
     details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
     details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
     details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
@@ -184,44 +207,83 @@
     .step-panel.is-current { border-left: .25rem solid var(--accent); padding-left: var(--space-2); }
     .stepper-controls { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 
-    .closing-section { padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-top: 1px solid var(--border-strong); }
-    .closing-section h2 { margin-top: 0; }
+    .closing-section { padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .closing-section h2 { margin-top: 0; font-size: var(--fs-h2); }
     .closing-section h3 { margin-bottom: var(--space-1); }
     .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
     .connector-warning { margin: var(--space-2) 0 0; color: var(--warning); font-weight: 700; }
     .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
+    .theme-toggle { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; color: var(--text-dim); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle[aria-pressed="true"] .theme-icon-sun, .theme-toggle[aria-pressed="false"] .theme-icon-moon { display: none; }
 
-    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
     .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
     .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
-    .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: var(--bg); }
-    .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: var(--bg); }
-    /* request は警告ではないためモノクロ。意味色は decision のチップ（選択=青）と既定案（推奨=緑）のみ */
+    .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    /* Semantic colors are limited to selection (accent) and the recommended badge (positive); request stays monochrome. */
     .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
     .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
-    .ask-options [data-ask-option] { display: grid; grid-template-columns: minmax(8rem, .35fr) 1fr; gap: var(--space-2); padding: var(--space-1); border-radius: .3rem; }
-    .ask-options [data-ask-default] { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); }
-    .ask-options [data-ask-default] > :first-child::after { content: "既定案"; margin-left: var(--space-1); color: var(--positive); font-size: var(--fs-small); font-weight: 700; }
-    .ask-tradeoff, .ask-no-default-reason { color: var(--text-dim); }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: 1fr; gap: 0; padding: var(--space-1) var(--space-2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+    .ask-option-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-weight: 700; }
+    .ask-option-head::before { content: ""; flex: none; width: .9rem; height: .9rem; border: 2px solid var(--text-dim); border-radius: 50%; }
+    .ask-options [data-ask-option][data-ask-selected] .ask-option-head::before { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
+    .ask-badge { padding: 0 var(--space-1); border-radius: 999px; color: var(--positive); background: color-mix(in srgb, var(--positive) 12%, var(--surface)); font-size: var(--fs-small); }
+    .ask-benefit, .ask-tradeoff { color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
+    .ask-options [data-ask-withdrawn] { cursor: not-allowed; color: var(--text-faint); background: transparent; }
+    .ask-options [data-ask-withdrawn] .ask-option-label { text-decoration: line-through; }
+    .ask-options [data-ask-withdrawn] .ask-option-head::before { border-style: dashed; border-color: var(--text-faint); }
+    .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
+    .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-card); font-weight: 700; }
+    .ask-card-status::before { content: "いまの回答"; color: var(--text-dim); font-weight: 400; }
+    .ask:has([data-ask-selected]) .ask-card-status { color: var(--text); }
+    .ask:has([data-ask-selected]) .ask-card-status::after { content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-dim); font-weight: 400; }
     .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
     .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
-    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
 
     /* 図表記法 */
     .dg-em { color: var(--dg-emphasis); font-weight: 700; }
 
-    .ask-options [data-ask-option][data-ask-selected] { box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask-options [data-ask-option]:not([data-ask-withdrawn]):not([data-ask-selected]):hover { border-color: var(--text-faint); }
+    .ask-options [data-ask-option][data-ask-selected] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
     .ask-memo { display: grid; gap: var(--space-1); margin-top: var(--space-2); }
-    .ask-memo textarea, .decision-panel textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; max-width: 100%; }
-    .decision-panel { max-width: var(--w-narrative); padding: var(--space-3); background: var(--surface); border-radius: .5rem; }
+    .ask-memo label { display: grid; gap: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+    .ask-memo textarea, .decision-panel textarea { font: inherit; font-size: var(--fs-body); font-weight: 400; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; width: 100%; max-width: 100%; }
+    .decision-panel { max-width: var(--w-narrative); padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
     .decision-panel h2 { margin-top: 0; }
-    .panel-asks { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
-    .panel-status { color: var(--text-dim); }
+    .panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .panel-asks li { display: grid; gap: 0; }
+    .panel-question { font-weight: 700; }
+    .panel-status { color: var(--text-dim); font-size: var(--fs-card); }
+    .panel-review-count { margin: var(--space-1) 0 0; color: var(--text-dim); }
     .panel-memo { display: block; color: var(--text-dim); white-space: pre-wrap; }
     .panel-copy-status { margin: var(--space-1) 0 0; color: var(--text-dim); }
+    .decision-panel > .button-primary { margin-top: var(--space-2); }
     .panel-copy-fallback { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); white-space: pre-wrap; }
 
+    [data-ve-blk]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    [data-ve-blk][data-ve-annotated] { border-left: 3px solid var(--accent); padding-left: var(--space-1); }
+    .review-tag { margin-right: var(--space-1); color: var(--accent-strong); font-size: var(--fs-small); font-weight: 700; user-select: none; }
+    .review-add, .review-pick { position: absolute; z-index: 3; min-width: 1.75rem; padding: 0 var(--space-1); border: 1px solid var(--border); background: var(--bg); color: var(--text-dim); font-size: var(--fs-small); line-height: 1.75; }
+    .review-editor { display: grid; gap: var(--space-1); max-width: var(--w-narrative); margin: var(--space-1) 0 var(--space-2); padding: var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-figure); }
+    .review-head { margin: 0; color: var(--text-dim); }
+    .review-chips, .review-actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+    .review-editor :is(.review-chip, .review-actions button, .review-list button) { padding: 0 var(--space-2); font-size: var(--fs-small); line-height: 2; }
+    .review-chip { border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+    .review-editor .review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 700; }
+    .review-chip[aria-checked="true"]::before { content: "✓ "; content: "✓ " / ""; }
+    .review-editor .button-primary:disabled { background: var(--bg); border-color: var(--border); border-style: dashed; color: var(--text-dim); font-weight: 400; }
+    .review-note { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); }
+    .review-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+    .review-list:empty { display: none; }
+    .review-list li { display: flex; gap: var(--space-2); align-items: baseline; justify-content: space-between; padding: var(--space-1) 0; border-top: 1px solid var(--border); }
+    .review-list li > span { flex: 1; min-width: 0; color: var(--text); }
+    .review-list-chip { margin-right: var(--space-1); font-weight: 700; }
+    .review-list li > button { flex: none; }
     footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
 
     /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
@@ -231,60 +293,76 @@
       .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
     }
 
+    @media (max-width: 52rem) {
+      [data-ve-section-kind] :is(p, li, h2, h3, blockquote)[data-ve-blk] { padding-right: var(--space-4); }
+    }
+
+    @media (width > 42rem) {
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; }
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-items: stretch; min-width: 0; max-width: none; }
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box { align-content: center; }
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-description { padding-inline-end: var(--space-2); }
+    }
+
     @media (max-width: 42rem) {
-      main { width: min(100% - var(--space-2), var(--w-narrative)); padding-top: var(--space-2); }
-      .theme-control { width: min(100% - var(--space-2), var(--w-narrative)); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll { overflow-x: visible; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll :is(table, tbody, tr, th, td) { display: block; width: auto; min-width: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr { margin: 0 0 var(--space-2); padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { padding: 0 0 var(--space-1); border-bottom: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td { padding: var(--space-1) 0 0; border-bottom: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td[data-ve-col-label]::before { content: attr(data-ve-col-label); display: block; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll table:has(.ve-dg-highlight) th[scope="row"] { padding-left: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > th[scope="row"] { box-shadow: none; }
+      .theme-control { width: min(100% - var(--space-4), var(--w-narrative)); }
       .theme-control button { max-width: 100%; white-space: normal; }
       .flow { flex-direction: column; gap: var(--space-3); }
       .flow .flow-node { flex: 0 1 auto; }
       .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
       .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
+      [data-ve-section-kind] .lane-nodes { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
       .compare { grid-template-columns: 1fr; }
       .ask-options [data-ask-option] { grid-template-columns: 1fr; gap: var(--space-1); }
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="matrix" data-ve-contract-version="2" data-ve-asset="matrix.css" data-ve-digest="fe9fd5f86063dcb93790a9549a7630a162d674082446e2dd5f86c540bd6b692c">figure[data-ve-component="matrix"] { display: block; min-width: 0; margin: var(--space-3) 0; }
-figure[data-ve-component="matrix"] .ve-matrix-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
-figure[data-ve-component="matrix"] .ve-matrix-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-figure[data-ve-component="matrix"] .ve-matrix-scroll { overflow-x: auto; }
-figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; min-width: 32rem; border-collapse: collapse; }
-figure[data-ve-component="matrix"] .ve-mx-grid { display: grid; gap: var(--space-1); max-width: 34rem; }
-figure[data-ve-component="matrix"] .ve-mx-cols-2 { grid-template-columns: 8rem repeat(2, minmax(0, 1fr)); }
-figure[data-ve-component="matrix"] .ve-mx-cols-3 { grid-template-columns: 8rem repeat(3, minmax(0, 1fr)); }
-figure[data-ve-component="matrix"] .ve-mx-cols-4 { grid-template-columns: 8rem repeat(4, minmax(0, 1fr)); }
-figure[data-ve-component="matrix"] .ve-mx-colhead {
-  display: grid; place-items: center; padding: var(--space-1);
-  background: var(--dg-primary); color: var(--dg-on-primary); font-weight: 700; }
-figure[data-ve-component="matrix"] .ve-mx-rowhead {
-  display: grid; place-items: center; padding: var(--space-1);
-  background: var(--dg-neutral); color: var(--text); font-weight: 700; }
-figure[data-ve-component="matrix"] .ve-mx-cell {
-  display: grid; place-items: center; padding: var(--space-1);
-  border: 1.5px solid var(--dg-primary); font-weight: 700; font-size: 1.0625rem; }
-figure[data-ve-component="matrix"] .ve-mx-cell.ve-dg-highlight { background: var(--dg-primary-light); }
-figure[data-ve-component="matrix"] .ve-matrix-scroll th {
-  color: var(--text); font-weight: 800; text-align: left;
-  padding: var(--space-1) var(--space-2) var(--space-1) 0; }
-figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="col"] { border-bottom: 1.5px solid var(--border-strong); }
-figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { border-bottom: 1px solid var(--border); vertical-align: top; }
-figure[data-ve-component="matrix"] .ve-matrix-scroll td {
-  border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
-figure[data-ve-component="matrix"] .ve-matrix-bullets { margin: 0; padding: 0; list-style: none; }
-figure[data-ve-component="matrix"] .ve-matrix-bullets li { margin: 0; padding-left: var(--space-2); text-indent: calc(-1 * var(--space-2)); }
-figure[data-ve-component="matrix"] .ve-matrix-bullets li::before { content: "・"; }
-figure[data-ve-component="matrix"] .ve-matrix-bullets li + li { margin-top: var(--space-1); }
-figure[data-ve-component="matrix"] .ve-matrix-scroll .ve-matrix-corner { background: transparent; border: 0; border-bottom: 1.5px solid var(--border-strong); }
-figure[data-ve-component="matrix"] .ve-takeaway-target { font-weight: 700; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
-figure[data-ve-component="matrix"] .ve-emphasis { display: block; margin-top: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
-figure[data-ve-component="matrix"] .ve-matrix-refs { display: block; margin-top: var(--space-1); }
-figure[data-ve-component="matrix"] .ve-cert { display: inline-block; margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; border-bottom: 1px solid var(--text-dim); }
-figure[data-ve-component="matrix"] .ve-cert-confirmed { color: var(--text-dim); }
-figure[data-ve-component="matrix"] .ve-cert-inferred { color: var(--text-dim); border-bottom-style: dashed; }
-figure[data-ve-component="matrix"] .ve-cert-unverified { color: var(--text-dim); border-bottom-style: dotted; }
-figure[data-ve-component="matrix"] .ve-src { display: inline-block; font-size: var(--fs-small); color: var(--text-dim); }
-figure[data-ve-component="matrix"] .ve-matrix-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
-figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
+  <style data-ve-component="grid-diagram" data-ve-contract-version="2" data-ve-asset="grid-diagram.css" data-ve-digest="f7c68713d73c15bbe53f744912c5c272a5096965bea0625fb8f20ea71ef6548a">[data-ve-component="grid-diagram"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="grid-diagram"] .ve-gd-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="grid-diagram"] .ve-gd-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="grid-diagram"] .ve-gd-canvas { overflow-x: auto; background: linear-gradient(to right, var(--ve-gd-canvas-bg, var(--bg)) 50%, transparent) left / 2rem 100% no-repeat local, linear-gradient(to left, var(--ve-gd-canvas-bg, var(--bg)) 50%, transparent) right / 2rem 100% no-repeat local, linear-gradient(to right, color-mix(in srgb, var(--text) 12%, var(--surface)), transparent) left / .75rem 100% no-repeat scroll, linear-gradient(to left, color-mix(in srgb, var(--text) 12%, var(--surface)), transparent) right / .75rem 100% no-repeat scroll; }
+[data-ve-component="grid-diagram"] .ve-gd-svg { display: block; width: 100%; margin: 0 auto; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-1 { min-width: 7.5rem; max-width: 9.375rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-2 { min-width: 15rem; max-width: 18.75rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-3 { min-width: 22.5rem; max-width: 28.125rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-4 { min-width: 30rem; max-width: 37.5rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-5 { min-width: 37.5rem; max-width: 46.875rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-6 { min-width: 45rem; max-width: 56.25rem; }
+[data-ve-component="grid-diagram"] .ve-gd-region-frame { fill: none; stroke: var(--dg-line); stroke-width: 1.5; stroke-dasharray: 5 4; rx: 10px; }
+[data-ve-component="grid-diagram"] .ve-gd-region-label { fill: var(--text-dim); font-size: 11px; font-weight: 700; }
+[data-ve-component="grid-diagram"] .ve-gd-edge-line, [data-ve-component="grid-diagram"] .ve-gd-edge-arrow { stroke: var(--dg-line); stroke-width: 1.5; stroke-linecap: round; }
+[data-ve-component="grid-diagram"] .ve-gd-edge-label { fill: var(--text-dim); font-size: 11px; }
+[data-ve-component="grid-diagram"] .ve-gd-node-box { rx: 6px; }
+[data-ve-component="grid-diagram"] .ve-gd-node-label { font-size: 13px; }
+[data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: var(--dg-primary-light); }
+[data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-label { fill: var(--text); }
+[data-ve-component="grid-diagram"] .ve-gd-tone-primary .ve-gd-node-box { fill: var(--dg-primary); }
+[data-ve-component="grid-diagram"] .ve-gd-tone-primary .ve-gd-node-label { fill: var(--dg-on-primary); font-weight: 700; }
+/* Dark: the light-blue base fill sits too close to the primary fill, so base nodes use the accent tint with an outline. */
+:root[data-theme="dark"] [data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--dg-primary-mid); stroke-width: 1.5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) [data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--dg-primary-mid); stroke-width: 1.5; } }
+[data-ve-component="grid-diagram"] .ve-gd-tone-warning .ve-gd-node-box { fill: var(--bg); stroke: var(--dg-negative); stroke-width: 2; }
+[data-ve-component="grid-diagram"] .ve-gd-tone-warning .ve-gd-node-label { fill: var(--text); }
+[data-ve-component="grid-diagram"] .ve-gd-marker-dot { fill: var(--accent); }
+[data-ve-component="grid-diagram"] .ve-gd-marker-n { fill: var(--bg); font-size: 12px; font-weight: 700; }
+[data-ve-component="grid-diagram"] .ve-grid-diagram-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="grid-diagram"] .ve-grid-diagram-notes li { margin: 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb { margin: var(--space-1) 0 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg { min-width: 0; margin: 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-canvas { background: none; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-1 { max-width: 8rem; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-2 { max-width: 16rem; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-3 { max-width: 24rem; }
 </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
   <script>
@@ -302,7 +380,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
 </head>
 <body>
   <div class="theme-control">
-    <button type="button" data-theme-toggle aria-pressed="false">現在のテーマを確認中です。</button>
+    <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="テーマを切り替える" title="テーマを切り替える"><svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
   </div>
   <script>
   /* FIXED THEME CONTROL JS: DO NOT MODIFY. */
@@ -324,7 +402,9 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     const render = () => {
       const current = currentTheme();
       const next = current === 'dark' ? 'light' : 'dark';
-      button.textContent = `現在のテーマ: ${label(current)}。${label(next)}に切り替える`;
+      const text = `テーマ: ${label(current)}（${label(next)}に切替）`;
+      button.setAttribute('aria-label', text);
+      button.setAttribute('title', text);
       button.setAttribute('aria-pressed', String(current === 'dark'));
     };
     const persist = (theme) => {
@@ -356,106 +436,76 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     <section data-ve-section-kind="first-screen" data-ve-document-type="proposal" data-ve-profile="strict" id="sec-first-screen">
 <section class="first-screen" aria-label="最初に伝えること">
   <h1>顧客向け料金改定は、承認地図で根拠を照合し、対象を限定して段階公開する。</h1>
-  <p class="conclusion"><strong>結論:</strong> 限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。</p>
+  <p class="conclusion" data-ve-blk="1"><strong>結論:</strong> 限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。</p>
 </section>
 </section>
-    <section data-ve-section-kind="canonical" data-ve-component="matrix" data-ve-contract-version="2" data-ve-instance="sec-alternatives" data-ve-fallback="static-content">
-<figure data-ve-component="matrix" role="group" aria-label="案の比較" aria-describedby="sec-alternatives-summary"><figcaption id="sec-alternatives-caption" class="ve-matrix-caption">見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。</figcaption><p id="sec-alternatives-summary" class="ve-matrix-summary">行が案、列が主な利点と主なトレードオフの比較表。</p><div class="ve-matrix-scroll"><table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td><th scope="col" data-ve-semantic-id="col-benefit">主な利点</th><th scope="col" data-ve-semantic-id="col-tradeoff">主なトレードオフ</th></tr></thead><tbody><tr><th scope="row" data-ve-semantic-id="opt-all">全顧客へ一斉公開</th><td data-ve-semantic-id="cell-all-benefit" data-ve-row-id="opt-all" data-ve-column-id="col-benefit">対象を分けずに早く反映できる</td><td data-ve-semantic-id="cell-all-tradeoff" data-ve-row-id="opt-all" data-ve-column-id="col-tradeoff">例外や計算誤りの影響範囲も最初から広い</td></tr><tr><th scope="row" data-ve-semantic-id="opt-hold">変更を保留</th><td data-ve-semantic-id="cell-hold-benefit" data-ve-row-id="opt-hold" data-ve-column-id="col-benefit">新しい請求影響を発生させない</td><td data-ve-semantic-id="cell-hold-tradeoff" data-ve-row-id="opt-hold" data-ve-column-id="col-tradeoff">料金改定の目的を達成できず、判断材料も増えない</td></tr><tr><th scope="row" data-ve-semantic-id="opt-proposal">提案: 限定対象で段階公開</th><td class="ve-dg-highlight" data-ve-semantic-id="cell-proposal-benefit" data-ve-row-id="opt-proposal" data-ve-column-id="col-benefit">照合した顧客群で影響と撤回条件を確かめられる</td><td data-ve-semantic-id="cell-proposal-tradeoff" data-ve-row-id="opt-proposal" data-ve-column-id="col-tradeoff">対象選定、承認、顧客対応を追加で運用する必要がある</td></tr></tbody></table></div><ul class="ve-matrix-notes"><li data-ve-semantic-id="cert-alternatives"><strong>推論:</strong> 全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。</li><li data-ve-semantic-id="src-alternatives"><strong>出典 料金改定の比較検討メモ</strong>（各案の利点と代償を承認者向けに整理した表。）</li></ul></figure>
+    <section data-ve-section-kind="canonical" data-ve-component="grid-diagram" data-ve-contract-version="2" data-ve-instance="sec-approval-map" data-ve-fallback="static-content">
+<figure data-ve-component="grid-diagram" class="ve-gd" data-ve-grid="4x3" role="group" aria-label="承認地図" aria-describedby="sec-approval-map-summary" data-ve-blk="2"><figcaption id="sec-approval-map-caption" class="ve-gd-caption">見るところ: 根拠と顧客影響は共同承認で合流する。</figcaption><p id="sec-approval-map-summary" class="ve-gd-summary">左から根拠、顧客影響、共同承認、公開と保護の順に並ぶ。</p><div class="ve-gd-canvas"><svg id="sec-approval-map-svg" class="ve-gd-svg ve-gd-cols-4" viewBox="0 0 600 288" preserveAspectRatio="xMidYMid meet" role="img" aria-label="承認地図" aria-describedby="sec-approval-map-relations"><title>承認地図</title><g class="ve-gd-region" data-ve-semantic-id="region-basis"><rect class="ve-gd-region-frame" x="4" y="4" width="142" height="184"></rect><text class="ve-gd-region-label" x="12" y="18" text-anchor="start">根拠</text></g><g class="ve-gd-region" data-ve-semantic-id="region-impact"><rect class="ve-gd-region-frame" x="154" y="100" width="142" height="184"></rect><text class="ve-gd-region-label" x="162" y="114" text-anchor="start">顧客影響</text></g><g class="ve-gd-edge" data-ve-semantic-id="e-exception-billing"><line class="ve-gd-edge-line" x1="134" y1="48" x2="225" y2="48"></line><line class="ve-gd-edge-line" x1="225" y1="48" x2="225" y2="118"></line><line class="ve-gd-edge-arrow" x1="221" y1="112" x2="225" y2="118"></line><line class="ve-gd-edge-arrow" x1="229" y1="112" x2="225" y2="118"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-price-billing"><line class="ve-gd-edge-line" x1="134" y1="144" x2="166" y2="144"></line><line class="ve-gd-edge-arrow" x1="160" y1="148" x2="166" y2="144"></line><line class="ve-gd-edge-arrow" x1="160" y1="140" x2="166" y2="144"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-price-notice"><line class="ve-gd-edge-line" x1="75" y1="170" x2="75" y2="240"></line><line class="ve-gd-edge-line" x1="75" y1="240" x2="166" y2="240"></line><line class="ve-gd-edge-arrow" x1="160" y1="244" x2="166" y2="240"></line><line class="ve-gd-edge-arrow" x1="160" y1="236" x2="166" y2="240"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-billing-approval"><line class="ve-gd-edge-line" x1="284" y1="144" x2="316" y2="144"></line><line class="ve-gd-edge-arrow" x1="310" y1="148" x2="316" y2="144"></line><line class="ve-gd-edge-arrow" x1="310" y1="140" x2="316" y2="144"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-notice-approval"><line class="ve-gd-edge-line" x1="284" y1="240" x2="375" y2="240"></line><line class="ve-gd-edge-line" x1="375" y1="240" x2="375" y2="170"></line><line class="ve-gd-edge-arrow" x1="379" y1="176" x2="375" y2="170"></line><line class="ve-gd-edge-arrow" x1="371" y1="176" x2="375" y2="170"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-approval-release"><line class="ve-gd-edge-line" x1="434" y1="144" x2="466" y2="144"></line><line class="ve-gd-edge-arrow" x1="460" y1="148" x2="466" y2="144"></line><line class="ve-gd-edge-arrow" x1="460" y1="140" x2="466" y2="144"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-rollback-release"><line class="ve-gd-edge-line" x1="525" y1="214" x2="525" y2="170"></line><line class="ve-gd-edge-arrow" x1="529" y1="176" x2="525" y2="170"></line><line class="ve-gd-edge-arrow" x1="521" y1="176" x2="525" y2="170"></line><text class="ve-gd-edge-label" x="531" y="196" text-anchor="start">見張る</text></g><g class="ve-gd-node ve-gd-tone-base" data-ve-semantic-id="contract-exception"><rect class="ve-gd-node-box" x="16" y="22" width="118" height="52"></rect><text class="ve-gd-node-label" x="75" y="53" text-anchor="middle">契約例外</text></g><g class="ve-gd-node ve-gd-tone-base" data-ve-semantic-id="price-change"><rect class="ve-gd-node-box" x="16" y="118" width="118" height="52"></rect><text class="ve-gd-node-label" x="75" y="149" text-anchor="middle">料金改定案</text></g><g class="ve-gd-node ve-gd-tone-base" data-ve-semantic-id="billing-calculation"><rect class="ve-gd-node-box" x="166" y="118" width="118" height="52"></rect><text class="ve-gd-node-label" x="225" y="141" text-anchor="middle">請求計算と</text><text class="ve-gd-node-label" x="225" y="157" text-anchor="middle">対象顧客</text></g><g class="ve-gd-node ve-gd-tone-base" data-ve-semantic-id="notification-audience"><rect class="ve-gd-node-box" x="166" y="214" width="118" height="52"></rect><text class="ve-gd-node-label" x="225" y="245" text-anchor="middle">告知対象と文面</text></g><g class="ve-gd-node ve-gd-tone-primary" data-ve-semantic-id="joint-approval"><rect class="ve-gd-node-box" x="316" y="118" width="118" height="52"></rect><text class="ve-gd-node-label" x="375" y="141" text-anchor="middle">三部門の</text><text class="ve-gd-node-label" x="375" y="157" text-anchor="middle">共同承認</text></g><g class="ve-gd-node ve-gd-tone-primary" data-ve-semantic-id="limited-release"><rect class="ve-gd-node-box" x="466" y="118" width="118" height="52"></rect><text class="ve-gd-node-label" x="525" y="149" text-anchor="middle">限定対象で公開</text></g><g class="ve-gd-node ve-gd-tone-warning" data-ve-semantic-id="rollback-condition"><rect class="ve-gd-node-box" x="466" y="214" width="118" height="52"></rect><text class="ve-gd-node-label" x="525" y="245" text-anchor="middle">撤回条件</text></g><g class="ve-gd-marker"><circle class="ve-gd-marker-dot" cx="284" cy="118" r="10"></circle><text class="ve-gd-marker-n" x="284" y="122" text-anchor="middle">1</text></g><g class="ve-gd-marker"><circle class="ve-gd-marker-dot" cx="434" cy="118" r="10"></circle><text class="ve-gd-marker-n" x="434" y="122" text-anchor="middle">2</text></g><g class="ve-gd-marker"><circle class="ve-gd-marker-dot" cx="584" cy="118" r="10"></circle><text class="ve-gd-marker-n" x="584" y="122" text-anchor="middle">3</text></g></svg></div><ul id="sec-approval-map-relations" class="ve-gd-relations visually-hidden"><li class="ve-gd-rel-node">契約例外（根拠）</li><li class="ve-gd-rel-node">料金改定案（根拠）</li><li class="ve-gd-rel-node">請求計算と 対象顧客（顧客影響）</li><li class="ve-gd-rel-node">告知対象と文面（顧客影響）</li><li class="ve-gd-rel-node">三部門の 共同承認</li><li class="ve-gd-rel-node">限定対象で公開</li><li class="ve-gd-rel-node">撤回条件</li><li class="ve-gd-rel-region">根拠: 契約例外・料金改定案</li><li class="ve-gd-rel-region">顧客影響: 請求計算と 対象顧客・告知対象と文面</li><li class="ve-gd-rel-edge">契約例外 → 請求計算と 対象顧客</li><li class="ve-gd-rel-edge">料金改定案 → 請求計算と 対象顧客</li><li class="ve-gd-rel-edge">料金改定案 → 告知対象と文面</li><li class="ve-gd-rel-edge">請求計算と 対象顧客 → 三部門の 共同承認</li><li class="ve-gd-rel-edge">告知対象と文面 → 三部門の 共同承認</li><li class="ve-gd-rel-edge">三部門の 共同承認 → 限定対象で公開</li><li class="ve-gd-rel-edge">撤回条件 → 限定対象で公開（見張る）</li><li class="ve-gd-rel-marker">番号 ①: 請求計算と 対象顧客</li><li class="ve-gd-rel-marker">番号 ②: 三部門の 共同承認</li><li class="ve-gd-rel-marker">番号 ③: 限定対象で公開</li></ul><ul class="ve-grid-diagram-notes"><li data-ve-semantic-id="cert-approval-map"><strong>推論:</strong> 説明用の承認経路で、各部門の実際の手順とは照合していません。</li><li data-ve-semantic-id="src-approval-map"><strong>出典 料金改定の承認手順メモ</strong></li></ul></figure>
 </section>
     <section data-ve-section-kind="overview-nav">
-<nav class="overview-markers" aria-label="この資料の論点"><ol><li><a href="#sec-current-problem"><span class="marker-n" aria-hidden="true">1</span><span>部門別確認の限界</span></a></li><li><a href="#sec-approval-map-intro"><span class="marker-n" aria-hidden="true">2</span><span>承認地図での照合</span></a></li><li><a href="#sec-ask-decision"><span class="marker-n" aria-hidden="true">3</span><span>限定対象で開始するか</span></a></li></ol></nav>
+<nav class="overview-markers" aria-label="この資料の論点"><ol><li data-ve-blk="3"><a href="#sec-current-problem"><span class="marker-n" aria-hidden="true">1</span><span>別々の確認では判断できない</span></a></li><li data-ve-blk="4"><a href="#sec-approval-map-intro"><span class="marker-n" aria-hidden="true">2</span><span>一つの承認地図で照合する</span></a></li><li data-ve-blk="5"><a href="#sec-ask-decision"><span class="marker-n" aria-hidden="true">3</span><span>限定対象で開始するか</span></a></li></ol></nav>
 </section>
     <section data-ve-section-kind="narrative" data-ve-instance="sec-current-problem" id="sec-current-problem">
 <section aria-labelledby="current-problem">
-  <h2 id="current-problem">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>
-  <p class="claim">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class="certainty unverified">未確認</span></p>
+  <h2 data-ve-marker="1" id="current-problem" data-ve-blk="6">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>
+  <p class="claim" data-ve-blk="7">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません<span class="certainty-tail">。<span class="certainty unverified">未確認</span></span></p>
 </section>
 </section>
     <section data-ve-section-kind="narrative" data-ve-instance="sec-approval-map-intro" id="sec-approval-map-intro">
 <section aria-labelledby="approval-map">
-  <h2 id="approval-map">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>
-  <p class="claim">承認者は、根拠と顧客影響を共同承認で照合し、限定対象で公開します。<span class="certainty inferred">推論</span></p>
+  <h2 data-ve-marker="2" id="approval-map" data-ve-blk="8">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>
+  <p class="claim" data-ve-blk="9">承認者は、根拠と顧客影響を共同承認で照合し、限定対象で公開します<span class="certainty-tail">。<span class="certainty inferred">推論</span></span></p>
 </section>
-</section>
-    <section data-ve-section-kind="compatibility" data-ve-compat-source="legacy-html-insertion" data-ve-compat-reason="unmigrated-format" data-ve-instance="sec-approval-map">
-<figure class="figure">
-        <div class="layers" data-connect="contract-exception->billing-calculation, price-change->billing-calculation, price-change->notification-audience, billing-calculation->joint-approval, notification-audience->joint-approval, joint-approval->limited-release">
-          <section class="lane" data-lane>
-            <p class="lane-label">根拠</p>
-            <div class="lane-nodes">
-              <div class="flow-node" id="contract-exception">契約例外</div>
-              <div class="flow-node" id="price-change">料金改定案</div>
-            </div>
-          </section>
-          <section class="lane" data-lane>
-            <p class="lane-label">顧客影響</p>
-            <div class="lane-nodes">
-              <div class="flow-node" id="billing-calculation">請求計算と対象顧客</div>
-              <div class="flow-node" id="notification-audience">告知対象と文面</div>
-            </div>
-          </section>
-          <section class="lane" data-lane>
-            <p class="lane-label">共同承認</p>
-            <div class="lane-nodes"><div class="flow-node" id="joint-approval">法務・請求・顧客対応が例外、価格、顧客群を照合</div></div>
-          </section>
-          <section class="lane" data-lane>
-            <p class="lane-label">公開と保護</p>
-            <div class="lane-nodes">
-              <div class="flow-node" id="limited-release">限定対象で公開</div>
-              <div class="flow-node" id="rollback-condition">撤回条件を監視</div>
-            </div>
-          </section>
-        </div>
-        <figcaption>根拠・顧客影響・承認・撤回を一つの経路でたどれるため、部門をまたぐ不整合に気づける。</figcaption>
-      </figure>
 </section>
     <section data-ve-section-kind="compatibility" data-ve-compat-source="legacy-html-insertion" data-ve-compat-reason="unmigrated-format" data-ve-instance="sec-before-after-compare">
 <div class="compare">
   <section class="compare-frame">
-    <h3>Before: 部門別の確認</h3>
-    <p>法務は契約例外、請求は計算、顧客対応は告知を個別に確認します。</p>
-    <p>承認者は、例外が誰の請求と通知に影響するかを資料間でつなぎ直します。</p>
+    <h3 data-ve-blk="10">Before: 部門別の確認</h3>
+    <p data-ve-blk="11">法務は契約例外、請求は計算、顧客対応は告知を個別に確認します。</p>
+    <p data-ve-blk="12">承認者は、例外が誰の請求と通知に影響するかを資料間でつなぎ直します。</p>
   </section>
   <section class="compare-frame">
-    <h3>After: 共同の承認地図</h3>
-    <p>同じ顧客群に対する根拠、計算、通知、撤回条件を一つの経路で照合します。</p>
-    <p>開始前に責任者と限定対象を明示し、問題時は撤回条件へ戻れます。</p>
+    <h3 data-ve-blk="13">After: 共同の承認地図</h3>
+    <p data-ve-blk="14">同じ顧客群に対する根拠、計算、通知、撤回条件を一つの経路で照合します。</p>
+    <p data-ve-blk="15">開始前に責任者と限定対象を明示し、問題時は撤回条件へ戻れます。</p>
   </section>
 </div>
 </section>
     <section data-ve-section-kind="ask" data-ve-ask-type="hypothesis" id="sec-ask-hypothesis">
 <div class="ask" data-ask="hypothesis">
   <p class="ask-kind">検証待ちの仮説</p>
-  <p class="ask-claim">承認地図での照合は、部門別の確認より前に例外と顧客影響の不整合を見つけられる <span class="certainty inferred">推論</span></p>
-  <p class="ask-verify">検証方法: 限定対象の1グループで承認地図の照合と従来の部門別確認を並行し、見つかる不整合の件数と発見時点を比べる</p>
+  <p class="ask-claim" data-ve-blk="16">承認地図での照合は、部門別の確認より前に例外と顧客影響の不整合を見つけられ<span class="certainty-tail">る <span class="certainty inferred">推論</span></span></p>
+  <p class="ask-verify" data-ve-blk="17">検証方法: 限定対象の1グループで承認地図の照合と従来の部門別確認を並行し、見つかる不整合の件数と発見時点を比べる</p>
 </div>
 </section>
     <section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">
 <div class="ask" data-ask="decision">
   <p class="ask-kind">判断してください</p>
-  <p class="ask-question">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>
+  <p class="ask-question" data-ve-marker="3" data-ve-blk="18">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>
+  <p class="ask-evidence" data-ve-blk="19"><span class="ask-prefix">根拠:</span> 照合シートの試算「契約例外 12 件のうち 9 件が同じ顧客群に集中」</p>
   <ul class="ask-options">
-    <li data-ask-option data-ask-option-id="limited" data-ask-default><span>限定対象で段階公開する</span><span class="ask-tradeoff">対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li><li data-ask-option data-ask-option-id="all"><span>全顧客へ一斉公開する</span><span class="ask-tradeoff">例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>
+    <li data-ask-option data-ask-option-id="limited" data-ask-default><span class="ask-option-head"><span class="ask-option-label">限定対象で段階公開する</span><span class="ask-badge">推奨</span></span><span class="ask-benefit"><span class="ask-prefix">利点:</span> 誤りの影響を限定対象に閉じたまま照合の効果を確かめられる</span><span class="ask-tradeoff"><span class="ask-prefix">代償:</span> 対象選定と承認・顧客対応の運用を追加で用意する必要がある</span><figure data-ve-component="grid-diagram" class="ve-gd ve-gd-thumb" data-ve-thumb data-ve-grid="3x1" aria-label="限定対象で段階公開する の図"><svg id="sec-ask-decision-opt-1-svg" class="ve-gd-svg ve-gd-cols-3" viewBox="0 0 450 96" preserveAspectRatio="xMidYMid meet" role="img" aria-label="限定対象で段階公開する の図" aria-describedby="sec-ask-decision-opt-1-relations"><title>限定対象で段階公開する の図</title><g class="ve-gd-edge"><line class="ve-gd-edge-line" x1="134" y1="48" x2="166" y2="48"></line><line class="ve-gd-edge-arrow" x1="160" y1="52" x2="166" y2="48"></line><line class="ve-gd-edge-arrow" x1="160" y1="44" x2="166" y2="48"></line></g><g class="ve-gd-edge"><line class="ve-gd-edge-line" x1="284" y1="48" x2="316" y2="48"></line><line class="ve-gd-edge-arrow" x1="310" y1="52" x2="316" y2="48"></line><line class="ve-gd-edge-arrow" x1="310" y1="44" x2="316" y2="48"></line></g><g class="ve-gd-node ve-gd-tone-primary"><rect class="ve-gd-node-box" x="16" y="22" width="118" height="52"></rect><text class="ve-gd-node-label" x="75" y="53" text-anchor="middle">限定対象で公開</text></g><g class="ve-gd-node ve-gd-tone-base"><rect class="ve-gd-node-box" x="166" y="22" width="118" height="52"></rect><text class="ve-gd-node-label" x="225" y="53" text-anchor="middle">影響を確認</text></g><g class="ve-gd-node ve-gd-tone-base"><rect class="ve-gd-node-box" x="316" y="22" width="118" height="52"></rect><text class="ve-gd-node-label" x="375" y="53" text-anchor="middle">全顧客へ拡大</text></g></svg><ul id="sec-ask-decision-opt-1-relations" class="ve-gd-relations visually-hidden"><li class="ve-gd-rel-node">限定対象で公開</li><li class="ve-gd-rel-node">影響を確認</li><li class="ve-gd-rel-node">全顧客へ拡大</li><li class="ve-gd-rel-edge">限定対象で公開 → 影響を確認</li><li class="ve-gd-rel-edge">影響を確認 → 全顧客へ拡大</li></ul></figure></li><li data-ask-option data-ask-option-id="all"><span class="ask-option-head"><span class="ask-option-label">全顧客へ一斉公開する</span></span><span class="ask-benefit"><span class="ask-prefix">利点:</span> 告知と請求の切替が一度で済み運用が二重にならない</span><span class="ask-tradeoff"><span class="ask-prefix">代償:</span> 例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span><figure data-ve-component="grid-diagram" class="ve-gd ve-gd-thumb" data-ve-thumb data-ve-grid="3x1" aria-label="全顧客へ一斉公開する の図"><svg id="sec-ask-decision-opt-2-svg" class="ve-gd-svg ve-gd-cols-3" viewBox="0 0 450 96" preserveAspectRatio="xMidYMid meet" role="img" aria-label="全顧客へ一斉公開する の図" aria-describedby="sec-ask-decision-opt-2-relations"><title>全顧客へ一斉公開する の図</title><g class="ve-gd-edge"><line class="ve-gd-edge-line" x1="284" y1="48" x2="316" y2="48"></line><line class="ve-gd-edge-arrow" x1="310" y1="52" x2="316" y2="48"></line><line class="ve-gd-edge-arrow" x1="310" y1="44" x2="316" y2="48"></line></g><g class="ve-gd-node ve-gd-tone-primary"><rect class="ve-gd-node-box" x="16" y="22" width="268" height="52"></rect><text class="ve-gd-node-label" x="150" y="53" text-anchor="middle">全顧客へ一斉公開</text></g><g class="ve-gd-node ve-gd-tone-warning"><rect class="ve-gd-node-box" x="316" y="22" width="118" height="52"></rect><text class="ve-gd-node-label" x="375" y="53" text-anchor="middle">誤りも全体へ</text></g></svg><ul id="sec-ask-decision-opt-2-relations" class="ve-gd-relations visually-hidden"><li class="ve-gd-rel-node">全顧客へ一斉公開</li><li class="ve-gd-rel-node">誤りも全体へ</li><li class="ve-gd-rel-edge">全顧客へ一斉公開 → 誤りも全体へ</li></ul></figure></li>
   </ul>
-  <div class="ask-memo"><label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>
+  <div class="ask-memo"><label>補足（任意）<textarea data-ask-memo></textarea></label></div>
 </div>
 </section>
     <section data-ve-section-kind="closing" id="sec-closing">
 <section class="closing-section" aria-label="判断材料">
-  <h2>リスクと弱い前提</h2>
-  <ul><li>限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。</li><li>この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。</li></ul>
-  <h2>不確かな点</h2>
-  <ul><li>実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。</li><li>開始判断の前に、それぞれの担当者と確認が必要です。</li><li>この資料は説明用の想定で、実在の顧客・契約・請求データは使っていません。</li></ul>
+  <h2 data-ve-blk="20">リスクと弱い前提</h2>
+  <ul><li data-ve-blk="21">限定対象でも、契約例外の分類や請求計算が誤っていれば不利益が生じます。</li><li data-ve-blk="22">この提案は、承認者が例外・対象・撤回条件を公開前に照合できることを前提にします。</li></ul>
+  <h2 data-ve-blk="23">不確かな点</h2>
+  <ul><li data-ve-blk="24">実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。</li><li data-ve-blk="25">開始判断の前に、それぞれの担当者と確認が必要です。</li><li data-ve-blk="26">この資料は説明用の想定で、実在の顧客・契約・請求データは使っていません。</li></ul>
 </section>
 </section>
     <section data-ve-section-kind="decision-panel" data-ve-document-id="example-proposal" data-ve-schema-version="2" data-ve-ask-digest="8fe4c53ec0891f78" data-ve-document-path="skills/visual-explain/examples/example-proposal.html" id="sec-decision-panel">
-<section class="decision-panel" aria-label="判断の回収">
-  <h2>判断の回収</h2>
+<section class="decision-panel" aria-label="回答と指摘の回収">
+  <h2>回答と指摘の回収</h2>
   <ul class="panel-asks">
-    <li data-ve-panel-ask="sec-ask-decision"><span class="panel-question">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</span><span class="panel-status" data-ve-panel-status>未選択（既定案: 限定対象で段階公開する）</span><span class="panel-memo" data-ve-panel-memo hidden></span></li>
+    <li data-ve-panel-ask="sec-ask-decision"><span class="panel-question">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</span><span class="panel-status" data-ve-panel-status>お任せ（推奨: 限定対象で段階公開する）</span><span class="panel-memo" data-ve-panel-memo hidden></span></li>
   </ul>
+  <p class="panel-review-count" data-ve-panel-review-count>指摘 0 件</p>
   <div class="ask-memo"><label>全体メモ<textarea data-ve-panel-global-memo></textarea></label></div>
-  <p class="panel-note">選択の反映・メモの保存・コピーはブラウザのJavaScript が有効なときに使えます。</p>
+  <p class="panel-note">選択・指摘の保存とコピーは、ブラウザのJavaScript が有効なときに使えます。</p>
 </section>
 </section>
     <!-- VE-CONTROLLED:CONTENT:END -->
@@ -603,26 +653,32 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
   })();
 
   /* FIXED DECISION ENGINE CORE:BEGIN (verbatim copy of scripts/tests/runtime/decision_engine.js) */
-/* Decision-collection pure core for visual-explain.
+/* Review-collection pure core for visual-explain.
    This file is the source of truth; assets/skeleton.html embeds it verbatim
    between the FIXED DECISION ENGINE CORE markers (byte-equality is enforced
    by test_skeleton_audit.py). No DOM, no timers, no I/O here. */
 (function (global) {
   "use strict";
 
+  const CHIPS = ["わからない", "図にしてほしい", "もっと詳しく", "短くする", "削る", "言い換える", "事実を確認", "ここは良い"];
+  const QUOTE_LIMIT = 40;
+  const CLOSING_LINE = "上の回答を反映して作業を続けてください。お任せの項目は推奨案で確定してください。";
+
   function storageKey(contract) {
-    return "ve-decision:" + contract.documentId + ":" + contract.schemaVersion + ":" + contract.digest;
+    // Digest and block count make a rebuilt document with changed asks or
+    // blocks start clean instead of restoring drafts onto the wrong targets.
+    return "ve-review:" + contract.documentId + ":" + contract.schemaVersion + ":" +
+      contract.digest + ":" + contract.blockCount;
   }
 
   function emptyMap() {
     // Object.create(null) keeps ask ids like "__proto__" as ordinary own
-    // properties instead of tripping the Object.prototype accessor, which
-    // would otherwise silently drop the assignment for such ids.
+    // properties instead of tripping the Object.prototype accessor.
     return Object.create(null);
   }
 
   function emptyState() {
-    return { selections: emptyMap(), memos: emptyMap(), globalMemo: "" };
+    return { selections: emptyMap(), memos: emptyMap(), globalMemo: "", annotations: [] };
   }
 
   function findAsk(contract, askId) {
@@ -635,12 +691,13 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     return null;
   }
 
+  function activeOption(ask, optionId) {
+    const option = typeof optionId === "string" ? findOption(ask, optionId) : null;
+    return option && !option.withdrawn ? option : null;
+  }
+
   function findPanelRow(rows, askId) {
-    // Candidates come from the unparameterized ``li[data-ve-panel-ask]``
-    // selector; matching by ``dataset`` equality here (instead of splicing
-    // askId into a CSS attribute selector at the call site) keeps arbitrary
-    // non-empty ask ids — quotes, whitespace, Japanese text, leading
-    // digits — working without ever building a selector string from them.
+    // Match by dataset equality so arbitrary ids never build a CSS selector.
     for (const row of rows) if (row.dataset.vePanelAsk === askId) return row;
     return null;
   }
@@ -650,30 +707,66 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
       selections: Object.assign(emptyMap(), state.selections, patch.selections || emptyMap()),
       memos: Object.assign(emptyMap(), state.memos, patch.memos || emptyMap()),
       globalMemo: patch.globalMemo !== undefined ? patch.globalMemo : state.globalMemo,
+      annotations: patch.annotations !== undefined ? patch.annotations : state.annotations.slice(),
     };
   }
 
   function selectOption(state, askId, optionId, contract) {
+    // Radio-like choice; choosing the selected option again returns to the
+    // recommendation ("お任せ"). Withdrawn and unknown options are ignored.
     const ask = findAsk(contract, askId);
-    if (!ask || !findOption(ask, optionId)) return state;
-    const patch = { selections: emptyMap() };
-    patch.selections[askId] = optionId;
-    return cloneWith(state, patch);
+    if (!ask || !activeOption(ask, optionId)) return state;
+    const next = cloneWith(state, {});
+    if (next.selections[askId] === optionId) delete next.selections[askId];
+    else next.selections[askId] = optionId;
+    return next;
   }
 
   function setMemo(state, askId, text) {
-    const patch = { memos: emptyMap() };
-    patch.memos[askId] = String(text);
-    return cloneWith(state, patch);
+    const next = cloneWith(state, {});
+    next.memos[askId] = String(text);
+    return next;
   }
 
   function setGlobalMemo(state, text) {
     return cloneWith(state, { globalMemo: String(text) });
   }
 
+  function flatten(text) {
+    return String(text == null ? "" : text).replace(/\s+/g, " ").trim();
+  }
+
+  function normalizeQuote(text) {
+    // Count code points so a surrogate pair is never split.
+    return Array.from(flatten(text)).slice(0, QUOTE_LIMIT).join("");
+  }
+
+  function addAnnotation(state, blk, chip, quote, note, contract) {
+    if (!Number.isInteger(blk) || blk < 1 || blk > contract.blockCount) return state;
+    if (CHIPS.indexOf(chip) < 0) return state;
+    const annotations = state.annotations.slice();
+    annotations.push({ blk: blk, chip: chip, quote: normalizeQuote(quote), note: flatten(note) });
+    return cloneWith(state, { annotations: annotations });
+  }
+
+  function removeAnnotation(state, index) {
+    if (!Number.isInteger(index) || index < 0 || index >= state.annotations.length) return state;
+    const annotations = state.annotations.slice();
+    annotations.splice(index, 1);
+    return cloneWith(state, { annotations: annotations });
+  }
+
+  function annotationsFor(state, blk) {
+    const found = [];
+    state.annotations.forEach(function (item, index) {
+      if (item.blk === blk) found.push({ index: index, chip: item.chip, quote: item.quote, note: item.note });
+    });
+    return found;
+  }
+
   function restoreState(raw, contract) {
-    // Stale or foreign entries never survive: unknown ask ids and option ids
-    // are dropped so a regenerated document starts unselected (scenario 7).
+    // Stale or foreign entries never survive: unknown asks, unknown or
+    // withdrawn options, out-of-range blocks, and unknown chips are dropped.
     let parsed;
     try {
       parsed = JSON.parse(raw);
@@ -681,14 +774,22 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
       return emptyState();
     }
     if (!parsed || typeof parsed !== "object") return emptyState();
-    const state = emptyState();
+    let state = emptyState();
     for (const ask of contract.asks) {
       const selected = parsed.selections ? parsed.selections[ask.id] : undefined;
-      if (typeof selected === "string" && findOption(ask, selected)) state.selections[ask.id] = selected;
+      if (activeOption(ask, selected)) state.selections[ask.id] = selected;
       const memo = parsed.memos ? parsed.memos[ask.id] : undefined;
       if (typeof memo === "string") state.memos[ask.id] = memo;
     }
     if (typeof parsed.globalMemo === "string") state.globalMemo = parsed.globalMemo;
+    if (Array.isArray(parsed.annotations)) {
+      for (const item of parsed.annotations) {
+        if (!item || typeof item !== "object") continue;
+        const quote = typeof item.quote === "string" ? item.quote : "";
+        const note = typeof item.note === "string" ? item.note : "";
+        state = addAnnotation(state, item.blk, item.chip, quote, note, contract);
+      }
+    }
     return state;
   }
 
@@ -697,58 +798,65 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
   }
 
   function defaultLabel(ask) {
-    if (!ask.defaultId) return null;
-    const option = findOption(ask, ask.defaultId);
-    return option ? option.label : null;
+    const option = ask.defaultId ? findOption(ask, ask.defaultId) : null;
+    return option ? option.label : "";
   }
 
-  function unselectedNote(ask) {
-    const label = defaultLabel(ask);
-    return ask.question + "（既定案: " + (label === null ? "なし" : label) + "）";
+  function cardStatus(ask, state) {
+    const option = activeOption(ask, state.selections[ask.id]);
+    return option ? "選択: " + option.label : "お任せ（推奨: " + defaultLabel(ask) + "）";
   }
 
-  function selectionStatus(ask, optionId) {
-    if (!ask.defaultId) return "既定案なし";
-    return optionId === ask.defaultId ? "既定案どおり" : "既定案から変更";
+  function nextChipIndex(current, key, total) {
+    if (total <= 0) return -1;
+    if (key === "ArrowRight" || key === "ArrowDown") return current < 0 ? 0 : (current + 1) % total;
+    if (key === "ArrowLeft" || key === "ArrowUp") return current <= 0 ? total - 1 : current - 1;
+    if (key === "Home") return 0;
+    if (key === "End") return total - 1;
+    return -1;
   }
 
-  function askLines(state, ask, unselected) {
-    // r1 C3: every ask emits its 問い/選択/メモ block regardless of selection
-    // state, so memos on unselected asks are never dropped from the copy text.
-    const lines = ["問い: " + ask.question];
-    const selectedId = state.selections[ask.id];
-    const option = selectedId ? findOption(ask, selectedId) : null;
-    if (option) {
-      lines.push("→ 選択: " + option.label + "（" + selectionStatus(ask, option.id) + "）"
-        + " — トレードオフ: " + option.tradeoff);
-    } else {
-      const label = defaultLabel(ask);
-      lines.push("→ 選択: 未選択（既定案: " + (label === null ? "なし" : label) + "）");
-      unselected.push(unselectedNote(ask));
-    }
-    const memo = state.memos[ask.id];
-    if (typeof memo === "string" && memo.trim()) lines.push("→ メモ: " + memo);
-    return lines;
+  function askLine(ask, index, state) {
+    const option = activeOption(ask, state.selections[ask.id]);
+    let line = "Q" + (index + 1) + ". " + ask.question + ": " + (option ? option.label : "(未選択 = お任せ)");
+    const memo = typeof state.memos[ask.id] === "string" ? state.memos[ask.id].trim() : "";
+    if (memo) line += " / 補足: " + memo;
+    return line;
+  }
+
+  function annotationLine(item) {
+    let line = "#" + item.blk + " [" + item.chip + "]";
+    if (item.quote) line += " 「" + item.quote + "」";
+    if (item.note) line += " " + item.note;
+    return line;
   }
 
   function formatCopyText(contract, state) {
     const lines = [
-      "[visual-explain 判断結果]",
+      "[visual-explain 回答]",
       "資料: " + contract.title,
       "(" + contract.documentPath + " / id: " + contract.documentId +
         " / schema: " + contract.schemaVersion + " / asks: " + contract.digest + ")",
     ];
-    const unselected = [];
-    for (const ask of contract.asks) lines.push(...askLines(state, ask, unselected));
-    if (unselected.length) lines.push("未選択: " + unselected.join(" / "));
-    if (contract.riskHeadings.length) lines.push("リスク要約: " + contract.riskHeadings.join(" / "));
-    if (state.globalMemo && state.globalMemo.trim()) lines.push("全体メモ: " + state.globalMemo);
+    contract.asks.forEach(function (ask, index) { lines.push(askLine(ask, index, state)); });
+    const globalMemo = typeof state.globalMemo === "string" ? state.globalMemo.trim() : "";
+    if (globalMemo) lines.push("全体メモ: " + globalMemo);
+    const ordered = state.annotations
+      .map(function (item, order) { return { item: item, order: order }; })
+      .sort(function (a, b) { return a.item.blk - b.item.blk || a.order - b.order; });
+    if (ordered.length) {
+      lines.push("## 指摘");
+      ordered.forEach(function (entry) { lines.push(annotationLine(entry.item)); });
+    }
+    lines.push("---");
+    lines.push(CLOSING_LINE);
     return lines.join("\n");
   }
 
   const engine = {
-    storageKey, emptyState, selectOption, setMemo, setGlobalMemo,
-    restoreState, serializeState, formatCopyText, findPanelRow,
+    CHIPS, QUOTE_LIMIT, storageKey, emptyState, selectOption, setMemo, setGlobalMemo,
+    normalizeQuote, addAnnotation, removeAnnotation, annotationsFor, restoreState,
+    serializeState, cardStatus, nextChipIndex, formatCopyText, findPanelRow,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = engine;
   else global.veDecisionEngine = engine;
@@ -760,27 +868,37 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
   (() => {
     const engine = globalThis.veDecisionEngine;
     const panel = document.querySelector('section[data-ve-section-kind="decision-panel"]');
-    if (!engine || !panel) return;
+    const main = document.querySelector('main');
+    if (!engine || !panel || !main) return;
+    panel.querySelectorAll('.panel-note').forEach((note) => { note.hidden = true; });
+    const blocks = Array.from(main.querySelectorAll('[data-ve-blk]'));
     const askSections = Array.from(document.querySelectorAll(
       'section[data-ve-section-kind="ask"][data-ve-ask-type="decision"][id]'));
+    const textOf = (node) => (node ? node.textContent : '').trim();
+    const ensureId = (node, base) => {
+      if (node.id) return node.id;
+      let id = base;
+      for (let n = 2; document.getElementById(id); n += 1) id = `${base}-${n}`;
+      node.id = id;
+      return id;
+    };
     const contract = {
-      documentId: panel.dataset.veDocumentId || "",
-      schemaVersion: panel.dataset.veSchemaVersion || "",
-      digest: panel.dataset.veAskDigest || "",
+      documentId: panel.dataset.veDocumentId || '',
+      schemaVersion: panel.dataset.veSchemaVersion || '',
+      digest: panel.dataset.veAskDigest || '',
       title: document.title,
-      documentPath: panel.dataset.veDocumentPath || "",
-      riskHeadings: Array.from(document.querySelectorAll(
-        'section[data-ve-section-kind="closing"] h2')).map((h) => h.textContent.trim()),
+      documentPath: panel.dataset.veDocumentPath || '',
+      blockCount: blocks.length,
       asks: askSections.map((section) => {
         const defaultItem = section.querySelector('[data-ask-default]');
         return {
           id: section.id,
-          question: (section.querySelector('.ask-question')?.textContent || "").trim(),
+          question: textOf(section.querySelector('.ask-question')),
           defaultId: defaultItem ? (defaultItem.dataset.askOptionId || null) : null,
           options: Array.from(section.querySelectorAll('[data-ask-option]')).map((item) => ({
-            id: item.dataset.askOptionId || "",
-            label: (item.querySelector('span')?.textContent || "").trim(),
-            tradeoff: (item.querySelector('.ask-tradeoff')?.textContent || "").trim(),
+            id: item.dataset.askOptionId || '',
+            label: textOf(item.querySelector('.ask-option-label')),
+            withdrawn: item.hasAttribute('data-ask-withdrawn'),
           })),
         };
       }),
@@ -791,41 +909,295 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
       storage = window.localStorage;
       state = engine.restoreState(storage.getItem(engine.storageKey(contract)), contract);
     } catch {
-      storage = null; // 永続化のみ喪失。選択は動き続ける（シナリオ④）。
+      storage = null; // Only persistence is lost; selection and annotations keep working.
     }
     const persist = () => {
       if (!storage) return;
       try { storage.setItem(engine.storageKey(contract), engine.serializeState(state)); } catch {}
     };
+    const statusLines = new Map();
+    // Review layer: add button, selection "pick" button, editor below the block, number tags.
+    const blockNumber = (block) => Number(block.dataset.veBlk);
+    const tags = new Map();
+    let editor = null;
+    let addTarget = null;
+    let pick = null;
+    const makeButton = (className, label) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = className;
+      button.textContent = label;
+      button.hidden = true;
+      document.body.append(button);
+      return button;
+    };
+    const addButton = makeButton('review-add', '＋');
+    const pickButton = makeButton('review-pick', '指摘');
+    const place = (button, rect, below, block) => {
+      button.hidden = false;
+      const width = button.offsetWidth;
+      let left;
+      let top = below ? rect.bottom + 4 : rect.top;
+      if (below) left = rect.left;
+      else if (rect.left >= width + 8) left = rect.left - width - 4;
+      else {
+        // No room on the left: text blocks reserve right padding for the button;
+        // figures, tables and code get it just above their top-right corner.
+        left = rect.right - width;
+        if (block && /^(FIGURE|TABLE|PRE)$/.test(block.tagName)) top = rect.top - button.offsetHeight - 4;
+      }
+      left = Math.max(0, Math.min(left, document.documentElement.clientWidth - width));
+      button.style.left = `${Math.round(window.scrollX + left)}px`;
+      button.style.top = `${Math.round(window.scrollY + top)}px`;
+    };
+    const showAdd = (block) => {
+      if (editor && editor.block === block) return;
+      addTarget = block;
+      addButton.setAttribute('aria-label', `#${blockNumber(block)} に指摘を付ける`);
+      place(addButton, block.getBoundingClientRect(), false, block);
+    };
+    const closeEditor = (refocus) => {
+      if (!editor) return;
+      const { block, root } = editor;
+      root.remove();
+      editor = null;
+      if (refocus) block.focus();
+    };
+    const openEditor = (block, quote) => {
+      closeEditor(false);
+      addButton.hidden = true;
+      pickButton.hidden = true;
+      const n = blockNumber(block);
+      const root = document.createElement('div');
+      root.className = 'review-editor';
+      root.setAttribute('role', 'group');
+      root.setAttribute('aria-label', `#${n} への指摘`);
+      const head = document.createElement('p');
+      head.className = 'review-head';
+      const chips = document.createElement('div');
+      chips.className = 'review-chips';
+      chips.setAttribute('role', 'radiogroup');
+      chips.setAttribute('aria-label', '指摘の種類');
+      const chipButtons = engine.CHIPS.map((label) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'review-chip';
+        chip.setAttribute('role', 'radio');
+        chip.textContent = label;
+        return chip;
+      });
+      chips.append(...chipButtons);
+      const note = document.createElement('input');
+      note.type = 'text';
+      note.className = 'review-note';
+      note.placeholder = 'ひとこと（任意）';
+      note.setAttribute('aria-label', 'ひとこと（任意）');
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'button-primary';
+      add.textContent = '追加';
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.textContent = '閉じる';
+      const actions = document.createElement('div');
+      actions.className = 'review-actions';
+      actions.append(add, close);
+      const list = document.createElement('ul');
+      list.className = 'review-list';
+      root.append(head, chips, note, actions, list);
+      editor = { block, root, list, chip: '', quote: engine.normalizeQuote(quote) };
+      const reset = () => {
+        editor.chip = '';
+        chipButtons.forEach((chip, i) => {
+          chip.setAttribute('aria-checked', 'false');
+          chip.tabIndex = i === 0 ? 0 : -1;
+        });
+        add.disabled = true;
+        head.textContent = editor.quote ? `#${n} 「${editor.quote}」` : `#${n}`;
+      };
+      const check = (index) => {
+        editor.chip = engine.CHIPS[index];
+        chipButtons.forEach((chip, i) => {
+          chip.setAttribute('aria-checked', String(i === index));
+          chip.tabIndex = i === index ? 0 : -1;
+        });
+        add.disabled = false;
+        chipButtons[index].focus();
+      };
+      chipButtons.forEach((chip, index) => {
+        chip.addEventListener('click', () => check(index));
+        chip.addEventListener('keydown', (event) => {
+          const next = engine.nextChipIndex(index, event.key, chipButtons.length);
+          if (next < 0) return;
+          event.preventDefault();
+          check(next);
+        });
+      });
+      add.addEventListener('click', () => {
+        if (!editor || !editor.chip) return;
+        state = engine.addAnnotation(state, n, editor.chip, editor.quote, note.value, contract);
+        editor.quote = '';
+        note.value = '';
+        reset();
+        persist(); render();
+        chipButtons[0].focus();
+      });
+      note.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        add.click();
+      });
+      close.addEventListener('click', () => closeEditor(true));
+      root.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        closeEditor(true);
+      });
+      reset();
+      if (block.tagName === 'LI') block.append(root);
+      else block.after(root);
+      render();
+      chipButtons[0].focus();
+    };
+    const renderReview = () => {
+      blocks.forEach((block) => {
+        const n = blockNumber(block);
+        const count = engine.annotationsFor(state, n).length;
+        let tag = tags.get(n);
+        if (count && !tag) {
+          tag = document.createElement('span');
+          tag.className = 'review-tag';
+          tag.setAttribute('aria-hidden', 'true');
+          tag.textContent = `#${n}`;
+          if (block.tagName === 'TABLE') block.before(tag);
+          else block.prepend(tag);
+          tags.set(n, tag);
+        } else if (!count && tag) {
+          tag.remove();
+          tags.delete(n);
+        }
+        if (count) block.setAttribute('data-ve-annotated', '');
+        else block.removeAttribute('data-ve-annotated');
+      });
+      if (!editor) return;
+      const n = blockNumber(editor.block);
+      editor.list.replaceChildren(...engine.annotationsFor(state, n).map((item) => {
+        const row = document.createElement('li');
+        const label = document.createElement('span');
+        const chipTag = document.createElement('strong');
+        chipTag.className = 'review-list-chip';
+        chipTag.textContent = item.chip;
+        label.append(chipTag, `${item.quote ? `「${item.quote}」` : ''}${item.note ? ` ${item.note}` : ''}`);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '削除';
+        remove.setAttribute('aria-label', `[${item.chip}] の指摘を削除`);
+        remove.addEventListener('click', () => {
+          const at = Array.from(editor.list.querySelectorAll('button')).indexOf(remove);
+          state = engine.removeAnnotation(state, item.index);
+          persist(); render();
+          // Keep keyboard focus inside the editor: next delete, else previous, else first chip.
+          const left = editor.list.querySelectorAll('button');
+          const target = left[at] || left[at - 1] || editor.root.querySelector('.review-chip');
+          if (target) target.focus();
+        });
+        row.append(label, remove);
+        return row;
+      }));
+    };
+    blocks.forEach((block) => {
+      block.setAttribute('tabindex', '0');
+      block.addEventListener('pointerenter', (event) => {
+        if (event.pointerType === 'mouse') showAdd(block);
+      });
+      block.addEventListener('click', (event) => {
+        if (event.target.closest('.review-editor, a, button, input, textarea, summary')) return;
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) return;
+        if (event.target.closest('[data-ve-blk]') === block) showAdd(block);
+      });
+      block.addEventListener('keydown', (event) => {
+        if (event.target !== block || event.key !== 'Enter') return;
+        event.preventDefault();
+        openEditor(block, '');
+      });
+    });
+    addButton.addEventListener('click', () => { if (addTarget) openEditor(addTarget, ''); });
+    pickButton.addEventListener('pointerdown', (event) => event.preventDefault());
+    pickButton.addEventListener('click', () => { if (pick) openEditor(pick.block, pick.quote); });
+    document.addEventListener('selectionchange', () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.rangeCount) {
+        pickButton.hidden = true;
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const node = range.startContainer;
+      const start = node.nodeType === 1 ? node : node.parentElement;
+      const block = start ? start.closest('[data-ve-blk]') : null;
+      if (!block || start.closest('.review-editor')) {
+        pickButton.hidden = true;
+        return;
+      }
+      pick = { block, quote: selection.toString() };
+      place(pickButton, range.getBoundingClientRect(), true);
+    });
     const render = () => {
+      fallback.hidden = true;
+      copyStatus.textContent = '';
       contract.asks.forEach((ask) => {
         const section = document.getElementById(ask.id);
         if (!section) return;
         section.querySelectorAll('[data-ask-option]').forEach((item) => {
+          if (item.hasAttribute('data-ask-withdrawn')) return;
           const selected = state.selections[ask.id] === item.dataset.askOptionId;
           if (selected) item.setAttribute('data-ask-selected', '');
           else item.removeAttribute('data-ask-selected');
-          item.setAttribute('aria-pressed', String(selected));
+          item.setAttribute('aria-checked', String(selected));
         });
+        const line = statusLines.get(ask.id);
+        if (line) line.textContent = engine.cardStatus(ask, state);
         const row = engine.findPanelRow(
           Array.from(panel.querySelectorAll('li[data-ve-panel-ask]')), ask.id);
         if (!row) return;
         const status = row.querySelector('[data-ve-panel-status]');
-        const option = ask.options.find((o) => o.id === state.selections[ask.id]);
-        if (status && option) status.textContent = `選択: ${option.label}`;
+        if (status) status.textContent = engine.cardStatus(ask, state);
         const memoRow = row.querySelector('[data-ve-panel-memo]');
         if (memoRow) {
-          const memo = state.memos[ask.id] || '';
-          memoRow.hidden = !memo.trim();
-          memoRow.textContent = memo.trim() ? `メモ: ${memo}` : '';
+          const memo = (state.memos[ask.id] || '').trim();
+          memoRow.hidden = !memo;
+          memoRow.textContent = memo ? `補足: ${memo}` : '';
         }
       });
+      renderReview();
+      const count = panel.querySelector('[data-ve-panel-review-count]');
+      if (count) count.textContent = `指摘 ${state.annotations.length} 件`;
     };
     askSections.forEach((section) => {
-      section.querySelectorAll('[data-ask-option]').forEach((item) => {
-        item.setAttribute('role', 'button');
+      const list = section.querySelector('.ask-options');
+      if (list) {
+        list.setAttribute('role', 'radiogroup');
+        list.setAttribute('aria-label', textOf(section.querySelector('.ask-question')));
+      }
+      section.querySelectorAll('[data-ask-option]').forEach((item, index) => {
+        item.setAttribute('role', 'radio');
+        // Name the radio by its label alone; badge, benefit and tradeoff become
+        // its description, and the picture's hidden relation list stays out.
+        const label = item.querySelector('.ask-option-label');
+        if (label) {
+          item.setAttribute('aria-labelledby', ensureId(label, `${section.id}-opt-${index + 1}-label`));
+          const details = Array.from(item.querySelectorAll('.ask-option-head .ask-badge, .ask-option-head .ask-withdrawn-note, .ask-benefit, .ask-tradeoff'));
+          if (details.length) {
+            item.setAttribute('aria-describedby', details
+              .map((node, n) => ensureId(node, `${section.id}-opt-${index + 1}-desc-${n + 1}`)).join(' '));
+          }
+        }
+        if (item.hasAttribute('data-ask-withdrawn')) {
+          item.setAttribute('aria-disabled', 'true');
+          item.setAttribute('aria-checked', 'false');
+          return;
+        }
         item.setAttribute('tabindex', '0');
-        item.setAttribute('aria-pressed', 'false');
         const select = () => {
           state = engine.selectOption(state, section.id, item.dataset.askOptionId, contract);
           persist(); render();
@@ -837,6 +1209,11 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
           select();
         });
       });
+      const line = document.createElement('p');
+      line.className = 'ask-card-status';
+      line.setAttribute('aria-live', 'polite');
+      if (list) list.after(line);
+      statusLines.set(section.id, line);
       const memoField = section.querySelector('textarea[data-ask-memo]');
       if (memoField) {
         memoField.value = state.memos[section.id] || '';
@@ -856,7 +1233,8 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     }
     const copyButton = document.createElement('button');
     copyButton.type = 'button';
-    copyButton.textContent = '判断をプロンプトとしてコピー';
+    copyButton.className = 'button-primary';
+    copyButton.textContent = '回答と指摘をコピー';
     const copyStatus = document.createElement('p');
     copyStatus.className = 'panel-copy-status';
     copyStatus.setAttribute('aria-live', 'polite');
@@ -878,7 +1256,6 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     panel.querySelector('.decision-panel')?.append(copyButton, copyStatus, fallback);
     render();
   })();
-
   </script>
 </body>
 </html>

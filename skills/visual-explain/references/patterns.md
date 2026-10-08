@@ -1,6 +1,6 @@
 # 構成と図フォーマットの契約
 
-この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。first-screen の IR は `conclusion`（1〜3 文、各文 80 字以内）と、h2 付きの節か ask が 3 つ以上ある資料で書く `overview`（`section` は first-screen 直後に置く canonical セクションの id、`markers` は 1〜5 件で `n` / `label`（30 字以内）/ `target`（ask / narrative / closing の id））から成る。`decision` / `conditions` は持たず、目次も生成しない（番号一覧が兼ねる）。`document.summary` はメタ情報で画面には出ない。`schemaVersion` は `2`。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
+この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。first-screen の IR は `conclusion`（1〜3 文、各文 80 字以内）と、h2 付きの節か ask が 3 つ以上ある資料で書く `overview`（`section` は first-screen 直後に置く canonical セクションの id、`markers` は 1〜5 件で `n` / `label`（30 字以内）/ `target`（ask / narrative / closing の id））から成る。ビルドは各 `target` の見出し（narrative は最初の h2、無ければ最初の h3。closing は最初の h2。ask は decision が問い行 `p.ask-question`、request が種別行 `p.ask-kind`、hypothesis が主張行 `p.ask-claim`）に `data-ve-marker="n"` を付け、skeleton が番号一覧と同じ丸印で描く（予約属性。作者は書けない）。`decision` / `conditions` は持たず、目次も生成しない（番号一覧が兼ねる）。`document.summary` はメタ情報で画面には出ない。`schemaVersion` は `2`。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
 ## 共通契約
 
@@ -168,9 +168,10 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
       "id": "sec-ask-decision",
       "askType": "decision",
       "question": "限定対象で開始しますか？",
+      "evidence": "scripts/build_explainer.py:1",
       "options": [
-        {"id": "limited", "label": "限定対象で公開する", "tradeoff": "運用が追加で必要"},
-        {"id": "all", "label": "一斉公開する", "tradeoff": "影響範囲が最初から広い"}
+        {"id": "limited", "label": "限定対象で公開する", "benefit": "影響が出ても対象顧客だけで止められる", "tradeoff": "対象外の顧客は恩恵を受けるまで待つ"},
+        {"id": "all", "label": "一斉公開する", "benefit": "全顧客が同時に新しい承認経路を使える", "tradeoff": "例外分類の誤りが全顧客に及ぶ"}
       ],
       "defaultId": "limited"
     },
@@ -292,7 +293,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **ユーザーへの依頼は `askType: "request"`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
 - **検証待ち主張は `askType: "hypothesis"`**: まだ確証がない主張と、その検証方法。
 
-`decision`。選択肢は2件以上。既定案は `defaultId`（options の id）か、既定なし理由の `noDefaultReason` のどちらか一方。レンダラ出力では選択チップは青（`--accent`）、既定案は緑（`--positive`）。
+`decision`（問いカード）。選択肢は2件以上で、各選択肢に `benefit`（利点）と `tradeoff`（代償）を必ず書く。推奨は `defaultId`（必須。取り下げた選択肢は指せない）で、カードに「推奨」バッジが付く。読者が選ばなければ「お任せ＝推奨」として回収される。`evidence` には `file:line` か「」で囲んだ実行結果の引用を 200 字以内で書く（事実を読者に聞かないため）。再往復で捨てた案は `"withdrawn": true` で残す（取り消し線付きで表示され、選べない）。decision ask は1資料4問まで。案ごとに見た目（範囲・順序・配置）が違うなら、取り下げていない選択肢すべてに `figure`（3×3 以内の `grid-diagram`。書き方は「grid-diagram（格子上の配置）@2」）を付ける。
 
 ```json
 {
@@ -300,9 +301,10 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
   "id": "sec-ask-decision",
   "askType": "decision",
   "question": "注釈を今回に含めますか？",
+  "evidence": "scripts/build_explainer.py:1",
   "options": [
-    {"id": "include", "label": "含める", "tradeoff": "変更量が増える"},
-    {"id": "later", "label": "次フェーズ", "tradeoff": "効果が遅れる"}
+    {"id": "include", "label": "含める", "benefit": "注釈を使う場面の確認を今回のレビューで済ませられる", "tradeoff": "変更量が増えレビュー時間が延びる"},
+    {"id": "later", "label": "次フェーズ", "benefit": "今回の変更を小さく保ち、戻す範囲を狭くできる", "tradeoff": "注釈による判断支援が次フェーズまで届かない"}
   ],
   "defaultId": "include"
 }
@@ -336,9 +338,25 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 レンダラ出力の HTML 契約（`.ask` / `data-ask` / `.ask-options` 等）は checker が検証する。モデルは HTML を手書きせず IR だけを書く。
 
-### decision ask の回収パネル（Phase 2）
+### 回収パネルと指摘層
 
-`askType: "decision"` の ask を1件以上含む資料は、末尾節の後にビルドが「判断の回収」パネルを自動生成する。**Phase 2 で ask の IR は変わらない**。上の `decision` サンプルのように ask を書けば、回収は `build_explainer.py` と骨格の固定 JavaScript だけが担い、パネル自体を IR に書く必要はない。decision ask が0件の資料にはパネルは現れない。
+全資料の末尾節の後に、ビルドが回収パネルを1つ自動生成する（decision ask が0件でも出る）。パネルを IR に書いてはならない。本文の `p` / `h2` / `h3` / `li` / `figure` / `blockquote` / `pre` / `table` にはビルドが `data-ve-blk="N"`（1 からの DOM 順）を付け、読者はブロックを指して 8 種のチップ（わからない / 図にしてほしい / もっと詳しく / 短くする / 削る / 言い換える / 事実を確認 / ここは良い）とひとことを付けられる。問いカードの UI 部品・回収パネル・段階表示の内側には番号を付けない。`data-ve-blk` は予約属性で、narrative にも compatibility にも書けない。コピーされる固定形は次のとおり。
+
+```text
+[visual-explain 回答]
+資料: <title>
+(<path> / id: <id> / schema: <ver> / asks: <digest>)
+Q1. <問い>: <選択> / 補足: <自由記述>
+Q2. <問い>: (未選択 = お任せ)
+全体メモ: <自由記述>
+## 指摘
+#12 [図にしてほしい] 「<なぞった文字列（先頭 40 字）>」 <ひとこと>
+#15 [ここは良い]
+---
+上の回答を反映して作業を続けてください。お任せの項目は推奨案で確定してください。
+```
+
+`#N` は資料内の `data-ve-blk="N"` を指す。`(未選択 = お任せ)` は推奨案で確定する。空の節（指摘 0 件、全体メモ空）は出さず、補足が空なら ` / 補足:` を省く。
 
 ## 図フォーマット
 
@@ -481,11 +499,11 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 接続は同じレーン内の隣接ノード、または隣接レーン間だけに限定する。障害物回避や交差の解消はしない。これで表せない複雑なグラフは図を分割する。ノードの位置、接続点、線、矢印を手で描いてはならない。固定のコネクタ処理が辺の中点、曲線、矢印、再描画、視覚的な警告を扱い、`connection-text visually-hidden` の接続テキストも生成するため、これらを手で追加または変更してはならない。
 
-ライブラリで表せない場合だけ自由なインライン SVG を使う。その直前に SVG を使う理由を HTML コメントで残し、座標直書きではなくデザイン規則に従う。同じ需要が繰り返すなら、新しい図フォーマットへの昇格を検討する。
+これで表せない「配置そのものが意味を持つ図」は、自由なインライン SVG ではなく canonical の `grid-diagram`（後述）で描く。自由な SVG は checker が拒否する。
 
-## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / bars / kpi / mixed の組み立て例
+## カノニカルな matrix / flow / enumeration / chevron / pyramid / stairs / logic-tree / waterfall / slope / evidence-map / bars / kpi / grid-diagram / mixed の組み立て例
 
-昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi` は canonical IR（**contractVersion 2 / @2**）から生成する。以下の組み立て例はすべて `selection.version: 2` を宣言する。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
+昇格済みの `matrix`、`flow`、`enumeration`、`chevron`、`pyramid`、`stairs`、`logic-tree`、`waterfall`、`slope`、`evidence-map`、`bars`、`kpi`、`grid-diagram` は canonical IR（**contractVersion 2 / @2**）から生成する。以下の組み立て例はすべて `selection.version: 2` を宣言する。`build_explainer.py --assembly <IR> --output <html>` でビルドし、`check.sh <html>` で四層検証する。ほかの形式と弱モデル劣化はラベル付き互換節として同じ組み立てに入る。takeaway 注釈を使うなら `takeawayTargetIds`（1〜3件）/ `emphasis`（全体で最大3件、対象ごとに1件まで、各40字以内）/ `takeawayScope: "whole"` を上記「図のキャプション規約」に従って IR に足す。
 
 ### 箇条書き種別 → 図（選択ガイド）
 
@@ -500,6 +518,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **結論と根拠の1段マッピング** → `evidence-map`（`claim-support` / `claim-support-mapping`）。**根拠の根拠は図を分割** — 階層は1段のみ。
 - **単軸の定量比較・ランキング** → `bars`（`quantitative-comparison` / `single-axis-quantity`）。**時系列や加算的ブリッジは waterfall / slope へ** — 最大10行、主題の1本だけ teal ハイライト。
 - **主要指標の強調（リング型）** → `kpi`（`headline-metrics` / `metric-highlight`）。**複数系列の時系列比較は slope へ** — 最大5個（1行3個まで）。
+- **配置そのものが意味を持つ（近さ＝関係、上下＝優先、囲み＝責任範囲）** → `grid-diagram`（`spatial-layout` / `spatial-placement`）。**順序だけなら chevron / flow、2軸の比較なら matrix** — 12 形式で表せるならそちらを使う。格子は列・行とも 1〜6、ノード 2〜12。
 
 各項目が「1つの内容」なら enumeration（順序なし）/ chevron（順序あり）。各項目が**複数の並列箇条書き**を持つなら、**見出しなしマトリックス**（`matrix@2`, `presentation: "dense"`, `showColumnHeaders: false`, セル `content` を配列）を使う。enumeration/chevron は紺色の図形の右に1内容のみを想定しており、1項目に複数内容を置くとレイアウトが崩れる。
 
@@ -1749,6 +1768,180 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
       ]
     }
   ]
+}
+```
+
+### grid-diagram（格子上の配置）@2
+
+配置そのものが意味を持つとき（近さ＝関係、上下＝優先、囲み＝責任範囲）だけ使う。12 形式で表せるならそちらを使う。`grid` は列・行とも 1〜6。ノードは 2〜12 件で、`cell` は 1 始まりの `[列, 行]`、`span`（`[幅, 高さ]`）は任意、`label` は 14 字以内（1 行に収まらなければ半角か全角の空白 1 つの位置、無ければ中央で 2 行に折る）。`tone` は `base`（既定）/ `primary`（主役）/ `warning`（注意の枠）。`regions` は 0〜4 件の囲み（`label` 8 字以内、囲み同士は重ねない）、`edges` は 0〜16 件で `id` / `from` / `to` と任意の `label`（10 字以内）を持つ。座標・経路・色は書かない（ビルドが決める）。
+
+ビルドは線を直交 1 回折れ（水平→垂直、ふさがっていれば垂直→水平）で引き、次のどれかに当たると**配置を直さずに**診断を返す: 2 つのノードが同じマスを占める / ノードが囲みの境界をまたぐ / 線が端点以外のノードを横切る / 線が囲みのラベルに重なる（「囲み '<id>' のラベルに線が重なります」） / ラベルがノードや囲みに収まらない・線のラベルを置く場所がない（線のラベル同士、ノード、囲みのラベルに重ならない場所を、折れの向きを替えながら探す） / 参照先が無い・文字列でない・格子の外を指す。id の重複（ノード・囲み・線のあいだも含む）は、どの検証モードでも報告される。診断を読んでマスを置き直す（ラベル付きの線は、端点のあいだに空きマスを 1 つ置くと通りやすい）。
+
+`markers`（`n` / `target` / 任意の `ask`）は first-screen の全体図（`overview.section`）にした grid-diagram にだけ書き、`overview.markers` と同じ番号をすべて置く。番号はノードの右上に青い丸で描かれ、直後の番号一覧にも並ぶ。`ask` を書くなら、同じ番号の `overview.markers[].target` と同じ id にする。takeaway 注釈（`takeawayTargetIds` / `emphasis`）は使えない（強調は `tone` で宣言する）。
+
+ビルドは図の直後に、ノード・囲み（中が空なら「中は空」）・線・番号を並べた読み上げ用の一覧（`ul.ve-gd-relations.visually-hidden`）を自動で出す。このクラス（`visually-hidden` / `ve-gd-relations`）は予約済みで、narrative や compatibility には書けない。一覧は本文の字数に数えない。
+
+```json
+{
+  "schemaVersion": 2,
+  "document": {
+    "id": "grid-diagram-demo",
+    "title": "承認の配置図",
+    "summary": "根拠と顧客影響が共同承認で合流する位置を格子で示す。",
+    "type": "system",
+    "profile": "strict"
+  },
+  "sections": [
+    {
+      "kind": "first-screen",
+      "id": "sec-first",
+      "conclusion": "この資料の判断を進めます。"
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-grid",
+        "relationship": {
+          "kind": "spatial-layout",
+          "capabilities": [
+            "spatial-placement"
+          ]
+        },
+        "selection": {
+          "component": "grid-diagram",
+          "version": 2,
+          "matchedCapabilities": [
+            "spatial-placement"
+          ]
+        },
+        "caption": "何を見るか: 二つの根拠が共同承認で合流する位置",
+        "certainty": [
+          {
+            "id": "cert-grid",
+            "level": "inferred",
+            "statement": "説明用の配置。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-grid",
+            "label": "承認手順メモ"
+          }
+        ],
+        "accessibility": {
+          "label": "承認の配置図",
+          "summary": "左に根拠、中央に共同承認、右に公開と撤回条件を置く。"
+        },
+        "grid-diagram": {
+          "grid": {
+            "cols": 4,
+            "rows": 3
+          },
+          "nodes": [
+            {
+              "id": "exception",
+              "label": "契約例外",
+              "cell": [
+                1,
+                1
+              ]
+            },
+            {
+              "id": "price",
+              "label": "料金改定案",
+              "cell": [
+                1,
+                3
+              ]
+            },
+            {
+              "id": "approval",
+              "label": "共同承認",
+              "cell": [
+                3,
+                2
+              ],
+              "tone": "primary"
+            },
+            {
+              "id": "rollback",
+              "label": "撤回条件",
+              "cell": [
+                4,
+                3
+              ],
+              "tone": "warning"
+            }
+          ],
+          "regions": [
+            {
+              "id": "legal",
+              "label": "根拠",
+              "from": [
+                1,
+                1
+              ],
+              "to": [
+                1,
+                3
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "id": "e-exception",
+              "from": "exception",
+              "to": "approval",
+              "label": "照合"
+            },
+            {
+              "id": "e-price",
+              "from": "price",
+              "to": "approval"
+            },
+            {
+              "id": "e-rollback",
+              "from": "approval",
+              "to": "rollback",
+              "label": "見張る"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "closing",
+      "id": "sec-closing",
+      "blocks": [
+        {
+          "heading": "限界・確度",
+          "items": [
+            "説明用の配置で、実データではない。"
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+decision ask の選択肢には、同じ形の小図を `figure` に付けられる（`grid` は 3×3 以内、ノードは 1〜9 件、`markers` は書けない、図の中の id は一意）。見た目が違う案を比べるときに使い、取り下げていない選択肢は**すべて付けるか、すべて付けないか**のどちらかにする（取り下げた選択肢は 1 つだけ付けてもよい）。小図の文字は本文の字数に数えない。小図の id が資料内の他の id と衝突すると拒否される。
+
+```json
+{
+  "id": "limited",
+  "label": "限定対象で段階公開する",
+  "benefit": "誤りの影響を限定対象に閉じたまま照合の効果を確かめられる",
+  "tradeoff": "対象選定と承認・顧客対応の運用を追加で用意する必要がある",
+  "figure": {
+    "grid": {"cols": 3, "rows": 1},
+    "nodes": [
+      {"id": "limited", "label": "限定対象で公開", "cell": [1, 1], "tone": "primary"},
+      {"id": "check", "label": "影響を確認", "cell": [2, 1]},
+      {"id": "expand", "label": "全顧客へ拡大", "cell": [3, 1]}
+    ],
+    "edges": [{"id": "e1", "from": "limited", "to": "check"}, {"id": "e2", "from": "check", "to": "expand"}]
+  }
 }
 ```
 
