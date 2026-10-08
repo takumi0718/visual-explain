@@ -159,6 +159,30 @@ class UniquenessTest(unittest.TestCase):
         self.assertEqual(messages(raw), ["edge.from 'ghost' がノードにありません"])
 
 
+class UnhashableValueTest(unittest.TestCase):
+    """Non-string JSON values must yield diagnostics, never TypeError."""
+
+    def test_edge_endpoints(self) -> None:
+        self.assertEqual(messages(changed(edges=[{"id": "e1", "from": [1], "to": "approval"}])),
+                         ["edge.from '[1]' がノードにありません"])
+        self.assertEqual(messages(changed(edges=[{"id": "e1", "from": "exception", "to": {"a": 1}}])),
+                         ["edge.to '{'a': 1}' がノードにありません"])
+
+    def test_both_endpoints_unhashable(self) -> None:
+        self.assertEqual(messages(changed(edges=[{"id": "e1", "from": [1], "to": [1]}])),
+                         ["edge.from '[1]' がノードにありません", "edge.to '[1]' がノードにありません",
+                          "edge.from と edge.to は別のノードである必要があります"])
+
+    def test_tone(self) -> None:
+        raw = changed()
+        raw["nodes"][0]["tone"] = [1]
+        self.assertEqual(messages(raw), ["未知の tone '[1]'"])
+
+    def test_marker_target(self) -> None:
+        self.assertEqual(messages(changed(markers=[{"n": 1, "target": [1]}])),
+                         ["marker.target '[1]' がノードにありません"])
+
+
 class ThumbnailTest(unittest.TestCase):
     def test_thumbnail_is_three_by_three_at_most_and_has_no_markers(self) -> None:
         small = {"grid": {"cols": 3, "rows": 1},

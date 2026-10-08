@@ -2659,9 +2659,10 @@ def _validate_grid_diagram(raw: object, path: str, col: DiagnosticCollector, *,
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.cell は [列, 行] の1以上の整数2個です", p)
         if span is None:
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.span は [幅, 高さ] の1以上の整数2個です", p)
-        if tone not in _GRID_TONES:
+        tone_ok = isinstance(tone, str) and tone in _GRID_TONES
+        if not tone_ok:
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"未知の tone '{tone}'", p)
-        if _nonblank_str(node_id) and _nonblank_str(label) and cell and span and tone in _GRID_TONES:
+        if _nonblank_str(node_id) and _nonblank_str(label) and cell and span and tone_ok:
             nodes.append(GridNode(id=node_id, label=label, col=cell[0], row=cell[1],
                                   span_cols=span[0], span_rows=span[1], tone=tone))
     regions_raw = raw.get("regions", [])
@@ -2703,12 +2704,14 @@ def _validate_grid_diagram(raw: object, path: str, col: DiagnosticCollector, *,
         edge_id, source, target, label = item.get("id"), item.get("from"), item.get("to"), item.get("label", "")
         if not _nonblank_str(edge_id):
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.id は空にできません", p)
-        if source not in known_ids:
+        if not isinstance(source, str) or source not in known_ids:
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"edge.from '{source}' がノードにありません", p)
-        if target not in known_ids:
+        if not isinstance(target, str) or target not in known_ids:
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"edge.to '{target}' がノードにありません", p)
         if source == target:
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.from と edge.to は別のノードである必要があります", p)
+        elif not (isinstance(source, str) and isinstance(target, str)):
+            pass
         elif (source, target) in pairs:
             col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"辺 '{source}' → '{target}' が重複しています", p)
         elif (target, source) in pairs:
@@ -2738,7 +2741,7 @@ def _validate_grid_diagram(raw: object, path: str, col: DiagnosticCollector, *,
                 col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "marker.n は1〜5の整数です", p)
             elif n in seen_n:
                 col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"marker.n {n} が重複しています", p)
-            if target not in known_ids:
+            if not isinstance(target, str) or target not in known_ids:
                 col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"marker.target '{target}' がノードにありません", p)
             elif target in marked:
                 col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"ノード '{target}' に番号が2つあります", p)
