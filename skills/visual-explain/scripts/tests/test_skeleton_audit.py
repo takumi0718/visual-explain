@@ -301,6 +301,16 @@ class DecisionOptionCardInteractionTest(unittest.TestCase):
         self.assertIn("item.setAttribute('tabindex', '0')", block)
         self.assertIn("item.addEventListener('click', select)", block)
 
+    def test_option_name_comes_from_its_label_only(self):
+        # The option li holds benefit, tradeoff and a hidden relation list; its
+        # radio name must be the label alone, the rest a description.
+        block = self._collection_block()
+        self.assertIn("const label = item.querySelector('.ask-option-label');", block)
+        self.assertIn("item.setAttribute('aria-labelledby', ensureId(label, `${section.id}-opt-${index + 1}-label`));", block)
+        self.assertIn("item.querySelectorAll('.ask-option-head .ask-badge, .ask-option-head .ask-withdrawn-note, .ask-benefit, .ask-tradeoff')", block)
+        self.assertIn("item.setAttribute('aria-describedby'", block)
+        self.assertNotIn("ve-gd-relations", block)
+
     def test_aria_checked_syncs_on_the_item_itself(self):
         block = self._collection_block()
         self.assertIn("item.setAttribute('aria-checked', String(selected))", block)

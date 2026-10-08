@@ -757,6 +757,13 @@
     const askSections = Array.from(document.querySelectorAll(
       'section[data-ve-section-kind="ask"][data-ve-ask-type="decision"][id]'));
     const textOf = (node) => (node ? node.textContent : '').trim();
+    const ensureId = (node, base) => {
+      if (node.id) return node.id;
+      let id = base;
+      for (let n = 2; document.getElementById(id); n += 1) id = `${base}-${n}`;
+      node.id = id;
+      return id;
+    };
     const contract = {
       documentId: panel.dataset.veDocumentId || '',
       schemaVersion: panel.dataset.veSchemaVersion || '',
@@ -1050,8 +1057,19 @@
         list.setAttribute('role', 'radiogroup');
         list.setAttribute('aria-label', textOf(section.querySelector('.ask-question')));
       }
-      section.querySelectorAll('[data-ask-option]').forEach((item) => {
+      section.querySelectorAll('[data-ask-option]').forEach((item, index) => {
         item.setAttribute('role', 'radio');
+        // Name the radio by its label alone; badge, benefit and tradeoff become
+        // its description, and the picture's hidden relation list stays out.
+        const label = item.querySelector('.ask-option-label');
+        if (label) {
+          item.setAttribute('aria-labelledby', ensureId(label, `${section.id}-opt-${index + 1}-label`));
+          const details = Array.from(item.querySelectorAll('.ask-option-head .ask-badge, .ask-option-head .ask-withdrawn-note, .ask-benefit, .ask-tradeoff'));
+          if (details.length) {
+            item.setAttribute('aria-describedby', details
+              .map((node, n) => ensureId(node, `${section.id}-opt-${index + 1}-desc-${n + 1}`)).join(' '));
+          }
+        }
         if (item.hasAttribute('data-ask-withdrawn')) {
           item.setAttribute('aria-disabled', 'true');
           item.setAttribute('aria-checked', 'false');
