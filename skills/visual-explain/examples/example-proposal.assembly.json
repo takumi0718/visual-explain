@@ -11,13 +11,25 @@
     {
       "kind": "first-screen",
       "id": "sec-first-screen",
-      "conclusion": "未確認の契約例外を含む料金改定を、限定対象で開始するか決めます。",
+      "conclusion": "限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。",
       "overview": {
         "section": "sec-alternatives",
         "markers": [
-          {"n": 1, "label": "現状の問題", "target": "sec-current-problem"},
-          {"n": 2, "label": "承認地図", "target": "sec-approval-map-intro"},
-          {"n": 3, "label": "変更前後", "target": "sec-before-after-intro"}
+          {
+            "n": 1,
+            "label": "部門別確認の限界",
+            "target": "sec-current-problem"
+          },
+          {
+            "n": 2,
+            "label": "承認地図での照合",
+            "target": "sec-approval-map-intro"
+          },
+          {
+            "n": 3,
+            "label": "限定対象で開始するか",
+            "target": "sec-ask-decision"
+          }
         ]
       }
     },
@@ -40,7 +52,7 @@
             "intersection-comparison"
           ]
         },
-        "caption": "一斉公開は影響が広く、保留は目的を達せず、限定公開だけが影響確認の機会を残す。",
+        "caption": "見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。",
         "certainty": [
           {
             "id": "cert-alternatives",
@@ -130,7 +142,7 @@
     {
       "kind": "narrative",
       "id": "sec-current-problem",
-      "markup": "<section aria-labelledby=\"current-problem\">\n  <h2 id=\"current-problem\">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>\n  <p class=\"claim\">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class=\"certainty unverified\">未確認</span></p>\n  <p class=\"evidence\">これは正規見本のための想定です。実在する料金改定の状況を示すものではありません。</p>\n  <details class=\"source-note\"><summary>出所</summary><p>この canonical proposal example の説明用シナリオ。外部の顧客、契約、請求データは使用していません。</p></details>\n</section>"
+      "markup": "<section aria-labelledby=\"current-problem\">\n  <h2 id=\"current-problem\">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>\n  <p class=\"claim\">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class=\"certainty unverified\">未確認</span></p>\n</section>"
     },
     {
       "kind": "narrative",
@@ -146,16 +158,6 @@
         "reason": "unmigrated-format",
         "format": "layers"
       }
-    },
-    {
-      "kind": "narrative",
-      "id": "sec-approval-map-evidence",
-      "markup": "<p class=\"evidence\">文章だけでは、どの根拠がどの顧客影響と承認・撤回に接続するかを追いにくいため、この見本では関係を図にしています。</p>"
-    },
-    {
-      "kind": "narrative",
-      "id": "sec-before-after-intro",
-      "markup": "<section aria-labelledby=\"before-after\">\n  <h2 id=\"before-after\">判断材料を部門ごとに分けたままにせず、同じ顧客群を一つの経路で照合する</h2>\n  <p class=\"claim\">比較するのは資料の見た目ではなく、公開判断で失われる関係です。</p>\n</section>"
     },
     {
       "kind": "compatibility",
@@ -211,7 +213,8 @@
           "heading": "不確かな点",
           "items": [
             "実際に限定公開できる顧客群、必要な同意、問い合わせ量、撤回に要する時間は未検証です。",
-            "開始判断の前に、それぞれの担当者と確認が必要です。"
+            "開始判断の前に、それぞれの担当者と確認が必要です。",
+            "この資料は説明用の想定で、実在の顧客・契約・請求データは使っていません。"
           ]
         }
       ]
