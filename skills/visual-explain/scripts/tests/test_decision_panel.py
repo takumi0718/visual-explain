@@ -82,19 +82,22 @@ class RenderDecisionPanelTest(unittest.TestCase):
         self.assertIn('data-ve-document-path="examples/demo.html"', panel.markup)
         self.assertIn('id="sec-decision-panel"', panel.markup)
         self.assertIn('class="decision-panel"', panel.markup)
-        self.assertIn('aria-label="判断の回収"', panel.markup)
-        self.assertIn("<h2>判断の回収</h2>", panel.markup)
+        self.assertIn('aria-label="回答と指摘の回収"', panel.markup)
+        self.assertIn("<h2>回答と指摘の回収</h2>", panel.markup)
         self.assertIn('data-ve-panel-ask="ask-1"', panel.markup)
         self.assertIn('class="panel-question"', panel.markup)
         self.assertIn("どちらにしますか。", panel.markup)
         self.assertIn('data-ve-panel-status', panel.markup)
-        self.assertIn("未選択（既定案: 案B）", panel.markup)
+        self.assertIn("お任せ（推奨: 案B）", panel.markup)
         self.assertIn('data-ve-panel-memo hidden', panel.markup)
         self.assertIn('<textarea data-ve-panel-global-memo></textarea>', panel.markup)
 
-    def test_returns_none_for_zero_decision_asks(self) -> None:
-        self.assertIsNone(render_decision_panel((), _DOC, 1, "out.html"))
-        self.assertIsNone(render_decision_panel((_REQUEST_ASK,), _DOC, 1, "out.html"))
+    def test_panel_without_decision_asks_has_no_ask_list(self) -> None:
+        panel = render_decision_panel((_REQUEST_ASK,), _DOC, 2, "out.html")
+        self.assertIn('data-ve-section-kind="decision-panel"', panel.markup)
+        self.assertNotIn('class="panel-asks"', panel.markup)
+        self.assertIn('<p class="panel-review-count" data-ve-panel-review-count>指摘 0 件</p>', panel.markup)
+        self.assertIn(f'data-ve-ask-digest="{compute_ask_digest((_REQUEST_ASK,))}"', panel.markup)
 
     def test_avoids_occupied_instance_id(self) -> None:
         panel = render_decision_panel(
@@ -129,15 +132,16 @@ class BuildDocumentDecisionPanelTest(unittest.TestCase):
         self.assertIn('data-ve-document-path="examples/demo.html"', doc)
         self.assertIn('data-ve-document-id="doc-1"', doc)
 
-    def test_no_panel_when_no_decision_ask(self) -> None:
+    def test_panel_present_without_decision_ask(self) -> None:
         doc = build_document(
             _assembly(decision_ask=False), REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS_DIR,
             document_path="out.html",
         )
-        # The skeleton's fixed decision-collection JS embeds this attribute string
-        # inside a querySelector call regardless of panel presence (Task 5), so the
-        # section-tag assertion checks the opening tag rather than a bare substring.
-        self.assertNotIn('<section data-ve-section-kind="decision-panel"', doc)
+        self.assertEqual(doc.count('<section data-ve-section-kind="decision-panel"'), 1)
+        self.assertLess(doc.index('data-ve-section-kind="closing"'),
+                        doc.index('<section data-ve-section-kind="decision-panel"'))
+        from ve_components.checker import check_final_document
+        self.assertEqual(check_final_document(doc, SKELETON, REGISTRY, components_dir=COMPONENTS_DIR), [])
 
 
 class BuildCliDocumentPathTest(unittest.TestCase):

@@ -239,28 +239,28 @@ def render_decision_panel(
     document_path: str,
     *,
     occupied_ids: frozenset[str] | set[str] = frozenset(),
-) -> WrappedDocumentSection | None:
-    """Build the decision-recovery panel inserted after closing.
+) -> WrappedDocumentSection:
+    """Build the collection panel inserted after closing (always exactly one).
 
-    Returns ``None`` when there are no decision-type asks (an empty panel is
-    never emitted). Static markup only: JS-driven selection sync, copy
-    controls, and status updates are Task 5.
+    It lists decision asks when there are any, and always carries the
+    annotation count and the global memo. Selection sync, drafts, and the
+    copy control are the skeleton's fixed collection JS.
     """
     decisions = tuple(a for a in asks if a.ask_type == "decision")
-    if not decisions:
-        return None
     digest = compute_ask_digest(asks)
-    items_html = "".join(_render_panel_ask_item(a) for a in decisions)
     instance_id = _allocate_instance_id(_PANEL_INSTANCE_ID_PREFIX, occupied_ids)
+    asks_html = ""
+    if decisions:
+        items_html = "".join(_render_panel_ask_item(a) for a in decisions)
+        asks_html = f'  <ul class="panel-asks">\n    {items_html}\n  </ul>\n'
     body = (
-        '<section class="decision-panel" aria-label="判断の回収">\n'
-        "  <h2>判断の回収</h2>\n"
-        '  <ul class="panel-asks">\n'
-        f"    {items_html}\n"
-        "  </ul>\n"
+        '<section class="decision-panel" aria-label="回答と指摘の回収">\n'
+        "  <h2>回答と指摘の回収</h2>\n"
+        f"{asks_html}"
+        '  <p class="panel-review-count" data-ve-panel-review-count>指摘 0 件</p>\n'
         '  <div class="ask-memo"><label>全体メモ'
         "<textarea data-ve-panel-global-memo></textarea></label></div>\n"
-        '  <p class="panel-note">選択の反映・メモの保存・コピーはブラウザの'
+        '  <p class="panel-note">選択・指摘の保存とコピーは、ブラウザの'
         "JavaScript が有効なときに使えます。</p>\n"
         "</section>"
     )
@@ -278,12 +278,10 @@ def render_decision_panel(
 
 
 def _render_panel_ask_item(section: AskSection) -> str:
-    default_label = None
-    if section.default_id is not None:
-        default_label = next(
-            (opt.label for opt in section.options if opt.id == section.default_id), None
-        )
-    status = f"未選択（既定案: {default_label}）"
+    default_label = next(
+        opt.label for opt in section.options if opt.id == section.default_id
+    )
+    status = f"お任せ（推奨: {default_label}）"
     return (
         f'<li data-ve-panel-ask="{_esc(section.id)}">'
         f'<span class="panel-question">{_esc(section.question or "")}</span>'

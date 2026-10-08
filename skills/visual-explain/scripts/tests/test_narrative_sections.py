@@ -142,7 +142,9 @@ def _build_composition_and_document(raw):
     # the intermediate CompositionResult around so the test can pass it as
     # ``expected`` to check_final_document directly (build_document only
     # returns the final HTML string).
-    from ve_components.document_sections import render_ask, render_closing, render_first_screen
+    from ve_components.document_sections import (
+        render_ask, render_closing, render_decision_panel, render_first_screen,
+    )
     from ve_components.model import AskSection, ClosingSection, FirstScreenSection
 
     request = validate_assembly(raw)
@@ -160,6 +162,10 @@ def _build_composition_and_document(raw):
             items.append(render_ask(section))
         else:
             items.append(process_compatibility_section(section))
+    items.append(render_decision_panel(
+        tuple(s for s in request.sections if isinstance(s, AskSection)),
+        request.document, request.schema_version, "doc.html",
+        occupied_ids=frozenset(i.instance_id for i in items)))
     composition = compose_sections(items)
     composition = replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
     document = flatten_document(composition, SKELETON, COMPONENTS_DIR, request.document.title)

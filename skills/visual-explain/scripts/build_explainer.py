@@ -112,8 +112,7 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
         tuple(s for s in request.sections if isinstance(s, AskSection)),
         request.document, request.schema_version, document_path,
         occupied_ids=occupied_ids | ({nav.instance_id} if nav is not None else frozenset()))
-    if panel is not None:
-        items.append(panel)
+    items.append(panel)
     if nav is not None:
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)

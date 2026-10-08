@@ -11,6 +11,7 @@ from ve_components.checker import CONTENT_BEGIN, CONTENT_END, check_final_docume
 from ve_components.diagnostics import ContractError
 from ve_components.document_checks import check_document_structure
 from ve_components.document_sections import compute_ask_digest_from_pairs
+from ve_components.review_blocks import stamp_review_blocks
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
 
@@ -209,7 +210,7 @@ class DocumentStructureValidTest(unittest.TestCase):
         )
         self.assertIn('data-ve-section-kind="decision-panel"', html)
         content, title = _content_and_title(html)
-        self.assertEqual(check_document_structure(content, title=title), [])
+        self.assertEqual(check_document_structure(content, title=title, skeleton_version=3), [])
         self.assertEqual(
             check_final_document(html, SKELETON, REGISTRY, components_dir=COMPONENTS),
             [],
@@ -225,7 +226,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             document_path="doc.html",
         )
         content, title = _content_and_title(html)
-        self.assertEqual(check_document_structure(content, title=title), [])
+        self.assertEqual(check_document_structure(content, title=title, skeleton_version=3), [])
         self.assertEqual(
             check_final_document(html, SKELETON, REGISTRY, components_dir=COMPONENTS),
             [],
@@ -249,7 +250,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             '<span class="link-domain">‹evil.example›</span>',
         )
         self.assertIn("‹evil.example›", broken)
-        msgs = _msgs(check_document_structure(broken, title=TITLE))
+        msgs = _msgs(check_document_structure(broken, title=TITLE, skeleton_version=3))
         self.assertTrue(
             any("外部リンクのドメインマーカーが不正です" in m for m in msgs),
             msgs,
@@ -271,7 +272,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             "",
             1,
         )
-        msgs = _msgs(check_document_structure(broken, title=title))
+        msgs = _msgs(check_document_structure(broken, title=title, skeleton_version=3))
         self.assertIn("first-screen に summary がありません", msgs)
 
     def test_invalid_type_vocabulary_is_diagnosed(self) -> None:
@@ -289,7 +290,7 @@ class DocumentStructureValidTest(unittest.TestCase):
             'data-ve-document-type="memo"',
             1,
         )
-        msgs = _msgs(check_document_structure(broken, title=title))
+        msgs = _msgs(check_document_structure(broken, title=title, skeleton_version=3))
         self.assertIn("文書型の自己表明が不正です: memo", msgs)
 
     def test_check_final_document_runs_group3_on_component_docs(self) -> None:
@@ -699,6 +700,39 @@ class DecisionPanelStructureTest(unittest.TestCase):
         self.assertNotEqual(msgs, [])
 
 
+class CollectionPanelV3Test(unittest.TestCase):
+    """skeleton v3: the collection panel is exactly one regardless of decision asks."""
+
+    def _check(self, content: str) -> list[str]:
+        stamped, _ = stamp_review_blocks(content)
+        return _msgs(check_document_structure(stamped, title=None, skeleton_version=3))
+
+    def test_panel_without_decision_ask_is_clean(self) -> None:
+        digest = compute_ask_digest_from_pairs(())
+        self.assertEqual(self._check(_FIRST_BLOCK + _CLOSING_BLOCK + _panel_block(digest)), [])
+
+    def test_missing_panel_is_reported(self) -> None:
+        self.assertEqual(self._check(_FIRST_BLOCK + _CLOSING_BLOCK), ["回収パネルがありません"])
+
+    def test_two_panels_are_reported(self) -> None:
+        digest = compute_ask_digest_from_pairs(())
+        content = (_FIRST_BLOCK + _CLOSING_BLOCK + _panel_block(digest)
+                   + _panel_block(digest, instance_id="sec-decision-panel-2"))
+        self.assertEqual(self._check(content), ["回収パネルはちょうど1個必要です"])
+
+    def test_decision_digest_is_still_checked(self) -> None:
+        content = _FIRST_BLOCK + _ask_block() + _CLOSING_BLOCK + _panel_block("0" * 16)
+        self.assertEqual(self._check(content), ["回収パネルの ask 契約ダイジェストが一致しません"])
+
+    def test_legacy_rule_kept_for_v1_and_v2(self) -> None:
+        digest = compute_ask_digest_from_pairs(())
+        content = _FIRST_BLOCK + _CLOSING_BLOCK + _panel_block(digest)
+        for version in (1, 2):
+            self.assertEqual(
+                _msgs(check_document_structure(content, title=None, skeleton_version=version)),
+                ["decision ask がないのに回収パネルがあります"], version)
+
+
 class CompatibilityReservedAttrSpoofTest(unittest.TestCase):
     """Structural reserved attributes (``data-ve-section-kind`` etc.) are keyed
     off bare ``[attr]`` DOM queries by both the skeleton's JS binder and a
@@ -827,7 +861,7 @@ class SelfClosingForeignContentTest(unittest.TestCase):
         self.assertIn("<circle", self_closed)
         self.assertNotIn("</circle>", self_closed)
         content, title = _content_and_title(self_closed)
-        self.assertEqual(check_document_structure(content, title=title), [])
+        self.assertEqual(check_document_structure(content, title=title, skeleton_version=3), [])
 
     def test_self_closed_html_section_outside_svg_still_fails(self) -> None:
         fake_ask = (
