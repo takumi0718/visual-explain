@@ -56,6 +56,7 @@ PAIRS = [
     ("accent", "surface", 4.5, "選択/面"),
     ("accent-strong", "bg", 4.5, "選択強/背景"),
     ("accent-strong", ("mix", "accent", "surface", 0.12), 4.5, "選択チップ文字/淡青面"),
+    ("accent-strong", "surface", 4.5, "指摘の番号札/面"),
     ("positive", "bg", 4.5, "推奨/背景"),
     ("positive", ("mix", "positive", "surface", 0.12), 4.5, "既定案マーク/淡緑面"),
     ("positive-strong", "bg", 4.5, "推奨強/背景"),
@@ -177,6 +178,10 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             ".conclusion",
             # 概観ナビの番号マーカー（accent = 現在地を示す番号の強調）
             ".marker-n",
+            # 指摘層の選択チップと番号札（accent = 読者が指した場所・選んだ種類の強調）
+            ".review-",
+            # 指摘済みブロックの左縦線（accent = 読者が指した場所）
+            "[data-ve-annotated]",
         )
         for rule in style.split("}"):
             if "{" not in rule:
@@ -323,6 +328,38 @@ class ResponsiveLayoutTest(unittest.TestCase):
             ".ask-options [data-ask-option] { grid-template-columns: 1fr; "
             "gap: var(--space-1); }",
             mobile)
+
+
+class ReviewLayerSkeletonTest(unittest.TestCase):
+    """Review layer: add/pick buttons, the editor below a block and number tags are built by fixed JS."""
+
+    _collection_block = DecisionOptionCardInteractionTest._collection_block
+
+    def test_review_layer_hooks_exist(self):
+        block = self._collection_block()
+        for needle in (
+            "block.setAttribute('tabindex', '0')",
+            "if (event.target !== block || event.key !== 'Enter') return;",
+            "chip.setAttribute('role', 'radio')",
+            "chips.setAttribute('role', 'radiogroup')",
+            "makeButton('review-add', '＋')",
+            "makeButton('review-pick', '指摘')",
+            "document.addEventListener('selectionchange'",
+            "engine.addAnnotation(state, n, editor.chip, editor.quote, note.value, contract)",
+            "      renderReview();\n",
+            "if (block.tagName === 'LI') block.append(root);",
+            "else block.after(root);",
+        ):
+            self.assertIn(needle, block)
+
+    def test_annotated_block_uses_accent_line(self):
+        style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]
+        self.assertIn(
+            "[data-ve-blk][data-ve-annotated] { border-left: 3px solid var(--accent); "
+            "padding-left: var(--space-1); }", style)
+        self.assertIn(
+            '.review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); '
+            "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }", style)
 
 
 if __name__ == "__main__":
