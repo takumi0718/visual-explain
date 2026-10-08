@@ -43,8 +43,8 @@ license: MIT
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
 4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
-5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。`askType: "decision"` の ask は回収パネルの対象になる。パネルは末尾 `closing` の後にビルドが自動生成し、選択肢とラベルを ask の option から引き写す。**パネル自体を IR に書いてはならない**。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
-6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・summary 描画・外部リンクのドメインマーカーに加え、decision ask を含む文書では判断の回収パネル（decision-panel）の存在・個数・closing 後の位置・ask 契約 digest・自己表明属性を検証し、自己閉じタグによる偽装も fail-closed で検出する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
+5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。`askType: "decision"` の ask は回収パネルの対象になる。パネルは末尾 `closing` の後にビルドが自動生成し、選択肢とラベルを ask の option から引き写す。**パネル自体を IR に書いてはならない**。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。ビルドは同じ主張の反復を止める（h2 と直後の主張行、図キャプションと直前の h2 の言い換え、同じ文の 2 回以上の出現、全体図の無い資料で最初の図より前の本文 200 字超）。診断が出たら片方を削って再ビルドする。成功時の「本文 N 字 / 図より前 M 字 / 図 K 点」を見て、文字量を確かめる。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。`schemaVersion` は `2`。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
+6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・外部リンクのドメインマーカーに加え、decision ask を含む文書では判断の回収パネル（decision-panel）の存在・個数・closing 後の位置・ask 契約 digest・自己表明属性を検証し、自己閉じタグによる偽装も fail-closed で検出する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
 8. **保存する:** 下の保存規約に従い、衝突を避けて資料を保存する。
 9. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
@@ -52,21 +52,19 @@ license: MIT
 
 ## 型と第一画面
 
-`document.type` / `document.profile` を IR で宣言する。第一画面・末尾節・ask は型付きセクション（`first-screen` / `closing` / `ask`）で書き、レンダラが構成する。h1 と `<title>` の正本は `document.title` のみ（first-screen が描画する）。`document.summary` も first-screen に描画される。
+`document.type` / `document.profile` を IR で宣言する。第一画面・末尾節・ask は型付きセクション（`first-screen` / `closing` / `ask`）で書き、レンダラが構成する。h1 と `<title>` の正本は `document.title` のみ（first-screen が描画する）。
+
+第一画面は「題名（`document.title`）→ 結論 → 全体図 → 番号一覧」の順にビルドが描く。IR の first-screen には `conclusion`（1〜3 文、各文 80 字以内）を書き、h2 付きの節か ask が 3 つ以上ある資料では `overview` を書く。`overview.section` は first-screen 直後に置いた canonical セクションの id、`overview.markers` は 1〜5 件で、各番号の行き先（ask / narrative / closing の id）とラベル（30 字以内）を持つ。番号一覧が目次を兼ねるので、目次は生成しない。`document.summary` はメタ情報で、画面には出ない。
 
 ### 提案承認型（`type: "proposal"`）
 
-`first-screen` は次の **3 要素だけ**に固定する。
-
-1. `document.title`（提案または推奨を 1 文。トピック名禁止）。
-2. `decision`（**あなたが決めること**を 1 文）。
-3. `conditions`（判断を左右する条件を最大 2 件）。
+`first-screen` の `conclusion` には提案または推奨の結論を書く（トピック名禁止）。判断の中身は `kind: "ask"`（`askType: "decision"`）が担う。
 
 同じ判断文を末尾に重複させない。第三者が第一画面を 3 秒見て「何の話か」「何を判断するか」を答えられなければ作り直す。新出用語が多いときだけ用語表を先に置き、現状と問題、等サイズで並べた before/after、代替案とトレードオフの比較を続ける。`closing` の「リスクと弱い前提」「不確かな点」は省略しない。
 
 ### 仕組み理解型（`type: "system"`）
 
-`first-screen` の `decision` は「この資料が答える問い」として 1 文。必要時の用語表、全体地図、主要フロー、判断に不要な補足の `details`、`closing` の「限界・確度」を置く。推論で補った箇所を明示する。
+`first-screen` の `conclusion` は「この資料が答える問い」への答えとして 1〜3 文。必要時の用語表、全体地図、主要フロー、判断に不要な補足の `details`、`closing` の「限界・確度」を置く。推論で補った箇所を明示する。
 
 ### 調査報告型（`type: "research"`）
 

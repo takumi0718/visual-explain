@@ -1,6 +1,6 @@
 # 構成と図フォーマットの契約
 
-この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
+この資料は assembly IR（JSON）の書き方と、レンダラが生成する図の契約を定める。作成者は IR に意味（関係・データ・散文・確度・出典）だけを宣言し、HTML は `scripts/build_explainer.py` が生成する。`document.type` / `document.profile` を宣言し、セクションは `first-screen`（先頭・ちょうど1）/ `narrative` / `canonical` / `compatibility`（provenance 必須）/ `ask` / `closing`（末尾・ちょうど1）を読み順で並べる。first-screen・closing・ask を narrative の生 HTML で書いてはならない。first-screen の IR は `conclusion`（1〜3 文、各文 80 字以内）と、h2 付きの節か ask が 3 つ以上ある資料で書く `overview`（`section` は first-screen 直後に置く canonical セクションの id、`markers` は 1〜5 件で `n` / `label`（30 字以内）/ `target`（ask / narrative / closing の id））から成る。`decision` / `conditions` は持たず、目次も生成しない（番号一覧が兼ねる）。`document.summary` はメタ情報で画面には出ない。`schemaVersion` は `2`。以下の HTML 契約はレンダラ出力と互換節検証の規範であり、手書きで埋める指示ではない。各セクションは **1つの問い**だけに答え、目安を**主張1行・根拠2〜3行**にする。図・表・短文のうち最短で明確に伝わる1つを主にし、図が短文より明確になる理由がないなら図を使わない。根拠は主張または図の近傍に置く。核心、制約、反証を折りたたみに隠してはならない。
 
 ## 共通契約
 

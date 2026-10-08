@@ -39,7 +39,7 @@ CI はない。マージ前はテスト全通過と `check.sh --selftest` を手
 - `<!-- TITLE:BEGIN/END -->` と `<!-- CONTENT:BEGIN/END -->` の区間（生成コンテンツ）
 - `VE-CONTROLLED:COMPONENT-STYLES / COMPONENT-SCRIPTS` スロット（ビルド時にハッシュ検証済みのコンポーネントアセットを注入）
 
-それ以外の固定領域は checker が skeleton と SHA-256 でバイト一致比較する。つまり skeleton の 1 バイトの変更もチェッカー・全テスト・既存生成物に波及する。生成 HTML を手で直すことは禁止で、修正は常に IR を直して再ビルドする。
+それ以外の固定領域は checker が skeleton と SHA-256 でバイト一致比較する。skeleton は版ごとに不変で、最新版が `assets/skeleton.html`（`<html data-ve-skeleton="N">`）、旧版は `assets/skeleton-vN.html` に凍結する。checker は文書が宣言する版と照合する。つまり skeleton の 1 バイトの変更もチェッカー・全テスト・既存生成物に波及する。生成 HTML を手で直すことは禁止で、修正は常に IR を直して再ビルドする。
 
 ### ビルドパイプライン（`scripts/build_explainer.py` → `ve_components/`）
 
