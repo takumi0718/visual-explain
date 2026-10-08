@@ -30,7 +30,133 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
     {
       "kind": "first-screen",
       "id": "sec-first",
-      "conclusion": "限定対象で開始するか決めます。"
+      "conclusion": "限定対象で段階公開を始める。例外・請求・告知が同じ顧客群を指すことと、撤回条件の事前合意が前提。",
+      "overview": {
+        "section": "sec-alternatives",
+        "markers": [
+          {
+            "n": 1,
+            "label": "部門別確認の限界",
+            "target": "sec-problem"
+          },
+          {
+            "n": 2,
+            "label": "限定対象で開始するか",
+            "target": "sec-ask-decision"
+          },
+          {
+            "n": 3,
+            "label": "リスクと未検証点",
+            "target": "sec-closing"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "canonical",
+      "ir": {
+        "id": "sec-alternatives",
+        "relationship": {
+          "kind": "two-axis",
+          "capabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "selection": {
+          "component": "matrix",
+          "version": 2,
+          "matchedCapabilities": [
+            "two-axis-classification",
+            "intersection-comparison"
+          ]
+        },
+        "caption": "見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。",
+        "certainty": [
+          {
+            "id": "cert-alternatives",
+            "level": "inferred",
+            "statement": "全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "src-alternatives",
+            "label": "説明用シナリオ",
+            "detail": "外部の顧客・契約・請求データを用いない canonical proposal example の想定。"
+          }
+        ],
+        "accessibility": {
+          "label": "案の比較",
+          "summary": "行が案、列が主な利点と主なトレードオフの比較表。"
+        },
+        "matrix": {
+          "presentation": "dense",
+          "highlightId": "cell-proposal-benefit",
+          "rows": [
+            {
+              "id": "opt-all",
+              "label": "全顧客へ一斉公開"
+            },
+            {
+              "id": "opt-hold",
+              "label": "変更を保留"
+            },
+            {
+              "id": "opt-proposal",
+              "label": "提案: 限定対象で段階公開"
+            }
+          ],
+          "columns": [
+            {
+              "id": "col-benefit",
+              "label": "主な利点"
+            },
+            {
+              "id": "col-tradeoff",
+              "label": "主なトレードオフ"
+            }
+          ],
+          "cells": [
+            {
+              "id": "cell-all-benefit",
+              "rowId": "opt-all",
+              "columnId": "col-benefit",
+              "content": "対象を分けずに早く反映できる"
+            },
+            {
+              "id": "cell-all-tradeoff",
+              "rowId": "opt-all",
+              "columnId": "col-tradeoff",
+              "content": "例外や計算誤りの影響範囲も最初から広い"
+            },
+            {
+              "id": "cell-hold-benefit",
+              "rowId": "opt-hold",
+              "columnId": "col-benefit",
+              "content": "新しい請求影響を発生させない"
+            },
+            {
+              "id": "cell-hold-tradeoff",
+              "rowId": "opt-hold",
+              "columnId": "col-tradeoff",
+              "content": "料金改定の目的を達成できず、判断材料も増えない"
+            },
+            {
+              "id": "cell-proposal-benefit",
+              "rowId": "opt-proposal",
+              "columnId": "col-benefit",
+              "content": "照合した顧客群で影響と撤回条件を確かめられる"
+            },
+            {
+              "id": "cell-proposal-tradeoff",
+              "rowId": "opt-proposal",
+              "columnId": "col-tradeoff",
+              "content": "対象選定、承認、顧客対応を追加で運用する必要がある"
+            }
+          ]
+        }
+      }
     },
     {
       "kind": "narrative",
