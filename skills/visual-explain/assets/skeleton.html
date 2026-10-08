@@ -122,6 +122,10 @@
     [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure .ve-matrix-scroll { margin-inline: 0; }
+    /* Dense tables have no cell fill for highlightId: show it as an emphasized row (tint + accent rule on the header). */
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll table:has(.ve-dg-highlight) th[scope="row"] { padding-left: var(--space-2); }
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > th[scope="row"] { box-shadow: inset 3px 0 0 var(--accent); }
     [data-ve-section-kind] figure[data-ve-component] > figcaption[class] { font-size: var(--fs-h3); }
     [data-ve-section-kind] .layers > [data-lane]:first-child { margin-block-start: 0; }
     [data-ve-section-kind] .layers > [data-lane]:last-child { margin-block-end: 0; }
@@ -301,6 +305,9 @@
       [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { padding: 0 0 var(--space-1); border-bottom: 0; }
       [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td { padding: var(--space-1) 0 0; border-bottom: 0; }
       [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td[data-ve-col-label]::before { content: attr(data-ve-col-label); display: block; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll table:has(.ve-dg-highlight) th[scope="row"] { padding-left: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > th[scope="row"] { box-shadow: none; }
       .theme-control { width: min(100% - var(--space-4), var(--w-narrative)); }
       .theme-control button { max-width: 100%; white-space: normal; }
       .flow { flex-direction: column; gap: var(--space-3); }

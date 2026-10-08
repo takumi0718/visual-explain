@@ -52,7 +52,7 @@
             "intersection-comparison"
           ]
         },
-        "caption": "見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。",
+        "caption": "見るところ: 提案の行。影響を絞って確かめられるのは限定公開だけ。",
         "certainty": [
           {
             "id": "cert-alternatives",

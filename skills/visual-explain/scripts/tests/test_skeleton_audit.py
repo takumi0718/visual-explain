@@ -240,6 +240,8 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             ".marker-n",
             # 概観の番号を飛び先の見出しに付けた印（.marker-n と同じ意味・同じ見た目）
             "[data-ve-marker]",
+            # 作者が highlightId で指したセルの行（accent = 作者が選んだ注目箇所）
+            ".ve-dg-highlight",
             # 指摘層の選択チップと番号札（accent = 読者が指した場所・選んだ種類の強調）
             ".review-tag",
             ".review-chip[aria-checked",
@@ -667,6 +669,30 @@ class CardTextStepTest(unittest.TestCase):
     def test_notes_keep_the_small_step(self):
         css = _style()
         self.assertIn(".ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }", css)
+
+
+class DenseMatrixHighlightRowTest(unittest.TestCase):
+    """The dense table shows the author's highlighted cell as an emphasized row."""
+
+    _ROW = ('[data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll '
+            'tr:has(> .ve-dg-highlight)')
+    _TABLE = ('[data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll '
+              'table:has(.ve-dg-highlight) th[scope="row"]')
+
+    def test_desktop_row_gets_tint_and_accent_rule(self):
+        self.assertIn(self._ROW + " > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }",
+                      _style())
+        # The scroll wrapper clips anything drawn outside the table, so the rule is
+        # an inset shadow and every row header of that table moves in by the same step.
+        self.assertIn(self._TABLE + " { padding-left: var(--space-2); }", _style())
+        self.assertIn(self._ROW + " > th[scope=\"row\"] { box-shadow: inset 3px 0 0 var(--accent); }", _style())
+
+    def test_phone_card_gets_the_same_rule(self):
+        mobile = _style().split("@media (max-width: 42rem) {", 1)[1]
+        self.assertIn(self._ROW + " { border-left: 3px solid var(--accent); "
+                      "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }", mobile)
+        self.assertIn(self._TABLE + " { padding-left: 0; }", mobile)
+        self.assertIn(self._ROW + " > th[scope=\"row\"] { box-shadow: none; }", mobile)
 
 
 class CertaintyChipWrapTest(unittest.TestCase):
