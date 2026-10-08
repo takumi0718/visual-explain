@@ -29,7 +29,8 @@ from ve_components.assembly import (  # noqa: E402
     process_narrative_section,
 )
 from ve_components.checker import check_final_document  # noqa: E402
-from ve_components.diagnostics import ContractError, Diagnostic, FINAL_CHECK_FAILURE  # noqa: E402
+from ve_components.diagnostics import ContractError, Diagnostic, FINAL_CHECK_FAILURE, FIXED_REGION_MISMATCH  # noqa: E402
+from ve_components.skeletons import LATEST_SKELETON_VERSION, declared_skeleton_version  # noqa: E402
 from ve_components.document_sections import (  # noqa: E402
     build_overview_nav,
     render_ask,
@@ -80,6 +81,12 @@ def _section_instance_id(section) -> str:
 def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: str,
                    components_dir: Path, *, document_path: str) -> CompositionResult | str:
     """Validate, compose, flatten, and finally check. Raises on any failure."""
+    declared = declared_skeleton_version(skeleton_text)
+    if declared != LATEST_SKELETON_VERSION:
+        raise ContractError([Diagnostic(
+            FIXED_REGION_MISMATCH,
+            f"ビルドは最新の skeleton 版（{LATEST_SKELETON_VERSION}）だけを使えます: {declared}",
+        )])
     request = validate_assembly(raw_assembly)
     occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
     first = request.sections[0]

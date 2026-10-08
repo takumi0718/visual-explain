@@ -393,6 +393,7 @@ def run_selftest(script_dir: Path) -> int:
         ("structure-bad-no-closing.html", ("closing セクションがありません",)),
         ("structure-bad-panel-missing.html", ("decision ask があるのに回収パネルがありません",)),
         ("structure-bad-panel-digest.html", ("回収パネルの ask 契約ダイジェストが一致しません",)),
+        ("v2-proposal-doc.html", ()),
     ]
     for filename, expected_errors in structure_cases:
         raw = (fixtures / filename).read_text("utf-8")
