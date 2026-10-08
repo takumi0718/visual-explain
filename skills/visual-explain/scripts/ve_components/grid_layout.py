@@ -166,8 +166,25 @@ def _candidates(a: Rect, b: Rect) -> list[tuple[tuple[int, int], ...]]:
     return [horizontal_first, vertical_first]
 
 
-def route_edge(edge, rects: dict[str, Rect], width: int, height: int) -> EdgeRoute | str:
-    """Route one edge; return the route or the diagnostic message explaining why it cannot."""
+def label_box(points: Sequence[tuple[int, int]], label: str) -> tuple[Rect, tuple[int, int, str]]:
+    """Box and anchor of an edge label, placed on the longest segment of the path."""
+    segments = list(zip(points, points[1:]))
+    longest = max(segments, key=lambda s: abs(s[1][0] - s[0][0]) + abs(s[1][1] - s[0][1]))
+    return _label_box(longest[0], longest[1], label)
+
+
+def region_label_box(region) -> Rect:
+    """Estimated text box of a region label, from the same width estimate as the fit check."""
+    x, y = region_label_position(region)
+    return Rect(x, y - REGION_FONT, x + len(region.label) * REGION_FONT, y + 3)
+
+
+def route_edge(edge, rects: dict[str, Rect], width: int, height: int,
+               taken: Sequence[Rect] = ()) -> EdgeRoute | str:
+    """Route one edge; return the route or the diagnostic message explaining why it cannot.
+
+    ``taken`` holds label boxes already placed by earlier edges; a label may not overlap them.
+    """
     source, target = rects[edge.source], rects[edge.target]
     others = [rect for node_id, rect in rects.items() if node_id not in (edge.source, edge.target)]
     clear = [points for points in _candidates(source, target)
@@ -179,11 +196,10 @@ def route_edge(edge, rects: dict[str, Rect], width: int, height: int) -> EdgeRou
         return EdgeRoute(points=clear[0], label_at=None)
     bounds = Rect(0, 0, width, height)
     for points in clear:
-        segments = list(zip(points, points[1:]))
-        longest = max(segments, key=lambda s: abs(s[1][0] - s[0][0]) + abs(s[1][1] - s[0][1]))
-        box, anchor = _label_box(longest[0], longest[1], edge.label)
+        box, anchor = label_box(points, edge.label)
         inside = bounds.x0 <= box.x0 and box.x1 <= bounds.x1 and bounds.y0 <= box.y0 and box.y1 <= bounds.y1
-        if inside and not any(box.overlaps(rect) for rect in rects.values()):
+        if (inside and not any(box.overlaps(rect) for rect in rects.values())
+                and not any(box.overlaps(other) for other in taken)):
             return EdgeRoute(points=points, label_at=anchor)
     return f"辺 '{edge.id}' のラベルを置く場所がありません"
 
@@ -241,8 +257,18 @@ def check_layout(payload) -> list[str]:
         return messages
     rects = {node.id: node_rect(node) for node in payload.nodes}
     width, height = payload.cols * COL_W, payload.rows * ROW_H
+    taken: list[Rect] = []
+    segments: list[tuple[tuple[int, int], tuple[int, int]]] = []
     for edge in payload.edges:
-        route = route_edge(edge, rects, width, height)
+        route = route_edge(edge, rects, width, height, taken)
         if isinstance(route, str):
             messages.append(route)
+            continue
+        segments.extend(zip(route.points, route.points[1:]))
+        if edge.label:
+            taken.append(label_box(route.points, edge.label)[0])
+    for region in payload.regions:
+        box = region_label_box(region)
+        if any(_segment_hits(a, b, box) for a, b in segments):
+            messages.append(f"囲み '{region.id}' のラベルに線が重なります")
     return messages

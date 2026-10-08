@@ -13,6 +13,7 @@ from ve_components.grid_layout import (
     node_label_positions,
     node_rect,
     region_rect,
+    _segment_hits,
     route_edge,
     split_label,
     viewbox,
@@ -166,6 +167,47 @@ class CheckLayoutTest(unittest.TestCase):
         nodes = (node("a", 1, 2), node("b", 2, 1), node("x", 2, 2), node("y", 1, 1))
         self.assertEqual(check_layout(payload(nodes, edges=(GridEdge("e", "a", "b"),))),
                          ["辺 'e' は他のノードを横切らずに引けません（折れは1回まで）"])
+
+
+class OverlapRulesTest(unittest.TestCase):
+    def test_second_label_takes_the_other_bend_when_the_first_is_occupied(self) -> None:
+        nodes = (node("a", 1, 1), node("b", 4, 1), node("c", 3, 2))
+        edges = (GridEdge("e1", "a", "b", "八文字のラベル"), GridEdge("e2", "a", "c", "八文字のラベル"))
+        self.assertEqual(check_layout(payload(nodes, edges=edges)), [])
+        rects = {n.id: node_rect(n) for n in nodes}
+        first = route_edge(edges[0], rects, 600, 288)
+        taken = [_box(first, edges[0])]
+        second = route_edge(edges[1], rects, 600, 288, taken)
+        self.assertEqual(second.points, ((75, 74), (75, 144), (316, 144)))
+
+    def test_label_reported_when_no_candidate_avoids_an_earlier_label(self) -> None:
+        nodes = (node("a", 1, 1), node("b", 3, 1))
+        edges = (GridEdge("e1", "a", "b", "照合照合"), GridEdge("e2", "a", "b", "照合照合"))
+        self.assertEqual(check_layout(payload(nodes, edges=edges)),
+                         ["辺 'e2' のラベルを置く場所がありません"])
+
+    def test_edge_crossing_a_region_label_is_reported(self) -> None:
+        nodes = (node("a", 1, 1), node("b", 1, 2))
+        region = GridRegion(id="r", label="八文字の囲みです", from_col=1, from_row=2, to_col=1, to_row=3)
+        self.assertEqual(check_layout(payload(nodes, edges=(GridEdge("e", "a", "b"),), regions=(region,))),
+                         ["囲み 'r' のラベルに線が重なります"])
+
+    def test_spanning_target_is_routed_from_its_edge(self) -> None:
+        a, b = node("a", 1, 1), node("b", 3, 2, span=(2, 2))
+        route = route_edge(GridEdge("e", "a", "b"), {"a": node_rect(a), "b": node_rect(b)}, 600, 288)
+        self.assertEqual(route.points, ((134, 48), (450, 48), (450, 118)))
+
+    def test_segment_hit_boundary_rule(self) -> None:
+        rect = node_rect(node("n", 1, 1))  # Rect(16, 22, 134, 74)
+        self.assertTrue(_segment_hits((0, 22), (300, 22), rect))    # grazing the border
+        self.assertTrue(_segment_hits((134, 0), (134, 96), rect))   # grazing the border
+        self.assertFalse(_segment_hits((150, 0), (150, 96), rect))  # inside the 32px gap
+        self.assertFalse(_segment_hits((134, 48), (300, 48), rect))  # leaving from the edge point
+
+
+def _box(route, edge):
+    from ve_components.grid_layout import label_box
+    return label_box(route.points, edge.label)[0]
 
 
 if __name__ == "__main__":
