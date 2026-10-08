@@ -64,7 +64,7 @@ license: MIT
 
 `document.type` / `document.profile` を IR で宣言する。第一画面・末尾節・ask は型付きセクション（`first-screen` / `closing` / `ask`）で書き、レンダラが構成する。h1 と `<title>` の正本は `document.title` のみ（first-screen が描画する）。
 
-第一画面は「題名（`document.title`）→ 結論 → 全体図 → 番号一覧」の順にビルドが描く。IR の first-screen には `conclusion`（1〜3 文、各文 80 字以内）を書き、h2 付きの節か ask が 3 つ以上ある資料では `overview` を書く。`overview.section` は first-screen 直後に置いた canonical セクションの id、`overview.markers` は 1〜5 件で、各番号の行き先（ask / narrative / closing の id）とラベル（30 字以内）を持つ。番号一覧が目次を兼ねるので、目次は生成しない。`document.summary` はメタ情報で、画面には出ない。
+第一画面は「題名（`document.title`）→ 結論 → 全体図 → 番号一覧」の順にビルドが描く。IR の first-screen には `conclusion`（1〜3 文、各文 80 字以内）を書き、h2 付きの節か ask が 3 つ以上ある資料では `overview` を書く。`overview.section` は first-screen 直後に置いた canonical セクションの id、`overview.markers` は 1〜5 件で、各番号の行き先（ask / narrative / closing の id）とラベル（30 字以内）を持つ。ビルドは行き先の見出し（narrative の最初の h2、closing の最初の h2、ask の問い行）に同じ番号の丸印を付けるので、ラベルは行き先の見出しを短く言い直した語にする。番号一覧が目次を兼ねるので、目次は生成しない。`document.summary` はメタ情報で、画面には出ない。
 
 ### 提案承認型（`type: "proposal"`）
 
