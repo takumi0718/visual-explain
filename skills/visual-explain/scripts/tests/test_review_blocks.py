@@ -8,9 +8,9 @@ from pathlib import Path
 from build_explainer import build_document
 from first_screen_ir import assembly, decision_ask, messages, narr
 from ve_components.checker import check_final_document
+from ve_components.document_checks import check_document_structure
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
-from ve_components.document_checks import check_document_structure
 from ve_components.review_blocks import check_review_blocks, stamp_review_blocks
 
 SKILL = Path(__file__).resolve().parents[2]
@@ -118,10 +118,6 @@ class BuildTest(unittest.TestCase):
                       messages(assembly({"conclusion": "限定対象で開始する。"}, compat)))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class StampEdgeCaseTest(unittest.TestCase):
     def test_unquoted_value_before_self_closing_slash_is_preserved(self) -> None:
         stamped, _ = stamp_review_blocks("<p class=x/>")
@@ -137,6 +133,9 @@ class StampEdgeCaseTest(unittest.TestCase):
             self.assertEqual(
                 check_document_structure(stray, title=None, skeleton_version=version),
                 check_document_structure(plain, title=None, skeleton_version=version))
-        self.assertNotEqual(
-            check_document_structure(stray, title=None, skeleton_version=3),
-            check_document_structure(plain, title=None, skeleton_version=3))
+        messages_v3 = [d.message for d in check_document_structure(stray, title=None, skeleton_version=3)]
+        self.assertIn("data-ve-blk は1からの連番である必要があります（1 番目のブロックが 9）", messages_v3)
+
+
+if __name__ == "__main__":
+    unittest.main()

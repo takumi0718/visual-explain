@@ -951,6 +951,7 @@
     });
     const render = () => {
       fallback.hidden = true;
+      copyStatus.textContent = '';
       contract.asks.forEach((ask) => {
         const section = document.getElementById(ask.id);
         if (!section) return;

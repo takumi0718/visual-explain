@@ -1099,6 +1099,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     });
     const render = () => {
       fallback.hidden = true;
+      copyStatus.textContent = '';
       contract.asks.forEach((ask) => {
         const section = document.getElementById(ask.id);
         if (!section) return;

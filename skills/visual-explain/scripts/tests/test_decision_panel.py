@@ -74,7 +74,6 @@ def _assembly(*, decision_ask: bool) -> dict:
 class RenderDecisionPanelTest(unittest.TestCase):
     def test_renders_panel_for_one_decision_ask(self) -> None:
         panel = render_decision_panel((_DECISION_ASK,), _DOC, 1, "examples/demo.html")
-        self.assertIsNotNone(panel)
         self.assertIn('data-ve-section-kind="decision-panel"', panel.markup)
         self.assertIn('data-ve-document-id="doc-1"', panel.markup)
         self.assertIn('data-ve-schema-version="1"', panel.markup)
@@ -104,7 +103,6 @@ class RenderDecisionPanelTest(unittest.TestCase):
             (_DECISION_ASK,), _DOC, 1, "out.html",
             occupied_ids=frozenset({"sec-decision-panel"}),
         )
-        self.assertIsNotNone(panel)
         self.assertNotEqual(panel.instance_id, "sec-decision-panel")
         self.assertTrue(panel.instance_id.startswith("sec-decision-panel"))
 

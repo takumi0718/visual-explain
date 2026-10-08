@@ -350,7 +350,7 @@ class ReviewLayerSkeletonTest(unittest.TestCase):
             "      renderReview();\n",
             "if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;",
             "const target = left[at] || left[at - 1] || editor.root.querySelector('.review-chip');",
-            "    const render = () => {\n      fallback.hidden = true;\n",
+            "    const render = () => {\n      fallback.hidden = true;\n      copyStatus.textContent = '';\n",
             "if (block.tagName === 'LI') block.append(root);",
             "else block.after(root);",
         ):
