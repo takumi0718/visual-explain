@@ -2607,6 +2607,7 @@ def check_final_document(raw: bytes | str, skeleton: bytes | str, registry, expe
         expected_records = expected.expected_records if expected is not None else None
         structure_diagnostics = check_document_structure(
             content, title=_extract_title_text(text), expected=expected_records,
+            skeleton_version=declared_skeleton_version(skel),
         )
         diagnostics += structure_diagnostics
         visual_stage_used = sum(

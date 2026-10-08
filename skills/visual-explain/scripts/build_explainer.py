@@ -15,7 +15,7 @@ import json
 import os
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 
@@ -48,6 +48,7 @@ from ve_components.model import (  # noqa: E402
 )
 from ve_components.metrics import format_metrics, text_metrics  # noqa: E402
 from ve_components.registry import Registry, load_registry  # noqa: E402
+from ve_components.review_blocks import stamp_review_sections  # noqa: E402
 from ve_components.renderers import TRUSTED_RENDERERS  # noqa: E402
 from ve_components.validation import validate_assembly  # noqa: E402
 
@@ -117,6 +118,7 @@ def build_document(raw_assembly, registry: Registry, renderers, skeleton_text: s
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)
     composition = compose_sections(items)
+    composition = replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
     document = flatten_document(composition, skeleton_text, components_dir, request.document.title)
     diagnostics = check_final_document(document, skeleton_text, registry, expected=composition,
                                        components_dir=components_dir)

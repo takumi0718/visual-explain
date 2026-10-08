@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 import subprocess
 import tempfile
 from pathlib import Path
@@ -18,6 +19,7 @@ from ve_components.flatten import flatten_document
 from ve_components.model import CanonicalSection, NarrativeSection
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
+from ve_components.review_blocks import stamp_review_sections
 from ve_components.validation import validate_assembly
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -159,6 +161,7 @@ def _build_composition_and_document(raw):
         else:
             items.append(process_compatibility_section(section))
     composition = compose_sections(items)
+    composition = replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
     document = flatten_document(composition, SKELETON, COMPONENTS_DIR, request.document.title)
     return composition, document
 
@@ -170,7 +173,9 @@ def test_manifest_to_dom_flags_narrative_section_removed_from_final_dom():
     assert check_final_document(document, SKELETON, REGISTRY, expected=composition,
                                  components_dir=COMPONENTS_DIR) == []
     removed = composition.narrative[-1]
-    mutated = document.replace(removed.markup, "")
+    stamped = next(m for m in composition.sections_markup
+                   if f'data-ve-instance="{removed.instance_id}"' in m)
+    mutated = document.replace(stamped, "")
     assert mutated != document
     diags = check_final_document(mutated, SKELETON, REGISTRY, expected=composition,
                                   components_dir=COMPONENTS_DIR)

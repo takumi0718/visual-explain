@@ -147,6 +147,7 @@ _IR_KEYS = {
 _SEQUENCE_KEYS = {"mode", "steps"}
 _SEQUENCE_STEP_KEYS = {"id", "label", "targetIds"}
 _ASSERTION_KEYS = {"id", "text", "coverIds"}
+_BLOCK_ATTR_RE = re.compile(r"\sdata-ve-blk\b", re.IGNORECASE)
 _STAGE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 SEQUENCE_MODES = frozenset(VOCABULARY["sequenceModes"])
 # Single source of truth for panel DOM-ID rewriting and later normalization.
@@ -3113,6 +3114,9 @@ def _validate_compatibility_section(raw: dict, path: str, col: DiagnosticCollect
             code=INVALID_COMPATIBILITY_PROVENANCE,
         ):
             col.add(code, message, path)
+        if _BLOCK_ATTR_RE.search(markup):
+            col.add(INVALID_COMPATIBILITY_PROVENANCE,
+                    "compatibility に data-ve-blk は書けません（ビルドが付与します）", path)
     prov = raw.get("provenance")
     provenance = None
     if not isinstance(prov, dict):

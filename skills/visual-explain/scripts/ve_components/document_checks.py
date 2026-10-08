@@ -20,6 +20,7 @@ from urllib.parse import urlsplit
 
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
 from .document_sections import compute_ask_digest_from_pairs
+from .review_blocks import check_review_blocks
 from .validation import (
     _CLOSING_REQUIRED,
     _DOCUMENT_PROFILES,
@@ -2170,8 +2171,12 @@ def check_document_structure(
     *,
     title: str | None = None,
     expected=None,
+    skeleton_version: int = 1,
 ) -> list[Diagnostic]:
     """Inspect flattened content markup for group-3 structure invariants.
+
+    ``skeleton_version`` is the skeleton version the document declares (default 1,
+    the legacy rules); review block numbering is checked only from version 3 on.
 
     ``title`` is the document ``<title>`` text (from the TITLE slot; may still
     contain character references). When omitted, the title↔h1 equality check
@@ -2210,6 +2215,8 @@ def check_document_structure(
             "content",
         ))
         return diagnostics
+    if skeleton_version >= 3:
+        diagnostics.extend(check_review_blocks(content_markup))
     first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
     if not first_nodes:
         diagnostics.append(Diagnostic(

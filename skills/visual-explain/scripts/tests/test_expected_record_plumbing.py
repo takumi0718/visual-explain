@@ -96,7 +96,7 @@ def test_final_checker_passes_expected_records_to_document_structure(monkeypatch
     expected_records = (object(),)
     captured = []
 
-    def recording_check(content_markup: str, *, title=None, expected=None):
+    def recording_check(content_markup: str, *, title=None, expected=None, skeleton_version=1):
         captured.append(expected)
         return []
 

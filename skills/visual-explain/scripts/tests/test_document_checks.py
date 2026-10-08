@@ -267,7 +267,7 @@ class DocumentStructureValidTest(unittest.TestCase):
         content, title = _content_and_title(html)
         # Remove the conclusion paragraph.
         broken = content.replace(
-            '<p class="conclusion"><strong>結論:</strong> この提案を採択するか決めます。</p>',
+            '<p class="conclusion" data-ve-blk="1"><strong>結論:</strong> この提案を採択するか決めます。</p>',
             "",
             1,
         )
