@@ -269,9 +269,19 @@
       .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
     }
 
+    @media (max-width: 52rem) {
+      [data-ve-section-kind] :is(p, li, h2, h3, blockquote)[data-ve-blk] { padding-right: var(--space-4); }
+    }
+
     @media (max-width: 42rem) {
-      main { width: min(100% - var(--space-2), var(--w-narrative)); padding-top: var(--space-2); }
-      .theme-control { width: min(100% - var(--space-2), var(--w-narrative)); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll { overflow-x: visible; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll :is(table, tbody, tr, th, td) { display: block; width: auto; min-width: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr { margin: 0 0 var(--space-2); padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { padding: 0 0 var(--space-1); border-bottom: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td { padding: var(--space-1) 0 0; border-bottom: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td[data-ve-col-label]::before { content: attr(data-ve-col-label); display: block; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+      .theme-control { width: min(100% - var(--space-4), var(--w-narrative)); }
       .theme-control button { max-width: 100%; white-space: normal; }
       .flow { flex-direction: column; gap: var(--space-3); }
       .flow .flow-node { flex: 0 1 auto; }
@@ -400,7 +410,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
 </section>
 </section>
     <section data-ve-section-kind="canonical" data-ve-component="matrix" data-ve-contract-version="2" data-ve-instance="sec-alternatives" data-ve-fallback="static-content">
-<figure data-ve-component="matrix" role="group" aria-label="案の比較" aria-describedby="sec-alternatives-summary" data-ve-blk="2"><figcaption id="sec-alternatives-caption" class="ve-matrix-caption">見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。</figcaption><p id="sec-alternatives-summary" class="ve-matrix-summary">行が案、列が主な利点と主なトレードオフの比較表。</p><div class="ve-matrix-scroll"><table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td><th scope="col" data-ve-semantic-id="col-benefit">主な利点</th><th scope="col" data-ve-semantic-id="col-tradeoff">主なトレードオフ</th></tr></thead><tbody><tr><th scope="row" data-ve-semantic-id="opt-all">全顧客へ一斉公開</th><td data-ve-semantic-id="cell-all-benefit" data-ve-row-id="opt-all" data-ve-column-id="col-benefit">対象を分けずに早く反映できる</td><td data-ve-semantic-id="cell-all-tradeoff" data-ve-row-id="opt-all" data-ve-column-id="col-tradeoff">例外や計算誤りの影響範囲も最初から広い</td></tr><tr><th scope="row" data-ve-semantic-id="opt-hold">変更を保留</th><td data-ve-semantic-id="cell-hold-benefit" data-ve-row-id="opt-hold" data-ve-column-id="col-benefit">新しい請求影響を発生させない</td><td data-ve-semantic-id="cell-hold-tradeoff" data-ve-row-id="opt-hold" data-ve-column-id="col-tradeoff">料金改定の目的を達成できず、判断材料も増えない</td></tr><tr><th scope="row" data-ve-semantic-id="opt-proposal">提案: 限定対象で段階公開</th><td class="ve-dg-highlight" data-ve-semantic-id="cell-proposal-benefit" data-ve-row-id="opt-proposal" data-ve-column-id="col-benefit">照合した顧客群で影響と撤回条件を確かめられる</td><td data-ve-semantic-id="cell-proposal-tradeoff" data-ve-row-id="opt-proposal" data-ve-column-id="col-tradeoff">対象選定、承認、顧客対応を追加で運用する必要がある</td></tr></tbody></table></div><ul class="ve-matrix-notes"><li data-ve-semantic-id="cert-alternatives"><strong>推論:</strong> 全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。</li><li data-ve-semantic-id="src-alternatives"><strong>出典 料金改定の比較検討メモ</strong>（各案の利点と代償を承認者向けに整理した表。）</li></ul></figure>
+<figure data-ve-component="matrix" role="group" aria-label="案の比較" aria-describedby="sec-alternatives-summary" data-ve-blk="2"><figcaption id="sec-alternatives-caption" class="ve-matrix-caption">見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。</figcaption><p id="sec-alternatives-summary" class="ve-matrix-summary">行が案、列が主な利点と主なトレードオフの比較表。</p><div class="ve-matrix-scroll"><table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td><th scope="col" data-ve-semantic-id="col-benefit">主な利点</th><th scope="col" data-ve-semantic-id="col-tradeoff">主なトレードオフ</th></tr></thead><tbody><tr><th scope="row" data-ve-semantic-id="opt-all">全顧客へ一斉公開</th><td data-ve-semantic-id="cell-all-benefit" data-ve-row-id="opt-all" data-ve-column-id="col-benefit" data-ve-col-label="主な利点">対象を分けずに早く反映できる</td><td data-ve-semantic-id="cell-all-tradeoff" data-ve-row-id="opt-all" data-ve-column-id="col-tradeoff" data-ve-col-label="主なトレードオフ">例外や計算誤りの影響範囲も最初から広い</td></tr><tr><th scope="row" data-ve-semantic-id="opt-hold">変更を保留</th><td data-ve-semantic-id="cell-hold-benefit" data-ve-row-id="opt-hold" data-ve-column-id="col-benefit" data-ve-col-label="主な利点">新しい請求影響を発生させない</td><td data-ve-semantic-id="cell-hold-tradeoff" data-ve-row-id="opt-hold" data-ve-column-id="col-tradeoff" data-ve-col-label="主なトレードオフ">料金改定の目的を達成できず、判断材料も増えない</td></tr><tr><th scope="row" data-ve-semantic-id="opt-proposal">提案: 限定対象で段階公開</th><td class="ve-dg-highlight" data-ve-semantic-id="cell-proposal-benefit" data-ve-row-id="opt-proposal" data-ve-column-id="col-benefit" data-ve-col-label="主な利点">照合した顧客群で影響と撤回条件を確かめられる</td><td data-ve-semantic-id="cell-proposal-tradeoff" data-ve-row-id="opt-proposal" data-ve-column-id="col-tradeoff" data-ve-col-label="主なトレードオフ">対象選定、承認、顧客対応を追加で運用する必要がある</td></tr></tbody></table></div><ul class="ve-matrix-notes"><li data-ve-semantic-id="cert-alternatives"><strong>推論:</strong> 全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。</li><li data-ve-semantic-id="src-alternatives"><strong>出典 料金改定の比較検討メモ</strong>（各案の利点と代償を承認者向けに整理した表。）</li></ul></figure>
 </section>
     <section data-ve-section-kind="overview-nav">
 <nav class="overview-markers" aria-label="この資料の論点"><ol><li data-ve-blk="3"><a href="#sec-current-problem"><span class="marker-n" aria-hidden="true">1</span><span>部門別確認の限界</span></a></li><li data-ve-blk="4"><a href="#sec-approval-map-intro"><span class="marker-n" aria-hidden="true">2</span><span>承認地図での照合</span></a></li><li data-ve-blk="5"><a href="#sec-ask-decision"><span class="marker-n" aria-hidden="true">3</span><span>限定対象で開始するか</span></a></li></ol></nav>
@@ -918,14 +928,20 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     };
     const addButton = makeButton('review-add', '＋');
     const pickButton = makeButton('review-pick', '指摘');
-    const place = (button, rect, below) => {
+    const place = (button, rect, below, block) => {
       button.hidden = false;
       const width = button.offsetWidth;
       let left;
+      let top = below ? rect.bottom + 4 : rect.top;
       if (below) left = rect.left;
       else if (rect.left >= width + 8) left = rect.left - width - 4;
-      else left = rect.right - width;
-      const top = below ? rect.bottom + 4 : rect.top;
+      else {
+        // No room on the left: text blocks reserve right padding for the button;
+        // figures, tables and code get it just above their top-right corner.
+        left = rect.right - width;
+        if (block && /^(FIGURE|TABLE|PRE)$/.test(block.tagName)) top = rect.top - button.offsetHeight - 4;
+      }
+      left = Math.max(0, Math.min(left, document.documentElement.clientWidth - width));
       button.style.left = `${Math.round(window.scrollX + left)}px`;
       button.style.top = `${Math.round(window.scrollY + top)}px`;
     };
@@ -933,7 +949,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
       if (editor && editor.block === block) return;
       addTarget = block;
       addButton.setAttribute('aria-label', `#${blockNumber(block)} に指摘を付ける`);
-      place(addButton, block.getBoundingClientRect(), false);
+      place(addButton, block.getBoundingClientRect(), false, block);
     };
     const closeEditor = (refocus) => {
       if (!editor) return;

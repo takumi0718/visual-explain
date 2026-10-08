@@ -215,7 +215,7 @@ def test_state_lens_panels_are_complete_instances_with_one_shared_claim(
             "component-valid-matrix.json",
             render_matrix,
             MATRIX_DEF,
-            "dd263127f89af1b365ea1d190e5dd50c43ddae2ef653a533f3543d14c229224c",
+            "8a7a5aad2b2127dd0cbeabc6812323c61cf0de4178324c9e156de59614ea12ef",
         ),
         (
             "component-valid-stairs.json",

@@ -243,5 +243,22 @@ class MatrixHeaderlessTest(unittest.TestCase):
             validate_canonical_section(canonical_ir(raw))
 
 
+class MatrixCardLabelTest(unittest.TestCase):
+    """v4 mobile cards print each cell's column label from data-ve-col-label."""
+
+    def test_every_cell_carries_its_column_label(self) -> None:
+        labels = {c.id: c.label for c in load_fixture_ir().matrix.columns}
+        cells = [tag for tag in re.findall(r"<td\b[^>]*>", render_fixture().markup)
+                 if "data-ve-column-id" in tag]
+        self.assertEqual(len(cells), 4)
+        for tag in cells:
+            column = re.search(r'data-ve-column-id="([^"]+)"', tag).group(1)
+            self.assertIn(f'data-ve-col-label="{labels[column]}"', tag)
+
+    def test_headerless_matrix_has_no_card_labels(self) -> None:
+        markup = render_fixture("component-valid-matrix-headerless").markup
+        self.assertNotIn("data-ve-col-label", markup)
+
+
 if __name__ == "__main__":
     unittest.main()

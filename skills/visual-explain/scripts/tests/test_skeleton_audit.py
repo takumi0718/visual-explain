@@ -510,5 +510,46 @@ class ThemeToggleTest(unittest.TestCase):
         self.assertNotIn("removeItem", js)
 
 
+class MobileV4Test(unittest.TestCase):
+    _collection_block = DecisionOptionCardInteractionTest._collection_block
+
+    def _mobile(self):
+        return _style().split("@media (max-width: 42rem) {", 1)[1]
+
+    def test_sixteen_pixel_gutter(self):
+        style = _style()
+        self.assertIn("main { width: min(100% - var(--space-4), var(--w-narrative));", style)
+        self.assertNotIn("100% - var(--space-2)", style)
+
+    def test_dense_matrix_becomes_cards(self):
+        mobile = self._mobile()
+        prefix = '[data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll'
+        for needle in (
+            f"{prefix} {{ overflow-x: visible; }}",
+            f"{prefix} :is(table, tbody, tr, th, td) {{ display: block; width: auto; min-width: 0; }}",
+            f"{prefix} tr {{ margin: 0 0 var(--space-2); padding: var(--space-2); "
+            "border: 1px solid var(--border); border-radius: var(--radius); }",
+            f"{prefix} td[data-ve-col-label]::before {{ content: attr(data-ve-col-label); display: block; "
+            "color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }",
+        ):
+            self.assertIn(needle, mobile)
+
+    def test_text_blocks_reserve_room_for_the_add_button(self):
+        gate = _style().split("@media (max-width: 52rem) {", 1)
+        self.assertEqual(len(gate), 2)
+        self.assertIn("[data-ve-section-kind] :is(p, li, h2, h3, blockquote)[data-ve-blk] "
+                      "{ padding-right: var(--space-4); }", gate[1].split("\n    }", 1)[0])
+
+    def test_add_button_never_covers_text(self):
+        block = self._collection_block()
+        for needle in (
+            "const place = (button, rect, below, block) => {",
+            "if (block && /^(FIGURE|TABLE|PRE)$/.test(block.tagName)) top = rect.top - button.offsetHeight - 4;",
+            "left = Math.max(0, Math.min(left, document.documentElement.clientWidth - width));",
+            "place(addButton, block.getBoundingClientRect(), false, block);",
+        ):
+            self.assertIn(needle, block)
+
+
 if __name__ == "__main__":
     unittest.main()
