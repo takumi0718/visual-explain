@@ -188,8 +188,8 @@
 
     .certainty { display: inline-flex; align-items: center; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
     .certainty.confirmed { border-style: solid; }
-    .certainty.inferred { border-style: dashed; }
-    .certainty.unverified { border-style: dotted; }
+    .certainty.inferred { border-style: dashed; background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    .certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-faint); }
     details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
     details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
     details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }

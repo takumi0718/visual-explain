@@ -626,5 +626,15 @@ class ClosingCardTest(unittest.TestCase):
         self.assertNotIn("border-top: 1px solid var(--border-strong)", css)
         self.assertIn(".closing-section h2 { margin-top: 0; font-size: var(--fs-h2); }", css)
 
+class CertaintyBadgeTest(unittest.TestCase):
+    def test_inferred_and_unverified_differ_beyond_the_border_style(self):
+        # Dotted vs dashed alone is hard to tell apart at 13px: inferred also gets
+        # the grey tint, unverified fades to the faint ink on an empty pill.
+        css = _style()
+        self.assertIn(".certainty.inferred { border-style: dashed; "
+                      "background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }", css)
+        self.assertIn(".certainty.unverified { border-style: dotted; border-color: var(--text-faint); "
+                      "color: var(--text-faint); }", css)
+
 if __name__ == "__main__":
     unittest.main()
