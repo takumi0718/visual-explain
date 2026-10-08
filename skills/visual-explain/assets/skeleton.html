@@ -307,6 +307,7 @@
       .flow .flow-node { flex: 0 1 auto; }
       .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
       .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
+      [data-ve-section-kind] .lane-nodes { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
       .compare { grid-template-columns: 1fr; }
       .ask-options [data-ask-option] { grid-template-columns: 1fr; gap: var(--space-1); }
     }

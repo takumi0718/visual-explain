@@ -536,6 +536,12 @@ class MobileV4Test(unittest.TestCase):
         ):
             self.assertIn(needle, mobile)
 
+    def test_lane_nodes_stay_on_one_row(self):
+        # Stacking a lane's nodes would make the drawn connectors run through
+        # the lower node; keeping one row keeps every arrow pointing at its node.
+        self.assertIn("[data-ve-section-kind] .lane-nodes { grid-template-columns: none; "
+                      "grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }", self._mobile())
+
     def test_text_blocks_reserve_room_for_the_add_button(self):
         gate = _style().split("@media (max-width: 52rem) {", 1)
         self.assertEqual(len(gate), 2)
