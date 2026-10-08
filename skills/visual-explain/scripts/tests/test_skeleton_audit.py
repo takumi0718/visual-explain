@@ -569,16 +569,23 @@ class ChevronV4Test(unittest.TestCase):
         self.assertNotIn("flex-wrap", block)
 
 
-class LayersLaneMarginTest(unittest.TestCase):
+class NestedSectionMarginTest(unittest.TestCase):
     def test_outer_lanes_drop_the_section_margin(self):
-        # The global `section { margin-block }` rule leaks into lane sections and,
-        # inside a grid, leaves an empty band above the first and below the last lane.
+        # Inner lanes keep the section margin: the fixed connector script picks
+        # vertical anchors only when lanes sit farther apart than nodes do sideways.
         css = _style()
         self.assertIn(
             "[data-ve-section-kind] .layers > [data-lane]:first-child { margin-block-start: 0; }", css)
         self.assertIn(
             "[data-ve-section-kind] .layers > [data-lane]:last-child { margin-block-end: 0; }", css)
 
+    def test_nested_sections_drop_the_section_margin(self):
+        # The global `section { margin-block }` rule leaks into sections nested inside
+        # content (Before/After frames). Inside a grid those margins do not collapse
+        # and open ~100px bands; only direct children of a wrapper keep it.
+        self.assertIn(
+            "[data-ve-section-kind] section:not([data-ve-section-kind] > section, [data-lane]) "
+            "{ margin-block: 0; }", _style())
 
 if __name__ == "__main__":
     unittest.main()
