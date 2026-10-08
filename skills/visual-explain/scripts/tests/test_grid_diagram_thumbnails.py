@@ -214,6 +214,28 @@ class ThumbnailRenderTest(unittest.TestCase):
         self.assertIn("選択肢の図の id 'sec-ask-opt-1-svg' が他のセクション id と重複しています",
                       [d.message for d in ctx.exception.diagnostics])
 
+    def test_picture_ids_cannot_collide_with_ids_a_canonical_figure_generates(self) -> None:
+        import json
+        raw = json.loads((SKILL / "examples" / "example-proposal.assembly.json").read_text("utf-8"))
+        overview = raw["sections"][1]["ir"]
+        overview["id"] = "sec-ask-decision-opt-1"
+        raw["sections"][0]["overview"]["section"] = "sec-ask-decision-opt-1"
+        with self.assertRaises(ContractError) as ctx:
+            build(raw)
+        self.assertIn("選択肢の図の id 'sec-ask-decision-opt-1-relations' が資料内の他の id と重複しています",
+                      [d.message for d in ctx.exception.diagnostics])
+
+    def test_picture_ids_cannot_collide_with_a_semantic_id(self) -> None:
+        raw = assembly()
+        canonical = copy.deepcopy(CANONICAL)
+        canonical["ir"]["certainty"] = [{"id": "sec-ask-opt-2-svg", "level": "inferred",
+                                         "statement": "説明用の想定です。"}]
+        raw["sections"].insert(2, canonical)
+        with self.assertRaises(ContractError) as ctx:
+            build(raw)
+        self.assertIn("選択肢の図の id 'sec-ask-opt-2-svg' が資料内の他の id と重複しています",
+                      [d.message for d in ctx.exception.diagnostics])
+
 
 if __name__ == "__main__":
     unittest.main()

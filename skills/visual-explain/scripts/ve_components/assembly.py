@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import re
+from html.parser import HTMLParser
 from dataclasses import dataclass, replace
 
 from .checker import extract_flow_dom, validate_content_markup, RENDERER_SVG_ALLOWLIST
@@ -364,6 +365,41 @@ def option_figure_ids(asks) -> frozenset[str]:
         f"{ask.id}-opt-{index}-{suffix}"
         for ask in asks for index, option in enumerate(ask.options, start=1)
         if option.figure is not None for suffix in ("svg", "relations"))
+
+
+class _IdCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.ids: list[str] = []
+
+    def handle_starttag(self, tag, attrs) -> None:
+        for name, value in attrs:
+            if name == "id" and value is not None:
+                self.ids.append(value)
+
+
+def rendered_dom_ids(markup: str) -> list[str]:
+    """Every id attribute value in rendered markup, duplicates kept."""
+    collector = _IdCollector()
+    collector.feed(markup)
+    collector.close()
+    return collector.ids
+
+
+def option_figure_id_clashes(asks, rendered_markups, semantic_ids) -> list[str]:
+    """Option-picture ids that some other generated DOM id or IR semantic id already uses.
+
+    The pictures' own ids appear once in their ask's markup, so any second
+    occurrence anywhere in the rendered sections (canonical figures, overview
+    list, panels) or any equal semantic id is a clash.
+    """
+    picture_ids = option_figure_ids(asks)
+    counts: dict[str, int] = {}
+    for markup in rendered_markups:
+        for value in rendered_dom_ids(markup):
+            counts[value] = counts.get(value, 0) + 1
+    taken = set(semantic_ids)
+    return sorted(i for i in picture_ids if counts.get(i, 0) > 1 or i in taken)
 
 
 def add_option_figure_assets(composition: CompositionResult, asks, registry: Registry) -> CompositionResult:

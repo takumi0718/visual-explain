@@ -25,6 +25,7 @@ from ve_components.assembly import (  # noqa: E402
     CompositionResult,
     add_option_figure_assets,
     option_figure_ids,
+    option_figure_id_clashes,
     compose_sections,
     process_canonical_section,
     process_compatibility_section,
@@ -122,6 +123,11 @@ def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
     if nav is not None:
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)
+    semantic_ids = [i for s in request.sections if isinstance(s, CanonicalSection) for i in s.ir.semantic_ids()]
+    dom_clashes = option_figure_id_clashes(asks, [item.markup for item in items], semantic_ids)
+    if dom_clashes:
+        raise ContractError([Diagnostic(
+            DUPLICATE_SECTION_ID, f"選択肢の図の id '{dom_clashes[0]}' が資料内の他の id と重複しています")])
     composition = add_option_figure_assets(compose_sections(items), asks, registry)
     return replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
 
