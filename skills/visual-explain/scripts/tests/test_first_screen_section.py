@@ -85,6 +85,13 @@ class OverviewValidationTest(unittest.TestCase):
                         _narr("sec-a", "一つ目の見出し"), _narr("sec-b", "二つ目の見出し"), _narr("sec-c", "三つ目の見出し"))
         self.assertIn("h2 節または ask が3つ以上ある資料では first-screen.overview が必要です", _messages(raw))
 
+    def test_overview_not_required_with_h3_only_narratives(self) -> None:
+        def h3(sid: str) -> dict:
+            return {"kind": "narrative", "id": sid,
+                    "markup": f'<section aria-labelledby="{sid}-h"><h3 id="{sid}-h">小見出し{sid}</h3><p>本文。</p></section>'}
+        raw = _assembly({"conclusion": "限定対象で開始する。"}, h3("sec-a"), h3("sec-b"), h3("sec-c"))
+        self.assertNotIn("h2 節または ask が3つ以上ある資料では first-screen.overview が必要です", _messages(raw))
+
 
 if __name__ == "__main__":
     unittest.main()

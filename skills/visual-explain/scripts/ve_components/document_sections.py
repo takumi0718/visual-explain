@@ -47,8 +47,9 @@ def _esc(value: str) -> str:
 class _FirstH2H3Parser(HTMLParser):
     """Extract the first h2/h3 text the same way as check.sh ContentInspector.headings."""
 
-    def __init__(self) -> None:
+    def __init__(self, levels: frozenset[str] = frozenset({"h2", "h3"})) -> None:
         super().__init__(convert_charrefs=True)
+        self._levels = levels
         self.stack: list[str] = []
         self.active: tuple[int, list[str]] | None = None
         self.result: str | None = None
@@ -58,7 +59,7 @@ class _FirstH2H3Parser(HTMLParser):
         if tag not in _VOID_TAGS:
             self.stack.append(tag)
         depth = len(self.stack)
-        if self.result is None and self.active is None and tag in {"h2", "h3"}:
+        if self.result is None and self.active is None and tag in self._levels:
             self.active = (depth, [])
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -85,6 +86,14 @@ class _FirstH2H3Parser(HTMLParser):
 def extract_first_h2_h3(markup: str) -> str | None:
     """Return the text of the first h2/h3 in markup, or None if absent/blank."""
     parser = _FirstH2H3Parser()
+    parser.feed(markup)
+    parser.close()
+    return parser.result
+
+
+def extract_first_h2(markup: str) -> str | None:
+    """Return the text of the first h2 in markup (h3 ignored), or None if absent/blank."""
+    parser = _FirstH2H3Parser(frozenset({"h2"}))
     parser.feed(markup)
     parser.close()
     return parser.result

@@ -2854,13 +2854,13 @@ def _validate_overview(raw: object, path: str, col: DiagnosticCollector) -> Over
 
 def _validate_overview_links(sections_raw: list, sections: list[object], col: DiagnosticCollector) -> None:
     """Cross-section rules for the overview: placement, marker targets, and when it is required."""
-    from .document_sections import extract_first_h2_h3
+    from .document_sections import extract_first_h2
 
     first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
     if first is None:
         return
     headed = sum(1 for s in sections
-                 if isinstance(s, NarrativeSection) and extract_first_h2_h3(s.markup) is not None)
+                 if isinstance(s, NarrativeSection) and extract_first_h2(s.markup) is not None)
     asks = sum(1 for s in sections if isinstance(s, AskSection))
     if first.overview is None:
         if headed >= 3 or asks >= 3:
