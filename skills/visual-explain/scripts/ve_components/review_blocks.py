@@ -6,6 +6,7 @@ passes only when every eligible block carries its 1-based DOM ordinal in
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from html.parser import HTMLParser
 
@@ -85,7 +86,12 @@ class _BlockWalker(HTMLParser):
         line, col = self.getpos()
         start = self._line_starts[line - 1] + col
         text = self.get_starttag_text() or ""
-        trim = 2 if text.endswith("/>") else 1
+        # A self-closing tag whose last value is unquoted (``<p class=x/>``)
+        # owns the "/" as part of the value; insert before the final ">" then.
+        if text.endswith("/>") and not re.search(r"=[^\s\"'>]*/>$", text):
+            trim = 2
+        else:
+            trim = 1
         return start + len(text) - trim
 
 

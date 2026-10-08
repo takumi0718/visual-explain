@@ -10,6 +10,7 @@ from first_screen_ir import assembly, decision_ask, messages, narr
 from ve_components.checker import check_final_document
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
+from ve_components.document_checks import check_document_structure
 from ve_components.review_blocks import check_review_blocks, stamp_review_blocks
 
 SKILL = Path(__file__).resolve().parents[2]
@@ -119,3 +120,23 @@ class BuildTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StampEdgeCaseTest(unittest.TestCase):
+    def test_unquoted_value_before_self_closing_slash_is_preserved(self) -> None:
+        stamped, _ = stamp_review_blocks("<p class=x/>")
+        self.assertEqual(stamped, '<p class=x/ data-ve-blk="1">')
+
+    def test_quoted_self_closing_still_inserts_before_slash(self) -> None:
+        stamped, _ = stamp_review_blocks('<p class="x"/>')
+        self.assertEqual(stamped, '<p class="x" data-ve-blk="1"/>')
+
+    def test_stray_blk_is_ignored_before_v3_and_reported_from_v3(self) -> None:
+        stray, plain = '<p data-ve-blk="9">a</p>', "<p>a</p>"
+        for version in (1, 2):
+            self.assertEqual(
+                check_document_structure(stray, title=None, skeleton_version=version),
+                check_document_structure(plain, title=None, skeleton_version=version))
+        self.assertNotEqual(
+            check_document_structure(stray, title=None, skeleton_version=3),
+            check_document_structure(plain, title=None, skeleton_version=3))
