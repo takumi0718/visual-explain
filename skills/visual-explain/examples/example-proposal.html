@@ -1001,7 +1001,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
         chipButtons[0].focus();
       });
       note.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
+        if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
         event.preventDefault();
         add.click();
       });
@@ -1048,8 +1048,13 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
         remove.textContent = '削除';
         remove.setAttribute('aria-label', `[${item.chip}] の指摘を削除`);
         remove.addEventListener('click', () => {
+          const at = Array.from(editor.list.querySelectorAll('button')).indexOf(remove);
           state = engine.removeAnnotation(state, item.index);
           persist(); render();
+          // Keep keyboard focus inside the editor: next delete, else previous, else first chip.
+          const left = editor.list.querySelectorAll('button');
+          const target = left[at] || left[at - 1] || editor.root.querySelector('.review-chip');
+          if (target) target.focus();
         });
         row.append(label, remove);
         return row;
@@ -1093,6 +1098,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
       place(pickButton, range.getBoundingClientRect(), true);
     });
     const render = () => {
+      fallback.hidden = true;
       contract.asks.forEach((ask) => {
         const section = document.getElementById(ask.id);
         if (!section) return;

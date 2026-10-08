@@ -179,7 +179,8 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             # 概観ナビの番号マーカー（accent = 現在地を示す番号の強調）
             ".marker-n",
             # 指摘層の選択チップと番号札（accent = 読者が指した場所・選んだ種類の強調）
-            ".review-",
+            ".review-tag",
+            ".review-chip[aria-checked",
             # 指摘済みブロックの左縦線（accent = 読者が指した場所）
             "[data-ve-annotated]",
         )
@@ -347,6 +348,9 @@ class ReviewLayerSkeletonTest(unittest.TestCase):
             "document.addEventListener('selectionchange'",
             "engine.addAnnotation(state, n, editor.chip, editor.quote, note.value, contract)",
             "      renderReview();\n",
+            "if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;",
+            "const target = left[at] || left[at - 1] || editor.root.querySelector('.review-chip');",
+            "    const render = () => {\n      fallback.hidden = true;\n",
             "if (block.tagName === 'LI') block.append(root);",
             "else block.after(root);",
         ):
