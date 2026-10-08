@@ -158,7 +158,7 @@ class TypeScaleTest(unittest.TestCase):
         style = _style()
         self.assertIn("h1 { margin: 0; font-size: var(--fs-hero);", style)
         self.assertIn("h3 { font-size: var(--fs-h3); font-weight: 700; line-height: var(--lh-heading);", style)
-        self.assertIn(".claim { margin-bottom: var(--space-2); font-size: var(--fs-h3); font-weight: 700; }", style)
+        self.assertIn(".claim { margin-bottom: var(--space-2); font-size: var(--fs-h3); font-weight: 400; }", style)
         self.assertIn("[data-ve-section-kind] figure[data-ve-component] > figcaption[class] "
                       "{ font-size: var(--fs-h3); }", style)
 
