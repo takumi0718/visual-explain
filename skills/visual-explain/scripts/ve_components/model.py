@@ -312,6 +312,55 @@ class EvidenceMapPayload:
     evidence: tuple[EvidenceItem, ...]
 
 
+@dataclass(frozen=True)
+class GridNode:
+    """A labelled box placed on 1-based grid cells (col, row), spanning cells."""
+    id: str
+    label: str
+    col: int
+    row: int
+    span_cols: int = 1
+    span_rows: int = 1
+    tone: str = "base"  # base | primary | warning
+
+
+@dataclass(frozen=True)
+class GridRegion:
+    """A labelled enclosure covering the inclusive cell range from..to."""
+    id: str
+    label: str
+    from_col: int
+    from_row: int
+    to_col: int
+    to_row: int
+
+
+@dataclass(frozen=True)
+class GridEdge:
+    id: str
+    source: str
+    target: str
+    label: str = ""
+
+
+@dataclass(frozen=True)
+class GridMarker:
+    """Overview number ``n`` drawn on node ``target``; ``ask`` optionally names the ask section."""
+    n: int
+    target: str
+    ask: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class GridDiagramPayload:
+    cols: int
+    rows: int
+    nodes: tuple[GridNode, ...]
+    regions: tuple[GridRegion, ...] = ()
+    edges: tuple[GridEdge, ...] = ()
+    markers: tuple[GridMarker, ...] = ()
+
+
 # ---------------------------------------------------------------------------
 # Stage-deck declarations
 # ---------------------------------------------------------------------------
