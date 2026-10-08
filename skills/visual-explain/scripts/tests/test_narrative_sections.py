@@ -79,6 +79,22 @@ def test_process_narrative_wraps_with_instance():
     assert 'data-ve-instance="sec-intro"' in wrapped.markup
 
 
+def test_certainty_chip_is_glued_to_the_last_character_before_it():
+    sec = NarrativeSection(id="sec-c", markup=(
+        '<p>検証できません。<span class="certainty unverified">未確認</span></p>'
+        '<p>A &amp; B<span class="certainty inferred">推論</span></p>'))
+    markup = process_narrative_section(sec).markup
+    assert ('検証できません<span class="certainty-tail">。<span class="certainty unverified">未確認</span></span>'
+            in markup)
+    assert 'A &amp; <span class="certainty-tail">B<span class="certainty inferred">推論</span></span>' in markup
+
+
+def test_certainty_chip_after_an_entity_keeps_the_entity_whole():
+    sec = NarrativeSection(id="sec-c", markup='<p>A &amp;<span class="certainty inferred">推論</span></p>')
+    markup = process_narrative_section(sec).markup
+    assert 'A <span class="certainty-tail">&amp;<span class="certainty inferred">推論</span></span>' in markup
+
+
 def test_process_narrative_rejects_forbidden_markup():
     sec = NarrativeSection(id="sec-bad", markup='<script>alert(1)</script>')
     with pytest.raises(ContractError) as exc:

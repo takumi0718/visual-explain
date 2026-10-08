@@ -346,7 +346,7 @@ def process_narrative_section(
     diagnostics = validate_content_markup(section.markup, section_kind="narrative")
     if diagnostics:
         raise ContractError(diagnostics)
-    body = insert_link_domain_markers(section.markup)
+    body = glue_certainty_chips(insert_link_domain_markers(section.markup))
     if marker is not None:
         from .document_sections import mark_first_heading
         body = mark_first_heading(body, marker)
@@ -357,6 +357,18 @@ def process_narrative_section(
         f'{body}\n</section>'
     )
     return WrappedNarrative(instance_id=section.id, markup=wrapper)
+
+
+_CHIP_AFTER_TEXT = re.compile(
+    r'(&[#A-Za-z0-9]+;|[^\s<>;])(\s*)(<span class="certainty(?: [a-z-]+)*">[^<]*</span>)')
+
+
+def glue_certainty_chips(markup: str) -> str:
+    """Wrap a certainty chip with the character before it so the chip never starts a line alone.
+
+    Runs on validated narrative markup; the wrapper adds no text, so counts are unchanged.
+    """
+    return _CHIP_AFTER_TEXT.sub(r'<span class="certainty-tail">\1\2\3</span>', markup)
 
 
 def option_figure_ids(asks) -> frozenset[str]:
