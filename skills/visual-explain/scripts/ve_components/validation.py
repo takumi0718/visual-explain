@@ -39,10 +39,12 @@ from .diagnostics import (
     WATERFALL_STRUCTURE_VIOLATION,
     BARS_ITEM_LIMIT,
     KPI_ITEM_LIMIT,
+    GRID_DIAGRAM_STRUCTURE_VIOLATION,
     ContractError,
     DiagnosticCollector,
 )
 from .flow_layout import assign_rails, check_row_budget, check_topology, edge_spans, order_index
+from .grid_layout import MAX_GRID, MAX_THUMB_GRID, check_layout
 from .numeric import is_numeric, to_decimal, waterfall_axis_max, waterfall_scale_values
 from .model import (
     AccessibilityInfo,
@@ -71,6 +73,11 @@ from .model import (
     EvidenceConclusion,
     EvidenceItem,
     EvidenceMapPayload,
+    GridDiagramPayload,
+    GridEdge,
+    GridMarker,
+    GridNode,
+    GridRegion,
     FirstScreenSection,
     Overview,
     OverviewMarker,
@@ -2581,6 +2588,191 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
         if value in seen:
             col.add(DUPLICATE_SEMANTIC_ID, f"意味 ID '{value}' が重複しています", path)
         seen.add(value)
+
+
+# ---------------------------------------------------------------------------
+# grid-diagram (Phase 4)
+# ---------------------------------------------------------------------------
+
+_GRID_DIAGRAM_KEYS = {"grid", "nodes", "regions", "edges", "markers"}
+_GRID_THUMB_KEYS = {"grid", "nodes", "regions", "edges"}
+_GRID_SIZE_KEYS = {"cols", "rows"}
+_GRID_NODE_KEYS = {"id", "label", "cell", "span", "tone"}
+_GRID_REGION_KEYS = {"id", "label", "from", "to"}
+_GRID_EDGE_KEYS = {"id", "from", "to", "label"}
+_GRID_MARKER_KEYS = {"n", "target", "ask"}
+_GRID_TONES = frozenset({"base", "primary", "warning"})
+_MAX_GRID_NODE_LABEL = 14
+_MAX_GRID_EDGE_LABEL = 10
+_MAX_GRID_REGION_LABEL = 8
+_MAX_GRID_EDGES = 16
+_MAX_GRID_REGIONS = 4
+_MAX_GRID_MARKERS = 5
+
+
+def _grid_pair(value: object) -> tuple[int, int] | None:
+    if isinstance(value, list) and len(value) == 2 and all(_is_int(v) and v >= 1 for v in value):
+        return value[0], value[1]
+    return None
+
+
+def _validate_grid_diagram(raw: object, path: str, col: DiagnosticCollector, *,
+                           thumbnail: bool = False) -> GridDiagramPayload | None:
+    """Parse a grid-diagram payload, then run the shared layout checks (fail-closed)."""
+    if not isinstance(raw, dict):
+        col.add(INVALID_COMPONENT_PAYLOAD, "grid-diagram はオブジェクトである必要があります", path)
+        return None
+    before = len(col.diagnostics)
+    _check_keys(raw, _GRID_THUMB_KEYS if thumbnail else _GRID_DIAGRAM_KEYS, path, col)
+    max_grid = MAX_THUMB_GRID if thumbnail else MAX_GRID
+    grid = raw.get("grid")
+    cols = rows = 0
+    if not isinstance(grid, dict):
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "grid は cols と rows を持つオブジェクトである必要があります", path)
+    else:
+        _check_keys(grid, _GRID_SIZE_KEYS, f"{path}.grid", col)
+        cols, rows = grid.get("cols"), grid.get("rows")
+        if not (_is_int(cols) and _is_int(rows) and 1 <= cols <= max_grid and 1 <= rows <= max_grid):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                    f"grid.cols と grid.rows は1〜{max_grid}の整数です", f"{path}.grid")
+    low, high = (1, max_grid * max_grid) if thumbnail else (2, 12)
+    nodes_raw = raw.get("nodes")
+    if not isinstance(nodes_raw, list) or not low <= len(nodes_raw) <= high:
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"nodes は{low}〜{high}件の配列である必要があります", path)
+    nodes_raw = nodes_raw if isinstance(nodes_raw, list) else []
+    known_ids = {item.get("id") for item in nodes_raw
+                 if isinstance(item, dict) and _nonblank_str(item.get("id"))}
+    nodes: list[GridNode] = []
+    for i, item in enumerate(nodes_raw):
+        p = f"{path}.nodes[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "node はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _GRID_NODE_KEYS, p, col)
+        node_id, label, tone = item.get("id"), item.get("label"), item.get("tone", "base")
+        cell, span = _grid_pair(item.get("cell")), _grid_pair(item.get("span", [1, 1]))
+        if not _nonblank_str(node_id):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.id は空にできません", p)
+        if not _nonblank_str(label) or len(label) > _MAX_GRID_NODE_LABEL:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.label は1〜14字です", p)
+        if cell is None:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.cell は [列, 行] の1以上の整数2個です", p)
+        if span is None:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "node.span は [幅, 高さ] の1以上の整数2個です", p)
+        if tone not in _GRID_TONES:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"未知の tone '{tone}'", p)
+        if _nonblank_str(node_id) and _nonblank_str(label) and cell and span and tone in _GRID_TONES:
+            nodes.append(GridNode(id=node_id, label=label, col=cell[0], row=cell[1],
+                                  span_cols=span[0], span_rows=span[1], tone=tone))
+    regions_raw = raw.get("regions", [])
+    if not isinstance(regions_raw, list) or len(regions_raw) > _MAX_GRID_REGIONS:
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "regions は0〜4件の配列である必要があります", path)
+        regions_raw = regions_raw if isinstance(regions_raw, list) else []
+    regions: list[GridRegion] = []
+    for i, item in enumerate(regions_raw):
+        p = f"{path}.regions[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "region はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _GRID_REGION_KEYS, p, col)
+        region_id, label = item.get("id"), item.get("label")
+        start, end = _grid_pair(item.get("from")), _grid_pair(item.get("to"))
+        if not _nonblank_str(region_id):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.id は空にできません", p)
+        if not _nonblank_str(label) or len(label) > _MAX_GRID_REGION_LABEL:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.label は1〜8字です", p)
+        if start is None or end is None:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.from と region.to は [列, 行] の1以上の整数2個です", p)
+        elif start[0] > end[0] or start[1] > end[1]:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "region.from は region.to の左上にある必要があります", p)
+        elif _nonblank_str(region_id) and _nonblank_str(label):
+            regions.append(GridRegion(id=region_id, label=label, from_col=start[0], from_row=start[1],
+                                      to_col=end[0], to_row=end[1]))
+    edges_raw = raw.get("edges", [])
+    if not isinstance(edges_raw, list) or len(edges_raw) > _MAX_GRID_EDGES:
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edges は0〜16件の配列である必要があります", path)
+        edges_raw = edges_raw if isinstance(edges_raw, list) else []
+    edges: list[GridEdge] = []
+    pairs: set[tuple[str, str]] = set()
+    for i, item in enumerate(edges_raw):
+        p = f"{path}.edges[{i}]"
+        if not isinstance(item, dict):
+            col.add(INVALID_COMPONENT_PAYLOAD, "edge はオブジェクトである必要があります", p)
+            continue
+        _check_keys(item, _GRID_EDGE_KEYS, p, col)
+        edge_id, source, target, label = item.get("id"), item.get("from"), item.get("to"), item.get("label", "")
+        if not _nonblank_str(edge_id):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.id は空にできません", p)
+        if source not in known_ids:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"edge.from '{source}' がノードにありません", p)
+        if target not in known_ids:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"edge.to '{target}' がノードにありません", p)
+        if source == target:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.from と edge.to は別のノードである必要があります", p)
+        elif (source, target) in pairs:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"辺 '{source}' → '{target}' が重複しています", p)
+        elif (target, source) in pairs:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"辺 '{source}' → '{target}' は逆向きの辺と重なります", p)
+        if not isinstance(label, str) or len(label) > _MAX_GRID_EDGE_LABEL:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "edge.label は10字以内です", p)
+        if isinstance(source, str) and isinstance(target, str):
+            pairs.add((source, target))
+            if _nonblank_str(edge_id) and isinstance(label, str):
+                edges.append(GridEdge(id=edge_id, source=source, target=target, label=label))
+    markers: list[GridMarker] = []
+    if "markers" in raw and not thumbnail:
+        markers_raw = raw.get("markers")
+        if not isinstance(markers_raw, list) or not 1 <= len(markers_raw) <= _MAX_GRID_MARKERS:
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "markers は1〜5件の配列である必要があります", path)
+            markers_raw = []
+        seen_n: set[int] = set()
+        marked: set[str] = set()
+        for i, item in enumerate(markers_raw):
+            p = f"{path}.markers[{i}]"
+            if not isinstance(item, dict):
+                col.add(INVALID_COMPONENT_PAYLOAD, "marker はオブジェクトである必要があります", p)
+                continue
+            _check_keys(item, _GRID_MARKER_KEYS, p, col)
+            n, target, ask = item.get("n"), item.get("target"), item.get("ask")
+            if not _is_int(n) or not 1 <= n <= _MAX_GRID_MARKERS:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "marker.n は1〜5の整数です", p)
+            elif n in seen_n:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"marker.n {n} が重複しています", p)
+            if target not in known_ids:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"marker.target '{target}' がノードにありません", p)
+            elif target in marked:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, f"ノード '{target}' に番号が2つあります", p)
+            if ask is not None and not _nonblank_str(ask):
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, "marker.ask は空にできません", p)
+            if _is_int(n):
+                seen_n.add(n)
+            if isinstance(target, str):
+                marked.add(target)
+                if _is_int(n) and (ask is None or _nonblank_str(ask)):
+                    markers.append(GridMarker(n=n, target=target, ask=ask))
+    # Ids are semantic ids in the final DOM, so they must be unique across the whole picture;
+    # check_layout also assumes unique node ids (it keys nodes by id).
+    seen_ids: set[str] = set()
+    for item_id in [n.id for n in nodes] + [r.id for r in regions] + [e.id for e in edges]:
+        if item_id in seen_ids:
+            col.add(DUPLICATE_SEMANTIC_ID, f"図の id '{item_id}' が重複しています", path)
+        seen_ids.add(item_id)
+    if len(col.diagnostics) > before:
+        return None
+    payload = GridDiagramPayload(cols=cols, rows=rows, nodes=tuple(nodes), regions=tuple(regions),
+                                 edges=tuple(edges), markers=tuple(markers))
+    for message in check_layout(payload):
+        col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION, message, path)
+    return None if len(col.diagnostics) > before else payload
+
+
+def validate_grid_diagram(raw: object, *, thumbnail: bool = False) -> GridDiagramPayload:
+    """Validate one grid-diagram payload on its own (tests, option thumbnails)."""
+    col = DiagnosticCollector()
+    payload = _validate_grid_diagram(raw, "grid-diagram", col, thumbnail=thumbnail)
+    col.raise_if_any()
+    assert payload is not None
+    return payload
 
 
 # ---------------------------------------------------------------------------
