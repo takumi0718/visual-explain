@@ -147,7 +147,7 @@ FORBIDDEN_AUTHORING_KEYS = {
 _IR_KEYS = {
     "id", "relationship", "selection", "caption", "certainty", "sources", "accessibility",
     "matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree",
-    "slope", "bars", "kpi", "evidence-map",
+    "slope", "bars", "kpi", "evidence-map", "grid-diagram",
     "takeawayTargetIds", "takeawayScope", "emphasis",
     "claim", "sequence", "assertions",
 }
@@ -787,6 +787,8 @@ def _payload_semantic_ids(payload_kind: str, payload: object | None) -> set[str]
         return {item.id for item in payload.items}
     if payload_kind == "evidence-map":
         return {payload.conclusion.id, *(item.id for item in payload.evidence)}
+    if payload_kind == "grid-diagram":
+        return {*(n.id for n in payload.nodes), *(r.id for r in payload.regions), *(e.id for e in payload.edges)}
     return set()
 
 
@@ -984,6 +986,7 @@ def _validate_canonical_ir(
     bars = None
     kpi = None
     evidence_map = None
+    grid_diagram = None
     validated_payload = None
     present = [key for key in _PAYLOAD_KEYS if key in raw]
     if len(present) == 0:
@@ -1028,6 +1031,8 @@ def _validate_canonical_ir(
                 bars = validated_payload
             elif payload_kind == "kpi":
                 kpi = validated_payload
+            elif payload_kind == "grid-diagram":
+                grid_diagram = validated_payload
 
     if document_profile == "visual-stage":
         takeaway_target_ids, takeaway_scope, emphasis = (), "targets", ()
@@ -1090,6 +1095,7 @@ def _validate_canonical_ir(
         bars=bars,
         kpi=kpi,
         evidence_map=evidence_map,
+        grid_diagram=grid_diagram,
         takeaway_target_ids=takeaway_target_ids,
         takeaway_scope=takeaway_scope,
         emphasis=emphasis,
@@ -2583,6 +2589,11 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
         if isinstance(conclusion, dict) and isinstance(conclusion.get("id"), str):
             ids.append(conclusion["id"])
         collect(evidence_map.get("evidence"))
+    grid_diagram = raw.get("grid-diagram")
+    if isinstance(grid_diagram, dict):
+        collect(grid_diagram.get("nodes"))
+        collect(grid_diagram.get("regions"))
+        collect(grid_diagram.get("edges"))
     seen: set[str] = set()
     for value in ids:
         if value in seen:
@@ -2794,6 +2805,7 @@ _PAYLOAD_VALIDATORS = {
     "slope": _validate_slope,
     "bars": _validate_bars,
     "kpi": _validate_kpi,
+    "grid-diagram": _validate_grid_diagram,
 }
 
 

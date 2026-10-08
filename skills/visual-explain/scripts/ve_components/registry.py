@@ -56,6 +56,7 @@ KNOWN_CHECKER_RULES = frozenset({
     "bars-width-classes",
     "kpi-item-limit",
     "kpi-structure",
+    "grid-diagram-structure",
 })
 
 _ASSET_SLOTS = frozenset({"styles", "scripts"})

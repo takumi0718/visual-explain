@@ -26,6 +26,7 @@ EXISTING_ASSETS = {
     "evidence-map": ("evidence-map.css", "b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b"),
     "bars": ("bars.css", "dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9"),
     "kpi": ("kpi.css", "5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78"),
+    "grid-diagram": ("grid-diagram.css", "1522386ec816d31b03e305af2ef250e4502aae5a7d205e61e7b63610c4386893"),
 }
 
 
@@ -36,7 +37,7 @@ def test_every_component_declares_the_identical_verified_visual_stage_asset() ->
 
     assert raw["registryVersion"] == 1
     assert actual_digest == VISUAL_STAGE_DIGEST
-    assert len(registry.components) == 12
+    assert len(registry.components) == 13
     for component in registry.components:
         shared = component.asset_by_id("visual-stage")
         assert shared is not None

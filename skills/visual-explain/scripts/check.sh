@@ -395,6 +395,8 @@ def run_selftest(script_dir: Path) -> int:
         ("structure-bad-panel-digest.html", ("回収パネルの ask 契約ダイジェストが一致しません",)),
         ("v2-proposal-doc.html", ()),
         ("v3-proposal-doc.html", ()),
+        ("grid-diagram-doc.html", ()),
+        ("component-bad-grid-viewbox.html", ("viewBox は '0 0 600 288' の完全一致である必要があります",)),
         ("structure-bad-v3-panel-missing.html", ("回収パネルがありません",)),
         ("structure-bad-v3-blk-gap.html", ("data-ve-blk は1からの連番である必要があります（2 番目のブロックが 3）",)),
         ("structure-bad-v3-blk-tag.html", ("data-ve-blk は p / h2 / h3 / li / figure / blockquote / pre / table にだけ付けられます: <section>",)),

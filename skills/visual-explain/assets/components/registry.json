@@ -669,6 +669,63 @@
           "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
         }
       ]
+    },
+    {
+      "id": "grid-diagram",
+      "version": 2,
+      "relationshipKind": "spatial-layout",
+      "capabilities": [
+        "spatial-placement"
+      ],
+      "semanticResponsibility": "格子上の配置そのものが意味を持つ関係（近さ・上下・囲み）のみを担う。",
+      "requiredInputs": [
+        "caption",
+        "accessibility",
+        "grid",
+        "nodes"
+      ],
+      "optionalInputs": [
+        "certainty",
+        "sources",
+        "regions",
+        "edges",
+        "markers"
+      ],
+      "behavior": "宣言された格子のマスにノードと囲みを置き、直交1回折れの線で結んだ決定的 SVG を描画する。",
+      "slots": [
+        "caption",
+        "certainty",
+        "source",
+        "accessibility"
+      ],
+      "accessibility": "caption/summary を持つラベル付き figure、SVG 代替テキスト、ノード・関係・番号の読み上げ一覧。",
+      "responsive": true,
+      "dependencies": [],
+      "fallback": "static-content",
+      "checkerRules": [
+        "static-content",
+        "semantic-ids",
+        "escaping",
+        "no-external-reference",
+        "responsive-order",
+        "grid-diagram-structure",
+        "renderer-svg"
+      ],
+      "renderer": "grid-diagram@2",
+      "assets": [
+        {
+          "id": "grid-diagram.css",
+          "slot": "styles",
+          "path": "grid-diagram.css",
+          "digest": "1522386ec816d31b03e305af2ef250e4502aae5a7d205e61e7b63610c4386893"
+        },
+        {
+          "id": "visual-stage",
+          "slot": "styles",
+          "path": "visual-stage.css",
+          "digest": "991e15a7616d1b411a843881de666e9d24846ba6d23fd2f58a98b38089faede8"
+        }
+      ]
     }
   ]
 }

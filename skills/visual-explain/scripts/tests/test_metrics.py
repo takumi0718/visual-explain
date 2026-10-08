@@ -24,6 +24,10 @@ class MetricsTest(unittest.TestCase):
     def test_self_closing_void_tags_do_not_pop_the_parent(self) -> None:
         self.assertEqual(visible_chars("<p>a b<br/>c<br/></p><p>d</p>"), 4)
 
+    def test_screen_reader_only_text_is_not_counted(self) -> None:
+        markup = '<p>見える</p><ul class="ve-gd-relations visually-hidden"><li>読み上げ</li></ul>'
+        self.assertEqual(visible_chars(markup), 3)
+
     def test_format(self) -> None:
         self.assertEqual(format_metrics(TextMetrics(1400, 80, 3)), "本文 1400 字 / 図より前 80 字 / 図 3 点")
 

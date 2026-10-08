@@ -16,6 +16,8 @@ _EXCLUDED_KINDS = frozenset({"decision-panel"})
 _NOT_BEFORE_FIGURE_KINDS = frozenset({"first-screen"})
 # Fixed interface labels of the question card (chrome, not prose).
 _CHROME_CLASSES = frozenset({"ask-kind", "ask-badge", "ask-withdrawn-note", "ask-memo", "ask-prefix"})
+# Screen-reader twins of a picture (relation lists) are not read by the eye.
+_HIDDEN_CLASSES = frozenset({"visually-hidden"})
 VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
@@ -46,7 +48,7 @@ class _Counter(HTMLParser):
         parent_kind, parent_skip = self.stack[-1] if self.stack else (None, False)
         classes = set((dict(attrs).get("class") or "").split())
         self.stack.append((kind if kind else parent_kind,
-                           parent_skip or bool(classes & _CHROME_CLASSES)))
+                           parent_skip or bool(classes & (_CHROME_CLASSES | _HIDDEN_CLASSES))))
 
     def handle_startendtag(self, tag, attrs):
         # <br/> must not pop the parent; <span/> opens and closes nothing.

@@ -41,6 +41,7 @@
     "bars": {"$ref": "#/$defs/barsPayload"},
     "kpi": {"$ref": "#/$defs/kpiPayload"},
     "evidence-map": {"$ref": "#/$defs/evidenceMapPayload"},
+    "grid-diagram": {"$ref": "#/$defs/gridDiagramPayload"},
     "takeawayTargetIds": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     "takeawayScope": {"enum": ["targets", "whole"]},
     "emphasis": {
@@ -52,23 +53,24 @@
     }
   },
   "oneOf": [
-    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["waterfall"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["logic-tree"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["slope"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["bars"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["kpi"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}]}},
-    {"required": ["evidence-map"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}]}}
+    {"required": ["matrix"], "not": {"anyOf": [{"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["flow"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["enumeration"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["chevron"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["pyramid"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["stairs"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["waterfall"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["logic-tree"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["slope"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["bars"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["kpi"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["evidence-map"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["evidence-map"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["grid-diagram"]}]}},
+    {"required": ["grid-diagram"], "not": {"anyOf": [{"required": ["matrix"]}, {"required": ["flow"]}, {"required": ["enumeration"]}, {"required": ["chevron"]}, {"required": ["pyramid"]}, {"required": ["stairs"]}, {"required": ["waterfall"]}, {"required": ["logic-tree"]}, {"required": ["slope"]}, {"required": ["bars"]}, {"required": ["kpi"]}, {"required": ["evidence-map"]}]}}
   ],
   "$defs": {
-    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree", "slope", "bars", "kpi", "evidence-map"]},
+    "componentId": {"enum": ["matrix", "flow", "enumeration", "chevron", "pyramid", "stairs", "waterfall", "logic-tree", "slope", "bars", "kpi", "evidence-map", "grid-diagram"]},
     "contractVersion": {"enum": [2]},
-    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition", "additive-bridge", "two-point-change", "quantitative-comparison", "headline-metrics", "claim-support"]},
+    "relationshipKind": {"enum": ["two-axis", "directed-graph", "parallel-enumeration", "ordered-sequence", "layered-priority", "staged-maturity", "hierarchical-decomposition", "additive-bridge", "two-point-change", "quantitative-comparison", "headline-metrics", "claim-support", "spatial-layout"]},
     "capability": {
       "enum": [
         "two-axis-classification",
@@ -88,6 +90,7 @@
         "ranked-comparison",
         "metric-highlight",
         "claim-support-mapping",
+        "spatial-placement",
         "typed-sequence"
       ]
     },
@@ -602,6 +605,72 @@
         "label": {"type": "string", "minLength": 1, "maxLength": 40},
         "certaintyRef": {"type": "string", "minLength": 1},
         "sourceRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "gridDiagramPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grid", "nodes"],
+      "properties": {
+        "grid": {"$ref": "#/$defs/gridSize"},
+        "nodes": {"type": "array", "minItems": 2, "maxItems": 12, "items": {"$ref": "#/$defs/gridNode"}},
+        "regions": {"type": "array", "maxItems": 4, "items": {"$ref": "#/$defs/gridRegion"}},
+        "edges": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/gridEdge"}},
+        "markers": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/$defs/gridMarker"}}
+      }
+    },
+    "gridSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cols", "rows"],
+      "properties": {
+        "cols": {"type": "integer", "minimum": 1, "maximum": 6},
+        "rows": {"type": "integer", "minimum": 1, "maximum": 6}
+      }
+    },
+    "gridCell": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 1}},
+    "gridNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "cell"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 14},
+        "cell": {"$ref": "#/$defs/gridCell"},
+        "span": {"$ref": "#/$defs/gridCell"},
+        "tone": {"enum": ["base", "primary", "warning"]}
+      }
+    },
+    "gridRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "from", "to"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1, "maxLength": 8},
+        "from": {"$ref": "#/$defs/gridCell"},
+        "to": {"$ref": "#/$defs/gridCell"}
+      }
+    },
+    "gridEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "maxLength": 10}
+      }
+    },
+    "gridMarker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "target"],
+      "properties": {
+        "n": {"type": "integer", "minimum": 1, "maximum": 5},
+        "target": {"type": "string", "minLength": 1},
+        "ask": {"type": "string", "minLength": 1}
       }
     }
   }

@@ -21,6 +21,7 @@ from .diagnostics import (
     EVIDENCE_MAP_STRUCTURE_VIOLATION,
     FIXED_REGION_MISMATCH,
     FORBIDDEN_CONTENT_MARKUP,
+    GRID_DIAGRAM_STRUCTURE_VIOLATION,
     INVALID_CONTROLLED_ASSET,
     MISSING_CONTROLLED_MARKER,
     MISSING_PROVENANCE,
@@ -34,6 +35,7 @@ from .diagnostics import (
     KPI_STRUCTURE_VIOLATION,
     Diagnostic,
 )
+from .grid_layout import MAX_GRID, viewbox as grid_viewbox
 from .validation import VOCABULARY, scan_author_markup_bans
 
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
@@ -42,7 +44,7 @@ _COMPONENTS = set(VOCABULARY["components"])
 _SECTION_TAG_RE = re.compile(r"<section\b([^>]*)>")
 _ATTR_RE = lambda name: re.compile(name + r'="([^"]*)"')
 
-RENDERER_SVG_ALLOWLIST = frozenset({"slope@2", "waterfall@2"})
+RENDERER_SVG_ALLOWLIST = frozenset({"slope@2", "waterfall@2", "grid-diagram@2"})
 
 _SVG_ALLOWED_TAGS = frozenset({"svg", "g", "line", "circle", "text", "title", "desc", "rect"})
 _SVG_ATTR_ALLOWLIST = {
@@ -64,6 +66,8 @@ _RENDERER_SVG_VIEWBOX = {
 _SVG_PRESERVE_EXACT = "xMidYMid meet"
 _SVG_TEXT_ANCHOR = frozenset({"start", "middle", "end"})
 _SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
+# grid-diagram declares its grid on the figure; the checker derives the viewBox from it.
+_GRID_ATTR_RE = re.compile(r'\bdata-ve-grid="([1-9][0-9]*)x([1-9][0-9]*)"')
 _WRAPPER_SECTION_RE = re.compile(
     r'<section\b([^>]*)data-ve-section-kind="([^"]+)"([^>]*)>(.*?)</section>',
     re.DOTALL,
@@ -1823,18 +1827,20 @@ def _check_logic_tree_artifact(body: str, parser: _DomSemanticParser) -> list[Di
 class _SvgSubtreeParser(HTMLParser):
     """Validate one SVG subtree against the closed element/attribute allowlist."""
 
-    def __init__(self, component_key: str = "slope@2") -> None:
+    def __init__(self, component_key: str = "slope@2", expected_viewbox: str | None = None) -> None:
         super().__init__(convert_charrefs=True)
         self.diagnostics: list[Diagnostic] = []
         self._svg_depth = 0
         self._component_key = component_key
+        self._expected_viewbox = expected_viewbox
 
     def _reject(self, message: str) -> None:
         self.diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, message))
 
     def _check_value(self, tag: str, name: str, value: str) -> None:
         if name == "viewBox":
-            expected = _RENDERER_SVG_VIEWBOX.get(self._component_key, _RENDERER_SVG_VIEWBOX["slope@2"])
+            expected = self._expected_viewbox or _RENDERER_SVG_VIEWBOX.get(
+                self._component_key, _RENDERER_SVG_VIEWBOX["slope@2"])
             if value != expected:
                 self._reject(f"viewBox は '{expected}' の完全一致である必要があります")
         elif name == "preserveAspectRatio":
@@ -2022,8 +2028,9 @@ def _panel_diagnostics(
     ]
 
 
-def _validate_svg_subtree(fragment: str, component_key: str = "slope@2") -> list[Diagnostic]:
-    parser = _SvgSubtreeParser(component_key=component_key)
+def _validate_svg_subtree(fragment: str, component_key: str = "slope@2",
+                          expected_viewbox: str | None = None) -> list[Diagnostic]:
+    parser = _SvgSubtreeParser(component_key=component_key, expected_viewbox=expected_viewbox)
     parser.feed(fragment)
     parser.close()
     return parser.diagnostics
@@ -2051,6 +2058,17 @@ def _validate_closed_svg(
             ))
     diagnostics.extend(_validate_svg_subtree(fragment, component_key))
     return diagnostics
+
+
+def _grid_viewbox_from(markup: str, limit: int) -> str | None:
+    """Expected viewBox from the first data-ve-grid in ``markup``; None if absent or too large."""
+    match = _GRID_ATTR_RE.search(markup)
+    if match is None:
+        return None
+    cols, rows = int(match.group(1)), int(match.group(2))
+    if cols > limit or rows > limit:
+        return None
+    return grid_viewbox(cols, rows)
 
 
 def validate_renderer_svg(content: str) -> list[Diagnostic]:
@@ -2138,6 +2156,14 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
             continue
 
         unit_diagnostics: list[Diagnostic] = []
+        expected_viewbox = None
+        if component == "grid-diagram":
+            expected_viewbox = _grid_viewbox_from(body, MAX_GRID)
+            if expected_viewbox is None:
+                unit_diagnostics.append(Diagnostic(
+                    RENDERER_SVG_VIOLATION,
+                    "grid-diagram の figure に1〜6の data-ve-grid がありません",
+                ))
         svg_matches = list(_SVG_OPEN_RE.finditer(body))
         if len(svg_matches) != 1:
             unit_diagnostics.append(Diagnostic(
@@ -2167,7 +2193,7 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
                 ))
                 continue
             subtree = body[start:end + len("</svg>")]
-            unit_diagnostics.extend(_validate_svg_subtree(subtree, component_key))
+            unit_diagnostics.extend(_validate_svg_subtree(subtree, component_key, expected_viewbox))
         diagnostics.extend(unit_diagnostics)
     outside = content
     for match in _WRAPPER_SECTION_RE.finditer(content):
@@ -2211,6 +2237,34 @@ def _check_slope_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnos
             SLOPE_STRUCTURE_VIOLATION,
             "slope には <svg> がちょうど1つ必要です",
         ))
+    return diagnostics
+
+
+def _check_grid_diagram_artifact(body: str, parser: _DomSemanticParser) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+
+    def fail(message: str) -> None:
+        diagnostics.append(Diagnostic(GRID_DIAGRAM_STRUCTURE_VIOLATION, message))
+
+    if len(_SVG_OPEN_RE.findall(body)) != 1:
+        fail("grid-diagram には <svg> がちょうど1つ必要です")
+    nodes = re.findall(r"<g\s+([^>]*\bve-gd-node\b[^>]*)>(.*?)</g>", body, re.DOTALL)
+    if not 2 <= len(nodes) <= 12:
+        fail(f"grid-diagram のノードは2〜12個である必要があります (found {len(nodes)})")
+    for attrs, inner in nodes:
+        if 'data-ve-semantic-id="' not in attrs:
+            fail("grid-diagram ノードに data-ve-semantic-id がありません")
+        if len(re.findall(r"<rect\s+[^>]*\bve-gd-node-box\b", inner)) != 1:
+            fail("grid-diagram ノードは rect.ve-gd-node-box を1つだけ持つ必要があります")
+    edges = re.findall(r"<g\s+[^>]*\bve-gd-edge\b", body)
+    markers = re.findall(r"<g\s+[^>]*\bve-gd-marker\b[^>]*>(.*?)</g>", body, re.DOTALL)
+    for kind, count in (("node", len(nodes)), ("edge", len(edges)), ("marker", len(markers))):
+        if len(re.findall(rf'<li class="ve-gd-rel-{kind}"', body)) != count:
+            fail("grid-diagram の読み上げ一覧が図と一致しません")
+            break
+    numbers = [re.sub(r"<[^>]+>", "", inner).strip() for inner in markers]
+    if any(re.fullmatch(r"[1-5]", n) is None for n in numbers) or len(set(numbers)) != len(numbers):
+        fail("grid-diagram の番号は1〜5の重複しない数字である必要があります")
     return diagnostics
 
 
@@ -2435,6 +2489,7 @@ COMPONENT_ARTIFACT_CHECKS = {
     "bars": _check_bars_artifact,
     "kpi": _check_kpi_artifact,
     "evidence-map": _check_evidence_map_artifact,
+    "grid-diagram": _check_grid_diagram_artifact,
 }
 
 _CANONICAL_SECTION_RE = re.compile(

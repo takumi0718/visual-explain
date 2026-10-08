@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="ja" data-theme-storage-key="visual-explain-theme" data-ve-skeleton="4">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <!-- TITLE:BEGIN -->
+  <title>承認の配置図</title>
+  <!-- TITLE:END -->
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --surface: #f4f5f7;
+      --border: #e2e5e9;
+      --border-strong: #1a1d21;
+      --text: #1a1d21;
+      --text-dim: #555e6a;
+      --text-faint: #676f7a;
+      --accent: #2456b3;
+      --accent-strong: #1a4290;
+      --positive: #1e6b46;
+      --positive-strong: #14532f;
+      --warning: #9a4e0e;
+      --warning-strong: #7c3d08;
+      --accent-warm: #9a4e0e;
+      --focus: #005fcc;
+      --radius: .4rem;
+      --dg-primary: #1F4E79; --dg-primary-mid: #2E6DA4; --dg-primary-light: #BDD7EE;
+      --dg-highlight: #2E8B9A; --dg-negative: #c05810; --dg-neutral: #F2F2F2;
+      --dg-line: #7F7F7F; --dg-emphasis: #2E75B6; --dg-on-primary: #ffffff;
+      --fs-hero: 1.953rem; --fs-h2: 1.563rem; --fs-h3: 1.25rem; --fs-body: 1rem; --fs-card: .9375rem; --fs-small: .8rem; --fs-figure: .8rem;
+      --lh-body: 1.75; --lh-heading: 1.45; --lh-card: 1.7;
+      --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem;
+      --space-5: 3rem; --space-6: 4rem; --space-7: 5.5rem;
+      --w-narrative: 45rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        color-scheme: dark;
+        --bg: #15181c;
+        --surface: #1e2226;
+        --border: #33383f;
+        --border-strong: #e9ebee;
+        --text: #e9ebee;
+        --text-dim: #aab1bb;
+        --text-faint: #838b96;
+        --accent: #85aef2;
+        --accent-strong: #a8c4f6;
+        --positive: #6cc496;
+        --positive-strong: #92d6b2;
+        --warning: #e0a05e;
+        --warning-strong: #eab884;
+        --accent-warm: #e0a05e;
+        --focus: #8cc8ff;
+        --radius: .4rem;
+        --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+        --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+        --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
+      }
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #15181c;
+      --surface: #1e2226;
+      --border: #33383f;
+      --border-strong: #e9ebee;
+      --text: #e9ebee;
+      --text-dim: #aab1bb;
+      --text-faint: #838b96;
+      --accent: #85aef2;
+      --accent-strong: #a8c4f6;
+      --positive: #6cc496;
+      --positive-strong: #92d6b2;
+      --warning: #e0a05e;
+      --warning-strong: #eab884;
+      --accent-warm: #e0a05e;
+      --focus: #8cc8ff;
+      --radius: .4rem;
+      --dg-primary: #2E5A8F; --dg-primary-mid: #3E77B4; --dg-primary-light: #274664;
+      --dg-highlight: #3FA3B4; --dg-negative: #bb5c1d; --dg-neutral: #262b31;
+      --dg-line: #9aa1ab; --dg-emphasis: #6FA8DC; --dg-on-primary: #f2f5f9;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      button, .ask-options [data-ask-option], .overview-markers .marker-n { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease; }
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--text); font-size: clamp(1rem, 0.7rem + 0.5vw, 1.25rem); }
+    body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
+    main { width: min(100% - var(--space-4), var(--w-narrative)); margin: 0 auto; padding: var(--space-2) 0 var(--space-6); }
+    section { min-width: 0; margin-block: var(--space-5); }
+    h1, h2, h3, p { min-width: 0; }
+    p, ul, ol, .claim, .evidence { max-width: var(--w-narrative); }
+    h1 { margin: 0; font-size: var(--fs-hero); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    h3 { font-size: var(--fs-h3); font-weight: 700; line-height: var(--lh-heading); max-width: var(--w-narrative); }
+    a { color: var(--accent-strong); }
+    button, summary, a { outline-offset: 3px; }
+    button:focus-visible, summary:focus-visible, a:focus-visible, .ask-options [data-ask-option]:focus-visible { outline: 3px solid var(--focus); }
+    button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1) var(--space-2); cursor: pointer; }
+    button:hover:not(:disabled) { background: var(--surface); border-color: var(--text-faint); }
+    .button-primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
+    .button-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+    button:disabled { color: var(--text-dim); cursor: not-allowed; }
+
+    .first-screen { display: grid; gap: var(--space-2); padding: 0; margin-block: 0; background: transparent; border-left: 0; }
+    [data-ve-section-kind="first-screen"] { margin-block: 0 var(--space-3); }
+    .conclusion { margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); font-size: var(--fs-body); color: var(--text); }
+    [data-ve-section-kind="first-screen"] + [data-ve-section-kind="canonical"] { margin-top: var(--space-3); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) { margin-bottom: var(--space-2); }
+    [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure .ve-matrix-scroll { margin-inline: 0; }
+    /* Dense tables have no cell fill for highlightId: show it as an emphasized row (tint + accent rule on the header). */
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll table:has(.ve-dg-highlight) th[scope="row"] { padding-left: var(--space-2); }
+    [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > th[scope="row"] { box-shadow: inset 3px 0 0 var(--accent); }
+    [data-ve-section-kind] figure[data-ve-component] > figcaption[class] { font-size: var(--fs-h3); }
+    [data-ve-section-kind] .layers > [data-lane]:first-child { margin-block-start: 0; }
+    [data-ve-section-kind] .layers > [data-lane]:last-child { margin-block-end: 0; }
+    [data-ve-section-kind] section:not([data-ve-section-kind] > section, [data-lane]) { margin-block: 0; }
+    .overview-markers ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+    .overview-markers a { display: inline-flex; gap: var(--space-1); align-items: baseline; color: var(--text); text-decoration: none; }
+    .overview-markers .marker-n { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+    /* The overview number echoed on the heading it links to (stamped by the build, drawn here so the text stays as written). */
+    [data-ve-section-kind] [data-ve-marker]::before { content: attr(data-ve-marker); content: attr(data-ve-marker) / ""; display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-right: var(--space-1); border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); line-height: 1; font-variant-numeric: tabular-nums; vertical-align: .2em; }
+    .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
+    .decision strong { color: var(--accent-strong); }
+    .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
+    .conditions { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); color: var(--text-dim); }
+
+    .claim { margin-bottom: var(--space-2); font-size: var(--fs-h3); font-weight: 400; }
+    .figure { position: relative; min-width: 0; margin: var(--space-3) 0; padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; }
+    .figure figcaption { margin-top: var(--space-2); color: var(--text-dim); font-size: var(--fs-body); }
+    .evidence { margin-top: var(--space-2); padding-left: var(--space-2); border-left: .2rem solid var(--border); color: var(--text-dim); font-size: var(--fs-body); }
+    details.deep-dive { margin-top: var(--space-2); padding: var(--space-1) var(--space-2); background: transparent; border: 1px solid var(--border); border-radius: var(--radius); }
+    details.deep-dive summary { cursor: pointer; font-weight: 700; }
+    pre { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); }
+
+    .flow-node { position: relative; z-index: 1; min-width: 0; padding: var(--space-1) var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font-size: var(--fs-figure); }
+    .flow { display: flex; align-items: stretch; gap: var(--space-4); }
+    .flow .flow-node { flex: 1 1 10rem; }
+    .flow > .flow-node:not(:last-of-type)::after { content: "→"; position: absolute; top: 50%; left: calc(100% + var(--space-1)); color: var(--text-dim); font-weight: 700; transform: translateY(-50%); }
+    .flow[data-connect] > .flow-node:not(:last-of-type)::after { content: none; }
+    .layers { display: grid; gap: var(--space-2); }
+    .lane, [data-lane] { display: grid; grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+    .lane-label { color: var(--text-dim); font-weight: 700; font-size: var(--fs-figure); }
+    .lane-nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); min-width: 0; font-size: var(--fs-figure); }
+    .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .compare-frame { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-card); line-height: var(--lh-card); }
+    .compare-frame h3 { margin-top: 0; }
+    .matrix { max-width: 100%; overflow: auto; }
+    .matrix table { width: 100%; min-width: 34rem; border-collapse: collapse; }
+    .matrix-label, .matrix-cell { padding: var(--space-1) var(--space-2) var(--space-1) 0; text-align: left; vertical-align: top; border: 0; border-bottom: 1px solid var(--border); background: transparent; font-size: var(--fs-figure); }
+    .matrix-label { color: var(--text); font-weight: 800; }
+    .matrix thead .matrix-label { border-bottom: 1px solid var(--border-strong); }
+    .option-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .matrix .option-card { padding: 0; background: transparent; border: 0; border-radius: 0; }
+    [data-tone="accent"] { --tone-border: var(--accent); --tone-background: color-mix(in srgb, var(--accent) 12%, var(--surface)); --tone-text: var(--accent-strong); }
+    [data-tone="positive"] { --tone-border: var(--positive); --tone-background: color-mix(in srgb, var(--positive) 12%, var(--surface)); --tone-text: var(--positive-strong); }
+    [data-tone="warning"] { --tone-border: var(--warning); --tone-background: color-mix(in srgb, var(--warning) 12%, var(--surface)); --tone-text: var(--warning); }
+    [data-tone="muted"] { --tone-border: var(--border); --tone-background: var(--bg); --tone-text: var(--text-dim); }
+    .flow-node[data-tone], .option-card[data-tone], .matrix-label[data-tone], .matrix-cell[data-tone] { border-color: var(--tone-border); background: var(--tone-background); color: var(--tone-text); }
+    .matrix .option-card[data-tone] { background: transparent; color: inherit; }
+    .matrix .option-card[data-tone] > .matrix-label, .matrix .option-card[data-tone] > .matrix-cell, .matrix .matrix-label[data-tone], .matrix .matrix-cell[data-tone] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .matrix .option-card[data-tone="accent"] > .matrix-label, .matrix .option-card[data-tone="accent"] > .matrix-cell, .matrix .matrix-label[data-tone="accent"], .matrix .matrix-cell[data-tone="accent"] { background: var(--tone-background); }
+    .timeline { display: grid; gap: var(--space-2); border-left: .2rem solid var(--border-strong); padding-left: var(--space-3); font-size: var(--fs-figure); }
+    .timeline-item { position: relative; min-width: 0; }
+    .timeline-item::before { content: ""; position: absolute; width: .7rem; height: .7rem; left: calc(-1.5rem - .45rem); top: .45rem; background: var(--border-strong); border-radius: 50%; }
+    .timeline time { color: var(--text-dim); font-weight: 700; }
+    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-2); }
+    .kpi-card { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .kpi-value { display: block; color: var(--text); font-size: var(--fs-hero); font-weight: 800; line-height: 1.2; }
+    .bars { display: grid; gap: var(--space-2); }
+    .bar-row { display: grid; grid-template-columns: minmax(7rem, .35fr) minmax(8rem, 1fr) auto; gap: var(--space-2); align-items: center; min-width: 0; font-size: var(--fs-figure); }
+    .bar-track { min-width: 0; height: 1rem; overflow: hidden; background: var(--bg); border-radius: 999px; }
+    .bar-fill { display: block; width: var(--value, 0%); min-width: .25rem; height: 100%; background: var(--text-dim); }
+    .bar-fill[data-tone] { background: var(--tone-border); }
+    .terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-2); }
+    .term { min-width: 0; padding: var(--space-2); background: var(--surface); border: 0; border-radius: .4rem; font-size: var(--fs-figure); }
+    .term dt { color: var(--text); font-weight: 800; }
+    .term dd { margin: var(--space-1) 0 0; color: var(--text-dim); }
+
+    .certainty { display: inline-block; margin-inline: var(--space-1); padding: 0 var(--space-1); border: 1px solid var(--text-dim); border-radius: 999px; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+    .certainty-tail { white-space: nowrap; }
+    .certainty.confirmed { border-style: solid; }
+    .certainty.inferred { border-style: dashed; background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    .certainty.unverified { border-style: dotted; border-color: var(--text-faint); color: var(--text-faint); }
+    details.source-note { display: inline-block; position: relative; margin-inline: var(--space-1); }
+    details.source-note summary { cursor: pointer; color: var(--text-dim); font-size: .88em; }
+    details.source-note > :not(summary) { max-width: min(30rem, 90vw); margin-top: var(--space-1); padding: var(--space-1); background: var(--surface); border: 1px solid var(--border); border-radius: .3rem; }
+
+    .stepper { display: grid; gap: var(--space-2); padding: var(--space-2); background: var(--surface); border: 0; border-radius: .5rem; }
+    .stepper-status { margin: 0; color: var(--text-dim); }
+    .step-panel[hidden] { display: none; }
+    .step-panel.is-current { border-left: .25rem solid var(--accent); padding-left: var(--space-2); }
+    .stepper-controls { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+    .closing-section { padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .closing-section h2 { margin-top: 0; font-size: var(--fs-h2); }
+    .closing-section h3 { margin-bottom: var(--space-1); }
+    .connector-layer { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .connector-warning { margin: var(--space-2) 0 0; color: var(--warning); font-weight: 700; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .theme-control { display: flex; justify-content: flex-end; width: min(100% - var(--space-4), var(--w-narrative)); margin: var(--space-2) auto 0; }
+    .theme-toggle { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; color: var(--text-dim); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle[aria-pressed="true"] .theme-icon-sun, .theme-toggle[aria-pressed="false"] .theme-icon-moon { display: none; }
+
+    .ask { max-width: var(--w-narrative); margin: var(--space-3) 0; padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .ask-kind { display: inline-block; margin: 0 0 var(--space-1); padding: 0 var(--space-1); border-radius: .25rem; font-size: var(--fs-small); font-weight: 700; letter-spacing: .08em; }
+    .ask[data-ask="decision"] .ask-kind { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask[data-ask="request"] .ask-kind { color: var(--text-dim); background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    .ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }
+    /* Semantic colors are limited to selection (accent) and the recommended badge (positive); request stays monochrome. */
+    .ask-question, .ask-claim { margin: 0 0 var(--space-2); font-weight: 700; }
+    .ask-options { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+    .ask-options [data-ask-option] { display: grid; grid-template-columns: 1fr; gap: 0; padding: var(--space-1) var(--space-2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+    .ask-option-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-weight: 700; }
+    .ask-option-head::before { content: ""; flex: none; width: .9rem; height: .9rem; border: 2px solid var(--text-dim); border-radius: 50%; }
+    .ask-options [data-ask-option][data-ask-selected] .ask-option-head::before { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
+    .ask-badge { padding: 0 var(--space-1); border-radius: 999px; color: var(--positive); background: color-mix(in srgb, var(--positive) 12%, var(--surface)); font-size: var(--fs-small); }
+    .ask-benefit, .ask-tradeoff { color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
+    .ask-options [data-ask-withdrawn] { cursor: not-allowed; color: var(--text-faint); background: transparent; }
+    .ask-options [data-ask-withdrawn] .ask-option-label { text-decoration: line-through; }
+    .ask-options [data-ask-withdrawn] .ask-option-head::before { border-style: dashed; border-color: var(--text-faint); }
+    .ask-withdrawn-note { color: var(--text-faint); font-size: var(--fs-small); font-weight: 400; }
+    .ask-evidence { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+    .ask-card-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); margin: var(--space-1) 0 0; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); color: var(--text-dim); font-size: var(--fs-card); font-weight: 700; }
+    .ask-card-status::before { content: "いまの回答"; color: var(--text-faint); font-weight: 400; }
+    .ask:has([data-ask-selected]) .ask-card-status { color: var(--text); }
+    .ask:has([data-ask-selected]) .ask-card-status::after { content: "選んだ案をもう一度押すとお任せに戻る"; color: var(--text-faint); font-weight: 400; }
+    .ask-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+    .ask-steps [data-ask-role]::before { content: attr(data-ask-role-label); margin-right: var(--space-1); font-size: var(--fs-small); font-weight: 700; letter-spacing: .04em; }
+    .ask-verify { margin: var(--space-2) 0 0; color: var(--text-dim); font-size: var(--fs-card); line-height: var(--lh-card); }
+
+    /* 図表記法 */
+    .dg-em { color: var(--dg-emphasis); font-weight: 700; }
+
+    .ask-options [data-ask-option]:not([data-ask-withdrawn]):not([data-ask-selected]):hover { border-color: var(--text-faint); }
+    .ask-options [data-ask-option][data-ask-selected] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .ask-memo { display: grid; gap: var(--space-1); margin-top: var(--space-2); }
+    .ask-memo label { display: grid; gap: var(--space-1); color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+    .ask-memo textarea, .decision-panel textarea { font: inherit; font-size: var(--fs-body); font-weight: 400; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); min-height: 3rem; width: 100%; max-width: 100%; }
+    .decision-panel { max-width: var(--w-narrative); padding: var(--space-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .decision-panel h2 { margin-top: 0; }
+    .panel-asks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .panel-asks li { display: grid; gap: 0; }
+    .panel-question { font-weight: 700; }
+    .panel-status { color: var(--text-dim); font-size: var(--fs-card); }
+    .panel-review-count { margin: var(--space-1) 0 0; color: var(--text-dim); }
+    .panel-memo { display: block; color: var(--text-dim); white-space: pre-wrap; }
+    .panel-copy-status { margin: var(--space-1) 0 0; color: var(--text-dim); }
+    .decision-panel > .button-primary { margin-top: var(--space-2); }
+    .panel-copy-fallback { max-width: 100%; overflow: auto; padding: var(--space-2); background: var(--bg); border: 1px solid var(--border); white-space: pre-wrap; }
+
+    [data-ve-blk]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    [data-ve-blk][data-ve-annotated] { border-left: 3px solid var(--accent); padding-left: var(--space-1); }
+    .review-tag { margin-right: var(--space-1); color: var(--accent-strong); font-size: var(--fs-small); font-weight: 700; user-select: none; }
+    .review-add, .review-pick { position: absolute; z-index: 3; min-width: 1.75rem; padding: 0 var(--space-1); border: 1px solid var(--border); background: var(--bg); color: var(--text-dim); font-size: var(--fs-small); line-height: 1.75; }
+    .review-editor { display: grid; gap: var(--space-1); max-width: var(--w-narrative); margin: var(--space-1) 0 var(--space-2); padding: var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-figure); }
+    .review-head { margin: 0; color: var(--text-dim); }
+    .review-chips, .review-actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+    .review-chip { padding: 0 var(--space-1); border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+    .review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .review-note { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-1); }
+    .review-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+    .review-list li { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; }
+    footer { padding: var(--space-2); color: var(--text-dim); text-align: center; font-size: var(--fs-small); }
+
+    /* 二層幅: 適格の図だけ本文カラムの中心軸から対称に張り出す（design-system.md 幅の節） */
+    @media (min-width: 60rem) {
+      .figure:has(.flow, .matrix) { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); }
+      figure[data-ve-component="matrix"] .ve-matrix-scroll { margin-inline: calc(-1 * min(10rem, (100vw - 60rem) / 2)); max-width: none; }
+      .figure .matrix table, figure[data-ve-component="matrix"] table { width: min(var(--w-narrative), 100%); margin-inline: auto; }
+    }
+
+    @media (max-width: 52rem) {
+      [data-ve-section-kind] :is(p, li, h2, h3, blockquote)[data-ve-blk] { padding-right: var(--space-4); }
+    }
+
+    @media (width > 42rem) {
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; }
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-step { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-items: stretch; min-width: 0; max-width: none; }
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chv-box { align-content: center; }
+      [data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal .ve-chevron-description { padding-inline-end: var(--space-2); }
+    }
+
+    @media (max-width: 42rem) {
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll { overflow-x: visible; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll :is(table, tbody, tr, th, td) { display: block; width: auto; min-width: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr { margin: 0 0 var(--space-2); padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll th[scope="row"] { padding: 0 0 var(--space-1); border-bottom: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td { padding: var(--space-1) 0 0; border-bottom: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll td[data-ve-col-label]::before { content: attr(data-ve-col-label); display: block; color: var(--text-dim); font-size: var(--fs-small); font-weight: 700; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll table:has(.ve-dg-highlight) th[scope="row"] { padding-left: 0; }
+      [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > th[scope="row"] { box-shadow: none; }
+      .theme-control { width: min(100% - var(--space-4), var(--w-narrative)); }
+      .theme-control button { max-width: 100%; white-space: normal; }
+      .flow { flex-direction: column; gap: var(--space-3); }
+      .flow .flow-node { flex: 0 1 auto; }
+      .flow .flow-node:not(:last-child)::after { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%) rotate(90deg); }
+      .lane, [data-lane], .bar-row { grid-template-columns: 1fr; gap: var(--space-1); }
+      [data-ve-section-kind] .lane-nodes { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+      .compare { grid-template-columns: 1fr; }
+      .ask-options [data-ask-option] { grid-template-columns: 1fr; gap: var(--space-1); }
+    }
+  </style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
+  <style data-ve-component="grid-diagram" data-ve-contract-version="2" data-ve-asset="grid-diagram.css" data-ve-digest="1522386ec816d31b03e305af2ef250e4502aae5a7d205e61e7b63610c4386893">[data-ve-component="grid-diagram"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+figure[data-ve-component="grid-diagram"] .ve-gd-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
+figure[data-ve-component="grid-diagram"] .ve-gd-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
+[data-ve-component="grid-diagram"] .ve-gd-canvas { overflow-x: auto; }
+[data-ve-component="grid-diagram"] .ve-gd-svg { display: block; width: 100%; margin: 0 auto; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-1 { min-width: 7.5rem; max-width: 9.375rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-2 { min-width: 15rem; max-width: 18.75rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-3 { min-width: 22.5rem; max-width: 28.125rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-4 { min-width: 30rem; max-width: 37.5rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-5 { min-width: 37.5rem; max-width: 46.875rem; }
+[data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-6 { min-width: 45rem; max-width: 56.25rem; }
+[data-ve-component="grid-diagram"] .ve-gd-region-frame { fill: none; stroke: var(--dg-line); stroke-width: 1.5; stroke-dasharray: 5 4; rx: 10px; }
+[data-ve-component="grid-diagram"] .ve-gd-region-label { fill: var(--text-dim); font-size: 11px; font-weight: 700; }
+[data-ve-component="grid-diagram"] .ve-gd-edge-line, [data-ve-component="grid-diagram"] .ve-gd-edge-arrow { stroke: var(--dg-line); stroke-width: 1.5; stroke-linecap: round; }
+[data-ve-component="grid-diagram"] .ve-gd-edge-label { fill: var(--text-dim); font-size: 11px; }
+[data-ve-component="grid-diagram"] .ve-gd-node-box { rx: 6px; }
+[data-ve-component="grid-diagram"] .ve-gd-node-label { font-size: 13px; }
+[data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: var(--dg-primary-light); }
+[data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-label { fill: var(--text); }
+[data-ve-component="grid-diagram"] .ve-gd-tone-primary .ve-gd-node-box { fill: var(--dg-primary); }
+[data-ve-component="grid-diagram"] .ve-gd-tone-primary .ve-gd-node-label { fill: var(--dg-on-primary); font-weight: 700; }
+[data-ve-component="grid-diagram"] .ve-gd-tone-warning .ve-gd-node-box { fill: var(--bg); stroke: var(--dg-negative); stroke-width: 2; }
+[data-ve-component="grid-diagram"] .ve-gd-tone-warning .ve-gd-node-label { fill: var(--text); }
+[data-ve-component="grid-diagram"] .ve-gd-marker-dot { fill: var(--accent); }
+[data-ve-component="grid-diagram"] .ve-gd-marker-n { fill: var(--bg); font-size: 12px; font-weight: 700; }
+[data-ve-component="grid-diagram"] .ve-grid-diagram-notes { margin: var(--space-2) 0 0; padding-left: var(--space-2); color: var(--text-dim); font-size: var(--fs-small); }
+[data-ve-component="grid-diagram"] .ve-grid-diagram-notes li { margin: 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb { margin: var(--space-1) 0 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg { min-width: 0; margin: 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-1 { max-width: 8rem; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-2 { max-width: 16rem; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-3 { max-width: 24rem; }
+</style>
+  <!-- VE-CONTROLLED:COMPONENT-STYLES:END -->
+  <script>
+  /* FIXED THEME INITIALIZATION: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    try {
+      const theme = window.localStorage.getItem(root.dataset.themeStorageKey);
+      if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+    } catch {
+      // Storage is optional; CSS keeps the OS preference when it is unavailable.
+    }
+  })();
+  </script>
+</head>
+<body>
+  <div class="theme-control">
+    <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="テーマを切り替える" title="テーマを切り替える"><svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+  </div>
+  <script>
+  /* FIXED THEME CONTROL JS: DO NOT MODIFY. */
+  (() => {
+    const root = document.documentElement;
+    const button = document.querySelector('[data-theme-toggle]');
+    if (!button) return;
+
+    let mediaQuery;
+    try {
+      mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    } catch {
+      mediaQuery = null;
+    }
+    let explicitTheme = root.dataset.theme === 'light' || root.dataset.theme === 'dark';
+    const systemTheme = () => mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+    const currentTheme = () => explicitTheme ? root.dataset.theme : systemTheme();
+    const label = (theme) => theme === 'dark' ? 'ダーク' : 'ライト';
+    const render = () => {
+      const current = currentTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+      const text = `テーマ: ${label(current)}（${label(next)}に切替）`;
+      button.setAttribute('aria-label', text);
+      button.setAttribute('title', text);
+      button.setAttribute('aria-pressed', String(current === 'dark'));
+    };
+    const persist = (theme) => {
+      try {
+        window.localStorage.setItem(root.dataset.themeStorageKey, theme);
+      } catch {
+        // A manual choice still works for this document if storage is unavailable.
+      }
+    };
+
+    render();
+    button.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      explicitTheme = true;
+      persist(next);
+      render();
+    });
+    if (mediaQuery) {
+      const updateFromSystem = () => { if (!explicitTheme) render(); };
+      if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', updateFromSystem);
+      else if (mediaQuery.addListener) mediaQuery.addListener(updateFromSystem);
+    }
+  })();
+  </script>
+  <main>
+    <!-- CONTENT:BEGIN -->
+    <!-- VE-CONTROLLED:CONTENT:BEGIN -->
+    <section data-ve-section-kind="first-screen" data-ve-document-type="system" data-ve-profile="strict" id="sec-first">
+<section class="first-screen" aria-label="最初に伝えること">
+  <h1>承認の配置図</h1>
+  <p class="conclusion" data-ve-blk="1"><strong>結論:</strong> この資料の判断を進めます。</p>
+</section>
+</section>
+    <section data-ve-section-kind="canonical" data-ve-component="grid-diagram" data-ve-contract-version="2" data-ve-instance="sec-grid" data-ve-fallback="static-content">
+<figure data-ve-component="grid-diagram" class="ve-gd" data-ve-grid="4x3" role="group" aria-label="承認の配置図" aria-describedby="sec-grid-summary" data-ve-blk="2"><figcaption id="sec-grid-caption" class="ve-gd-caption">何を見るか: 二つの根拠が共同承認で合流する位置</figcaption><p id="sec-grid-summary" class="ve-gd-summary">左に根拠、中央に共同承認、右に公開と撤回条件を置く。</p><div class="ve-gd-canvas"><svg id="sec-grid-svg" class="ve-gd-svg ve-gd-cols-4" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="承認の配置図" aria-describedby="sec-grid-relations"><title>承認の配置図</title><g class="ve-gd-region" data-ve-semantic-id="legal"><rect class="ve-gd-region-frame" x="4" y="4" width="142" height="280"></rect><text class="ve-gd-region-label" x="12" y="18" text-anchor="start">根拠</text></g><g class="ve-gd-edge" data-ve-semantic-id="e-exception"><line class="ve-gd-edge-line" x1="134" y1="48" x2="375" y2="48"></line><line class="ve-gd-edge-line" x1="375" y1="48" x2="375" y2="118"></line><line class="ve-gd-edge-arrow" x1="371" y1="112" x2="375" y2="118"></line><line class="ve-gd-edge-arrow" x1="379" y1="112" x2="375" y2="118"></line><text class="ve-gd-edge-label" x="254" y="41" text-anchor="middle">照合</text></g><g class="ve-gd-edge" data-ve-semantic-id="e-price"><line class="ve-gd-edge-line" x1="134" y1="240" x2="375" y2="240"></line><line class="ve-gd-edge-line" x1="375" y1="240" x2="375" y2="170"></line><line class="ve-gd-edge-arrow" x1="379" y1="176" x2="375" y2="170"></line><line class="ve-gd-edge-arrow" x1="371" y1="176" x2="375" y2="170"></line></g><g class="ve-gd-edge" data-ve-semantic-id="e-rollback"><line class="ve-gd-edge-line" x1="434" y1="144" x2="525" y2="144"></line><line class="ve-gd-edge-line" x1="525" y1="144" x2="525" y2="214"></line><line class="ve-gd-edge-arrow" x1="521" y1="208" x2="525" y2="214"></line><line class="ve-gd-edge-arrow" x1="529" y1="208" x2="525" y2="214"></line><text class="ve-gd-edge-label" x="479" y="137" text-anchor="middle">見張る</text></g><g class="ve-gd-node ve-gd-tone-base" data-ve-semantic-id="exception"><rect class="ve-gd-node-box" x="16" y="22" width="118" height="52"></rect><text class="ve-gd-node-label" x="75" y="53" text-anchor="middle">契約例外</text></g><g class="ve-gd-node ve-gd-tone-base" data-ve-semantic-id="price"><rect class="ve-gd-node-box" x="16" y="214" width="118" height="52"></rect><text class="ve-gd-node-label" x="75" y="245" text-anchor="middle">料金改定案</text></g><g class="ve-gd-node ve-gd-tone-primary" data-ve-semantic-id="approval"><rect class="ve-gd-node-box" x="316" y="118" width="118" height="52"></rect><text class="ve-gd-node-label" x="375" y="149" text-anchor="middle">共同承認</text></g><g class="ve-gd-node ve-gd-tone-warning" data-ve-semantic-id="rollback"><rect class="ve-gd-node-box" x="466" y="214" width="118" height="52"></rect><text class="ve-gd-node-label" x="525" y="245" text-anchor="middle">撤回条件</text></g></svg></div><ul id="sec-grid-relations" class="ve-gd-relations visually-hidden"><li class="ve-gd-rel-node">契約例外（根拠）</li><li class="ve-gd-rel-node">料金改定案（根拠）</li><li class="ve-gd-rel-node">共同承認</li><li class="ve-gd-rel-node">撤回条件</li><li class="ve-gd-rel-edge">契約例外 → 共同承認（照合）</li><li class="ve-gd-rel-edge">料金改定案 → 共同承認</li><li class="ve-gd-rel-edge">共同承認 → 撤回条件（見張る）</li></ul><ul class="ve-grid-diagram-notes"><li data-ve-semantic-id="cert-grid"><strong>推論:</strong> 説明用の配置。</li><li data-ve-semantic-id="src-grid"><strong>出典 承認手順メモ</strong></li></ul></figure>
+</section>
+    <section data-ve-section-kind="closing" id="sec-closing">
+<section class="closing-section" aria-label="判断材料">
+  <h2 data-ve-blk="3">限界・確度</h2>
+  <ul><li data-ve-blk="4">説明用の配置で、実データではない。</li></ul>
+</section>
+</section>
+    <section data-ve-section-kind="decision-panel" data-ve-document-id="grid-diagram-demo" data-ve-schema-version="2" data-ve-ask-digest="4f53cda18c2baa0c" data-ve-document-path="tests/grid-diagram-doc.html" id="sec-decision-panel">
+<section class="decision-panel" aria-label="回答と指摘の回収">
+  <h2>回答と指摘の回収</h2>
+  <p class="panel-review-count" data-ve-panel-review-count>指摘 0 件</p>
+  <div class="ask-memo"><label>全体メモ<textarea data-ve-panel-global-memo></textarea></label></div>
+  <p class="panel-note">選択・指摘の保存とコピーは、ブラウザのJavaScript が有効なときに使えます。</p>
+</section>
+</section>
+    <!-- VE-CONTROLLED:CONTENT:END -->
+    <!-- CONTENT:END -->
+  </main>
+  <footer>AI が生成した資料</footer>
+
+  <!-- VE-CONTROLLED:COMPONENT-SCRIPTS:BEGIN --><!-- VE-CONTROLLED:COMPONENT-SCRIPTS:END -->
+  <script>
+  /* FIXED CONNECTOR JS: DO NOT MODIFY. */
+  (() => {
+    let resizeObserver;
+    const SVG_NS = 'http:' + '//www.w3.org/2000/svg';
+    const directChild = (parent, className) => Array.from(parent.children).find((node) => node.classList && node.classList.contains(className));
+    const scopes = () => Array.from(new Set([
+      ...document.querySelectorAll('[data-connect-scope]'),
+      ...Array.from(document.querySelectorAll('.figure')).filter((figure) => figure.querySelector('[data-connect]'))
+    ]));
+    const nodeMap = (scope) => new Map(Array.from(scope.querySelectorAll('[id]')).map((node) => [node.id, node]));
+    const laneIndex = (node, scope) => Array.from(scope.querySelectorAll('[data-lane]')).findIndex((lane) => lane.contains(node));
+    const siblingIndex = (node) => Array.from(node.parentElement.querySelectorAll(':scope > [id]')).indexOf(node);
+    const adjacent = (from, to, scope) => {
+      const fromLane = laneIndex(from, scope);
+      const toLane = laneIndex(to, scope);
+      if (fromLane >= 0 && toLane >= 0) return fromLane === toLane ? Math.abs(siblingIndex(from) - siblingIndex(to)) === 1 : Math.abs(fromLane - toLane) === 1;
+      return from.parentElement === to.parentElement && Math.abs(siblingIndex(from) - siblingIndex(to)) === 1;
+    };
+    const pointPair = (from, to, scope) => {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), box = scope.getBoundingClientRect();
+      const ax = a.left + a.width / 2, ay = a.top + a.height / 2, bx = b.left + b.width / 2, by = b.top + b.height / 2;
+      if (Math.abs(bx - ax) >= Math.abs(by - ay)) return [bx >= ax ? a.right : a.left, ay, bx >= ax ? b.left : b.right, by, box];
+      return [ax, by >= ay ? a.bottom : a.top, bx, by >= ay ? b.top : b.bottom, box];
+    };
+    const pathFor = (from, to, scope) => {
+      const [sx, sy, ex, ey, box] = pointPair(from, to, scope);
+      const x1 = sx - box.left, y1 = sy - box.top, x2 = ex - box.left, y2 = ey - box.top;
+      const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+      const c1x = horizontal ? x1 + (x2 - x1) * .45 : x1, c1y = horizontal ? y1 : y1 + (y2 - y1) * .45;
+      const c2x = horizontal ? x2 - (x2 - x1) * .45 : x2, c2y = horizontal ? y2 : y2 - (y2 - y1) * .45;
+      return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+    };
+    const warning = (scope, message) => {
+      const badge = document.createElement('p');
+      badge.className = 'connector-warning';
+      badge.textContent = `接続を描画できません: ${message}`;
+      scope.append(badge);
+    };
+    const render = (scope) => {
+      scope.querySelectorAll('.connector-layer, .connector-warning').forEach((node) => node.remove());
+      const list = directChild(scope, 'connection-text') || document.createElement('ul');
+      list.className = 'connection-text visually-hidden';
+      list.setAttribute('aria-label', '接続関係');
+      list.replaceChildren();
+      if (!list.parentElement) scope.append(list);
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'connector-layer');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs><marker id="connector-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"/></marker></defs>';
+      const nodes = nodeMap(scope);
+      let hasLine = false;
+      scope.querySelectorAll('[data-connect]').forEach((declaration) => {
+        declaration.dataset.connect.split(',').map((item) => item.trim()).filter(Boolean).forEach((item) => {
+          const [fromId, toId] = item.split('->').map((id) => id && id.trim());
+          const from = nodes.get(fromId), to = nodes.get(toId);
+          if (!from || !to) {
+            console.error('visual-explain: unknown connector reference', item);
+            warning(scope, `「${item}」の ID が見つかりません。`);
+            return;
+          }
+          if (!adjacent(from, to, scope)) {
+            console.error('visual-explain: non-adjacent connector rejected', item);
+            warning(scope, `「${item}」は隣接ノードだけを接続できます。`);
+            return;
+          }
+          const path = document.createElementNS(SVG_NS, 'path');
+          path.setAttribute('d', pathFor(from, to, scope));
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', 'currentColor');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('marker-end', 'url(#connector-arrow)');
+          svg.append(path);
+          const text = document.createElement('li');
+          text.textContent = `${from.textContent.trim()} から ${to.textContent.trim()} へ接続`;
+          list.append(text);
+          hasLine = true;
+        });
+      });
+      if (hasLine) scope.append(svg);
+    };
+    const renderAll = () => scopes().forEach(render);
+    window.addEventListener('load', () => {
+      renderAll();
+      resizeObserver = new ResizeObserver(renderAll);
+      scopes().forEach((scope) => resizeObserver.observe(scope));
+    });
+    document.addEventListener('toggle', (event) => { if (event.target.matches('details')) renderAll(); }, true);
+    document.addEventListener('visual-explain:stepchange', renderAll);
+  })();
+
+  /* FIXED STEPPER AND DETAILS JS: DO NOT MODIFY. */
+  (() => {
+    const update = (stepper, current, all = false) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      panels.forEach((panel) => {
+        const active = Number(panel.dataset.step) === current;
+        panel.hidden = !all && !active;
+        panel.classList.toggle('is-current', active && !all);
+        panel.setAttribute('aria-current', active && !all ? 'step' : 'false');
+      });
+      let status = stepper.querySelector('.stepper-status');
+      if (!status) {
+        status = document.createElement('p');
+        status.className = 'stepper-status';
+        status.setAttribute('aria-live', 'polite');
+        stepper.prepend(status);
+      }
+      status.textContent = all ? `全体表示: ${total} 段階を同時に表示中。` : `現在の状態: ステップ ${current}/${total}。開始状態はステップ 1、終了状態はステップ ${total}。`;
+      const previous = stepper.querySelector('[data-step-action="previous"]');
+      const next = stepper.querySelector('[data-step-action="next"]');
+      if (previous) previous.disabled = all || current <= 1;
+      if (next) next.disabled = all || current >= total;
+      if (next) next.textContent = next.dataset.nextLabel || `次へ: ステップ ${Math.min(total, current + 1)} を表示`;
+      stepper.dataset.currentStep = String(current);
+      document.dispatchEvent(new CustomEvent('visual-explain:stepchange'));
+    };
+    document.querySelectorAll('details').forEach((details) => details.setAttribute('aria-expanded', String(details.open)));
+    document.querySelectorAll('[data-stepper]').forEach((stepper) => {
+      const panels = Array.from(stepper.querySelectorAll('[data-step]'));
+      const total = Number(stepper.dataset.totalSteps) || panels.length;
+      if (!total) return;
+      update(stepper, 1);
+      stepper.addEventListener('click', (event) => {
+        const action = event.target.closest('button[data-step-action]');
+        if (!action) return;
+        const current = Number(stepper.dataset.currentStep) || 1;
+        if (action.dataset.stepAction === 'previous') update(stepper, Math.max(1, current - 1));
+        if (action.dataset.stepAction === 'next') update(stepper, Math.min(total, current + 1));
+        if (action.dataset.stepAction === 'all') update(stepper, current, true);
+      });
+    });
+    document.addEventListener('toggle', (event) => {
+      if (event.target.matches('details')) event.target.setAttribute('aria-expanded', String(event.target.open));
+    }, true);
+  })();
+
+  /* FIXED DECISION ENGINE CORE:BEGIN (verbatim copy of scripts/tests/runtime/decision_engine.js) */
+/* Review-collection pure core for visual-explain.
+   This file is the source of truth; assets/skeleton.html embeds it verbatim
+   between the FIXED DECISION ENGINE CORE markers (byte-equality is enforced
+   by test_skeleton_audit.py). No DOM, no timers, no I/O here. */
+(function (global) {
+  "use strict";
+
+  const CHIPS = ["わからない", "図にしてほしい", "もっと詳しく", "短くする", "削る", "言い換える", "事実を確認", "ここは良い"];
+  const QUOTE_LIMIT = 40;
+  const CLOSING_LINE = "上の回答を反映して作業を続けてください。お任せの項目は推奨案で確定してください。";
+
+  function storageKey(contract) {
+    // Digest and block count make a rebuilt document with changed asks or
+    // blocks start clean instead of restoring drafts onto the wrong targets.
+    return "ve-review:" + contract.documentId + ":" + contract.schemaVersion + ":" +
+      contract.digest + ":" + contract.blockCount;
+  }
+
+  function emptyMap() {
+    // Object.create(null) keeps ask ids like "__proto__" as ordinary own
+    // properties instead of tripping the Object.prototype accessor.
+    return Object.create(null);
+  }
+
+  function emptyState() {
+    return { selections: emptyMap(), memos: emptyMap(), globalMemo: "", annotations: [] };
+  }
+
+  function findAsk(contract, askId) {
+    for (const ask of contract.asks) if (ask.id === askId) return ask;
+    return null;
+  }
+
+  function findOption(ask, optionId) {
+    for (const option of ask.options) if (option.id === optionId) return option;
+    return null;
+  }
+
+  function activeOption(ask, optionId) {
+    const option = typeof optionId === "string" ? findOption(ask, optionId) : null;
+    return option && !option.withdrawn ? option : null;
+  }
+
+  function findPanelRow(rows, askId) {
+    // Match by dataset equality so arbitrary ids never build a CSS selector.
+    for (const row of rows) if (row.dataset.vePanelAsk === askId) return row;
+    return null;
+  }
+
+  function cloneWith(state, patch) {
+    return {
+      selections: Object.assign(emptyMap(), state.selections, patch.selections || emptyMap()),
+      memos: Object.assign(emptyMap(), state.memos, patch.memos || emptyMap()),
+      globalMemo: patch.globalMemo !== undefined ? patch.globalMemo : state.globalMemo,
+      annotations: patch.annotations !== undefined ? patch.annotations : state.annotations.slice(),
+    };
+  }
+
+  function selectOption(state, askId, optionId, contract) {
+    // Radio-like choice; choosing the selected option again returns to the
+    // recommendation ("お任せ"). Withdrawn and unknown options are ignored.
+    const ask = findAsk(contract, askId);
+    if (!ask || !activeOption(ask, optionId)) return state;
+    const next = cloneWith(state, {});
+    if (next.selections[askId] === optionId) delete next.selections[askId];
+    else next.selections[askId] = optionId;
+    return next;
+  }
+
+  function setMemo(state, askId, text) {
+    const next = cloneWith(state, {});
+    next.memos[askId] = String(text);
+    return next;
+  }
+
+  function setGlobalMemo(state, text) {
+    return cloneWith(state, { globalMemo: String(text) });
+  }
+
+  function flatten(text) {
+    return String(text == null ? "" : text).replace(/\s+/g, " ").trim();
+  }
+
+  function normalizeQuote(text) {
+    // Count code points so a surrogate pair is never split.
+    return Array.from(flatten(text)).slice(0, QUOTE_LIMIT).join("");
+  }
+
+  function addAnnotation(state, blk, chip, quote, note, contract) {
+    if (!Number.isInteger(blk) || blk < 1 || blk > contract.blockCount) return state;
+    if (CHIPS.indexOf(chip) < 0) return state;
+    const annotations = state.annotations.slice();
+    annotations.push({ blk: blk, chip: chip, quote: normalizeQuote(quote), note: flatten(note) });
+    return cloneWith(state, { annotations: annotations });
+  }
+
+  function removeAnnotation(state, index) {
+    if (!Number.isInteger(index) || index < 0 || index >= state.annotations.length) return state;
+    const annotations = state.annotations.slice();
+    annotations.splice(index, 1);
+    return cloneWith(state, { annotations: annotations });
+  }
+
+  function annotationsFor(state, blk) {
+    const found = [];
+    state.annotations.forEach(function (item, index) {
+      if (item.blk === blk) found.push({ index: index, chip: item.chip, quote: item.quote, note: item.note });
+    });
+    return found;
+  }
+
+  function restoreState(raw, contract) {
+    // Stale or foreign entries never survive: unknown asks, unknown or
+    // withdrawn options, out-of-range blocks, and unknown chips are dropped.
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      return emptyState();
+    }
+    if (!parsed || typeof parsed !== "object") return emptyState();
+    let state = emptyState();
+    for (const ask of contract.asks) {
+      const selected = parsed.selections ? parsed.selections[ask.id] : undefined;
+      if (activeOption(ask, selected)) state.selections[ask.id] = selected;
+      const memo = parsed.memos ? parsed.memos[ask.id] : undefined;
+      if (typeof memo === "string") state.memos[ask.id] = memo;
+    }
+    if (typeof parsed.globalMemo === "string") state.globalMemo = parsed.globalMemo;
+    if (Array.isArray(parsed.annotations)) {
+      for (const item of parsed.annotations) {
+        if (!item || typeof item !== "object") continue;
+        const quote = typeof item.quote === "string" ? item.quote : "";
+        const note = typeof item.note === "string" ? item.note : "";
+        state = addAnnotation(state, item.blk, item.chip, quote, note, contract);
+      }
+    }
+    return state;
+  }
+
+  function serializeState(state) {
+    return JSON.stringify(state);
+  }
+
+  function defaultLabel(ask) {
+    const option = ask.defaultId ? findOption(ask, ask.defaultId) : null;
+    return option ? option.label : "";
+  }
+
+  function cardStatus(ask, state) {
+    const option = activeOption(ask, state.selections[ask.id]);
+    return option ? "選択: " + option.label : "お任せ（推奨: " + defaultLabel(ask) + "）";
+  }
+
+  function nextChipIndex(current, key, total) {
+    if (total <= 0) return -1;
+    if (key === "ArrowRight" || key === "ArrowDown") return current < 0 ? 0 : (current + 1) % total;
+    if (key === "ArrowLeft" || key === "ArrowUp") return current <= 0 ? total - 1 : current - 1;
+    if (key === "Home") return 0;
+    if (key === "End") return total - 1;
+    return -1;
+  }
+
+  function askLine(ask, index, state) {
+    const option = activeOption(ask, state.selections[ask.id]);
+    let line = "Q" + (index + 1) + ". " + ask.question + ": " + (option ? option.label : "(未選択 = お任せ)");
+    const memo = typeof state.memos[ask.id] === "string" ? state.memos[ask.id].trim() : "";
+    if (memo) line += " / 補足: " + memo;
+    return line;
+  }
+
+  function annotationLine(item) {
+    let line = "#" + item.blk + " [" + item.chip + "]";
+    if (item.quote) line += " 「" + item.quote + "」";
+    if (item.note) line += " " + item.note;
+    return line;
+  }
+
+  function formatCopyText(contract, state) {
+    const lines = [
+      "[visual-explain 回答]",
+      "資料: " + contract.title,
+      "(" + contract.documentPath + " / id: " + contract.documentId +
+        " / schema: " + contract.schemaVersion + " / asks: " + contract.digest + ")",
+    ];
+    contract.asks.forEach(function (ask, index) { lines.push(askLine(ask, index, state)); });
+    const globalMemo = typeof state.globalMemo === "string" ? state.globalMemo.trim() : "";
+    if (globalMemo) lines.push("全体メモ: " + globalMemo);
+    const ordered = state.annotations
+      .map(function (item, order) { return { item: item, order: order }; })
+      .sort(function (a, b) { return a.item.blk - b.item.blk || a.order - b.order; });
+    if (ordered.length) {
+      lines.push("## 指摘");
+      ordered.forEach(function (entry) { lines.push(annotationLine(entry.item)); });
+    }
+    lines.push("---");
+    lines.push(CLOSING_LINE);
+    return lines.join("\n");
+  }
+
+  const engine = {
+    CHIPS, QUOTE_LIMIT, storageKey, emptyState, selectOption, setMemo, setGlobalMemo,
+    normalizeQuote, addAnnotation, removeAnnotation, annotationsFor, restoreState,
+    serializeState, cardStatus, nextChipIndex, formatCopyText, findPanelRow,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = engine;
+  else global.veDecisionEngine = engine;
+})(globalThis);
+
+  /* FIXED DECISION ENGINE CORE:END */
+
+  /* FIXED DECISION COLLECTION JS: DO NOT MODIFY. */
+  (() => {
+    const engine = globalThis.veDecisionEngine;
+    const panel = document.querySelector('section[data-ve-section-kind="decision-panel"]');
+    const main = document.querySelector('main');
+    if (!engine || !panel || !main) return;
+    panel.querySelectorAll('.panel-note').forEach((note) => { note.hidden = true; });
+    const blocks = Array.from(main.querySelectorAll('[data-ve-blk]'));
+    const askSections = Array.from(document.querySelectorAll(
+      'section[data-ve-section-kind="ask"][data-ve-ask-type="decision"][id]'));
+    const textOf = (node) => (node ? node.textContent : '').trim();
+    const contract = {
+      documentId: panel.dataset.veDocumentId || '',
+      schemaVersion: panel.dataset.veSchemaVersion || '',
+      digest: panel.dataset.veAskDigest || '',
+      title: document.title,
+      documentPath: panel.dataset.veDocumentPath || '',
+      blockCount: blocks.length,
+      asks: askSections.map((section) => {
+        const defaultItem = section.querySelector('[data-ask-default]');
+        return {
+          id: section.id,
+          question: textOf(section.querySelector('.ask-question')),
+          defaultId: defaultItem ? (defaultItem.dataset.askOptionId || null) : null,
+          options: Array.from(section.querySelectorAll('[data-ask-option]')).map((item) => ({
+            id: item.dataset.askOptionId || '',
+            label: textOf(item.querySelector('.ask-option-label')),
+            withdrawn: item.hasAttribute('data-ask-withdrawn'),
+          })),
+        };
+      }),
+    };
+    let storage = null;
+    let state = engine.emptyState();
+    try {
+      storage = window.localStorage;
+      state = engine.restoreState(storage.getItem(engine.storageKey(contract)), contract);
+    } catch {
+      storage = null; // Only persistence is lost; selection and annotations keep working.
+    }
+    const persist = () => {
+      if (!storage) return;
+      try { storage.setItem(engine.storageKey(contract), engine.serializeState(state)); } catch {}
+    };
+    const statusLines = new Map();
+    // Review layer: add button, selection "pick" button, editor below the block, number tags.
+    const blockNumber = (block) => Number(block.dataset.veBlk);
+    const tags = new Map();
+    let editor = null;
+    let addTarget = null;
+    let pick = null;
+    const makeButton = (className, label) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = className;
+      button.textContent = label;
+      button.hidden = true;
+      document.body.append(button);
+      return button;
+    };
+    const addButton = makeButton('review-add', '＋');
+    const pickButton = makeButton('review-pick', '指摘');
+    const place = (button, rect, below, block) => {
+      button.hidden = false;
+      const width = button.offsetWidth;
+      let left;
+      let top = below ? rect.bottom + 4 : rect.top;
+      if (below) left = rect.left;
+      else if (rect.left >= width + 8) left = rect.left - width - 4;
+      else {
+        // No room on the left: text blocks reserve right padding for the button;
+        // figures, tables and code get it just above their top-right corner.
+        left = rect.right - width;
+        if (block && /^(FIGURE|TABLE|PRE)$/.test(block.tagName)) top = rect.top - button.offsetHeight - 4;
+      }
+      left = Math.max(0, Math.min(left, document.documentElement.clientWidth - width));
+      button.style.left = `${Math.round(window.scrollX + left)}px`;
+      button.style.top = `${Math.round(window.scrollY + top)}px`;
+    };
+    const showAdd = (block) => {
+      if (editor && editor.block === block) return;
+      addTarget = block;
+      addButton.setAttribute('aria-label', `#${blockNumber(block)} に指摘を付ける`);
+      place(addButton, block.getBoundingClientRect(), false, block);
+    };
+    const closeEditor = (refocus) => {
+      if (!editor) return;
+      const { block, root } = editor;
+      root.remove();
+      editor = null;
+      if (refocus) block.focus();
+    };
+    const openEditor = (block, quote) => {
+      closeEditor(false);
+      addButton.hidden = true;
+      pickButton.hidden = true;
+      const n = blockNumber(block);
+      const root = document.createElement('div');
+      root.className = 'review-editor';
+      root.setAttribute('role', 'group');
+      root.setAttribute('aria-label', `#${n} への指摘`);
+      const head = document.createElement('p');
+      head.className = 'review-head';
+      const chips = document.createElement('div');
+      chips.className = 'review-chips';
+      chips.setAttribute('role', 'radiogroup');
+      chips.setAttribute('aria-label', '指摘の種類');
+      const chipButtons = engine.CHIPS.map((label) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'review-chip';
+        chip.setAttribute('role', 'radio');
+        chip.textContent = label;
+        return chip;
+      });
+      chips.append(...chipButtons);
+      const note = document.createElement('input');
+      note.type = 'text';
+      note.className = 'review-note';
+      note.placeholder = 'ひとこと（任意）';
+      note.setAttribute('aria-label', 'ひとこと（任意）');
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '追加';
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.textContent = '閉じる';
+      const actions = document.createElement('div');
+      actions.className = 'review-actions';
+      actions.append(add, close);
+      const list = document.createElement('ul');
+      list.className = 'review-list';
+      root.append(head, chips, note, actions, list);
+      editor = { block, root, list, chip: '', quote: engine.normalizeQuote(quote) };
+      const reset = () => {
+        editor.chip = '';
+        chipButtons.forEach((chip, i) => {
+          chip.setAttribute('aria-checked', 'false');
+          chip.tabIndex = i === 0 ? 0 : -1;
+        });
+        add.disabled = true;
+        head.textContent = editor.quote ? `#${n} 「${editor.quote}」` : `#${n}`;
+      };
+      const check = (index) => {
+        editor.chip = engine.CHIPS[index];
+        chipButtons.forEach((chip, i) => {
+          chip.setAttribute('aria-checked', String(i === index));
+          chip.tabIndex = i === index ? 0 : -1;
+        });
+        add.disabled = false;
+        chipButtons[index].focus();
+      };
+      chipButtons.forEach((chip, index) => {
+        chip.addEventListener('click', () => check(index));
+        chip.addEventListener('keydown', (event) => {
+          const next = engine.nextChipIndex(index, event.key, chipButtons.length);
+          if (next < 0) return;
+          event.preventDefault();
+          check(next);
+        });
+      });
+      add.addEventListener('click', () => {
+        if (!editor || !editor.chip) return;
+        state = engine.addAnnotation(state, n, editor.chip, editor.quote, note.value, contract);
+        editor.quote = '';
+        note.value = '';
+        reset();
+        persist(); render();
+        chipButtons[0].focus();
+      });
+      note.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        add.click();
+      });
+      close.addEventListener('click', () => closeEditor(true));
+      root.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        closeEditor(true);
+      });
+      reset();
+      if (block.tagName === 'LI') block.append(root);
+      else block.after(root);
+      render();
+      chipButtons[0].focus();
+    };
+    const renderReview = () => {
+      blocks.forEach((block) => {
+        const n = blockNumber(block);
+        const count = engine.annotationsFor(state, n).length;
+        let tag = tags.get(n);
+        if (count && !tag) {
+          tag = document.createElement('span');
+          tag.className = 'review-tag';
+          tag.setAttribute('aria-hidden', 'true');
+          tag.textContent = `#${n}`;
+          if (block.tagName === 'TABLE') block.before(tag);
+          else block.prepend(tag);
+          tags.set(n, tag);
+        } else if (!count && tag) {
+          tag.remove();
+          tags.delete(n);
+        }
+        if (count) block.setAttribute('data-ve-annotated', '');
+        else block.removeAttribute('data-ve-annotated');
+      });
+      if (!editor) return;
+      const n = blockNumber(editor.block);
+      editor.list.replaceChildren(...engine.annotationsFor(state, n).map((item) => {
+        const row = document.createElement('li');
+        const label = document.createElement('span');
+        label.textContent = `[${item.chip}]${item.quote ? ` 「${item.quote}」` : ''}${item.note ? ` ${item.note}` : ''}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '削除';
+        remove.setAttribute('aria-label', `[${item.chip}] の指摘を削除`);
+        remove.addEventListener('click', () => {
+          const at = Array.from(editor.list.querySelectorAll('button')).indexOf(remove);
+          state = engine.removeAnnotation(state, item.index);
+          persist(); render();
+          // Keep keyboard focus inside the editor: next delete, else previous, else first chip.
+          const left = editor.list.querySelectorAll('button');
+          const target = left[at] || left[at - 1] || editor.root.querySelector('.review-chip');
+          if (target) target.focus();
+        });
+        row.append(label, remove);
+        return row;
+      }));
+    };
+    blocks.forEach((block) => {
+      block.setAttribute('tabindex', '0');
+      block.addEventListener('pointerenter', (event) => {
+        if (event.pointerType === 'mouse') showAdd(block);
+      });
+      block.addEventListener('click', (event) => {
+        if (event.target.closest('.review-editor, a, button, input, textarea, summary')) return;
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) return;
+        if (event.target.closest('[data-ve-blk]') === block) showAdd(block);
+      });
+      block.addEventListener('keydown', (event) => {
+        if (event.target !== block || event.key !== 'Enter') return;
+        event.preventDefault();
+        openEditor(block, '');
+      });
+    });
+    addButton.addEventListener('click', () => { if (addTarget) openEditor(addTarget, ''); });
+    pickButton.addEventListener('pointerdown', (event) => event.preventDefault());
+    pickButton.addEventListener('click', () => { if (pick) openEditor(pick.block, pick.quote); });
+    document.addEventListener('selectionchange', () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.rangeCount) {
+        pickButton.hidden = true;
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const node = range.startContainer;
+      const start = node.nodeType === 1 ? node : node.parentElement;
+      const block = start ? start.closest('[data-ve-blk]') : null;
+      if (!block || start.closest('.review-editor')) {
+        pickButton.hidden = true;
+        return;
+      }
+      pick = { block, quote: selection.toString() };
+      place(pickButton, range.getBoundingClientRect(), true);
+    });
+    const render = () => {
+      fallback.hidden = true;
+      copyStatus.textContent = '';
+      contract.asks.forEach((ask) => {
+        const section = document.getElementById(ask.id);
+        if (!section) return;
+        section.querySelectorAll('[data-ask-option]').forEach((item) => {
+          if (item.hasAttribute('data-ask-withdrawn')) return;
+          const selected = state.selections[ask.id] === item.dataset.askOptionId;
+          if (selected) item.setAttribute('data-ask-selected', '');
+          else item.removeAttribute('data-ask-selected');
+          item.setAttribute('aria-checked', String(selected));
+        });
+        const line = statusLines.get(ask.id);
+        if (line) line.textContent = engine.cardStatus(ask, state);
+        const row = engine.findPanelRow(
+          Array.from(panel.querySelectorAll('li[data-ve-panel-ask]')), ask.id);
+        if (!row) return;
+        const status = row.querySelector('[data-ve-panel-status]');
+        if (status) status.textContent = engine.cardStatus(ask, state);
+        const memoRow = row.querySelector('[data-ve-panel-memo]');
+        if (memoRow) {
+          const memo = (state.memos[ask.id] || '').trim();
+          memoRow.hidden = !memo;
+          memoRow.textContent = memo ? `補足: ${memo}` : '';
+        }
+      });
+      renderReview();
+      const count = panel.querySelector('[data-ve-panel-review-count]');
+      if (count) count.textContent = `指摘 ${state.annotations.length} 件`;
+    };
+    askSections.forEach((section) => {
+      const list = section.querySelector('.ask-options');
+      if (list) {
+        list.setAttribute('role', 'radiogroup');
+        list.setAttribute('aria-label', textOf(section.querySelector('.ask-question')));
+      }
+      section.querySelectorAll('[data-ask-option]').forEach((item) => {
+        item.setAttribute('role', 'radio');
+        if (item.hasAttribute('data-ask-withdrawn')) {
+          item.setAttribute('aria-disabled', 'true');
+          item.setAttribute('aria-checked', 'false');
+          return;
+        }
+        item.setAttribute('tabindex', '0');
+        const select = () => {
+          state = engine.selectOption(state, section.id, item.dataset.askOptionId, contract);
+          persist(); render();
+        };
+        item.addEventListener('click', select);
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          select();
+        });
+      });
+      const line = document.createElement('p');
+      line.className = 'ask-card-status';
+      line.setAttribute('aria-live', 'polite');
+      if (list) list.after(line);
+      statusLines.set(section.id, line);
+      const memoField = section.querySelector('textarea[data-ask-memo]');
+      if (memoField) {
+        memoField.value = state.memos[section.id] || '';
+        memoField.addEventListener('input', () => {
+          state = engine.setMemo(state, section.id, memoField.value);
+          persist(); render();
+        });
+      }
+    });
+    const globalField = panel.querySelector('textarea[data-ve-panel-global-memo]');
+    if (globalField) {
+      globalField.value = state.globalMemo || '';
+      globalField.addEventListener('input', () => {
+        state = engine.setGlobalMemo(state, globalField.value);
+        persist();
+      });
+    }
+    const copyButton = document.createElement('button');
+    copyButton.type = 'button';
+    copyButton.className = 'button-primary';
+    copyButton.textContent = '回答と指摘をコピー';
+    const copyStatus = document.createElement('p');
+    copyStatus.className = 'panel-copy-status';
+    copyStatus.setAttribute('aria-live', 'polite');
+    const fallback = document.createElement('pre');
+    fallback.className = 'panel-copy-fallback';
+    fallback.hidden = true;
+    copyButton.addEventListener('click', async () => {
+      const text = engine.formatCopyText(contract, state);
+      try {
+        await navigator.clipboard.writeText(text);
+        fallback.hidden = true;
+        copyStatus.textContent = 'コピーしました。エージェントへ貼り付けてください。';
+      } catch {
+        fallback.textContent = text;
+        fallback.hidden = false;
+        copyStatus.textContent = 'クリップボードを使えないため、以下を手動でコピーしてください。';
+      }
+    });
+    panel.querySelector('.decision-panel')?.append(copyButton, copyStatus, fallback);
+    render();
+  })();
+  </script>
+</body>
+</html>

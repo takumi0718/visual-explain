@@ -40,8 +40,8 @@ def _check(name: str) -> set[str]:
 
 
 class RendererSvgGateTest(unittest.TestCase):
-    def test_allowlist_contains_slope_and_waterfall(self) -> None:
-        self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@2", "waterfall@2"}))
+    def test_allowlist_contains_slope_waterfall_and_grid_diagram(self) -> None:
+        self.assertEqual(RENDERER_SVG_ALLOWLIST, frozenset({"slope@2", "waterfall@2", "grid-diagram@2"}))
 
     def test_svg_gate_accepts_slope_v2_and_waterfall_v2(self) -> None:
         self.assertIn("slope@2", RENDERER_SVG_ALLOWLIST)

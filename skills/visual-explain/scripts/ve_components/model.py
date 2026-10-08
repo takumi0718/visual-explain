@@ -412,6 +412,7 @@ class CanonicalIR:
     bars: Optional[BarsPayload] = None
     kpi: Optional[KpiPayload] = None
     evidence_map: Optional[EvidenceMapPayload] = None
+    grid_diagram: Optional[GridDiagramPayload] = None
     takeaway_target_ids: tuple[str, ...] = ()
     takeaway_scope: str = "targets"
     emphasis: tuple["EmphasisAnnotation", ...] = ()
@@ -445,6 +446,8 @@ class CanonicalIR:
             return "kpi"
         if self.evidence_map is not None:
             return "evidence-map"
+        if self.grid_diagram is not None:
+            return "grid-diagram"
         raise ValueError("canonical IR has no payload")
 
     def semantic_ids(self) -> tuple[str, ...]:
@@ -485,6 +488,10 @@ class CanonicalIR:
         if self.evidence_map is not None:
             ids.append(self.evidence_map.conclusion.id)
             ids.extend(item.id for item in self.evidence_map.evidence)
+        if self.grid_diagram is not None:
+            ids.extend(node.id for node in self.grid_diagram.nodes)
+            ids.extend(region.id for region in self.grid_diagram.regions)
+            ids.extend(edge.id for edge in self.grid_diagram.edges)
         return tuple(ids)
 
 

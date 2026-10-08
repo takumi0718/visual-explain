@@ -12,7 +12,7 @@ class SelftestTest(unittest.TestCase):
     def test_selftest_passes_with_v3_cases(self) -> None:
         proc = subprocess.run(["bash", str(CHECK), "--selftest"], capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("selftest: 36 passed, 0 failed", proc.stdout)
+        self.assertIn("selftest: 38 passed, 0 failed", proc.stdout)
 
 
 if __name__ == "__main__":

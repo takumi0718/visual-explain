@@ -20,6 +20,7 @@ from .slope import render_slope
 from .evidence_map import render_evidence_map
 from .bars import render_bars
 from .kpi import render_kpi
+from .grid_diagram import render_grid_diagram
 
 TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "matrix@2": render_matrix,
@@ -34,4 +35,5 @@ TRUSTED_RENDERERS: dict[str, RendererFn] = {
     "evidence-map@2": render_evidence_map,
     "bars@2": render_bars,
     "kpi@2": render_kpi,
+    "grid-diagram@2": render_grid_diagram,
 }
