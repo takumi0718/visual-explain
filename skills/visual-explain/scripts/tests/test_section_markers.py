@@ -66,6 +66,10 @@ class ExampleMarkersTest(unittest.TestCase):
     def test_skeleton_draws_the_number_like_the_overview_marker(self) -> None:
         self.assertIn("[data-ve-section-kind] [data-ve-marker]::before { content: attr(data-ve-marker);", SKELETON)
 
+    def test_echoed_number_has_empty_alt_text_after_a_plain_fallback(self) -> None:
+        plain = "content: attr(data-ve-marker); content: attr(data-ve-marker) / \"\";"
+        self.assertIn(plain, SKELETON)
+
     def test_marker_number_is_not_counted_as_text(self) -> None:
         stripped = re.sub(r' data-ve-marker="\d+"', "", self.html)
         self.assertEqual(text_metrics(self.html), text_metrics(stripped))

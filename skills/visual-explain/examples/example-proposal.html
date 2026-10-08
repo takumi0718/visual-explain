@@ -134,7 +134,7 @@
     .overview-markers a { display: inline-flex; gap: var(--space-1); align-items: baseline; color: var(--text); text-decoration: none; }
     .overview-markers .marker-n { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
     /* The overview number echoed on the heading it links to (stamped by the build, drawn here so the text stays as written). */
-    [data-ve-section-kind] [data-ve-marker]::before { content: attr(data-ve-marker); display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-right: var(--space-1); border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); line-height: 1; font-variant-numeric: tabular-nums; vertical-align: .2em; }
+    [data-ve-section-kind] [data-ve-marker]::before { content: attr(data-ve-marker); content: attr(data-ve-marker) / ""; display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-right: var(--space-1); border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); line-height: 1; font-variant-numeric: tabular-nums; vertical-align: .2em; }
     .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
     .decision strong { color: var(--accent-strong); }
     .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
