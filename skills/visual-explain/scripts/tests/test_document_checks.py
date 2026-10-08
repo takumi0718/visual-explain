@@ -85,9 +85,10 @@ def _decision_assembly(**doc_extra) -> dict:
         "id": "sec-ask-decision",
         "askType": "decision",
         "question": "この提案を採択しますか。",
+        "evidence": "scripts/build_explainer.py:1",
         "options": [
-            {"id": "opt-adopt", "label": "採択する", "tradeoff": "初期コストがかかる"},
-            {"id": "opt-hold", "label": "見送る", "tradeoff": "機会を逃す"},
+            {"id": "opt-adopt", "label": "採択する", "tradeoff": "初期コストがかかる", "benefit": "選ぶ理由がある"},
+            {"id": "opt-hold", "label": "見送る", "tradeoff": "機会を逃す", "benefit": "選ぶ理由がある"},
         ],
         "defaultId": "opt-adopt",
     })

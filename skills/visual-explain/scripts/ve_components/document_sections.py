@@ -191,11 +191,6 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
             f"<li {attrs}><span>{_esc(opt.label)}</span>"
             f'<span class="ask-tradeoff">{_esc(opt.tradeoff)}</span></li>'
         )
-    reason = ""
-    if section.no_default_reason:
-        reason = (
-            f'\n  <p class="ask-no-default-reason">{_esc(section.no_default_reason)}</p>'
-        )
     memo = (
         '\n  <div class="ask-memo">'
         '<label>メモ（この判断について）<textarea data-ask-memo></textarea></label></div>'
@@ -206,7 +201,7 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
         f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
-        f"  </ul>{reason}{memo}\n"
+        f"  </ul>{memo}\n"
         f"</div>"
     )
 
@@ -279,7 +274,7 @@ def _render_panel_ask_item(section: AskSection) -> str:
         default_label = next(
             (opt.label for opt in section.options if opt.id == section.default_id), None
         )
-    status = f"未選択（既定案: {default_label}）" if default_label is not None else "未選択（既定案なし）"
+    status = f"未選択（既定案: {default_label}）"
     return (
         f'<li data-ve-panel-ask="{_esc(section.id)}">'
         f'<span class="panel-question">{_esc(section.question or "")}</span>'

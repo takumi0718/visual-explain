@@ -43,9 +43,10 @@ def _assembly(*, decision_ask: bool) -> dict:
             "id": "sec-ask-decision",
             "askType": "decision",
             "question": "どちらにしますか。",
+            "evidence": "scripts/build_explainer.py:1",
             "options": [
-                {"id": "opt-a", "label": "案A", "tradeoff": "早いが粗い"},
-                {"id": "opt-b", "label": "案B", "tradeoff": "遅いが確実"},
+                {"id": "opt-a", "label": "案A", "tradeoff": "早いが粗い", "benefit": "選ぶ理由がある"},
+                {"id": "opt-b", "label": "案B", "tradeoff": "遅いが確実", "benefit": "選ぶ理由がある"},
             ],
             "defaultId": "opt-b",
         })
@@ -90,16 +91,6 @@ class RenderDecisionPanelTest(unittest.TestCase):
         self.assertIn("未選択（既定案: 案B）", panel.markup)
         self.assertIn('data-ve-panel-memo hidden', panel.markup)
         self.assertIn('<textarea data-ve-panel-global-memo></textarea>', panel.markup)
-
-    def test_status_reports_no_default_when_absent(self) -> None:
-        ask = AskSection(
-            id="ask-nd", ask_type="decision", question="どちらにしますか。",
-            options=(AskOption("a", "案A", "t"), AskOption("b", "案B", "t")),
-            no_default_reason="判断材料が拮抗しているため",
-        )
-        panel = render_decision_panel((ask,), _DOC, 1, "out.html")
-        self.assertIsNotNone(panel)
-        self.assertIn("未選択（既定案なし）", panel.markup)
 
     def test_returns_none_for_zero_decision_asks(self) -> None:
         self.assertIsNone(render_decision_panel((), _DOC, 1, "out.html"))

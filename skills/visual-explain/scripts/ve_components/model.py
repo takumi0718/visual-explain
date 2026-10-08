@@ -501,6 +501,8 @@ class AskOption:
     id: str
     label: str
     tradeoff: str
+    benefit: str = ""
+    withdrawn: bool = False
 
 
 @dataclass(frozen=True)
@@ -520,7 +522,7 @@ class AskClaim:
 class AskSection:
     """Discriminated union over ask_type ∈ {decision, request, hypothesis}.
 
-    decision: question + options + (default_id XOR no_default_reason)
+    decision: question + options + default_id (recommended) + evidence
     request: steps
     hypothesis: claim + verify
     Unused arms are None / empty.
@@ -530,10 +532,10 @@ class AskSection:
     question: Optional[str] = None
     options: tuple[AskOption, ...] = ()
     default_id: Optional[str] = None
-    no_default_reason: Optional[str] = None
     steps: tuple[AskStep, ...] = ()
     claim: Optional[AskClaim] = None
     verify: Optional[str] = None
+    evidence: str = ""
 
 
 @dataclass(frozen=True)

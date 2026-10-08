@@ -54,9 +54,10 @@ def _decision_section(**extra) -> dict:
         "id": "sec-ask-decision",
         "askType": "decision",
         "question": "注釈を今回に含めますか？",
+        "evidence": "scripts/build_explainer.py:1",
         "options": [
-            {"id": "include", "label": "含める", "tradeoff": "変更量が増える"},
-            {"id": "later", "label": "次フェーズ", "tradeoff": "効果が遅れる"},
+            {"id": "include", "label": "含める", "tradeoff": "変更量が増える", "benefit": "選ぶ理由がある"},
+            {"id": "later", "label": "次フェーズ", "tradeoff": "効果が遅れる", "benefit": "選ぶ理由がある"},
         ],
         "defaultId": "include",
     }
@@ -71,7 +72,7 @@ class AskSectionTest(unittest.TestCase):
         self.assertEqual(section.ask_type, "decision")
         self.assertEqual(section.question, "注釈を今回に含めますか？")
         self.assertEqual(section.default_id, "include")
-        self.assertIsNone(section.no_default_reason)
+        self.assertEqual(section.evidence, "scripts/build_explainer.py:1")
         self.assertEqual(len(section.options), 2)
 
         wrapped = render_ask(section)
@@ -120,8 +121,8 @@ class AskSectionTest(unittest.TestCase):
     def test_option_id_with_quote_character_is_accepted(self) -> None:
         raw = _assembly(_decision_section(
             options=[
-                {"id": 'opt"a', "label": "A", "tradeoff": "t1"},
-                {"id": "opt-b", "label": "B", "tradeoff": "t2"},
+                {"id": 'opt"a', "label": "A", "tradeoff": "t1", "benefit": "選ぶ理由がある"},
+                {"id": "opt-b", "label": "B", "tradeoff": "t2", "benefit": "選ぶ理由がある"},
             ],
             defaultId="opt-b",
         ))
@@ -139,8 +140,8 @@ class AskSectionTest(unittest.TestCase):
         """Same restored compatibility as the ask id, for option ids."""
         raw = _assembly(_decision_section(
             options=[
-                {"id": "opt-a\n", "label": "A", "tradeoff": "t1"},
-                {"id": "opt-b", "label": "B", "tradeoff": "t2"},
+                {"id": "opt-a\n", "label": "A", "tradeoff": "t1", "benefit": "選ぶ理由がある"},
+                {"id": "opt-b", "label": "B", "tradeoff": "t2", "benefit": "選ぶ理由がある"},
             ],
             defaultId="opt-b",
         ))
@@ -229,22 +230,13 @@ class AskSectionTest(unittest.TestCase):
         self.assertIn('class="ask-verify"', wrapped.markup)
         self.assertEqual(validate_ask_blocks(wrapped.markup), [])
 
-    def test_decision_without_default_renders_no_default_reason(self) -> None:
-        section = AskSection(
-            id="sec-ask-no-default",
-            ask_type="decision",
-            question="どちらにしますか？",
-            options=(
-                AskOption(id="a", label="案A", tradeoff="コスト増"),
-                AskOption(id="b", label="案B", tradeoff="効果遅延"),
-            ),
-            no_default_reason="判断材料が拮抗しているため",
-        )
-        wrapped = render_ask(section)
-        self.assertNotIn("data-ask-default", wrapped.markup)
-        self.assertIn('class="ask-no-default-reason"', wrapped.markup)
-        self.assertIn("判断材料が拮抗しているため", wrapped.markup)
-        self.assertEqual(validate_ask_blocks(wrapped.markup), [])
+    def test_decision_with_no_default_reason_is_rejected(self) -> None:
+        section = _decision_section(noDefaultReason="判断材料が拮抗しているため")
+        del section["defaultId"]
+        with self.assertRaises(ContractError) as ctx:
+            validate_assembly(_assembly(section))
+        self.assertIn("decision.noDefaultReason は廃止されました。推奨案を defaultId で示してください",
+                      [d.message for d in ctx.exception.diagnostics])
 
     def test_build_document_includes_decision_ask(self) -> None:
         html = build_document(
@@ -293,13 +285,13 @@ class AskSectionTest(unittest.TestCase):
         from ve_components.document_sections import compute_ask_digest
         base = (AskSection(id="ask-1", ask_type="decision", question="Q。",
                            options=(AskOption("a", "A", "t"), AskOption("b", "B", "t")),
-                           no_default_reason="理由"),)
+                           default_id="a"),)
         with_request = base + (AskSection(id="ask-2", ask_type="request",
                                           steps=(AskStep("user", "あなた", "確認する"),)),)
         self.assertEqual(compute_ask_digest(base), compute_ask_digest(with_request))
         changed = (AskSection(id="ask-1", ask_type="decision", question="Q。",
                               options=(AskOption("a", "A", "t"), AskOption("c", "C", "t")),
-                              no_default_reason="理由"),)
+                              default_id="a"),)
         self.assertNotEqual(compute_ask_digest(base), compute_ask_digest(changed))
 
     def test_render_escapes_html(self) -> None:

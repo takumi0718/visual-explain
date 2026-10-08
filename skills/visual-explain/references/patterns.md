@@ -168,9 +168,10 @@ Pi 上の Katsura Qwen では、必須事実の因果を原因→結果の原文
       "id": "sec-ask-decision",
       "askType": "decision",
       "question": "限定対象で開始しますか？",
+      "evidence": "scripts/build_explainer.py:1",
       "options": [
-        {"id": "limited", "label": "限定対象で公開する", "tradeoff": "運用が追加で必要"},
-        {"id": "all", "label": "一斉公開する", "tradeoff": "影響範囲が最初から広い"}
+        {"id": "limited", "label": "限定対象で公開する", "benefit": "選ぶ理由がある", "tradeoff": "運用が追加で必要"},
+        {"id": "all", "label": "一斉公開する", "benefit": "選ぶ理由がある", "tradeoff": "影響範囲が最初から広い"}
       ],
       "defaultId": "limited"
     },
@@ -292,7 +293,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 - **ユーザーへの依頼は `askType: "request"`**: 誰が何をするかの手順。各手順に主体（役割）を付ける。
 - **検証待ち主張は `askType: "hypothesis"`**: まだ確証がない主張と、その検証方法。
 
-`decision`。選択肢は2件以上。既定案は `defaultId`（options の id）か、既定なし理由の `noDefaultReason` のどちらか一方。レンダラ出力では選択チップは青（`--accent`）、既定案は緑（`--positive`）。
+`decision`（問いカード）。選択肢は2件以上で、各選択肢に `benefit`（利点）と `tradeoff`（代償）を必ず書く。推奨は `defaultId`（必須。取り下げた選択肢は指せない）で、カードに「推奨」バッジが付く。読者が選ばなければ「お任せ＝推奨」として回収される。`evidence` には `file:line` か「」で囲んだ実行結果の引用を 200 字以内で書く（事実を読者に聞かないため）。再往復で捨てた案は `"withdrawn": true` で残す（取り消し線付きで表示され、選べない）。decision ask は1資料4問まで。
 
 ```json
 {
@@ -300,9 +301,10 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
   "id": "sec-ask-decision",
   "askType": "decision",
   "question": "注釈を今回に含めますか？",
+  "evidence": "scripts/build_explainer.py:1",
   "options": [
-    {"id": "include", "label": "含める", "tradeoff": "変更量が増える"},
-    {"id": "later", "label": "次フェーズ", "tradeoff": "効果が遅れる"}
+    {"id": "include", "label": "含める", "benefit": "選ぶ理由がある", "tradeoff": "変更量が増える"},
+    {"id": "later", "label": "次フェーズ", "benefit": "選ぶ理由がある", "tradeoff": "効果が遅れる"}
   ],
   "defaultId": "include"
 }
@@ -338,7 +340,7 @@ caption はその図から持ち帰る1文（takeaway）にする。図の説明
 
 ### decision ask の回収パネル（Phase 2）
 
-`askType: "decision"` の ask を1件以上含む資料は、末尾節の後にビルドが「判断の回収」パネルを自動生成する。**Phase 2 で ask の IR は変わらない**。上の `decision` サンプルのように ask を書けば、回収は `build_explainer.py` と骨格の固定 JavaScript だけが担い、パネル自体を IR に書く必要はない。decision ask が0件の資料にはパネルは現れない。
+`askType: "decision"` の ask を1件以上含む資料は、末尾節の後にビルドが「判断の回収」パネルを自動生成する。上の `decision` サンプルのように ask を書けば、回収は `build_explainer.py` と骨格の固定 JavaScript だけが担い、パネル自体を IR に書く必要はない。decision ask が0件の資料にはパネルは現れない。
 
 ## 図フォーマット
 

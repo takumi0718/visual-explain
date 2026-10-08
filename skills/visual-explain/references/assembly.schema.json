@@ -101,11 +101,13 @@
     "askOption": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label", "tradeoff"],
+      "required": ["id", "label", "benefit", "tradeoff"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "label": {"type": "string", "minLength": 1},
-        "tradeoff": {"type": "string", "minLength": 1}
+        "benefit": {"type": "string", "minLength": 1},
+        "tradeoff": {"type": "string", "minLength": 1},
+        "withdrawn": {"type": "boolean"}
       }
     },
     "askStep": {
@@ -130,7 +132,6 @@
     "askSection": {
       "oneOf": [
         {"$ref": "#/$defs/askDecisionWithDefault"},
-        {"$ref": "#/$defs/askDecisionNoDefault"},
         {"$ref": "#/$defs/askRequestSection"},
         {"$ref": "#/$defs/askHypothesisSection"}
       ]
@@ -138,35 +139,19 @@
     "askDecisionWithDefault": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "id", "askType", "question", "options", "defaultId"],
+      "required": ["kind", "id", "askType", "question", "evidence", "options", "defaultId"],
       "properties": {
         "kind": {"const": "ask"},
         "id": {"type": "string", "minLength": 1},
         "askType": {"const": "decision"},
         "question": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string", "minLength": 1, "maxLength": 200},
         "options": {
           "type": "array",
           "minItems": 2,
           "items": {"$ref": "#/$defs/askOption"}
         },
         "defaultId": {"type": "string", "minLength": 1}
-      }
-    },
-    "askDecisionNoDefault": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind", "id", "askType", "question", "options", "noDefaultReason"],
-      "properties": {
-        "kind": {"const": "ask"},
-        "id": {"type": "string", "minLength": 1},
-        "askType": {"const": "decision"},
-        "question": {"type": "string", "minLength": 1},
-        "options": {
-          "type": "array",
-          "minItems": 2,
-          "items": {"$ref": "#/$defs/askOption"}
-        },
-        "noDefaultReason": {"type": "string", "minLength": 1}
       }
     },
     "askRequestSection": {

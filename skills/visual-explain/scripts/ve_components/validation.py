@@ -237,16 +237,19 @@ _SENTENCE_RE = re.compile(r"[^。！？!?]+[。！？!?]")
 _CLOSING_SECTION_KEYS = {"kind", "id", "blocks"}
 _CLOSING_BLOCK_KEYS = {"heading", "items"}
 _ASK_SECTION_KEYS = {
-    "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason",
+    "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason", "evidence",
     "steps", "claim", "verify",
 }
-_ASK_OPTION_KEYS = {"id", "label", "tradeoff"}
+_ASK_OPTION_KEYS = {"id", "label", "benefit", "tradeoff", "withdrawn"}
 _ASK_STEP_KEYS = {"role", "roleLabel", "text"}
 _ASK_CLAIM_KEYS = {"text", "certainty"}
 _ASK_TYPES = frozenset({"decision", "request", "hypothesis"})
 _ASK_ROLES = frozenset({"user", "agent", "third-party"})
 _ASK_CERTAINTY = frozenset({"confirmed", "inferred", "unverified"})
-_DECISION_ONLY_KEYS = frozenset({"question", "options", "defaultId", "noDefaultReason"})
+_DECISION_ONLY_KEYS = frozenset({"question", "options", "defaultId", "noDefaultReason", "evidence"})
+_MAX_DECISION_ASKS = 4
+_MAX_EVIDENCE_CHARS = 200
+_EVIDENCE_RE = re.compile(r"[^\s:：「」]+:\d+|「[^」]+」")
 _REQUEST_ONLY_KEYS = frozenset({"steps"})
 _HYPOTHESIS_ONLY_KEYS = frozenset({"claim", "verify"})
 _CLOSING_REQUIRED = {
@@ -2683,6 +2686,10 @@ def validate_assembly(raw: object) -> AssemblyRequest:
         section = _validate_section(item, p, col, seen_section_ids, doc_type, doc_profile)
         if section is not None:
             sections.append(section)
+    decision_count = sum(1 for s in sections if isinstance(s, AskSection) and s.ask_type == "decision")
+    if decision_count > _MAX_DECISION_ASKS:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"decision ask は1資料4問までです（{decision_count}問）",
+                "assembly.sections")
     _validate_document_structure(sections_raw, col)
     _validate_overview_links(sections_raw, sections, col)
     if doc_profile == "visual-stage":
@@ -2927,6 +2934,19 @@ def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> As
     question = raw.get("question")
     if not _nonblank_str(question):
         col.add(INVALID_COMPONENT_PAYLOAD, "decision.question は空にできません", path)
+    evidence = raw.get("evidence")
+    if not _nonblank_str(evidence):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision.evidence は空にできません（file:line か実行結果の引用）", path)
+    elif len(evidence) > _MAX_EVIDENCE_CHARS:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"decision.evidence は200字以内です（{len(evidence)}字）", path)
+    elif not _EVIDENCE_RE.search(evidence):
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision.evidence には file:line か「」で囲んだ実行結果の引用が必要です", path)
+    if "noDefaultReason" in raw:
+        col.add(INVALID_COMPONENT_PAYLOAD,
+                "decision.noDefaultReason は廃止されました。推奨案を defaultId で示してください", path)
+    default_id = raw.get("defaultId")
     options_raw = raw.get("options")
     options: list[AskOption] = []
     option_ids: set[str] = set()
@@ -2954,37 +2974,35 @@ def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> As
             tradeoff = item.get("tradeoff")
             if not _nonblank_str(tradeoff):
                 col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].tradeoff は空にできません", op)
-            if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff):
-                options.append(AskOption(id=oid, label=label, tradeoff=tradeoff))
-    has_default = "defaultId" in raw and raw.get("defaultId") is not None
-    has_reason = "noDefaultReason" in raw and raw.get("noDefaultReason") is not None
-    default_id = raw.get("defaultId") if has_default else None
-    no_default_reason = raw.get("noDefaultReason") if has_reason else None
-    if has_default and has_reason:
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                "decision の defaultId と noDefaultReason は同時に指定できません", path)
-    elif not has_default and not has_reason:
-        col.add(INVALID_COMPONENT_PAYLOAD,
-                "decision には defaultId か noDefaultReason のどちらか一方が必要です", path)
-    else:
-        if has_default:
-            if not _nonblank_str(default_id):
-                col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は空にできません", path)
-            elif default_id not in option_ids:
+            benefit = item.get("benefit")
+            if not _nonblank_str(benefit):
+                if accepted_id and oid != default_id:
+                    col.add(INVALID_COMPONENT_PAYLOAD,
+                            f"推奨でない選択肢 '{oid}' にも benefit（選ぶ理由）が必要です", op)
+                else:
+                    col.add(INVALID_COMPONENT_PAYLOAD, "decision.options[].benefit は空にできません", op)
+            withdrawn = item.get("withdrawn", False)
+            if not isinstance(withdrawn, bool):
                 col.add(INVALID_COMPONENT_PAYLOAD,
-                        f"decision.defaultId '{default_id}' が options にありません", path)
-        if has_reason and not _nonblank_str(no_default_reason):
-            col.add(INVALID_COMPONENT_PAYLOAD, "decision.noDefaultReason は空にできません", path)
+                        "decision.options[].withdrawn は true / false のいずれかです", op)
+                withdrawn = False
+            if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff) and _nonblank_str(benefit):
+                options.append(AskOption(id=oid, label=label, tradeoff=tradeoff,
+                                         benefit=benefit, withdrawn=withdrawn))
+        if len(options) == len(options_raw) and sum(1 for o in options if not o.withdrawn) < 2:
+            col.add(INVALID_COMPONENT_PAYLOAD, "decision の取り下げていない選択肢は2件以上必要です", path)
+    if default_id is None:
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision には推奨案の defaultId が必要です", path)
+    elif not _nonblank_str(default_id):
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は空にできません", path)
+    elif default_id not in option_ids:
+        col.add(INVALID_COMPONENT_PAYLOAD, f"decision.defaultId '{default_id}' が options にありません", path)
+    elif any(o.id == default_id and o.withdrawn for o in options):
+        col.add(INVALID_COMPONENT_PAYLOAD, "decision.defaultId は取り下げた選択肢を指せません", path)
     if len(col.diagnostics) > before:
         return None
-    return AskSection(
-        id=raw["id"],
-        ask_type="decision",
-        question=question,
-        options=tuple(options),
-        default_id=default_id,
-        no_default_reason=no_default_reason,
-    )
+    return AskSection(id=raw["id"], ask_type="decision", question=question,
+                      options=tuple(options), default_id=default_id, evidence=evidence)
 
 
 def _validate_ask_request(raw: dict, path: str, col: DiagnosticCollector) -> AskSection | None:
