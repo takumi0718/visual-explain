@@ -2928,6 +2928,7 @@ def validate_assembly(raw: object) -> AssemblyRequest:
                 "assembly.sections")
     _validate_document_structure(sections_raw, col)
     _validate_overview_links(sections_raw, sections, col)
+    _validate_grid_markers(sections, col)
     if doc_profile == "visual-stage":
         _validate_visual_stage_document(sections_raw, sections, col)
     if not col.diagnostics:
@@ -3125,6 +3126,34 @@ def _validate_overview_links(sections_raw: list, sections: list[object], col: Di
             col.add(INVALID_COMPONENT_PAYLOAD,
                     f"first-screen.overview.markers[{i}].target '{marker.target}' は ask / narrative / closing セクションの id である必要があります",
                     "assembly.sections[0].overview")
+
+
+def _validate_grid_markers(sections: list[object], col: DiagnosticCollector) -> None:
+    """Numbers on a grid-diagram are the overview's numbers: only on the overview figure, all of them."""
+    first = sections[0] if sections and isinstance(sections[0], FirstScreenSection) else None
+    overview = first.overview if first is not None else None
+    overview_id = overview.section if overview is not None else None
+    for section in sections:
+        if not isinstance(section, CanonicalSection) or section.ir.grid_diagram is None:
+            continue
+        grid = section.ir.grid_diagram
+        where = f"assembly.sections[{sections.index(section)}]"
+        if section.ir.id != overview_id:
+            if grid.markers:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                        "grid-diagram の markers は first-screen.overview の図にだけ付けられます", where)
+            continue
+        targets = {m.n: m.target for m in overview.markers}
+        if {m.n for m in grid.markers} != set(targets):
+            col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                    "全体図の grid-diagram の markers は first-screen.overview.markers と同じ番号を持つ必要があります",
+                    where)
+        for marker in grid.markers:
+            if marker.ask is not None and targets.get(marker.n) != marker.ask:
+                col.add(GRID_DIAGRAM_STRUCTURE_VIOLATION,
+                        f"grid-diagram の marker {marker.n} の ask '{marker.ask}' は"
+                        f" first-screen.overview.markers の同じ番号の target と一致する必要があります",
+                        where)
 
 
 def _validate_ask_section(raw: dict, path: str, col: DiagnosticCollector, seen_ids: set[str]):
