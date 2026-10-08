@@ -46,6 +46,11 @@ _RESERVED_CLASS_CASES = (
     "ask",
     "link-domain",
     "decision-panel",
+    "ask-kind",
+    "ask-badge",
+    "ask-withdrawn-note",
+    "ask-memo",
+    "ask-prefix",
 )
 
 

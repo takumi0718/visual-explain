@@ -261,7 +261,8 @@ _SENTENCE_TERMINATORS = frozenset("。！？!?")
 
 # Reserved tokens for narrative / freeform author markup (Global Constraints).
 _RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain", "decision-panel",
-                               "conclusion", "overview-markers"})
+                               "conclusion", "overview-markers", "ask-kind", "ask-badge",
+                               "ask-withdrawn-note", "ask-memo", "ask-prefix"})
 _RESERVED_DATA_EXACT = frozenset({
     "data-connect",
     "data-connect-scope",
