@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 from .diagnostics import DOCUMENT_STRUCTURE_VIOLATION, Diagnostic
 from .document_sections import compute_ask_digest_from_pairs
 from .review_blocks import check_review_blocks
+from .section_markers import check_section_markers
 from .validation import (
     _CLOSING_REQUIRED,
     _DOCUMENT_PROFILES,
@@ -2218,6 +2219,7 @@ def check_document_structure(
         return diagnostics
     if skeleton_version >= 3:
         diagnostics.extend(check_review_blocks(content_markup))
+    diagnostics.extend(check_section_markers(content_markup))
     first_nodes = [s for s in structure.sections if s.kind == "first-screen"]
     if not first_nodes:
         diagnostics.append(Diagnostic(

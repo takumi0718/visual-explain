@@ -340,11 +340,15 @@ def process_narrative_section(
     section: NarrativeSection,
     *,
     include_anchor_id: bool = False,
+    marker: int | None = None,
 ) -> WrappedNarrative:
     diagnostics = validate_content_markup(section.markup, section_kind="narrative")
     if diagnostics:
         raise ContractError(diagnostics)
     body = insert_link_domain_markers(section.markup)
+    if marker is not None:
+        from .document_sections import mark_first_heading
+        body = mark_first_heading(body, marker)
     id_attr = f' id="{_attr(section.id)}"' if include_anchor_id else ""
     wrapper = (
         f'<section data-ve-section-kind="narrative"'

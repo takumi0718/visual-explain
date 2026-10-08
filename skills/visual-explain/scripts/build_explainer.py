@@ -91,20 +91,20 @@ def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
     occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
     first = request.sections[0]
     nav = build_overview_nav(first, occupied_ids=occupied_ids)
-    marked = {m.target for m in first.overview.markers} if first.overview is not None else set()
+    marked = {m.target: m.n for m in first.overview.markers} if first.overview is not None else {}
     items = []
     for section in request.sections:
         if isinstance(section, CanonicalSection):
             items.append(process_canonical_section(section, registry, renderers))
         elif isinstance(section, NarrativeSection):
             items.append(process_narrative_section(
-                section, include_anchor_id=section.id in marked))
+                section, include_anchor_id=section.id in marked, marker=marked.get(section.id)))
         elif isinstance(section, FirstScreenSection):
             items.append(render_first_screen(section, request.document))
         elif isinstance(section, ClosingSection):
-            items.append(render_closing(section))
+            items.append(render_closing(section, marker=marked.get(section.id)))
         elif isinstance(section, AskSection):
-            items.append(render_ask(section))
+            items.append(render_ask(section, marker=marked.get(section.id)))
         else:
             items.append(process_compatibility_section(section))
     panel = render_decision_panel(

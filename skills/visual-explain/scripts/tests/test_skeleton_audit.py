@@ -238,6 +238,8 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             ".conclusion",
             # 概観ナビの番号マーカー（accent = 現在地を示す番号の強調）
             ".marker-n",
+            # 概観の番号を飛び先の見出しに付けた印（.marker-n と同じ意味・同じ見た目）
+            "[data-ve-marker]",
             # 指摘層の選択チップと番号札（accent = 読者が指した場所・選んだ種類の強調）
             ".review-tag",
             ".review-chip[aria-checked",

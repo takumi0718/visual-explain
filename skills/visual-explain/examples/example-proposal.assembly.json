@@ -17,12 +17,12 @@
         "markers": [
           {
             "n": 1,
-            "label": "部門別確認の限界",
+            "label": "別々の確認では判断できない",
             "target": "sec-current-problem"
           },
           {
             "n": 2,
-            "label": "承認地図での照合",
+            "label": "一つの承認地図で照合する",
             "target": "sec-approval-map-intro"
           },
           {

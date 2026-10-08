@@ -99,6 +99,42 @@ def extract_first_h2(markup: str) -> str | None:
     return parser.result
 
 
+class _FirstHeadingFinder(HTMLParser):
+    """Record the source position of the first h2 and the first h3 start tag."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.found: dict[str, tuple[int, int]] = {}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag in {"h2", "h3"} and tag not in self.found:
+            self.found[tag] = self.getpos()
+
+
+def mark_first_heading(markup: str, n: int) -> str:
+    """Stamp ``data-ve-marker="n"`` on the first h2 (else h3) of trusted-validated markup.
+
+    The skeleton draws the number with CSS, so the heading text, copy output
+    and text counts stay exactly as authored. Markup without a heading is
+    returned unchanged.
+    """
+    finder = _FirstHeadingFinder()
+    finder.feed(markup)
+    finder.close()
+    tag = "h2" if "h2" in finder.found else "h3" if "h3" in finder.found else None
+    if tag is None:
+        return markup
+    lineno, col = finder.found[tag]
+    lines = markup.split("\n")
+    index = sum(len(line) + 1 for line in lines[:lineno - 1]) + col + 1 + len(tag)
+    return f'{markup[:index]} data-ve-marker="{n}"{markup[index:]}'
+
+
+def _marker_attr(marker: int | None) -> str:
+    return f' data-ve-marker="{marker}"' if marker is not None else ""
+
+
 def _allocate_instance_id(prefix: str, occupied_ids: frozenset[str] | set[str]) -> str:
     """Pick a compose-only instance id that does not collide with section ids."""
     if prefix not in occupied_ids:
@@ -148,11 +184,12 @@ def build_overview_nav(
     )
 
 
-def render_closing(section: ClosingSection) -> WrappedDocumentSection:
+def render_closing(section: ClosingSection, *, marker: int | None = None) -> WrappedDocumentSection:
     parts: list[str] = []
-    for block in section.blocks:
+    for i, block in enumerate(section.blocks):
         items = "".join(f"<li>{_esc(item)}</li>" for item in block.items)
-        parts.append(f"  <h2>{_esc(block.heading)}</h2>\n  <ul>{items}</ul>")
+        attr = _marker_attr(marker) if i == 0 else ""
+        parts.append(f"  <h2{attr}>{_esc(block.heading)}</h2>\n  <ul>{items}</ul>")
     body = "\n".join(parts)
     markup = (
         f'<section data-ve-section-kind="closing" id="{_esc(section.id)}">\n'
@@ -163,15 +200,17 @@ def render_closing(section: ClosingSection) -> WrappedDocumentSection:
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
 
 
-def render_ask(section: AskSection) -> WrappedDocumentSection:
+def render_ask(section: AskSection, *, marker: int | None = None) -> WrappedDocumentSection:
+    """Render a question card; ``marker`` echoes an overview number on its lead line."""
     kind = section.ask_type
     kind_label = _ASK_KIND_LABEL[kind]
+    attr = _marker_attr(marker)
     if kind == "decision":
-        body = _render_decision_body(section, kind_label)
+        body = _render_decision_body(section, kind_label, attr)
     elif kind == "request":
-        body = _render_request_body(section, kind_label)
+        body = _render_request_body(section, kind_label, attr)
     else:
-        body = _render_hypothesis_body(section, kind_label)
+        body = _render_hypothesis_body(section, kind_label, attr)
     markup = (
         f'<section data-ve-section-kind="ask" data-ve-ask-type="{_esc(kind)}"'
         f' id="{_esc(section.id)}">\n'
@@ -181,7 +220,7 @@ def render_ask(section: AskSection) -> WrappedDocumentSection:
     return WrappedDocumentSection(instance_id=section.id, markup=markup)
 
 
-def _render_decision_body(section: AskSection, kind_label: str) -> str:
+def _render_decision_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
     options_html: list[str] = []
     for opt in section.options:
         attrs = f'data-ask-option data-ask-option-id="{_esc(opt.id)}"'
@@ -206,7 +245,7 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
     return (
         f'<div class="ask" data-ask="decision">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
-        f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
+        f'  <p class="ask-question"{marker_attr}>{_esc(section.question or "")}</p>\n'
         f'  <p class="ask-evidence"><span class="ask-prefix">根拠:</span> {_esc(section.evidence)}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
@@ -291,7 +330,7 @@ def _render_panel_ask_item(section: AskSection) -> str:
     )
 
 
-def _render_request_body(section: AskSection, kind_label: str) -> str:
+def _render_request_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
     steps_html = "".join(
         f'<li data-ask-role="{_esc(step.role)}" '
         f'data-ask-role-label="{_esc(step.role_label)}">{_esc(step.text)}</li>'
@@ -299,7 +338,7 @@ def _render_request_body(section: AskSection, kind_label: str) -> str:
     )
     return (
         f'<div class="ask" data-ask="request">\n'
-        f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
+        f'  <p class="ask-kind"{marker_attr}>{_esc(kind_label)}</p>\n'
         f'  <ol class="ask-steps">\n'
         f"    {steps_html}\n"
         f"  </ol>\n"
@@ -307,14 +346,14 @@ def _render_request_body(section: AskSection, kind_label: str) -> str:
     )
 
 
-def _render_hypothesis_body(section: AskSection, kind_label: str) -> str:
+def _render_hypothesis_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
     assert section.claim is not None
     certainty = section.claim.certainty
     certainty_label = CERTAINTY_LABEL[certainty]
     return (
         f'<div class="ask" data-ask="hypothesis">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
-        f'  <p class="ask-claim">{_esc(section.claim.text)} '
+        f'  <p class="ask-claim"{marker_attr}>{_esc(section.claim.text)} '
         f'<span class="certainty {certainty}">{_esc(certainty_label)}</span></p>\n'
         f'  <p class="ask-verify">{_esc(section.verify or "")}</p>\n'
         f"</div>"

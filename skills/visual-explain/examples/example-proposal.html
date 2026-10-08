@@ -129,6 +129,8 @@
     .overview-markers ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
     .overview-markers a { display: inline-flex; gap: var(--space-1); align-items: baseline; color: var(--text); text-decoration: none; }
     .overview-markers .marker-n { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+    /* The overview number echoed on the heading it links to (stamped by the build, drawn here so the text stays as written). */
+    [data-ve-section-kind] [data-ve-marker]::before { content: attr(data-ve-marker); display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-right: var(--space-1); border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-weight: 700; font-size: var(--fs-small); line-height: 1; font-variant-numeric: tabular-nums; vertical-align: .2em; }
     .proposal, .decision { margin: 0; font-size: var(--fs-h2); }
     .decision strong { color: var(--accent-strong); }
     .subtitle { margin: 0; font-size: var(--fs-h2); font-weight: 400; color: var(--text-dim); }
@@ -430,17 +432,17 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
 <figure data-ve-component="matrix" role="group" aria-label="案の比較" aria-describedby="sec-alternatives-summary" data-ve-blk="2"><figcaption id="sec-alternatives-caption" class="ve-matrix-caption">見るところ: 右列のトレードオフ。限定公開だけが影響範囲を絞れる。</figcaption><p id="sec-alternatives-summary" class="ve-matrix-summary">行が案、列が主な利点と主なトレードオフの比較表。</p><div class="ve-matrix-scroll"><table><thead><tr><td class="ve-matrix-corner" aria-hidden="true"></td><th scope="col" data-ve-semantic-id="col-benefit">主な利点</th><th scope="col" data-ve-semantic-id="col-tradeoff">主なトレードオフ</th></tr></thead><tbody><tr><th scope="row" data-ve-semantic-id="opt-all">全顧客へ一斉公開</th><td data-ve-semantic-id="cell-all-benefit" data-ve-row-id="opt-all" data-ve-column-id="col-benefit" data-ve-col-label="主な利点">対象を分けずに早く反映できる</td><td data-ve-semantic-id="cell-all-tradeoff" data-ve-row-id="opt-all" data-ve-column-id="col-tradeoff" data-ve-col-label="主なトレードオフ">例外や計算誤りの影響範囲も最初から広い</td></tr><tr><th scope="row" data-ve-semantic-id="opt-hold">変更を保留</th><td data-ve-semantic-id="cell-hold-benefit" data-ve-row-id="opt-hold" data-ve-column-id="col-benefit" data-ve-col-label="主な利点">新しい請求影響を発生させない</td><td data-ve-semantic-id="cell-hold-tradeoff" data-ve-row-id="opt-hold" data-ve-column-id="col-tradeoff" data-ve-col-label="主なトレードオフ">料金改定の目的を達成できず、判断材料も増えない</td></tr><tr><th scope="row" data-ve-semantic-id="opt-proposal">提案: 限定対象で段階公開</th><td class="ve-dg-highlight" data-ve-semantic-id="cell-proposal-benefit" data-ve-row-id="opt-proposal" data-ve-column-id="col-benefit" data-ve-col-label="主な利点">照合した顧客群で影響と撤回条件を確かめられる</td><td data-ve-semantic-id="cell-proposal-tradeoff" data-ve-row-id="opt-proposal" data-ve-column-id="col-tradeoff" data-ve-col-label="主なトレードオフ">対象選定、承認、顧客対応を追加で運用する必要がある</td></tr></tbody></table></div><ul class="ve-matrix-notes"><li data-ve-semantic-id="cert-alternatives"><strong>推論:</strong> 全顧客への即時反映と変更保留はそれぞれ影響と目的を犠牲にするため、確認機会を残せるのは限定公開だけです。</li><li data-ve-semantic-id="src-alternatives"><strong>出典 料金改定の比較検討メモ</strong>（各案の利点と代償を承認者向けに整理した表。）</li></ul></figure>
 </section>
     <section data-ve-section-kind="overview-nav">
-<nav class="overview-markers" aria-label="この資料の論点"><ol><li data-ve-blk="3"><a href="#sec-current-problem"><span class="marker-n" aria-hidden="true">1</span><span>部門別確認の限界</span></a></li><li data-ve-blk="4"><a href="#sec-approval-map-intro"><span class="marker-n" aria-hidden="true">2</span><span>承認地図での照合</span></a></li><li data-ve-blk="5"><a href="#sec-ask-decision"><span class="marker-n" aria-hidden="true">3</span><span>限定対象で開始するか</span></a></li></ol></nav>
+<nav class="overview-markers" aria-label="この資料の論点"><ol><li data-ve-blk="3"><a href="#sec-current-problem"><span class="marker-n" aria-hidden="true">1</span><span>別々の確認では判断できない</span></a></li><li data-ve-blk="4"><a href="#sec-approval-map-intro"><span class="marker-n" aria-hidden="true">2</span><span>一つの承認地図で照合する</span></a></li><li data-ve-blk="5"><a href="#sec-ask-decision"><span class="marker-n" aria-hidden="true">3</span><span>限定対象で開始するか</span></a></li></ol></nav>
 </section>
     <section data-ve-section-kind="narrative" data-ve-instance="sec-current-problem" id="sec-current-problem">
 <section aria-labelledby="current-problem">
-  <h2 id="current-problem" data-ve-blk="6">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>
+  <h2 data-ve-marker="1" id="current-problem" data-ve-blk="6">契約例外・請求計算・顧客通知を別々に確認する限り、限定公開の影響は判断できない</h2>
   <p class="claim" data-ve-blk="7">契約例外、請求計算、顧客通知を別々に確認すると、同じ顧客群に対する例外と撤回条件を一度に検証できません。<span class="certainty unverified">未確認</span></p>
 </section>
 </section>
     <section data-ve-section-kind="narrative" data-ve-instance="sec-approval-map-intro" id="sec-approval-map-intro">
 <section aria-labelledby="approval-map">
-  <h2 id="approval-map" data-ve-blk="8">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>
+  <h2 data-ve-marker="2" id="approval-map" data-ve-blk="8">根拠から限定公開までを一つの承認地図で照合すれば、影響と撤回条件を同時に確かめられる</h2>
   <p class="claim" data-ve-blk="9">承認者は、根拠と顧客影響を共同承認で照合し、限定対象で公開します。<span class="certainty inferred">推論</span></p>
 </section>
 </section>
@@ -500,7 +502,7 @@ figure[data-ve-component="matrix"] .ve-matrix-notes li { margin: 0; }
     <section data-ve-section-kind="ask" data-ve-ask-type="decision" id="sec-ask-decision">
 <div class="ask" data-ask="decision">
   <p class="ask-kind">判断してください</p>
-  <p class="ask-question" data-ve-blk="19">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>
+  <p class="ask-question" data-ve-marker="3" data-ve-blk="19">未確認の契約例外を含む料金改定を、限定対象で開始しますか？</p>
   <p class="ask-evidence" data-ve-blk="20"><span class="ask-prefix">根拠:</span> 照合シートの試算「契約例外 12 件のうち 9 件が同じ顧客群に集中」</p>
   <ul class="ask-options">
     <li data-ask-option data-ask-option-id="limited" data-ask-default><span class="ask-option-head"><span class="ask-option-label">限定対象で段階公開する</span><span class="ask-badge">推奨</span></span><span class="ask-benefit"><span class="ask-prefix">利点:</span> 誤りの影響を限定対象に閉じたまま照合の効果を確かめられる</span><span class="ask-tradeoff"><span class="ask-prefix">代償:</span> 対象選定と承認・顧客対応の運用を追加で用意する必要がある</span></li><li data-ask-option data-ask-option-id="all"><span class="ask-option-head"><span class="ask-option-label">全顧客へ一斉公開する</span></span><span class="ask-benefit"><span class="ask-prefix">利点:</span> 告知と請求の切替が一度で済み運用が二重にならない</span><span class="ask-tradeoff"><span class="ask-prefix">代償:</span> 例外や計算誤りの影響範囲が最初から全顧客に及ぶ</span></li>
