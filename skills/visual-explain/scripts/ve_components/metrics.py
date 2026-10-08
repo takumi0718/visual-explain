@@ -14,7 +14,9 @@ _END = "<!-- VE-CONTROLLED:CONTENT:END -->"
 _FIGURE_KINDS = frozenset({"canonical", "compatibility"})
 _EXCLUDED_KINDS = frozenset({"decision-panel"})
 _NOT_BEFORE_FIGURE_KINDS = frozenset({"first-screen"})
-_VOID_TAGS = frozenset({
+# Fixed interface labels of the question card (chrome, not prose).
+_CHROME_CLASSES = frozenset({"ask-kind", "ask-badge", "ask-withdrawn-note", "ask-memo", "ask-prefix"})
+VOID_TAGS = frozenset({
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
 })
@@ -30,35 +32,38 @@ class TextMetrics:
 class _Counter(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.stack: list[str | None] = []
+        self.stack: list[tuple[str | None, bool]] = []
         self.body = self.before = self.figures = 0
         self.seen_figure = False
 
     def handle_starttag(self, tag, attrs):
-        if tag in _VOID_TAGS:
+        if tag in VOID_TAGS:
             return
         kind = dict(attrs).get("data-ve-section-kind") if tag == "section" else None
         if kind in _FIGURE_KINDS:
             self.figures += 1
             self.seen_figure = True
-        self.stack.append(kind if kind else (self.stack[-1] if self.stack else None))
+        parent_kind, parent_skip = self.stack[-1] if self.stack else (None, False)
+        classes = set((dict(attrs).get("class") or "").split())
+        self.stack.append((kind if kind else parent_kind,
+                           parent_skip or bool(classes & _CHROME_CLASSES)))
 
     def handle_startendtag(self, tag, attrs):
         # <br/> must not pop the parent; <span/> opens and closes nothing.
-        if tag in _VOID_TAGS:
+        if tag in VOID_TAGS:
             return
         self.handle_starttag(tag, attrs)
         self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
-        if tag in _VOID_TAGS:
+        if tag in VOID_TAGS:
             return
         if self.stack:
             self.stack.pop()
 
     def handle_data(self, data):
-        kind = self.stack[-1] if self.stack else None
-        if kind in _EXCLUDED_KINDS:
+        kind, skip = self.stack[-1] if self.stack else (None, False)
+        if skip or kind in _EXCLUDED_KINDS:
             return
         n = sum(1 for ch in data if not ch.isspace())
         self.body += n

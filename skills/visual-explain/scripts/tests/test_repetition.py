@@ -7,7 +7,7 @@ from pathlib import Path
 
 from build_explainer import build_document
 from first_screen_ir import CANONICAL, assembly as _assembly, decision_ask, messages as _msgs, narr as _narr
-from ve_components.metrics import text_metrics
+from ve_components.metrics import text_metrics, visible_chars
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
 from ve_components.repetition import bigram_jaccard, chars_before_first_figure, normalize_sentence
@@ -121,6 +121,24 @@ class PreFigureCountParityTest(unittest.TestCase):
         gate = chars_before_first_figure(request.sections)
         self.assertGreater(gate, 0)
         self.assertEqual(gate, text_metrics(html).chars_before_figure)
+
+    def test_ask_card_labels_are_chrome_not_body(self) -> None:
+        # 93 visible chars of prose, then a two-option card, then a figure: the
+        # card's fixed labels (kind, 根拠:/利点:/代償:, 推奨, 補足) must not push
+        # the document over the 200-char limit.
+        raw = _assembly({"conclusion": "限定対象で開始する。"},
+                        _narr("sec-a", "背景", "<p>" + "あ" * 90 + "。</p>"),
+                        decision_ask(), CANONICAL)
+        request = validate_assembly(raw)
+        self.assertEqual(visible_chars(request.sections[1].markup), 93)
+        self.assertEqual(_msgs(raw), [])
+        html = build_document(raw, REGISTRY, TRUSTED_RENDERERS, SKELETON, COMPONENTS, document_path="x.html")
+        self.assertEqual(chars_before_first_figure(request.sections), text_metrics(html).chars_before_figure)
+
+    def test_ask_prefix_text_is_skipped_by_the_counter(self) -> None:
+        self.assertEqual(visible_chars('<p>ab<span class="ask-prefix">根拠:</span> cd</p>'), 4)
+        self.assertEqual(visible_chars('<p class="ask-kind">判断してください</p><p>x</p>'), 1)
+        self.assertEqual(visible_chars('<div class="ask-memo"><label>補足<textarea></textarea></label></div>y'), 1)
 
 
 if __name__ == "__main__":

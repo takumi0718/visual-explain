@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
-from .metrics import _VOID_TAGS
+from .metrics import VOID_TAGS, visible_chars
 from .model import AskSection, CanonicalSection, ClosingSection, CompatibilitySection, FirstScreenSection, NarrativeSection
 
 SIMILARITY_THRESHOLD = 0.6
@@ -67,7 +67,7 @@ class _Blocks(HTMLParser):
             self._pop()
         if tag == "li" and self._stack and self._stack[-1][0] == "li":
             self._pop()
-        if tag in _VOID_TAGS:
+        if tag in VOID_TAGS:
             return
         classes = frozenset(" ".join(v or "" for k, v in attrs if k == "class").split())
         skip = "certainty" in classes
@@ -76,7 +76,7 @@ class _Blocks(HTMLParser):
 
     def handle_startendtag(self, tag, attrs):
         self.handle_starttag(tag, attrs)
-        if tag not in _VOID_TAGS:
+        if tag not in VOID_TAGS:
             self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
@@ -118,7 +118,6 @@ def chars_before_first_figure(sections: tuple[object, ...]) -> int:
     """
     from .assembly import insert_link_domain_markers
     from .document_sections import render_ask
-    from .metrics import visible_chars
 
     total = 0
     for section in sections:

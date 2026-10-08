@@ -32,8 +32,8 @@ class QuestionCardRenderTest(unittest.TestCase):
             '<li data-ask-option data-ask-option-id="limited" data-ask-default>'
             '<span class="ask-option-head"><span class="ask-option-label">限定対象で公開する</span>'
             '<span class="ask-badge">推奨</span></span>'
-            '<span class="ask-benefit">利点: 影響範囲を絞れる</span>'
-            '<span class="ask-tradeoff">代償: 運用が追加で必要</span></li>',
+            '<span class="ask-benefit"><span class="ask-prefix">利点:</span> 影響範囲を絞れる</span>'
+            '<span class="ask-tradeoff"><span class="ask-prefix">代償:</span> 運用が追加で必要</span></li>',
             self.markup)
 
     def test_other_option_has_no_badge(self) -> None:
@@ -52,7 +52,7 @@ class QuestionCardRenderTest(unittest.TestCase):
     def test_evidence_line_follows_question(self) -> None:
         self.assertIn(
             '<p class="ask-question">限定対象で開始しますか？</p>\n'
-            '  <p class="ask-evidence">根拠: scripts/build_explainer.py:1</p>',
+            '  <p class="ask-evidence"><span class="ask-prefix">根拠:</span> scripts/build_explainer.py:1</p>',
             self.markup)
 
     def test_memo_label_is_supplement(self) -> None:

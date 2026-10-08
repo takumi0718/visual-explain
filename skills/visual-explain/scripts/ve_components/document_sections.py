@@ -195,8 +195,8 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
         options_html.append(
             f"<li {attrs}>"
             f'<span class="ask-option-head"><span class="ask-option-label">{_esc(opt.label)}</span>{badge}</span>'
-            f'<span class="ask-benefit">利点: {_esc(opt.benefit)}</span>'
-            f'<span class="ask-tradeoff">代償: {_esc(opt.tradeoff)}</span>'
+            f'<span class="ask-benefit"><span class="ask-prefix">利点:</span> {_esc(opt.benefit)}</span>'
+            f'<span class="ask-tradeoff"><span class="ask-prefix">代償:</span> {_esc(opt.tradeoff)}</span>'
             "</li>"
         )
     memo = (
@@ -207,7 +207,7 @@ def _render_decision_body(section: AskSection, kind_label: str) -> str:
         f'<div class="ask" data-ask="decision">\n'
         f'  <p class="ask-kind">{_esc(kind_label)}</p>\n'
         f'  <p class="ask-question">{_esc(section.question or "")}</p>\n'
-        f'  <p class="ask-evidence">根拠: {_esc(section.evidence)}</p>\n'
+        f'  <p class="ask-evidence"><span class="ask-prefix">根拠:</span> {_esc(section.evidence)}</p>\n'
         f'  <ul class="ask-options">\n'
         f'    {"".join(options_html)}\n'
         f"  </ul>{memo}\n"
