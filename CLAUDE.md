@@ -9,7 +9,7 @@ visual-explain は、複雑な提案・仕組み・調査結果を自己完結�
 ## コマンド
 
 ```bash
-# 全テスト（666件前後）— 必ず scripts/ から python3 -m pytest のモジュール形式で実行する。
+# 全テスト（1289件前後）— 必ず scripts/ から python3 -m pytest のモジュール形式で実行する。
 # テストは ve_components を cwd 経由で import するため、他ディレクトリからは collection が失敗する。
 cd skills/visual-explain/scripts && python3 -m pytest tests -q
 
@@ -39,7 +39,7 @@ CI はない。マージ前はテスト全通過と `check.sh --selftest` を手
 - `<!-- TITLE:BEGIN/END -->` と `<!-- CONTENT:BEGIN/END -->` の区間（生成コンテンツ）
 - `VE-CONTROLLED:COMPONENT-STYLES / COMPONENT-SCRIPTS` スロット（ビルド時にハッシュ検証済みのコンポーネントアセットを注入）
 
-それ以外の固定領域は checker が skeleton と SHA-256 でバイト一致比較する。skeleton は版ごとに不変で、最新版が `assets/skeleton.html`（`<html data-ve-skeleton="N">`）、旧版は `assets/skeleton-vN.html` に凍結する。checker は文書が宣言する版と照合する。つまり skeleton の 1 バイトの変更もチェッカー・全テスト・既存生成物に波及する。生成 HTML を手で直すことは禁止で、修正は常に IR を直して再ビルドする。
+それ以外の固定領域は checker が skeleton と SHA-256 でバイト一致比較する。skeleton は版ごとに不変で、最新版が `assets/skeleton.html`（`<html data-ve-skeleton="N">`）、旧版は `assets/skeleton-vN.html` に凍結する。checker は文書が宣言する版と照合する。つまり skeleton の 1 バイトの変更もチェッカー・全テスト・既存生成物に波及する。生成 HTML を手で直すことは禁止で、修正は常に IR を直して再ビルドする。v3 は問いカード・指摘層・回収パネルの固定 JS を持ち、v2 は `assets/skeleton-v2.html` に凍結した。
 
 ### ビルドパイプライン（`scripts/build_explainer.py` → `ve_components/`）
 
@@ -54,7 +54,7 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 ```
 
 - セクションは `first-screen`（先頭・ちょうど1）/ `narrative`（限定 HTML の散文）/ `canonical`（IR 宣言の図）/ `compatibility`（legacy HTML・`provenance` 必須）/ `ask` / `closing`（末尾・ちょうど1）で、読み順に並ぶ。`document.type` / `document.profile` は IR 必須で、first-screen wrapper の data 属性として自己表明する。
-- `askType: "decision"` の ask を1件以上含む資料は、`document_sections.py` が closing の後に「判断の回収」パネル（`decision-panel`）を自動生成する。パネルは IR に書かず、DOM 上の decision ask option-id から `compute_ask_digest_from_pairs` で計算した digest を自己保持し、検査群③（後述）が最終文書段階で再照合する。
+- 回収パネル（`decision-panel`）は `document_sections.py` が closing の後に常に1つ生成する（v3）。パネルは IR に書かず、DOM 上の decision ask option-id から `compute_ask_digest_from_pairs` で計算した digest を自己保持し、検査群③が再照合する。content 内の `p, h2, h3, li, figure, blockquote, pre, table` には `review_blocks.py` が `data-ve-blk`（1 からの連番）を付け、checker は同じ規則で再計算して照合する（v3 文書のみ）。decision ask は `benefit` / `tradeoff` / `defaultId` / `evidence` 必須、1資料4問まで。
 - canonical 12 形式: `matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`。定義は `assets/components/registry.json`、CSS は `assets/components/*.css`。
 - 設計判断: 関係（`relationship.kind`）と `capabilities` は IR で明示宣言する。散文からの推測・自動選択・ランキングはしない。canonical 生成の失敗は診断を返して報告し、compatibility へ暗黙に縮退しない。first-screen / closing / ask を narrative 生 HTML で書く旧方式は受理しない。
 - 数値の扱い: waterfall は Decimal ＋ `displayPrecision` 必須で、binary float は fail-closed（`numeric.py`）。
@@ -62,7 +62,7 @@ validation.py（schema/契約検証・型付きセクション位置不変条件
 
 ### 検証（`check.sh` — 四層）
 
-依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・first-screen の結論（`p.conclusion`）描画・外部リンクのドメインマーカーに加え、decision-panel の存在（decision ask の有無との整合）・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）に加え、構造予約属性（`data-ve-section-kind` / `data-ve-ask-type` は `section`、`data-ve-panel-ask` は `li`）が指定タグ以外に付与されていないかを検証する（compatibility 等の非構造セクションに紛れ込んだ偽装パネル/ask の fail-closed）。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
+依存ゼロのスタンドアロン検証器。埋め込み Python の legacy checker（固定領域一致・title 検証・禁止タグ/イベント属性/外部 URL/無限アニメーション/座標直書きの検出）を通した後、`check_component_html.py` がコンポーネント契約（registry 準拠・アセットハッシュ・semantic ID など）を検査する。component 文書では **検査群③**（`document_checks.py`）が文書型自己表明・h1 一意（first-screen 内）・closing 必須見出し・first-screen の結論（`p.conclusion`）描画・外部リンクのドメインマーカーに加え、decision-panel の存在（v3 文書はちょうど1つ、v1/v2 は decision ask の有無との整合）・本文ブロック番号の連番・個数・closing 後の位置・digest 整合・自己表明属性（`data-ve-document-id` / `data-ve-schema-version` / `data-ve-document-path`）に加え、構造予約属性（`data-ve-section-kind` / `data-ve-ask-type` は `section`、`data-ve-panel-ask` は `li`）が指定タグ以外に付与されていないかを検証する（compatibility 等の非構造セクションに紛れ込んだ偽装パネル/ask の fail-closed）。component マーカーのない pre-migration 文書は legacy 型（proposal/system/research）を自動検出する。
 
 ### テスト構成（`scripts/tests/`）
 
@@ -70,7 +70,7 @@ fixture は命名規約を持つ: `component-valid-*.json` / `component-bad-*.js
 
 ### ドキュメントの正本
 
-- `skills/visual-explain/SKILL.md` — エージェント向けワークフローの正本（ゲート 3 条件・資料型・10 手順・保存規約）。パイプラインの挙動を変えたらここも更新する。
+- `skills/visual-explain/SKILL.md` — エージェント向けワークフローの正本（ゲート 3 条件・資料型・13 手順・保存規約）。パイプラインの挙動を変えたらここも更新する。
 - `references/patterns.md` — IR の書き方と図の契約、完全な JSON 例、コンポーネント選択ガイド。
 - `references/assembly.schema.json` / `component-ir.schema.json` — IR の schema。
 - `references/design-system.md` — 目視確認の規範（描画規則はレンダラが保証する）。

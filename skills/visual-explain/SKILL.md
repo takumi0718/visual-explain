@@ -37,18 +37,28 @@ license: MIT
 
 ## ワークフロー
 
-承認後、次の 10 手順を順番に行う。
+承認後、次の 13 手順を順番に行う。
 
 1. **ゲート判定:** 上の 3 条件を確認する。NO なら通常のテキスト説明へ戻り、資料は作らない。
 2. **型を選ぶ:** 提案承認型、仕組み理解型、調査報告型から選び、対応する構成と図の契約を [references/patterns.md](references/patterns.md) で読む。
 3. **動きを判定する:** 下の判定木で静的か、必要最小限の部品かを決める。
 4. **図フォーマットを選ぶ:** canonical 12 形式（`matrix` / `flow` / `enumeration` / `chevron` / `pyramid` / `stairs` / `logic-tree` / `waterfall` / `slope` / `evidence-map` / `bars` / `kpi`）を既定にする。互換用の legacy HTML（`layers` / `compare` / `timeline` / `terms` / `details` 等）は弱モデル劣化または未移行時のみ。座標計算、独自 CSS、独自 JavaScript は追加しない。
-5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。`askType: "decision"` の ask は回収パネルの対象になる。パネルは末尾 `closing` の後にビルドが自動生成し、選択肢とラベルを ask の option から引き写す。**パネル自体を IR に書いてはならない**。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。ビルドは同じ主張の反復を止める（h2 と直後の主張行、図キャプションと直前の h2 の言い換え、同じ文の 2 回以上の出現、全体図の無い資料で最初の図より前の本文 200 字超）。診断が出たら片方を削って再ビルドする。成功時の「本文 N 字 / 図より前 M 字 / 図 K 点」を見て、文字量を確かめる。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。`schemaVersion` は `2`。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
-6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・外部リンクのドメインマーカーに加え、decision ask を含む文書では判断の回収パネル（decision-panel）の存在・個数・closing 後の位置・ask 契約 digest・自己表明属性を検証し、自己閉じタグによる偽装も fail-closed で検出する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
+5. **構成する:** assembly IR（JSON）を書く。`document` に `id` / `title` / `summary` に加え **`type`**（`proposal` / `system` / `research`）と **`profile`**（`strict` / `extended`）を宣言する。`sections[]` は読み順で並べ、先頭は必ず `kind: "first-screen"`、末尾は必ず `kind: "closing"`。未決・依頼・検証待ちは `kind: "ask"`（`askType` の discriminated union）。`askType: "decision"` の ask は問いカードになる。各選択肢に `benefit`（利点）と `tradeoff`（代償）、ask に `defaultId`（推奨）と `evidence`（`file:line` か「」で囲んだ実行結果の引用）を必ず書く。事実は読者に聞かず根拠で示し、読者には判断だけを聞く。decision ask は1資料4問まで。回収パネルは decision ask の有無に関わらず末尾 `closing` の後にビルドが1つ自動生成し、本文の各ブロックにはビルドが指摘用の番号（`data-ve-blk`）を付ける。**パネル自体を IR に書いてはならない**。本文の散文は `kind: "narrative"`、図は `kind: "canonical"`、未移行 legacy 図は `kind: "compatibility"`（`provenance` 必須）。first-screen / closing / ask を narrative の生 HTML で書いてはならない。`python3 scripts/build_explainer.py --assembly <IR.json> --output <絶対パス>` で生成する。ビルドは同じ主張の反復を止める（h2 と直後の主張行、図キャプションと直前の h2 の言い換え、同じ文の 2 回以上の出現、全体図の無い資料で最初の図より前の本文 200 字超）。診断が出たら片方を削って再ビルドする。成功時の「本文 N 字 / 図より前 M 字 / 図 K 点」を見て、文字量を確かめる。skeleton をコピー・直編集しない。生成 HTML を手で直さない。narrative の markup は限定 HTML（見出し h2〜・段落・リスト・`details` など。予約 class / 予約 data 属性 / `<h1>` / `<title>` / `style` / `script` / 外部 `src` は禁止。`href` は `https:` 絶対 URL と `#` アンカーのみ）。`schemaVersion` は `2`。schema は [references/assembly.schema.json](references/assembly.schema.json)、完全な JSON 例は [references/patterns.md](references/patterns.md)、描画規則はレンダラが保証する（[references/design-system.md](references/design-system.md) は目視確認の規範として読む）。
+6. **機械チェックする:** `bash scripts/check.sh <絶対パス>` を実行する（経路自動検出・四層検証。検査群③は文書型自己表明・h1 一意・closing 必須見出し・外部リンクのドメインマーカーに加え、回収パネル（decision-panel。v3 文書では常にちょうど1つ）の存在・個数・closing 後の位置・ask 契約 digest・自己表明属性・本文ブロック番号の連番を検証し、自己閉じタグによる偽装も fail-closed で検出する）。FAIL は IR を修正して**再ビルド**し、成功するまで次へ進まない。
 7. **目視セルフチェックする:** 下のリストを通し、機械検査だけで正しいと判断しない。
 8. **保存する:** 下の保存規約に従い、衝突を避けて資料を保存する。
-9. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
-10. **ターミナルで要約する:** 資料の要点を 3 行、ファイルパス、そして「第一画面の判断ポイントと末尾のリスク節を読んでほしい」を表示する。
+9. **試問する:** 資料を開く前に、文脈を持たない general-purpose subagent に資料の絶対パスと読者宣言 1 行だけを渡し、次の 5 問で検査する。同期で結果を待つ。
+   1. 選択肢の弁別（各選択肢を選んだときの違いを資料だけから説明できるか）
+   2. 根拠の引用の有無
+   3. 実質 1 択の検出（推奨でない選択肢を選ぶ理由が読めるか）
+   4. 音読と 30 秒 3 文要約
+   5. 説明なしの内輪語の列挙
+
+   decision ask の無い解説資料では 1〜3 を省く。落ちた問いは「絵を足す / 問いを落とす / 言い換える」で IR を直して再ビルドし、同じ subagent に差分だけを送って再判定する。計 2 巡で打ち切る。
+10. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
+11. **ターミナルで要約する:** 資料の要点を 3 行、ファイルパス、そして「問いカードで選び、気になる段落は ＋ か文字のなぞりで指摘し、末尾の『回答と指摘をコピー』で貼り戻してほしい」を表示する。
+12. **待つ:** 資料をブラウザで開いたら、回答の貼り戻しが届くまで実装を始めない。
+13. **反映する:** `[visual-explain 回答]` で始まる固定形を読み、`(未選択 = お任せ)` の問いは推奨案で確定する。`## 指摘` の `#N` は資料の `data-ve-blk="N"` のブロックを指す。設計が変わる指摘なら `<topic>-02` で作り直し、捨てた案は選択肢の `"withdrawn": true` で残す。生成した資料は証跡として消さない。
 
 ## 型と第一画面
 
@@ -113,7 +123,7 @@ license: MIT
 
 仕組み理解型と調査報告型では、対応する「限界・確度」または「限界・反証・確度」節を置く。理解度テスト、回答の強制、理解問題は置かない。このスキルの責務は、判断ポイント、リスク、確度を隠さない説明資料の提示までである。
 
-decision ask を含む資料は、末尾節のさらに後にビルドが回収パネルを自動生成する。パネルは読者の選択を集めるための UI であり、`defaultId` で示した既定案は**選択済みとして扱わない**。既定案は初期フォーカスや案内文で示してよいが、選択状態（accent アウトライン等）は読者の明示操作後にのみ付与する。
+全資料の末尾節のさらに後に、ビルドが回収パネルを1つ自動生成する。パネルは問いカードの選択・補足・指摘・全体メモを集計してコピーする UI であり、推奨（`defaultId`）は**選択済みとして扱わない**。読者が選ばなかった問いは「お任せ＝推奨」として回収される。下書きはブラウザの localStorage に自動保存され、保存できない環境でも画面は動く。
 
 ## 目視チェック
 
@@ -127,7 +137,7 @@ decision ask を含む資料は、末尾節のさらに後にビルドが回収�
 - [ ] ノード、矢印、数値を原資料のコードまたは文書と逆照合した。
 - [ ] 未確認事項を事実として描いていない。推論・未確認は対象の直近に直接表記した。
 - [ ] 紫グラデーションや過剰装飾による generic な AI 見た目になっていない。
-- [ ] decision ask がある場合、回収パネルが closing の後にあり、既定案（`defaultId`）が選択済み扱いされていない。
+- [ ] 回収パネルが closing の後に1つだけあり、推奨（`defaultId`）が選択済み扱いされていない。問いカードの各選択肢に利点・代償があり、推奨でない選択肢を選ぶ理由が読める。
 
 ## 保存規約と縮退規則
 
