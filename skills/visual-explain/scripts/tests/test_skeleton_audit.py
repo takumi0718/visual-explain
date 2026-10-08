@@ -215,12 +215,6 @@ class DecisionOptionCardInteractionTest(unittest.TestCase):
         self.assertNotIn("'data-ask-select'", block)
         self.assertNotIn("'ask-select'", block)
 
-    def test_option_item_becomes_the_interactive_surface(self):
-        block = self._collection_block()
-        self.assertIn("item.setAttribute('role', 'button')", block)
-        self.assertIn("item.setAttribute('tabindex', '0')", block)
-        self.assertIn("item.addEventListener('click', select)", block)
-
     def test_option_item_responds_to_enter_and_space(self):
         block = self._collection_block()
         self.assertIn("item.addEventListener('keydown'", block)
@@ -228,10 +222,28 @@ class DecisionOptionCardInteractionTest(unittest.TestCase):
         self.assertIn("event.key !== ' '", block)
         self.assertIn("event.preventDefault()", block)
 
-    def test_aria_pressed_syncs_on_the_item_itself(self):
+    def test_option_item_is_a_radio(self):
         block = self._collection_block()
-        self.assertIn("item.setAttribute('aria-pressed', String(selected))", block)
-        self.assertNotIn("querySelector('button[data-ask-select]')", block)
+        self.assertIn("list.setAttribute('role', 'radiogroup')", block)
+        self.assertIn("item.setAttribute('role', 'radio')", block)
+        self.assertIn("item.setAttribute('tabindex', '0')", block)
+        self.assertIn("item.addEventListener('click', select)", block)
+
+    def test_aria_checked_syncs_on_the_item_itself(self):
+        block = self._collection_block()
+        self.assertIn("item.setAttribute('aria-checked', String(selected))", block)
+        self.assertNotIn("aria-pressed", block)
+
+    def test_withdrawn_option_is_not_interactive(self):
+        self.assertIn("item.setAttribute('aria-disabled', 'true')", self._collection_block())
+
+    def test_copy_button_label(self):
+        self.assertIn("copyButton.textContent = '回答と指摘をコピー';", self._collection_block())
+
+    def test_manual_copy_fallback_is_wired(self):
+        block = self._collection_block()
+        self.assertIn("fallback.hidden = false;", block)
+        self.assertIn("クリップボードを使えないため、以下を手動でコピーしてください。", block)
 
     def test_option_focus_style_extends_to_the_option_card(self):
         style = SKELETON.split("<style>", 1)[1].split("</style>", 1)[0]

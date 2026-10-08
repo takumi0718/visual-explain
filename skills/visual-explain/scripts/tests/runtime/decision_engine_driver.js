@@ -10,7 +10,8 @@ process.stdin.on("end", () => {
   const results = [];
   for (const call of calls) {
     const args = (call.args || []).map((a) => (a === "$state" ? state : a));
-    const result = engine[call.fn](...args);
+    const target = engine[call.fn];
+    const result = typeof target === "function" ? target(...args) : target;
     if (call.assign) state = result;
     results.push(result === undefined ? null : result);
   }
