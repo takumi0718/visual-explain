@@ -61,6 +61,9 @@ PAIRS = [
     ("accent-strong", "bg", 4.5, "選択強/背景"),
     ("accent-strong", ("mix", "accent", "surface", 0.12), 4.5, "選択チップ文字/淡青面"),
     ("accent-strong", "surface", 4.5, "指摘の番号札/面"),
+    ("bg", "accent", 4.5, "主ボタン文字/accent 面"),
+    ("bg", "accent-strong", 4.5, "主ボタン文字/hover 面"),
+    ("text-dim", ("mix", "text-dim", "surface", 0.12), 4.5, "要望・仮説チップ文字/淡灰面"),
     ("positive", "bg", 4.5, "推奨/背景"),
     ("positive", ("mix", "positive", "surface", 0.12), 4.5, "既定案マーク/淡緑面"),
     ("positive-strong", "bg", 4.5, "推奨強/背景"),
@@ -240,6 +243,8 @@ class ColorDisciplineAuditTest(unittest.TestCase):
             ".review-chip[aria-checked",
             # 指摘済みブロックの左縦線（accent = 読者が指した場所）
             "[data-ve-annotated]",
+            # 主ボタン（accent = この資料で最初に押す操作。コピーだけに付ける）
+            ".button-primary",
         )
         for rule in style.split("}"):
             if "{" not in rule:
@@ -421,6 +426,88 @@ class ReviewLayerSkeletonTest(unittest.TestCase):
         self.assertIn(
             '.review-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent-strong); '
             "background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }", style)
+
+
+class ControlsV4Test(unittest.TestCase):
+    _collection_block = DecisionOptionCardInteractionTest._collection_block
+
+    def test_primary_and_secondary_buttons(self):
+        style = _style()
+        self.assertIn("button { font: inherit; color: inherit; background: transparent; "
+                      "border: 1px solid var(--border); border-radius: var(--radius);", style)
+        self.assertIn(".button-primary { background: var(--accent); border-color: var(--accent); "
+                      "color: var(--bg); font-weight: 700; }", style)
+        self.assertIn(".button-primary:hover:not(:disabled) { background: var(--accent-strong); "
+                      "border-color: var(--accent-strong); }", style)
+        self.assertIn("copyButton.className = 'button-primary';", self._collection_block())
+
+    def test_option_hover_and_selected(self):
+        style = _style()
+        self.assertIn(".ask-options [data-ask-option]:not([data-ask-withdrawn]):not([data-ask-selected]):hover "
+                      "{ border-color: var(--text-faint); }", style)
+        self.assertIn(".ask-options [data-ask-option][data-ask-selected] { border-color: var(--accent); "
+                      "box-shadow: inset 0 0 0 1px var(--accent);", style)
+
+    def test_dead_no_default_reason_selector_removed(self):
+        self.assertNotIn("ask-no-default-reason", _style())
+
+    def test_js_only_note_hidden_after_init(self):
+        self.assertIn("panel.querySelectorAll('.panel-note').forEach((note) => { note.hidden = true; });",
+                      self._collection_block())
+
+    def test_transitions_respect_reduced_motion(self):
+        style = _style()
+        self.assertEqual(style.count("transition:"), 1)
+        gate = style.split("@media (prefers-reduced-motion: no-preference) {", 1)
+        self.assertEqual(len(gate), 2)
+        self.assertIn("transition: background-color 150ms ease, border-color 150ms ease, "
+                      "color 150ms ease, box-shadow 150ms ease;", gate[1].split("\n    }", 1)[0])
+        self.assertNotIn("infinite", style)
+
+    def test_request_and_hypothesis_chips_have_visible_pill(self):
+        style = _style()
+        pill = "background: color-mix(in srgb, var(--text-dim) 12%, var(--surface)); }"
+        self.assertIn('.ask[data-ask="request"] .ask-kind { color: var(--text-dim); ' + pill, style)
+        self.assertIn('.ask[data-ask="hypothesis"] .ask-kind { color: var(--text-dim); ' + pill, style)
+
+
+class ThemeToggleTest(unittest.TestCase):
+    def _theme_js(self):
+        return SKELETON.split("/* FIXED THEME CONTROL JS: DO NOT MODIFY. */", 1)[1].split("</script>", 1)[0]
+
+    def test_icon_only_round_button(self):
+        button = re.search(r"<button[^>]*data-theme-toggle[^>]*>(.*?)</button>", SKELETON, re.S)
+        self.assertIsNotNone(button)
+        tag = button.group(0).split(">", 1)[0]
+        for attr in ('class="theme-toggle"', 'aria-label="テーマを切り替える"',
+                     'title="テーマを切り替える"', 'aria-pressed="false"'):
+            self.assertIn(attr, tag)
+        inner = button.group(1)
+        self.assertEqual(re.sub(r"<[^>]+>", "", inner).strip(), "")
+        self.assertIn('class="theme-icon-sun"', inner)
+        self.assertIn('class="theme-icon-moon"', inner)
+        self.assertEqual(inner.count('aria-hidden="true"'), 2)
+        self.assertNotIn("#", inner)
+        style = _style()
+        self.assertIn(".theme-toggle { display: inline-grid; place-items: center; width: 32px; height: 32px; "
+                      "padding: 0; border-radius: 50%; color: var(--text-dim); }", style)
+        self.assertIn('.theme-toggle[aria-pressed="true"] .theme-icon-sun, '
+                      '.theme-toggle[aria-pressed="false"] .theme-icon-moon { display: none; }', style)
+
+    def test_label_describes_state_and_action(self):
+        js = self._theme_js()
+        self.assertIn("const text = `テーマ: ${label(current)}（${label(next)}に切替）`;", js)
+        self.assertIn("button.setAttribute('aria-label', text);", js)
+        self.assertIn("button.setAttribute('title', text);", js)
+        self.assertIn("button.setAttribute('aria-pressed', String(current === 'dark'));", js)
+        self.assertNotIn("textContent", js)
+
+    def test_two_states_only_and_storage_key_kept(self):
+        self.assertIn('data-theme-storage-key="visual-explain-theme"', SKELETON)
+        js = self._theme_js()
+        self.assertIn("window.localStorage.setItem(root.dataset.themeStorageKey, theme);", js)
+        self.assertNotIn("auto", js)
+        self.assertNotIn("removeItem", js)
 
 
 if __name__ == "__main__":
