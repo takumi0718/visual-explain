@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from build_explainer import build_document
+from first_screen_ir import CANONICAL
 from ve_components.checker import check_final_document
 from ve_components.diagnostics import ContractError
 from ve_components.registry import load_registry
@@ -161,8 +162,10 @@ class ThumbnailRenderTest(unittest.TestCase):
         self.assertTrue(any("は整数である必要があります" in m for m in check(forged)))
 
     def test_picture_with_a_forbidden_attribute_is_rejected(self) -> None:
-        forged = self.html.replace('<rect ', '<rect onclick="x" ', 1)
-        self.assertTrue(any("onclick" in m for m in check(forged)))
+        start = self.html.index('<svg id="sec-ask-opt-1-svg"')
+        at = self.html.index("<rect ", start)
+        forged = self.html[:at] + '<rect onclick="x" ' + self.html[at + len("<rect "):]
+        self.assertIn("<rect> に許可されていない属性 'onclick'", check(forged))
 
     def test_picture_svg_is_text_escaped(self) -> None:
         raw = assembly()
@@ -178,6 +181,38 @@ class ThumbnailRenderTest(unittest.TestCase):
         html = build(raw)
         self.assertEqual(check(html), [])
         self.assertEqual(html.count('class="ve-gd ve-gd-thumb"'), 2)
+
+    def test_pictures_do_not_count_as_text_before_the_first_figure(self) -> None:
+        from ve_components.metrics import text_metrics
+        from ve_components.repetition import chars_before_first_figure
+
+        plain = assembly()
+        for option in plain["sections"][1]["options"]:
+            del option["figure"]
+        with_pictures = assembly()
+        for raw in (plain, with_pictures):
+            raw["sections"].insert(2, copy.deepcopy(CANONICAL))
+        counts = []
+        for raw in (plain, with_pictures):
+            gate = chars_before_first_figure(validate_assembly(raw).sections)
+            report = text_metrics(build(raw)).chars_before_figure
+            self.assertEqual(gate, report)
+            counts.append(report)
+        self.assertEqual(counts[0], counts[1])
+
+    def test_generated_picture_ids_cannot_collide_with_a_section_id(self) -> None:
+        raw = assembly()
+        other = copy.deepcopy(raw["sections"][1])
+        other["id"] = "sec-ask-opt-1-svg"
+        other["question"] = "公開の順序はどちらにしますか？"
+        other["evidence"] = "問い合わせ集計「公開後 7 日の問い合わせは 31 件」"
+        for option in other["options"]:
+            del option["figure"]
+        raw["sections"].insert(2, other)
+        with self.assertRaises(ContractError) as ctx:
+            build(raw)
+        self.assertIn("選択肢の図の id 'sec-ask-opt-1-svg' が他のセクション id と重複しています",
+                      [d.message for d in ctx.exception.diagnostics])
 
 
 if __name__ == "__main__":

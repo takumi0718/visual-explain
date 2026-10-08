@@ -358,6 +358,14 @@ def process_narrative_section(
     return WrappedNarrative(instance_id=section.id, markup=wrapper)
 
 
+def option_figure_ids(asks) -> frozenset[str]:
+    """DOM ids the option pictures generate (svg and text twin), per ask and option number."""
+    return frozenset(
+        f"{ask.id}-opt-{index}-{suffix}"
+        for ask in asks for index, option in enumerate(ask.options, start=1)
+        if option.figure is not None for suffix in ("svg", "relations"))
+
+
 def add_option_figure_assets(composition: CompositionResult, asks, registry: Registry) -> CompositionResult:
     """Option pictures reuse the grid-diagram stylesheet, even with no canonical grid-diagram."""
     if not any(option.figure is not None for ask in asks for option in ask.options):

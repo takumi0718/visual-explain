@@ -46,9 +46,12 @@ class _Counter(HTMLParser):
             self.figures += 1
             self.seen_figure = True
         parent_kind, parent_skip = self.stack[-1] if self.stack else (None, False)
-        classes = set((dict(attrs).get("class") or "").split())
+        attr_map = dict(attrs)
+        classes = set((attr_map.get("class") or "").split())
+        # An option picture (and its text twin) is a figure, not prose.
+        thumb = tag == "figure" and "data-ve-thumb" in attr_map
         self.stack.append((kind if kind else parent_kind,
-                           parent_skip or bool(classes & (_CHROME_CLASSES | _HIDDEN_CLASSES))))
+                           parent_skip or thumb or bool(classes & (_CHROME_CLASSES | _HIDDEN_CLASSES))))
 
     def handle_startendtag(self, tag, attrs):
         # <br/> must not pop the parent; <span/> opens and closes nothing.

@@ -24,13 +24,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ve_components.assembly import (  # noqa: E402
     CompositionResult,
     add_option_figure_assets,
+    option_figure_ids,
     compose_sections,
     process_canonical_section,
     process_compatibility_section,
     process_narrative_section,
 )
 from ve_components.checker import check_final_document  # noqa: E402
-from ve_components.diagnostics import ContractError, Diagnostic, FINAL_CHECK_FAILURE, FIXED_REGION_MISMATCH  # noqa: E402
+from ve_components.diagnostics import ContractError, Diagnostic, DUPLICATE_SECTION_ID, FINAL_CHECK_FAILURE, FIXED_REGION_MISMATCH  # noqa: E402
 from ve_components.skeletons import LATEST_SKELETON_VERSION, declared_skeleton_version  # noqa: E402
 from ve_components.document_sections import (  # noqa: E402
     build_overview_nav,
@@ -90,6 +91,11 @@ def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
     after that figure and the collection panel goes last.
     """
     occupied_ids = frozenset(_section_instance_id(section) for section in request.sections)
+    asks = tuple(s for s in request.sections if isinstance(s, AskSection))
+    clashes = sorted(option_figure_ids(asks) & occupied_ids)
+    if clashes:
+        raise ContractError([Diagnostic(
+            DUPLICATE_SECTION_ID, f"選択肢の図の id '{clashes[0]}' が他のセクション id と重複しています")])
     first = request.sections[0]
     nav = build_overview_nav(first, occupied_ids=occupied_ids)
     marked = {m.target: m.n for m in first.overview.markers} if first.overview is not None else {}
@@ -109,16 +115,14 @@ def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
         else:
             items.append(process_compatibility_section(section))
     panel = render_decision_panel(
-        tuple(s for s in request.sections if isinstance(s, AskSection)),
+        asks,
         request.document, request.schema_version, document_path,
         occupied_ids=occupied_ids | ({nav.instance_id} if nav is not None else frozenset()))
     items.append(panel)
     if nav is not None:
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)
-    composition = add_option_figure_assets(
-        compose_sections(items),
-        tuple(s for s in request.sections if isinstance(s, AskSection)), registry)
+    composition = add_option_figure_assets(compose_sections(items), asks, registry)
     return replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
 
 
