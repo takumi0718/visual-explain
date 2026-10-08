@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ve_components.assembly import (  # noqa: E402
     CompositionResult,
+    add_option_figure_assets,
     compose_sections,
     process_canonical_section,
     process_compatibility_section,
@@ -115,7 +116,9 @@ def compose_document(request: AssemblyRequest, registry: Registry, renderers, *,
     if nav is not None:
         # first-screen [0], overview canonical [1], then the marker list.
         items.insert(2, nav)
-    composition = compose_sections(items)
+    composition = add_option_figure_assets(
+        compose_sections(items),
+        tuple(s for s in request.sections if isinstance(s, AskSection)), registry)
     return replace(composition, sections_markup=stamp_review_sections(composition.sections_markup))
 
 

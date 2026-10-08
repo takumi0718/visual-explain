@@ -107,7 +107,11 @@
         "label": {"type": "string", "minLength": 1},
         "benefit": {"type": "string", "minLength": 1},
         "tradeoff": {"type": "string", "minLength": 1},
-        "withdrawn": {"type": "boolean"}
+        "withdrawn": {"type": "boolean"},
+        "figure": {
+          "description": "選択肢の小図。grid-diagram と同じ形で、grid は 3×3 以内、ノードは 1〜9、markers は書けない。取り下げていない選択肢すべてに付けるか、1つも付けないかのどちらか。",
+          "$ref": "component-ir.schema.json#/$defs/gridThumbnailPayload"
+        }
       }
     },
     "askStep": {

@@ -559,6 +559,7 @@ class AskOption:
     tradeoff: str
     benefit: str = ""
     withdrawn: bool = False
+    figure: Optional[GridDiagramPayload] = None  # option picture: grid-diagram, 3x3 or smaller
 
 
 @dataclass(frozen=True)

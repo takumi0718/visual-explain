@@ -35,7 +35,7 @@ from .diagnostics import (
     KPI_STRUCTURE_VIOLATION,
     Diagnostic,
 )
-from .grid_layout import MAX_GRID, viewbox as grid_viewbox
+from .grid_layout import MAX_GRID, MAX_THUMB_GRID, viewbox as grid_viewbox
 from .validation import VOCABULARY, scan_author_markup_bans
 
 _COMPAT_SOURCES = set(VOCABULARY["compatibility"]["sources"])
@@ -68,6 +68,7 @@ _SVG_TEXT_ANCHOR = frozenset({"start", "middle", "end"})
 _SVG_OPEN_RE = re.compile(r"<svg\b([^>]*)>", re.IGNORECASE)
 # grid-diagram declares its grid on the figure; the checker derives the viewBox from it.
 _GRID_ATTR_RE = re.compile(r'\bdata-ve-grid="([1-9][0-9]*)x([1-9][0-9]*)"')
+_THUMB_FIGURE_RE = re.compile(r"<figure\b([^>]*\bdata-ve-thumb\b[^>]*)>(.*?)</figure>", re.DOTALL)
 _WRAPPER_SECTION_RE = re.compile(
     r'<section\b([^>]*)data-ve-section-kind="([^"]+)"([^>]*)>(.*?)</section>',
     re.DOTALL,
@@ -2043,8 +2044,11 @@ def _validate_closed_svg(
     *,
     component_key: str,
     expected_id: str | None,
+    expected_viewbox: str | None = None,
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
+    if component_key.startswith("grid-diagram") and expected_viewbox is None:
+        return [Diagnostic(RENDERER_SVG_VIOLATION, "grid-diagram の図に期待される viewBox を計算できません")]
     svg_match = _SVG_OPEN_RE.match(fragment)
     if svg_match is None:
         return [Diagnostic(RENDERER_SVG_VIOLATION, "<svg> 開始タグを解析できません")]
@@ -2058,7 +2062,7 @@ def _validate_closed_svg(
                 RENDERER_SVG_VIOLATION,
                 f"<svg> id は '{expected_id}' である必要があります",
             ))
-    diagnostics.extend(_validate_svg_subtree(fragment, component_key))
+    diagnostics.extend(_validate_svg_subtree(fragment, component_key, expected_viewbox))
     return diagnostics
 
 
@@ -2073,6 +2077,40 @@ def _grid_viewbox_from(markup: str, limit: int) -> str | None:
     return grid_viewbox(cols, rows)
 
 
+def _validate_ask_thumbnails(attrs: str, body: str) -> list[Diagnostic]:
+    """Option pictures: one grid-diagram SVG per thumbnail figure, in decision asks only."""
+    if _section_attr(attrs, "data-ve-ask-type") != "decision":
+        return [Diagnostic(RENDERER_SVG_VIOLATION, "選択肢の図は decision ask にだけ置けます")]
+    diagnostics: list[Diagnostic] = []
+    section_id = _section_attr(attrs, "id") or ""
+    figures = list(_THUMB_FIGURE_RE.finditer(body))
+    inside = sum(len(_SVG_OPEN_RE.findall(match.group(2))) for match in figures)
+    if inside != len(_SVG_OPEN_RE.findall(body)):
+        diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "選択肢の図の外に <svg> があります"))
+    id_re = re.compile(re.escape(section_id) + r"-opt-[1-9][0-9]*-svg")
+    for match in figures:
+        figure_attrs, figure_body = match.group(1), match.group(2)
+        expected = _grid_viewbox_from(figure_attrs, MAX_THUMB_GRID)
+        if _section_attr(figure_attrs, "data-ve-component") != "grid-diagram" or expected is None:
+            diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION,
+                                          "選択肢の図は3×3以内の grid-diagram である必要があります"))
+            continue
+        svgs = list(_SVG_OPEN_RE.finditer(figure_body))
+        end = figure_body.find("</svg>", svgs[0].end()) if len(svgs) == 1 else -1
+        if end == -1:
+            diagnostics.append(Diagnostic(RENDERER_SVG_VIOLATION, "選択肢の図には閉じた <svg> がちょうど1つ必要です"))
+            continue
+        if not id_re.fullmatch(_section_attr(svgs[0].group(1), "id") or ""):
+            diagnostics.append(Diagnostic(
+                RENDERER_SVG_VIOLATION,
+                f"選択肢の図の <svg> id は '{section_id}-opt-<番号>-svg' の形である必要があります"))
+        diagnostics.extend(_validate_closed_svg(
+            figure_body[svgs[0].start():end + len("</svg>")],
+            component_key="grid-diagram@2", expected_id=None, expected_viewbox=expected,
+        ))
+    return diagnostics
+
+
 def validate_renderer_svg(content: str) -> list[Diagnostic]:
     """Enforce allowlisted SVG placement and per-element attribute grammars."""
     diagnostics: list[Diagnostic] = []
@@ -2084,6 +2122,9 @@ def validate_renderer_svg(content: str) -> list[Diagnostic]:
         version = _section_attr(attrs, "data-ve-contract-version")
         instance = _section_attr(attrs, "data-ve-instance")
         component_key = f"{component}@{version}" if component and version else ""
+        if kind == "ask" and _SVG_OPEN_RE.search(body):
+            diagnostics.extend(_validate_ask_thumbnails(attrs, body))
+            continue
         allowed = (
             kind == "canonical"
             and component_key in RENDERER_SVG_ALLOWLIST

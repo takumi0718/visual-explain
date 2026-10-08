@@ -247,7 +247,7 @@ _ASK_SECTION_KEYS = {
     "kind", "id", "askType", "question", "options", "defaultId", "noDefaultReason", "evidence",
     "steps", "claim", "verify",
 }
-_ASK_OPTION_KEYS = {"id", "label", "benefit", "tradeoff", "withdrawn"}
+_ASK_OPTION_KEYS = {"id", "label", "benefit", "tradeoff", "withdrawn", "figure"}
 _ASK_STEP_KEYS = {"role", "roleLabel", "text"}
 _ASK_CLAIM_KEYS = {"text", "certainty"}
 _ASK_TYPES = frozenset({"decision", "request", "hypothesis"})
@@ -3254,11 +3254,19 @@ def _validate_ask_decision(raw: dict, path: str, col: DiagnosticCollector) -> As
                 col.add(INVALID_COMPONENT_PAYLOAD,
                         "decision.options[].withdrawn は true / false のいずれかです", op)
                 withdrawn = False
+            figure = None
+            if "figure" in item:
+                figure = _validate_grid_diagram(item["figure"], f"{op}.figure", col, thumbnail=True)
             if accepted_id and _nonblank_str(label) and _nonblank_str(tradeoff) and _nonblank_str(benefit):
                 options.append(AskOption(id=oid, label=label, tradeoff=tradeoff,
-                                         benefit=benefit, withdrawn=withdrawn))
+                                         benefit=benefit, withdrawn=withdrawn, figure=figure))
         if len(options) == len(options_raw) and sum(1 for o in options if not o.withdrawn) < 2:
             col.add(INVALID_COMPONENT_PAYLOAD, "decision の取り下げていない選択肢は2件以上必要です", path)
+        pictured = [isinstance(item, dict) and "figure" in item
+                    for item in options_raw if not (isinstance(item, dict) and item.get("withdrawn") is True)]
+        if any(pictured) and not all(pictured):
+            col.add(INVALID_COMPONENT_PAYLOAD,
+                    "選択肢の図は、取り下げていない選択肢すべてに付ける必要があります", path)
     if default_id is None:
         col.add(INVALID_COMPONENT_PAYLOAD, "decision には推奨案の defaultId が必要です", path)
     elif not _nonblank_str(default_id):

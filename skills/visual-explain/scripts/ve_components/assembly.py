@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import html
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .checker import extract_flow_dom, validate_content_markup, RENDERER_SVG_ALLOWLIST
 from .diagnostics import DUPLICATE_SECTION_ID, RENDERER_FAILURE, ContractError, Diagnostic
@@ -356,6 +356,19 @@ def process_narrative_section(
         f'{body}\n</section>'
     )
     return WrappedNarrative(instance_id=section.id, markup=wrapper)
+
+
+def add_option_figure_assets(composition: CompositionResult, asks, registry: Registry) -> CompositionResult:
+    """Option pictures reuse the grid-diagram stylesheet, even with no canonical grid-diagram."""
+    if not any(option.figure is not None for ask in asks for option in ask.options):
+        return composition
+    component = registry.find("grid-diagram", 2)
+    asset = component.asset_by_id("grid-diagram.css") if component is not None else None
+    if asset is None:
+        raise ContractError([Diagnostic(RENDERER_FAILURE, "選択肢の図には grid-diagram の資産が必要です")])
+    if any(ref.asset.id == asset.id for ref in composition.style_assets):
+        return composition
+    return replace(composition, style_assets=composition.style_assets + (AssetRef("grid-diagram", 2, asset),))
 
 
 def compose_sections(items) -> CompositionResult:

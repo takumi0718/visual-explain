@@ -122,6 +122,19 @@ def relation_items(payload: GridDiagramPayload) -> list[str]:
     return items
 
 
+def render_option_figure(payload: GridDiagramPayload, *, id_base: str, label: str) -> str:
+    """Small picture inside a decision option; no semantic ids (it is not a canonical figure)."""
+    relations_id = f"{id_base}-relations"
+    svg = render_grid_svg(payload, svg_id=f"{id_base}-svg", label=label,
+                          described_by=relations_id, semantic=False)
+    return (
+        f'<figure data-ve-component="grid-diagram" class="ve-gd ve-gd-thumb" data-ve-thumb'
+        f' data-ve-grid="{payload.cols}x{payload.rows}" aria-label="{_esc(label)}">{svg}'
+        f'<ul id="{_esc(relations_id)}" class="ve-gd-relations visually-hidden">'
+        f'{"".join(relation_items(payload))}</ul></figure>'
+    )
+
+
 def render_grid_diagram(section: CanonicalSection, definition) -> RenderResult:
     ir = section.ir
     payload = ir.grid_diagram

@@ -221,8 +221,14 @@ def render_ask(section: AskSection, *, marker: int | None = None) -> WrappedDocu
 
 
 def _render_decision_body(section: AskSection, kind_label: str, marker_attr: str = "") -> str:
+    from .renderers.grid_diagram import render_option_figure
+
     options_html: list[str] = []
-    for opt in section.options:
+    for index, opt in enumerate(section.options, start=1):
+        figure = ""
+        if opt.figure is not None:
+            figure = render_option_figure(opt.figure, id_base=f"{section.id}-opt-{index}",
+                                          label=f"{opt.label} の図")
         attrs = f'data-ask-option data-ask-option-id="{_esc(opt.id)}"'
         badge = ""
         if opt.id == section.default_id:
@@ -236,7 +242,7 @@ def _render_decision_body(section: AskSection, kind_label: str, marker_attr: str
             f'<span class="ask-option-head"><span class="ask-option-label">{_esc(opt.label)}</span>{badge}</span>'
             f'<span class="ask-benefit"><span class="ask-prefix">利点:</span> {_esc(opt.benefit)}</span>'
             f'<span class="ask-tradeoff"><span class="ask-prefix">代償:</span> {_esc(opt.tradeoff)}</span>'
-            "</li>"
+            f"{figure}</li>"
         )
     memo = (
         '\n  <div class="ask-memo">'
