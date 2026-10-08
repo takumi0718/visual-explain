@@ -15,7 +15,8 @@ from ve_components.model import CanonicalSection
 from ve_components.registry import load_registry
 from ve_components.renderers import TRUSTED_RENDERERS
 from ve_components.renderers.grid_diagram import render_grid_diagram
-from ve_components.validation import validate_assembly, validate_canonical_section
+from ve_components.grid_layout import check_layout, route_edges
+from ve_components.validation import validate_assembly, validate_canonical_section, validate_grid_diagram
 
 SKILL = Path(__file__).resolve().parents[2]
 TESTS = SKILL / "scripts" / "tests"
@@ -157,9 +158,98 @@ class FinalCheckTest(unittest.TestCase):
         self.assertIn('text-anchor="middle">A&amp;B &lt;x&gt;</text>', html)
         self.assertIn('<li class="ve-gd-rel-node">A&amp;B &lt;x&gt;（根拠）</li>', html)
 
+    def test_non_integer_coordinate_is_rejected(self) -> None:
+        forged = self.html.replace('class="ve-gd-node-box" x="316"', 'class="ve-gd-node-box" x="316.5"', 1)
+        self.assertIn("座標属性 x の値 '316.5' は整数である必要があります", check(forged))
+
+    def test_attribute_outside_the_allowlist_is_rejected(self) -> None:
+        forged = self.html.replace('<rect class="ve-gd-node-box" x="316"', '<rect class="ve-gd-node-box" rx="6" x="316"', 1)
+        self.assertIn("<rect> に許可されていない属性 'rx'", check(forged))
+
     def test_node_needs_its_box(self) -> None:
         forged = self.html.replace('class="ve-gd-node-box" x="316"', 'class="ve-gd-box" x="316"', 1)
         self.assertIn("grid-diagram ノードは rect.ve-gd-node-box を1つだけ持つ必要があります", check(forged))
+
+
+def _messages(raw_ir: dict) -> list[str]:
+    with unittest.TestCase().assertRaises(ContractError) as ctx:
+        validate_canonical_section(raw_ir)
+    return [d.message for d in ctx.exception.diagnostics]
+
+
+class ReservedClassTest(unittest.TestCase):
+    def test_narrative_cannot_hide_prose_from_the_text_budget(self) -> None:
+        for cls in ("visually-hidden", "ve-gd-relations"):
+            with self.subTest(cls=cls):
+                raw = raw_fixture()
+                raw["sections"].insert(1, {"kind": "narrative", "id": "sec-hide",
+                                           "markup": f'<p class="{cls}">隠した本文</p>'})
+                with self.assertRaises(ContractError) as ctx:
+                    validate_assembly(raw)
+                self.assertIn(f"narrative に予約 class {cls} は置けません",
+                              [d.message for d in ctx.exception.diagnostics])
+
+
+def _route_payload(*, blocker: bool) -> dict:
+    """b sits top-left, a bottom-right; the first bend puts the edge label on region 'r's label."""
+    nodes = [{"id": "a", "label": "甲", "cell": [2, 4]}, {"id": "b", "label": "乙", "cell": [1, 1]}]
+    if blocker:
+        nodes.append({"id": "c", "label": "丙", "cell": [2, 2]})
+    return {"grid": {"cols": 3, "rows": 4}, "nodes": nodes,
+            "regions": [{"id": "r", "label": "囲み", "from": [2, 3], "to": [2, 3]}],
+            "edges": [{"id": "e", "from": "a", "to": "b", "label": "あいうえおかきく"}]}
+
+
+class RouteAgreementTest(unittest.TestCase):
+    def _render(self, payload_raw: dict) -> str:
+        ir = canonical_ir(raw_fixture())
+        ir["grid-diagram"] = payload_raw
+        section = CanonicalSection(ir=validate_canonical_section(ir))
+        return render_grid_diagram(section, REGISTRY.find("grid-diagram", 2)).markup
+
+    def test_renderer_uses_the_route_check_layout_accepted(self) -> None:
+        payload_raw = {
+            "grid": {"cols": 4, "rows": 2},
+            "nodes": [{"id": "a", "label": "甲", "cell": [1, 1]}, {"id": "b", "label": "乙", "cell": [4, 1]},
+                      {"id": "c", "label": "丙", "cell": [3, 2]}],
+            "edges": [{"id": "e-ab", "from": "a", "to": "b", "label": "あいうえおかき"},
+                      {"id": "e-ac", "from": "a", "to": "c", "label": "さしすせそたち"}],
+        }
+        payload = validate_grid_diagram(copy.deepcopy(payload_raw))
+        self.assertEqual(check_layout(payload), [])
+        accepted = route_edges(payload)[1]
+        # The first bend's label would sit on e-ab's label, so e-ac goes down first.
+        self.assertEqual(accepted.points, ((75, 74), (75, 144), (316, 144)))
+        markup = self._render(payload_raw)
+        drawn = "".join(
+            f'<line class="ve-gd-edge-line" x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}"></line>'
+            for a, b in zip(accepted.points, accepted.points[1:]))
+        self.assertIn(f'<g class="ve-gd-edge" data-ve-semantic-id="e-ac">{drawn}', markup)
+
+    def test_edge_label_avoids_a_region_label_by_taking_the_other_bend(self) -> None:
+        payload = validate_grid_diagram(_route_payload(blocker=False))
+        self.assertEqual(route_edges(payload)[0].points, ((225, 310), (225, 48), (134, 48)))
+        self.assertIn('x1="225" y1="310" x2="225" y2="48"', self._render(_route_payload(blocker=False)))
+
+    def test_edge_label_on_a_region_label_with_no_other_bend_is_reported(self) -> None:
+        with self.assertRaises(ContractError) as ctx:
+            validate_grid_diagram(_route_payload(blocker=True))
+        self.assertEqual([d.message for d in ctx.exception.diagnostics],
+                         ["辺 'e' のラベルを置く場所がありません"])
+
+
+class DuplicateIdTest(unittest.TestCase):
+    def test_duplicate_inside_the_picture_is_reported_once(self) -> None:
+        ir = canonical_ir(raw_fixture())
+        ir["grid-diagram"]["regions"][0]["id"] = "approval"
+        hits = [m for m in _messages(ir) if "'approval'" in m and "重複" in m]
+        self.assertEqual(hits, ["図の id 'approval' が重複しています"])
+
+    def test_node_id_clashing_with_a_source_id_is_reported(self) -> None:
+        ir = canonical_ir(raw_fixture())
+        ir["grid-diagram"]["nodes"][3]["id"] = "src-grid"
+        ir["grid-diagram"]["edges"][2]["to"] = "src-grid"
+        self.assertEqual([m for m in _messages(ir) if "重複" in m], ["意味 ID 'src-grid' が重複しています"])
 
 
 if __name__ == "__main__":

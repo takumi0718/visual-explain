@@ -10,9 +10,7 @@ from __future__ import annotations
 import html
 
 from ..grid_layout import (
-    COL_W,
     MARKER_R,
-    ROW_H,
     arrow_lines,
     marker_position,
     node_cells,
@@ -22,7 +20,7 @@ from ..grid_layout import (
     region_cells,
     region_label_position,
     region_rect,
-    route_edge,
+    route_edges,
     viewbox,
 )
 from ..model import CERTAINTY_LABEL, CanonicalSection, GridDiagramPayload, RenderManifest, RenderResult
@@ -43,7 +41,6 @@ def render_grid_svg(payload: GridDiagramPayload, *, svg_id: str, label: str,
         return f' data-ve-semantic-id="{_esc(item_id)}"' if semantic else ""
 
     rects = {node.id: node_rect(node) for node in payload.nodes}
-    width, height = payload.cols * COL_W, payload.rows * ROW_H
     parts: list[str] = []
     for region in payload.regions:
         rect = region_rect(region)
@@ -55,8 +52,7 @@ def render_grid_svg(payload: GridDiagramPayload, *, svg_id: str, label: str,
             f'<text class="ve-gd-region-label" x="{lx}" y="{ly}" text-anchor="start">{_esc(region.label)}</text>'
             f'</g>'
         )
-    for edge in payload.edges:
-        route = route_edge(edge, rects, width, height)
+    for edge, route in zip(payload.edges, route_edges(payload)):
         assert not isinstance(route, str), route  # validation already ran check_layout
         lines = [
             f'<line class="ve-gd-edge-line" x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}"></line>'

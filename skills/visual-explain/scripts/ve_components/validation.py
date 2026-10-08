@@ -269,7 +269,9 @@ _SENTENCE_TERMINATORS = frozenset("。！？!?")
 # Reserved tokens for narrative / freeform author markup (Global Constraints).
 _RESERVED_CLASSES = frozenset({"first-screen", "closing-section", "ask", "link-domain", "decision-panel",
                                "conclusion", "overview-markers", "ask-kind", "ask-badge",
-                               "ask-withdrawn-note", "ask-memo", "ask-prefix"})
+                               "ask-withdrawn-note", "ask-memo", "ask-prefix",
+                               # Text in these is not counted by metrics (screen-reader twins).
+                               "visually-hidden", "ve-gd-relations"})
 _RESERVED_DATA_EXACT = frozenset({
     "data-connect",
     "data-connect-scope",
@@ -2591,9 +2593,13 @@ def _check_duplicate_ids(raw: dict, path: str, col: DiagnosticCollector) -> None
         collect(evidence_map.get("evidence"))
     grid_diagram = raw.get("grid-diagram")
     if isinstance(grid_diagram, dict):
+        # The grid validator already reports ids repeated inside the picture;
+        # keep one of each here so only clashes with other ids are reported.
+        start = len(ids)
         collect(grid_diagram.get("nodes"))
         collect(grid_diagram.get("regions"))
         collect(grid_diagram.get("edges"))
+        ids[start:] = list(dict.fromkeys(ids[start:]))
     seen: set[str] = set()
     for value in ids:
         if value in seen:

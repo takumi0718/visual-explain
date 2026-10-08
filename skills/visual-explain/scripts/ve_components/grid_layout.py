@@ -204,6 +204,25 @@ def route_edge(edge, rects: dict[str, Rect], width: int, height: int,
     return f"辺 '{edge.id}' のラベルを置く場所がありません"
 
 
+def route_edges(payload) -> tuple[EdgeRoute | str, ...]:
+    """Route every edge in payload order; the renderer and check_layout both call this.
+
+    Region label boxes are reserved up front, and each placed edge label box is
+    reserved for the edges after it, so the build draws exactly the routes the
+    check accepted.
+    """
+    rects = {node.id: node_rect(node) for node in payload.nodes}
+    width, height = payload.cols * COL_W, payload.rows * ROW_H
+    taken: list[Rect] = [region_label_box(region) for region in payload.regions]
+    routes: list[EdgeRoute | str] = []
+    for edge in payload.edges:
+        route = route_edge(edge, rects, width, height, taken)
+        routes.append(route)
+        if not isinstance(route, str) and edge.label:
+            taken.append(label_box(route.points, edge.label)[0])
+    return tuple(routes)
+
+
 def arrow_lines(points: Sequence[tuple[int, int]]) -> tuple[tuple[int, int, int, int], ...]:
     """Two short strokes forming the arrowhead at the last point."""
     (px, py), (ex, ey) = points[-2], points[-1]
@@ -255,18 +274,12 @@ def check_layout(payload) -> list[str]:
             messages.append(f"囲み '{region.id}' のラベルが囲みに収まりません")
     if messages:
         return messages
-    rects = {node.id: node_rect(node) for node in payload.nodes}
-    width, height = payload.cols * COL_W, payload.rows * ROW_H
-    taken: list[Rect] = []
     segments: list[tuple[tuple[int, int], tuple[int, int]]] = []
-    for edge in payload.edges:
-        route = route_edge(edge, rects, width, height, taken)
+    for route in route_edges(payload):
         if isinstance(route, str):
             messages.append(route)
             continue
         segments.extend(zip(route.points, route.points[1:]))
-        if edge.label:
-            taken.append(label_box(route.points, edge.label)[0])
     for region in payload.regions:
         box = region_label_box(region)
         if any(_segment_hits(a, b, box) for a, b in segments):
