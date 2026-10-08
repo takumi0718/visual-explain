@@ -26,7 +26,7 @@ EXISTING_ASSETS = {
     "evidence-map": ("evidence-map.css", "b70f35e5c997affac8204c4f21b98b7827e36963361db823ee1d9b0246c8637b"),
     "bars": ("bars.css", "dc4053c7f159dc7a52ad80571bf261882a48a4d10aa7c97e5790643b9f0288c9"),
     "kpi": ("kpi.css", "5953282c293f6788a73d77faa0cab1453330e46e86eddc62c897b4766c8c2b78"),
-    "grid-diagram": ("grid-diagram.css", "1522386ec816d31b03e305af2ef250e4502aae5a7d205e61e7b63610c4386893"),
+    "grid-diagram": ("grid-diagram.css", "f7c68713d73c15bbe53f744912c5c272a5096965bea0625fb8f20ea71ef6548a"),
 }
 
 

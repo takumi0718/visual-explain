@@ -269,5 +269,23 @@ class DuplicateIdTest(unittest.TestCase):
         self.assertEqual([m for m in _messages(ir) if "重複" in m], ["意味 ID 'src-grid' が重複しています"])
 
 
+class GridStyleTest(unittest.TestCase):
+    CSS = (COMPONENTS / "grid-diagram.css").read_text("utf-8")
+
+    def test_dark_base_nodes_differ_from_primary_by_tint_and_outline(self) -> None:
+        rule = ('[data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: color-mix(in srgb, '
+                'var(--accent) 12%, var(--surface)); stroke: var(--dg-primary-mid); stroke-width: 1.5; }')
+        self.assertIn(':root[data-theme="dark"] ' + rule, self.CSS)
+        self.assertIn('@media (prefers-color-scheme: dark) { :root:not([data-theme]) ' + rule + ' }', self.CSS)
+
+    def test_scrolling_canvas_shows_edge_shadows_with_existing_tokens(self) -> None:
+        rule = next(line for line in self.CSS.splitlines() if ".ve-gd-canvas { overflow-x: auto;" in line)
+        self.assertEqual(rule.count("no-repeat local"), 2)
+        self.assertEqual(rule.count("no-repeat scroll"), 2)
+        self.assertIn("var(--ve-gd-canvas-bg, var(--bg))", rule)
+        self.assertIn("color-mix(in srgb, var(--text) 12%, var(--surface))", rule)
+        self.assertIn(".ve-gd-thumb .ve-gd-canvas { background: none; }", self.CSS)
+
+
 if __name__ == "__main__":
     unittest.main()

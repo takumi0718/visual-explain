@@ -120,7 +120,7 @@
     [data-ve-section-kind="first-screen"] + [data-ve-section-kind="canonical"] { margin-top: var(--space-3); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) { margin-bottom: var(--space-2); }
     [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
-    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); --ve-gd-canvas-bg: var(--surface); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure .ve-matrix-scroll { margin-inline: 0; }
     /* Dense tables have no cell fill for highlightId: show it as an emphasized row (tint + accent rule on the header). */
     [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }

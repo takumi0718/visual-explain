@@ -120,7 +120,7 @@
     [data-ve-section-kind="first-screen"] + [data-ve-section-kind="canonical"] { margin-top: var(--space-3); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) { margin-bottom: var(--space-2); }
     [data-ve-section-kind="canonical"] + [data-ve-section-kind="overview-nav"] { margin-top: var(--space-2); }
-    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); }
+    [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure { margin-block: 0; padding: var(--space-3); background: var(--surface); border-radius: var(--radius); --ve-gd-canvas-bg: var(--surface); }
     [data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure .ve-matrix-scroll { margin-inline: 0; }
     /* Dense tables have no cell fill for highlightId: show it as an emphasized row (tint + accent rule on the header). */
     [data-ve-section-kind] figure[data-ve-component="matrix"] .ve-matrix-scroll tr:has(> .ve-dg-highlight) > :is(th, td) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
@@ -327,10 +327,10 @@
     }
   </style>
   <!-- VE-CONTROLLED:COMPONENT-STYLES:BEGIN -->
-  <style data-ve-component="grid-diagram" data-ve-contract-version="2" data-ve-asset="grid-diagram.css" data-ve-digest="1522386ec816d31b03e305af2ef250e4502aae5a7d205e61e7b63610c4386893">[data-ve-component="grid-diagram"] { display: block; min-width: 0; margin: var(--space-3) 0; }
+  <style data-ve-component="grid-diagram" data-ve-contract-version="2" data-ve-asset="grid-diagram.css" data-ve-digest="f7c68713d73c15bbe53f744912c5c272a5096965bea0625fb8f20ea71ef6548a">[data-ve-component="grid-diagram"] { display: block; min-width: 0; margin: var(--space-3) 0; }
 figure[data-ve-component="grid-diagram"] .ve-gd-caption { margin: 0 0 var(--space-1); font-weight: 700; font-size: var(--fs-h2); max-width: var(--w-narrative); }
 figure[data-ve-component="grid-diagram"] .ve-gd-summary { margin: 0 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-small); max-width: var(--w-narrative); }
-[data-ve-component="grid-diagram"] .ve-gd-canvas { overflow-x: auto; }
+[data-ve-component="grid-diagram"] .ve-gd-canvas { overflow-x: auto; background: linear-gradient(to right, var(--ve-gd-canvas-bg, var(--bg)) 50%, transparent) left / 2rem 100% no-repeat local, linear-gradient(to left, var(--ve-gd-canvas-bg, var(--bg)) 50%, transparent) right / 2rem 100% no-repeat local, linear-gradient(to right, color-mix(in srgb, var(--text) 12%, var(--surface)), transparent) left / .75rem 100% no-repeat scroll, linear-gradient(to left, color-mix(in srgb, var(--text) 12%, var(--surface)), transparent) right / .75rem 100% no-repeat scroll; }
 [data-ve-component="grid-diagram"] .ve-gd-svg { display: block; width: 100%; margin: 0 auto; }
 [data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-1 { min-width: 7.5rem; max-width: 9.375rem; }
 [data-ve-component="grid-diagram"] .ve-gd-svg.ve-gd-cols-2 { min-width: 15rem; max-width: 18.75rem; }
@@ -348,6 +348,9 @@ figure[data-ve-component="grid-diagram"] .ve-gd-summary { margin: 0 0 var(--spac
 [data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-label { fill: var(--text); }
 [data-ve-component="grid-diagram"] .ve-gd-tone-primary .ve-gd-node-box { fill: var(--dg-primary); }
 [data-ve-component="grid-diagram"] .ve-gd-tone-primary .ve-gd-node-label { fill: var(--dg-on-primary); font-weight: 700; }
+/* Dark: the light-blue base fill sits too close to the primary fill, so base nodes use the accent tint with an outline. */
+:root[data-theme="dark"] [data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--dg-primary-mid); stroke-width: 1.5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) [data-ve-component="grid-diagram"] .ve-gd-tone-base .ve-gd-node-box { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--dg-primary-mid); stroke-width: 1.5; } }
 [data-ve-component="grid-diagram"] .ve-gd-tone-warning .ve-gd-node-box { fill: var(--bg); stroke: var(--dg-negative); stroke-width: 2; }
 [data-ve-component="grid-diagram"] .ve-gd-tone-warning .ve-gd-node-label { fill: var(--text); }
 [data-ve-component="grid-diagram"] .ve-gd-marker-dot { fill: var(--accent); }
@@ -356,6 +359,7 @@ figure[data-ve-component="grid-diagram"] .ve-gd-summary { margin: 0 0 var(--spac
 [data-ve-component="grid-diagram"] .ve-grid-diagram-notes li { margin: 0; }
 figure[data-ve-component="grid-diagram"].ve-gd-thumb { margin: var(--space-1) 0 0; }
 figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg { min-width: 0; margin: 0; }
+figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-canvas { background: none; }
 figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-1 { max-width: 8rem; }
 figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-2 { max-width: 16rem; }
 figure[data-ve-component="grid-diagram"].ve-gd-thumb .ve-gd-svg.ve-gd-cols-3 { max-width: 24rem; }

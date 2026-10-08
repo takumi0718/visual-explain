@@ -189,7 +189,7 @@ class FirstScreenFoldTest(unittest.TestCase):
         style = _style()
         self.assertIn('[data-ve-section-kind="canonical"]:has(+ [data-ve-section-kind="overview-nav"]) > figure '
                       "{ margin-block: 0; padding: var(--space-3); background: var(--surface); "
-                      "border-radius: var(--radius); }", style)
+                      "border-radius: var(--radius); --ve-gd-canvas-bg: var(--surface); }", style)
         for selector in (".ask {", ".decision-panel {", "details.deep-dive {", ".figure {"):
             rule = next(line for line in style.splitlines() if line.strip().startswith(selector))
             self.assertNotIn("var(--surface)", rule, selector)
