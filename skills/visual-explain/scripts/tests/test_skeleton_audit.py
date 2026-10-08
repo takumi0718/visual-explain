@@ -551,5 +551,22 @@ class MobileV4Test(unittest.TestCase):
             self.assertIn(needle, block)
 
 
+class ChevronV4Test(unittest.TestCase):
+    def test_horizontal_steps_share_one_row_and_equal_heights(self):
+        gate = _style().split("@media (width > 42rem) {", 1)
+        self.assertEqual(len(gate), 2)
+        block = gate[1].split("\n    }", 1)[0]
+        prefix = '[data-ve-section-kind] figure[data-ve-component="chevron"] .ve-chevron-horizontal'
+        for needle in (
+            f"{prefix} {{ display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); "
+            "grid-template-rows: auto auto auto; }",
+            f"{prefix} .ve-chevron-step {{ display: grid; grid-row: span 3; grid-template-rows: subgrid; "
+            "align-items: stretch; min-width: 0; max-width: none; }",
+            f"{prefix} .ve-chv-box {{ align-content: center; }}",
+        ):
+            self.assertIn(needle, block)
+        self.assertNotIn("flex-wrap", block)
+
+
 if __name__ == "__main__":
     unittest.main()
