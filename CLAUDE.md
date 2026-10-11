@@ -71,7 +71,7 @@ fixture は命名規約を持つ: `component-valid-*.json` / `component-bad-*.js
 
 ### ドキュメントの正本
 
-- `skills/visual-explain/SKILL.md` — エージェント向けワークフローの正本（ゲート 3 条件・資料型・13 手順・保存規約）。パイプラインの挙動を変えたらここも更新する。
+- `skills/visual-explain/SKILL.md` — エージェント向けワークフローの正本（ゲート 3 条件・資料型・12 手順・保存規約）。パイプラインの挙動を変えたらここも更新する。
 - `references/patterns.md` — IR の書き方と図の契約、完全な JSON 例、コンポーネント選択ガイド。
 - `references/assembly.schema.json` / `component-ir.schema.json` — IR の schema。
 - `references/design-system.md` — 目視確認の規範（描画規則はレンダラが保証する）。

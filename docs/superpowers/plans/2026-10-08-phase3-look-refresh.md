@@ -48,7 +48,7 @@
 - skeleton は版ごとに 1 バイト不変。v1・v2・v3 は凍結ファイルで、checker は文書が宣言する版と照合する。CSP は変えない。UI の JS はすべて v4 skeleton の固定領域に置く。無限アニメーションは禁止。
 - component CSS（`assets/components/*.css`）と `registry.json` は変更しない（裁定 1）。
 - 生成 HTML の手編集禁止。見本の修正は IR → 再ビルド。見本の再ビルドはリポジトリルートを cwd にして相対パスで出力する: `python3 skills/visual-explain/scripts/build_explainer.py --assembly skills/visual-explain/examples/example-proposal.assembly.json --output skills/visual-explain/examples/example-proposal.html`
-- 参考にした他者スキルの固有名を、コード・コメント・コミット・文書に書かない。仕組みは一般語（問いカード、指摘層、回収パネル、試問）で表す。
+- 参考にした他者スキルの固有名を、コード・コメント・コミット・文書に書かない。仕組みは一般語（問いカード、指摘層、回収パネル）で表す。
 - コードのコメント / docstring は英語、checker 診断とスキル文書は日本語。診断文言は完全一致テストの対象。
 - コミットは conventional commits ＋ `(ve)` スコープ。末尾に次の 2 行を付ける:
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` / `Claude-Session: https://claude.ai/code/session_01NgfQq9eGiPhoY46Nmdb2Xv`

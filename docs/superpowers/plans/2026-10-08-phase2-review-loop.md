@@ -41,7 +41,7 @@
 - 余白（margin / padding / gap）は `0` / `var(--space-1)`〜`var(--space-7)` / `auto` / `inherit` だけ（`test_skeleton_audit.py` の格子監査）。
 - skeleton は版ごとに 1 バイト不変。v1・v2 は凍結ファイルで、checker は文書が宣言する版と照合する。CSP（inline script のみ、外部なし）は変えない。生成コンテンツに script を入れない。UI の JS はすべて v3 skeleton の固定領域に置く。
 - 生成 HTML の手編集禁止。見本の修正は IR → `build_explainer.py` で再ビルドする。見本の再ビルドはリポジトリルートを cwd にして相対パスで出力する: `python3 skills/visual-explain/scripts/build_explainer.py --assembly skills/visual-explain/examples/example-proposal.assembly.json --output skills/visual-explain/examples/example-proposal.html`
-- 参考にした他者スキルの固有名を、コード・コメント・コミット・文書に書かない。仕組みは一般語（問いカード、指摘層、回収パネル、試問）で表す。
+- 参考にした他者スキルの固有名を、コード・コメント・コミット・文書に書かない。仕組みは一般語（問いカード、指摘層、回収パネル）で表す。
 - コードのコメント / docstring は英語、checker 診断とスキル文書は日本語。診断文言は完全一致テストの対象。
 - コミットは conventional commits ＋ `(ve)` スコープ。末尾に次の 2 行を付ける:
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` / `Claude-Session: https://claude.ai/code/session_01NgfQq9eGiPhoY46Nmdb2Xv`
@@ -2656,7 +2656,7 @@ git commit -m "test(ve): pin skeleton v3 panel and block-number checks in the se
 ### Task 9: スキル文書の更新
 
 **Files:**
-- Modify: `skills/visual-explain/SKILL.md`（ワークフロー手順 5・6・9・10 と新手順、末尾節の回収パネル段落、目視チェックの最後の項目）
+- Modify: `skills/visual-explain/SKILL.md`（ワークフロー手順 5・6・9〜12、末尾節の回収パネル段落、目視チェックの最後の項目）
 - Modify: `skills/visual-explain/references/patterns.md`（「decision ask の回収パネル（Phase 2）」節）
 - Modify: `skills/visual-explain/references/design-system.md`（29 行の意味色の文、「回収パネル（decision ask）の目視規範」節）
 - Modify: `CLAUDE.md`（リポジトリルート）
@@ -2669,20 +2669,12 @@ git commit -m "test(ve): pin skeleton v3 panel and block-number checks in the se
 ```
 手順 6 の検査群③の括弧内に「、本文ブロック番号の連番」を足し、「decision ask を含む文書では判断の回収パネル」を「回収パネル（v3 文書では常にちょうど1つ）」にする。
 
-手順 8（保存する）の後を次の 5 手順にする（旧 9・10 は 10・11 に繰り下げ、内容を一部更新）:
+手順 8（保存する）の後を次の 4 手順にする（旧 10〜13 を 9〜12 に繰り上げ、内容を一部更新）:
 ```markdown
-9. **試問する:** 資料を開く前に、文脈を持たない general-purpose subagent に資料の絶対パスと読者宣言 1 行だけを渡し、次の 5 問で検査する。同期で結果を待つ。
-   1. 選択肢の弁別（各選択肢を選んだときの違いを資料だけから説明できるか）
-   2. 根拠の引用の有無
-   3. 実質 1 択の検出（推奨でない選択肢を選ぶ理由が読めるか）
-   4. 音読と 30 秒 3 文要約
-   5. 説明なしの内輪語の列挙
-
-   decision ask の無い解説資料では 1〜3 を省く。落ちた問いは「絵を足す / 問いを落とす / 言い換える」で IR を直して再ビルドし、同じ subagent に差分だけを送って再判定する。計 2 巡で打ち切る。
-10. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
-11. **ターミナルで要約する:** 資料の要点を 3 行、ファイルパス、そして「問いカードで選び、気になる段落は ＋ か文字のなぞりで指摘し、末尾の『回答と指摘をコピー』で貼り戻してほしい」を表示する。
-12. **待つ:** 資料をブラウザで開いたら、回答の貼り戻しが届くまで実装を始めない。
-13. **反映する:** `[visual-explain 回答]` で始まる固定形を読み、`(未選択 = お任せ)` の問いは推奨案で確定する。`## 指摘` の `#N` は資料の `data-ve-blk="N"` のブロックを指す。設計が変わる指摘なら `<topic>-02` で作り直し、捨てた案は選択肢の `"withdrawn": true` で残す。生成した資料は証跡として消さない。
+9. **開く:** `open-url "<絶対パス>"` を第一選択にする。なければ `open` または `xdg-open` を使う。起動の成功・失敗を問わず、資料の**絶対パスを必ず表示**する。GUI 表示は best effort であり、終了コード 0 でも表示を保証しない。
+10. **ターミナルで要約する:** 資料の要点を 3 行、ファイルパス、そして「問いカードで選び、気になる段落は ＋ か文字のなぞりで指摘し、末尾の『回答と指摘をコピー』で貼り戻してほしい」を表示する。
+11. **待つ:** 資料をブラウザで開いたら、回答の貼り戻しが届くまで実装を始めない。
+12. **反映する:** `[visual-explain 回答]` で始まる固定形を読み、`(未選択 = お任せ)` の問いは推奨案で確定する。`## 指摘` の `#N` は資料の `data-ve-blk="N"` のブロックを指す。設計が変わる指摘なら `<topic>-02` で作り直し、捨てた案は選択肢の `"withdrawn": true` で残す。生成した資料は証跡として消さない。
 ```
 「末尾節」節の最後の段落（「decision ask を含む資料は、末尾節のさらに後に…」）を次に置き換える:
 ```markdown
